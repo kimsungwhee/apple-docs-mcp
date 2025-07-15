@@ -1,0 +1,414 @@
+import { Tool } from '@modelcontextprotocol/sdk/types.js';
+
+export const findSimilarApisTool: Tool = {
+  name: 'find_similar_apis',
+  description: 'Find similar and related APIs based on Apple\'s official recommendations, including "See Also" sections and topic groupings',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      apiUrl: {
+        type: 'string',
+        description: 'The Apple Developer Documentation API URL to find similar APIs for',
+      },
+      searchDepth: {
+        type: 'string',
+        enum: ['shallow', 'medium', 'deep'],
+        description: 'Search depth: shallow (direct references), medium (+ topic sections), deep (+ related APIs) (default: medium)',
+      },
+      filterByCategory: {
+        type: 'string',
+        description: 'Filter results by category/topic (optional)',
+      },
+      includeAlternatives: {
+        type: 'boolean',
+        description: 'Include alternative APIs from the same topic section (default: true)',
+      },
+    },
+    required: ['apiUrl'],
+  },
+};
+
+/**
+ * 相似API信息接口
+ */
+interface SimilarAPI {
+  title: string;
+  url: string;
+  identifier: string;
+  abstract?: string;
+  category: string;
+  similarityType: string;
+  symbolKind?: string;
+  platforms?: string[];
+  confidence: number; // 1-10 相似度评分
+}
+
+interface SeeAlsoSection {
+  title: string;
+  identifiers: string[];
+}
+
+interface TopicSection {
+  title: string;
+  identifiers: string[];
+}
+
+interface AppleDocData {
+  metadata?: {
+    title?: string;
+    symbolKind?: string;
+  };
+  seeAlsoSections?: SeeAlsoSection[];
+  topicSections?: TopicSection[];
+  references?: Record<string, any>;
+}
+
+/**
+ * 查找相似API
+ */
+export async function handleFindSimilarApis(
+  apiUrl: string,
+  searchDepth: string = 'medium',
+  filterByCategory?: string,
+  includeAlternatives: boolean = true,
+): Promise<string> {
+  try {
+    console.error(`Finding similar APIs for: ${apiUrl}`);
+
+    const jsonApiUrl = convertToJsonApiUrl(apiUrl);
+
+    const response = await fetch(jsonApiUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+        'Accept': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch API data: ${response.status}`);
+    }
+
+    const data = await response.json() as AppleDocData;
+
+    // 收集相似API
+    const similarApis: SimilarAPI[] = [];
+
+    // 1. 从"另请参阅"部分收集
+    if (data.seeAlsoSections) {
+      const seeAlsoApis = extractSeeAlsoApis(data.seeAlsoSections, data.references, filterByCategory);
+      similarApis.push(...seeAlsoApis);
+    }
+
+    // 2. 从主题部分收集（medium 和 deep 模式）
+    if (searchDepth === 'medium' || searchDepth === 'deep') {
+      if (data.topicSections && includeAlternatives) {
+        const topicApis = extractTopicApis(data.topicSections, data.references, filterByCategory);
+        similarApis.push(...topicApis);
+      }
+    }
+
+    // 3. 深度搜索相关API（deep 模式）
+    if (searchDepth === 'deep') {
+      const deepApis = await extractDeepRelatedApis(similarApis.slice(0, 3)); // 限制前3个
+      similarApis.push(...deepApis);
+    }
+
+    // 去重和评分
+    const uniqueApis = deduplicateAndScore(similarApis);
+
+    // 按相似度排序
+    uniqueApis.sort((a, b) => b.confidence - a.confidence);
+
+    // 限制结果数量
+    const maxResults = searchDepth === 'shallow' ? 5 : searchDepth === 'medium' ? 10 : 15;
+    const limitedApis = uniqueApis.slice(0, maxResults);
+
+    return formatSimilarApis(apiUrl, limitedApis, data.metadata?.title);
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return `Error: Failed to find similar APIs: ${errorMessage}`;
+  }
+}
+
+/**
+ * 从"另请参阅"部分提取API
+ */
+function extractSeeAlsoApis(
+  seeAlsoSections: SeeAlsoSection[],
+  references?: Record<string, any>,
+  filterByCategory?: string,
+): SimilarAPI[] {
+  const apis: SimilarAPI[] = [];
+
+  for (const section of seeAlsoSections) {
+    // 过滤分类
+    if (filterByCategory && !section.title.toLowerCase().includes(filterByCategory.toLowerCase())) {
+      continue;
+    }
+
+    for (const identifier of section.identifiers) {
+      const api = createSimilarApi(
+        identifier,
+        section.title,
+        'See Also',
+        8, // 高相似度
+        references,
+      );
+      if (api) {
+        apis.push(api);
+      }
+    }
+  }
+
+  return apis;
+}
+
+/**
+ * 从主题部分提取API
+ */
+function extractTopicApis(
+  topicSections: TopicSection[],
+  references?: Record<string, any>,
+  filterByCategory?: string,
+): SimilarAPI[] {
+  const apis: SimilarAPI[] = [];
+
+  for (const section of topicSections) {
+    // 过滤分类
+    if (filterByCategory && !section.title.toLowerCase().includes(filterByCategory.toLowerCase())) {
+      continue;
+    }
+
+    // 限制每个主题的API数量
+    const limitedIdentifiers = section.identifiers.slice(0, 4);
+
+    for (const identifier of limitedIdentifiers) {
+      const api = createSimilarApi(
+        identifier,
+        section.title,
+        'Topic Group',
+        6, // 中等相似度
+        references,
+      );
+      if (api) {
+        apis.push(api);
+      }
+    }
+  }
+
+  return apis;
+}
+
+/**
+ * 深度搜索相关API
+ */
+async function extractDeepRelatedApis(seedApis: SimilarAPI[]): Promise<SimilarAPI[]> {
+  const deepApis: SimilarAPI[] = [];
+
+  for (const seedApi of seedApis) {
+    try {
+      const jsonApiUrl = convertToJsonApiUrl(seedApi.url);
+
+      const response = await fetch(jsonApiUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+          'Accept': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json() as AppleDocData;
+
+        // 只从"另请参阅"部分获取，避免过度扩展
+        if (data.seeAlsoSections) {
+          const relatedApis = extractSeeAlsoApis(data.seeAlsoSections, data.references);
+          // 降低相似度评分
+          relatedApis.forEach(api => {
+            api.confidence = Math.max(api.confidence - 2, 3);
+            api.similarityType = 'Deep Related';
+          });
+          deepApis.push(...relatedApis);
+        }
+      }
+    } catch (error) {
+      console.error(`Failed to fetch deep related API ${seedApi.url}:`, error);
+    }
+  }
+
+  return deepApis;
+}
+
+/**
+ * 创建相似API对象
+ */
+function createSimilarApi(
+  identifier: string,
+  category: string,
+  similarityType: string,
+  confidence: number,
+  references?: Record<string, any>,
+): SimilarAPI | null {
+  if (references && references[identifier]) {
+    const ref = references[identifier];
+    return {
+      title: ref.title || 'Unknown',
+      url: ref.url ? `https://developer.apple.com${ref.url}` : '#',
+      identifier,
+      abstract: ref.abstract ? ref.abstract.map((a: any) => a.text || '').join(' ').trim() : undefined,
+      category,
+      similarityType,
+      symbolKind: ref.kind || ref.symbolKind,
+      platforms: ref.platforms ? ref.platforms.map((p: any) => p.name) : undefined,
+      confidence,
+    };
+  }
+
+  // 如果references中没有，尝试从标识符解析
+  if (identifier.startsWith('doc://')) {
+    const parts = identifier.split('/');
+    const apiName = parts[parts.length - 1] || 'Unknown';
+    const pathPart = identifier.replace(/^doc:\/\/[^\/]+\/documentation\//, '');
+
+    return {
+      title: apiName,
+      url: `https://developer.apple.com/documentation/${pathPart}`,
+      identifier,
+      category,
+      similarityType,
+      confidence: confidence - 1, // 略降相似度
+    };
+  }
+
+  return null;
+}
+
+/**
+ * 去重和评分
+ */
+function deduplicateAndScore(apis: SimilarAPI[]): SimilarAPI[] {
+  const apiMap = new Map<string, SimilarAPI>();
+
+  for (const api of apis) {
+    const existing = apiMap.get(api.identifier);
+    if (existing) {
+      // 如果已存在，保留评分更高的
+      if (api.confidence > existing.confidence) {
+        apiMap.set(api.identifier, api);
+      }
+    } else {
+      apiMap.set(api.identifier, api);
+    }
+  }
+
+  return Array.from(apiMap.values());
+}
+
+/**
+ * 将网页URL转换为JSON API URL
+ */
+function convertToJsonApiUrl(webUrl: string): string {
+  if (webUrl.endsWith('/')) {
+    webUrl = webUrl.slice(0, -1);
+  }
+
+  let path = new URL(webUrl).pathname;
+
+  if (path.includes('/documentation/')) {
+    path = path.replace('/documentation/', '');
+    return `https://developer.apple.com/tutorials/data/documentation/${path}.json`;
+  }
+
+  return webUrl;
+}
+
+/**
+ * 格式化相似API结果
+ */
+function formatSimilarApis(
+  originalUrl: string,
+  similarApis: SimilarAPI[],
+  originalApiName?: string,
+): string {
+  if (similarApis.length === 0) {
+    return `No similar APIs found for: ${originalUrl}`;
+  }
+
+  const apiName = originalApiName || new URL(originalUrl).pathname.split('/').pop() || 'API';
+  let content = `# Similar APIs to ${apiName}\n\n`;
+  content += `**Source:** [${originalUrl}](${originalUrl})\n\n`;
+  content += `**Found ${similarApis.length} similar APIs (sorted by relevance):**\n\n`;
+
+  // 按相似度类型分组
+  const groupedApis = groupApisBySimilarityType(similarApis);
+
+  for (const [similarityType, apis] of Object.entries(groupedApis)) {
+    content += `## ${similarityType} (${apis.length})\n\n`;
+
+    for (const api of apis) {
+      content += formatSingleSimilarApi(api);
+    }
+  }
+
+  // 相似度分析
+  content += '## Similarity Analysis\n\n';
+  const avgConfidence = similarApis.reduce((sum, api) => sum + api.confidence, 0) / similarApis.length;
+  content += `**Average Similarity:** ${avgConfidence.toFixed(1)}/10\n`;
+
+  const highConfidenceApis = similarApis.filter(api => api.confidence >= 7);
+  if (highConfidenceApis.length > 0) {
+    content += `**Highly Similar APIs:** ${highConfidenceApis.length}\n`;
+  }
+
+  const categories = [...new Set(similarApis.map(api => api.category))];
+  content += `**Categories:** ${categories.join(', ')}\n\n`;
+
+  content += `---\n\n*Total: ${similarApis.length} similar APIs found*`;
+
+  return content;
+}
+
+/**
+ * 按相似度类型分组
+ */
+function groupApisBySimilarityType(apis: SimilarAPI[]): Record<string, SimilarAPI[]> {
+  const groups: Record<string, SimilarAPI[]> = {};
+
+  for (const api of apis) {
+    if (!groups[api.similarityType]) {
+      groups[api.similarityType] = [];
+    }
+    groups[api.similarityType].push(api);
+  }
+
+  return groups;
+}
+
+/**
+ * 格式化单个相似API
+ */
+function formatSingleSimilarApi(api: SimilarAPI): string {
+  let content = `### [${api.title}](${api.url})\n`;
+
+  if (api.abstract) {
+    content += `${api.abstract}\n\n`;
+  }
+
+  // 添加元数据
+  const metadata = [`Similarity: ${api.confidence}/10`];
+  if (api.symbolKind) {
+    metadata.push(`Type: ${api.symbolKind}`);
+  }
+  if (api.category !== api.similarityType) {
+    metadata.push(`Category: ${api.category}`);
+  }
+
+  content += `*${metadata.join(' | ')}*\n\n`;
+
+  // 添加平台信息
+  if (api.platforms && api.platforms.length > 0) {
+    content += `**Platforms:** ${api.platforms.join(', ')}\n\n`;
+  }
+
+  return content;
+}
