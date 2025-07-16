@@ -89,12 +89,12 @@ class HttpClient {
           // Process next request in queue
           const nextRequest = this.requestQueue.shift();
           if (nextRequest) {
-            nextRequest();
+            void nextRequest();
           }
         }
       };
 
-      execute();
+      void execute();
     });
   }
 

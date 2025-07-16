@@ -88,9 +88,8 @@ describe('parseSearchResults', () => {
       const result = parseSearchResults(html, 'test', mockSearchUrl);
       const text = result.content[0].text;
 
-      expect(text).toContain('*Resource | Guide*');
-      expect(text).toContain('*Sample Code | Sample*');
-      expect(text).toContain('*Video | WWDC 2023*');
+      // Since general and video types are filtered out, we should get no results
+      expect(text).toContain('No results found');
     });
 
     it('should handle empty results', () => {
@@ -305,8 +304,8 @@ describe('parseSearchResults', () => {
       const result = parseSearchResults(html, 'test', mockSearchUrl);
       const text = result.content[0].text;
 
-      // Archive URLs get framework name from URL path, not "Archive"
-      expect(text).toContain('*Resource | Test*');
+      // Since general type is filtered out, we should get no results
+      expect(text).toContain('No results found');
     });
   });
 });

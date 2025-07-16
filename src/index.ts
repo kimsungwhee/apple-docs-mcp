@@ -41,8 +41,8 @@ class AppleDeveloperDocsMCPServer {
     // 定义 Zod 验证模式
     const searchAppleDocsSchema = z.object({
       query: z.string().describe('Search query for Apple Developer Documentation'),
-      type: z.enum(['all', 'api', 'guide', 'sample', 'video']).default('all')
-        .describe('Type of documentation to search for'),
+      type: z.enum(['all', 'documentation', 'sample']).default('all')
+        .describe('Type of content to search for (documentation=API reference, sample=code samples)'),
     });
 
     const getAppleDocContentSchema = z.object({
@@ -111,8 +111,8 @@ class AppleDeveloperDocsMCPServer {
                 },
                 type: {
                   type: 'string',
-                  enum: ['all', 'api', 'guide', 'sample', 'video'],
-                  description: 'Type of documentation to search for (default: all)',
+                  enum: ['all', 'documentation', 'sample'],
+                  description: 'Type of content to filter (all=show all results, documentation=API references only, sample=code samples only)',
                 },
               },
               required: ['query'],
@@ -346,7 +346,7 @@ class AppleDeveloperDocsMCPServer {
     });
   }
 
-  private async searchAppleDocs(query: string, _type: string = 'all') {
+  private async searchAppleDocs(query: string, type: string = 'all') {
     try {
       // 输入验证
       const queryValidation = validateInput(query, 'Search query');
@@ -362,8 +362,8 @@ class AppleDeveloperDocsMCPServer {
       // 获取搜索结果页面
       const html = await httpClient.getText(searchUrl);
 
-      // 解析并返回搜索结果
-      return parseSearchResults(html, query, searchUrl);
+      // 解析并返回搜索结果，传递type参数进行过滤
+      return parseSearchResults(html, query, searchUrl, type);
     } catch (error) {
       const appError = handleFetchError(error, `${APPLE_URLS.SEARCH}?q=${encodeURIComponent(query)}`);
       return createErrorResponse(appError);
@@ -535,10 +535,10 @@ class AppleDeveloperDocsMCPServer {
   }
 
   private async findSimilarApis(
-    apiUrl: string, 
-    searchDepth: string = 'medium', 
-    filterByCategory?: string, 
-    includeAlternatives: boolean = true
+    apiUrl: string,
+    searchDepth: string = 'medium',
+    filterByCategory?: string,
+    includeAlternatives: boolean = true,
   ) {
     try {
       const result = await handleFindSimilarApis(apiUrl, searchDepth, filterByCategory, includeAlternatives);
@@ -568,7 +568,7 @@ class AppleDeveloperDocsMCPServer {
 
   private setupErrorHandling() {
     // 处理 SIGINT 以优雅关闭服务器
-    process.on('SIGINT', async () => {
+    process.on('SIGINT', () => {
       process.exit(0);
     });
 
@@ -591,16 +591,14 @@ class AppleDeveloperDocsMCPServer {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
     console.error('Apple Developer Docs MCP server running on stdio');
-    console.error('Cache system initialized with TTL: API(30m), Search(10m), Index(1h), Technologies(2h)');
+    console.error('Cache system initialized with TTL: API(30m), Index(1h), Technologies(2h)');
+    console.error('Note: Search results are not cached to ensure real-time accuracy');
   }
 }
 
 // 运行服务器
 const server = new AppleDeveloperDocsMCPServer();
-server.run().catch((error) => {
+void server.run().catch((error) => {
   console.error('Fatal error in main():', error);
   process.exit(1);
 });
-
-// Prevent unhandled promise rejection warning
-void server;

@@ -407,8 +407,15 @@ export async function fetchAppleDocJson(
 
       if (mainReference && mainReference.url) {
         // Recursively fetch the referenced documentation
-        const refUrl = `https://developer.apple.com/tutorials/data/documentation/${mainReference.url}.json`;
-        return await fetchAppleDocJson(refUrl, maxDepth - 1);
+        // Remove leading /documentation/ if present to avoid duplication
+        let refPath = mainReference.url;
+        if (refPath.startsWith('/documentation/')) {
+          refPath = refPath.substring('/documentation/'.length);
+        } else if (refPath.startsWith('/')) {
+          refPath = refPath.substring(1);
+        }
+        const refUrl = `https://developer.apple.com/tutorials/data/documentation/${refPath}.json`;
+        return await fetchAppleDocJson(refUrl, options, maxDepth - 1);
       }
     }
 
@@ -450,7 +457,7 @@ function extractRelatedApis(jsonData: AppleDocJSON): Array<{title: string, url: 
             const ref = jsonData.references[identifier];
             relatedApis.push({
               title: ref.title || 'Unknown',
-              url: ref.url ? `https://developer.apple.com${ref.url}` : '#',
+              url: ref.url ? (ref.url.startsWith('http') ? ref.url : `https://developer.apple.com${ref.url}`) : '#',
               relationship: section.title || 'Related',
             });
           }
@@ -468,7 +475,7 @@ function extractRelatedApis(jsonData: AppleDocJSON): Array<{title: string, url: 
             const ref = jsonData.references[identifier];
             relatedApis.push({
               title: ref.title || 'Unknown',
-              url: ref.url ? `https://developer.apple.com${ref.url}` : '#',
+              url: ref.url ? (ref.url.startsWith('http') ? ref.url : `https://developer.apple.com${ref.url}`) : '#',
               relationship: `See Also: ${section.title || 'Related'}`,
             });
           }
@@ -492,7 +499,7 @@ function extractReferences(jsonData: AppleDocJSON): Array<{title: string, url: s
     for (const [, ref] of refEntries) {
       references.push({
         title: ref.title || 'Unknown',
-        url: ref.url ? `https://developer.apple.com${ref.url}` : '#',
+        url: ref.url ? (ref.url.startsWith('http') ? ref.url : `https://developer.apple.com${ref.url}`) : '#',
         type: ref.role || ref.kind || 'unknown',
         abstract: ref.abstract ? ref.abstract.map((a: any) => a.text || '').join(' ').trim() : undefined,
       });
@@ -517,7 +524,7 @@ function extractSimilarApis(jsonData: AppleDocJSON): Array<{title: string, url: 
             const ref = jsonData.references[identifier];
             similarApis.push({
               title: ref.title || 'Unknown',
-              url: ref.url ? `https://developer.apple.com${ref.url}` : '#',
+              url: ref.url ? (ref.url.startsWith('http') ? ref.url : `https://developer.apple.com${ref.url}`) : '#',
               category: section.title || 'Related',
             });
           }

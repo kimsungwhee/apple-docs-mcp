@@ -1,5 +1,4 @@
 import * as cheerio from 'cheerio';
-import { searchCache, generateUrlCacheKey } from '../utils/cache.js';
 
 /**
  * Interface for Apple Doc Search Results
@@ -16,7 +15,7 @@ export interface AppleDocSearchResult {
 
 /**
  * Parse HTML search results from Apple Developer Documentation
- * 
+ *
  * Note: Apple Developer search pages use DOM structure for results,
  * not JavaScript objects. Results are in <li class="search-result"> elements
  * within a <ul class="search-results"> container.
@@ -24,32 +23,52 @@ export interface AppleDocSearchResult {
  * @param html HTML content from the search results page
  * @param query Original search query
  * @param searchUrl URL of the search
+ * @param filterType Type filter (all, documentation, guide, sample, article)
  * @returns Formatted search results or error response
  */
-export function parseSearchResults(html: string, query: string, searchUrl: string) {
+export function parseSearchResults(html: string, query: string, searchUrl: string, filterType: string = 'all') {
   try {
-    // Generate cache key for this search
-    const cacheKey = generateUrlCacheKey(searchUrl, { query });
-
-    // Try to get from cache first (search results change less frequently)
-    const cachedResult = searchCache.get(cacheKey);
-    if (cachedResult) {
-      console.error(`Search cache hit for: ${query}`);
-      return cachedResult;
-    }
-
+    // Note: Search results are not cached to ensure real-time accuracy
+    console.error(`Parsing search results for: ${query} (filter: ${filterType})`);
+    
     const $ = cheerio.load(html);
     const results: AppleDocSearchResult[] = [];
+
+    // Type mapping for filtering
+    // Only include types that support get_apple_doc_content
+    const typeMapping: Record<string, string[]> = {
+      'all': ['documentation', 'sample_code'], // Only supported types
+      'documentation': ['documentation'], // API reference documentation
+      'sample': ['sample_code'], // Code samples
+    };
 
     // Find all search result items
     $('.search-result').each((_, element) => {
       const resultItem = $(element);
 
-      // Extract type (documentation, video, etc.)
-      const resultType = resultItem.hasClass('documentation') ? 'documentation' :
-        resultItem.hasClass('video') ? 'video' :
-          resultItem.hasClass('sample') ? 'sample' :
-            resultItem.hasClass('general') ? 'general' : 'other';
+      // Extract type from class names
+      const classes = resultItem.attr('class')?.split(' ') || [];
+      let resultType = 'other';
+      
+      // Find the actual type class (not 'search-result')
+      for (const className of classes) {
+        if (className !== 'search-result' && className.trim()) {
+          resultType = className;
+          break;
+        }
+      }
+      
+      // Apply type filter - always filter to only supported types
+      const allowedTypes = typeMapping[filterType] || typeMapping['all'];
+      if (!allowedTypes.includes(resultType)) {
+        return; // Skip this result - not supported by get_apple_doc_content
+      }
+      
+      // Additional filter: exclude known unsupported types
+      const unsupportedTypes = ['general', 'video', 'forums', 'news'];
+      if (unsupportedTypes.includes(resultType)) {
+        return; // Skip this result - type not supported
+      }
 
       // Extract title
       const titleElement = resultItem.find('.result-title');
@@ -60,6 +79,22 @@ export function parseSearchResults(html: string, query: string, searchUrl: strin
       let url = urlElement.attr('href') || '';
       if (url && url.startsWith('/')) {
         url = `https://developer.apple.com${url}`;
+      }
+      
+      // Additional URL-based filtering to ensure get_apple_doc_content support
+      if (url) {
+        const unsupportedPaths = [
+          '/tutorials/app-dev-training/',
+          '/videos/',
+          '/forums/',
+          '/news/',
+          '/swift-playground/',
+          '/support/'
+        ];
+        
+        if (unsupportedPaths.some(path => url.includes(path))) {
+          return; // Skip this result - URL type not supported
+        }
       }
 
       // Extract description
@@ -121,6 +156,8 @@ export function parseSearchResults(html: string, query: string, searchUrl: strin
 
     // If no results were found
     if (results.length === 0) {
+      // Don't cache empty results - they might be due to temporary issues
+      console.error(`No results found for "${query}" - not caching empty result`);
       return {
         content: [
           {
@@ -143,13 +180,10 @@ export function parseSearchResults(html: string, query: string, searchUrl: strin
         metadata.push('Deprecated');
       }
 
-      // Add content type (cleaner naming)
+      // Add content type
       const contentTypeMap: Record<string, string> = {
         'documentation': 'Documentation',
-        'video': 'Video',
-        'sample': 'Sample Code',
-        'general': 'Resource',
-        'other': 'Reference',
+        'sample_code': 'Sample Code',
       };
 
       const contentType = contentTypeMap[result.type] || result.type;
@@ -173,9 +207,7 @@ export function parseSearchResults(html: string, query: string, searchUrl: strin
       ],
     };
 
-    // Cache the search results
-    searchCache.set(cacheKey, result);
-
+    // Note: Search results are not cached to ensure real-time accuracy
     return result;
   } catch (error) {
     console.error('Error parsing search results:', error);
