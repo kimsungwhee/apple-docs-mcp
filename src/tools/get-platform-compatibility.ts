@@ -1,4 +1,6 @@
-import { Tool } from '@modelcontextprotocol/sdk/types.js';
+import type { Tool } from '@modelcontextprotocol/sdk/types.js';
+import { convertToJsonApiUrl } from '../utils/url-converter.js';
+import { httpClient } from '../utils/http-client.js';
 
 export const getPlatformCompatibilityTool: Tool = {
   name: 'get_platform_compatibility',
@@ -95,18 +97,7 @@ async function analyzeSingleApiCompatibility(
 ): Promise<string> {
   const jsonApiUrl = convertToJsonApiUrl(apiUrl);
 
-  const response = await fetch(jsonApiUrl, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-      'Accept': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch API data: ${response.status}`);
-  }
-
-  const data = await response.json() as AppleDocData;
+  const data = await httpClient.getJson<AppleDocData>(jsonApiUrl);
 
   if (!data.metadata?.platforms) {
     return `No platform information available for: ${apiUrl}`;
@@ -171,29 +162,20 @@ async function analyzeRelatedCompatibility(
       }
 
       const ref = data.references[identifier];
-      if (ref && ref.url) {
+      if (ref?.url) {
         try {
           const relatedUrl = `https://developer.apple.com${ref.url}`;
           const relatedJsonUrl = convertToJsonApiUrl(relatedUrl);
 
-          const relatedResponse = await fetch(relatedJsonUrl, {
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-              'Accept': 'application/json',
-            },
-          });
-
-          if (relatedResponse.ok) {
-            const relatedData = await relatedResponse.json() as AppleDocData;
-            if (relatedData.metadata?.platforms) {
-              const analysis = analyzeCompatibility(
-                ref.title || 'Unknown',
-                relatedUrl,
-                relatedData.metadata.platforms,
-              );
-              analyses.push(analysis);
-              count++;
-            }
+          const relatedData = await httpClient.getJson<AppleDocData>(relatedJsonUrl);
+          if (relatedData.metadata?.platforms) {
+            const analysis = analyzeCompatibility(
+              ref.title || 'Unknown',
+              relatedUrl,
+              relatedData.metadata.platforms,
+            );
+            analyses.push(analysis);
+            count++;
           }
         } catch (error) {
           // 忽略单个相关API的错误
@@ -247,23 +229,7 @@ function analyzeCompatibility(
   };
 }
 
-/**
- * 将网页URL转换为JSON API URL
- */
-function convertToJsonApiUrl(webUrl: string): string {
-  if (webUrl.endsWith('/')) {
-    webUrl = webUrl.slice(0, -1);
-  }
 
-  let path = new URL(webUrl).pathname;
-
-  if (path.includes('/documentation/')) {
-    path = path.replace('/documentation/', '');
-    return `https://developer.apple.com/tutorials/data/documentation/${path}.json`;
-  }
-
-  return webUrl;
-}
 
 /**
  * 格式化兼容性分析结果

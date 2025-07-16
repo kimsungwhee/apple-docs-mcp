@@ -125,11 +125,13 @@ class MemoryCache {
   }
 }
 
+import { CACHE_SIZE, CACHE_TTL } from './constants.js';
+
 // Create different cache instances for different types of data
-export const apiCache = new MemoryCache(500, 30 * 60 * 1000); // 30 minutes for API responses
-export const searchCache = new MemoryCache(200, 10 * 60 * 1000); // 10 minutes for search results
-export const indexCache = new MemoryCache(100, 60 * 60 * 1000); // 1 hour for framework indexes
-export const technologiesCache = new MemoryCache(50, 2 * 60 * 60 * 1000); // 2 hours for technologies list
+export const apiCache = new MemoryCache(CACHE_SIZE.API_DOCS, CACHE_TTL.API_DOCS);
+export const searchCache = new MemoryCache(CACHE_SIZE.SEARCH_RESULTS, CACHE_TTL.SEARCH_RESULTS);
+export const indexCache = new MemoryCache(CACHE_SIZE.FRAMEWORK_INDEX, CACHE_TTL.FRAMEWORK_INDEX);
+export const technologiesCache = new MemoryCache(CACHE_SIZE.TECHNOLOGIES, CACHE_TTL.TECHNOLOGIES);
 
 /**
  * Generate cache key for URL-based requests

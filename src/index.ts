@@ -12,7 +12,10 @@ import { handleGetRelatedApis } from './tools/get-related-apis.js';
 import { handleResolveReferencesBatch } from './tools/resolve-references-batch.js';
 import { handleGetPlatformCompatibility } from './tools/get-platform-compatibility.js';
 import { handleFindSimilarApis } from './tools/find-similar-apis.js';
-import { apiCache, searchCache, indexCache, technologiesCache } from './utils/cache.js';
+import { APPLE_URLS } from './utils/constants.js';
+import { isValidAppleDeveloperUrl } from './utils/url-converter.js';
+import { validateInput, createErrorResponse, handleFetchError } from './utils/error-handler.js';
+import { httpClient } from './utils/http-client.js';
 
 class AppleDeveloperDocsMCPServer {
   private server: Server;
@@ -298,30 +301,7 @@ class AppleDeveloperDocsMCPServer {
               required: ['apiUrl'],
             },
           },
-          {
-            name: 'get_cache_stats',
-            description: 'Get cache statistics and performance metrics for the MCP service',
-            inputSchema: {
-              type: 'object',
-              properties: {},
-              required: [],
-            },
-          },
-          {
-            name: 'clear_cache',
-            description: 'Clear all caches to free up memory (use when needed)',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                cacheType: {
-                  type: 'string',
-                  enum: ['all', 'api', 'search', 'index', 'technologies'],
-                  description: 'Type of cache to clear (default: all)',
-                },
-              },
-              required: [],
-            },
-          },
+
         ],
       };
     });
@@ -370,23 +350,22 @@ class AppleDeveloperDocsMCPServer {
             const validatedArgs = findSimilarApisSchema.parse(args);
             return await this.findSimilarApis(validatedArgs.apiUrl, validatedArgs.searchDepth, validatedArgs.filterByCategory, validatedArgs.includeAlternatives);
           }
-          case 'get_cache_stats': {
-            return this.getCacheStats();
-          }
-          case 'clear_cache': {
-            const cacheType = (args as any).cacheType || 'all';
-            return this.clearCache(cacheType);
-          }
+
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        const appError = error instanceof Error
+          ? { type: 'UNKNOWN' as const, message: error.message, originalError: error }
+          : { type: 'UNKNOWN' as const, message: 'An unknown error occurred' };
+
+        console.error(`Tool ${name} failed:`, appError);
+
         return {
           content: [
             {
               type: 'text',
-              text: `Error: ${errorMessage}`,
+              text: `Error: ${appError.message}`,
             },
           ],
           isError: true,
@@ -397,37 +376,25 @@ class AppleDeveloperDocsMCPServer {
 
   private async searchAppleDocs(query: string, _type: string = 'all') {
     try {
+      // 输入验证
+      const queryValidation = validateInput(query, 'Search query');
+      if (queryValidation) {
+        return createErrorResponse(queryValidation);
+      }
+
       // 创建 Apple Developer Documentation 搜索 URL
-      const searchUrl = `https://developer.apple.com/search/?q=${encodeURIComponent(query)}`;
+      const searchUrl = `${APPLE_URLS.SEARCH}?q=${encodeURIComponent(query)}`;
 
       console.error(`Searching Apple docs for: ${query}`);
 
       // 获取搜索结果页面
-      const response = await fetch(searchUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch search results: ${response.status}`);
-      }
-
-      const html = await response.text();
+      const html = await httpClient.getText(searchUrl);
 
       // 解析并返回搜索结果
       return parseSearchResults(html, query, searchUrl);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: `Error: Failed to search Apple docs: ${errorMessage}`,
-          },
-        ],
-        isError: true,
-      };
+      const appError = handleFetchError(error, `${APPLE_URLS.SEARCH}?q=${encodeURIComponent(query)}`);
+      return createErrorResponse(appError);
     }
   }
 
@@ -438,13 +405,36 @@ class AppleDeveloperDocsMCPServer {
     includeSimilarApis: boolean = false,
     includePlatformAnalysis: boolean = false,
   ) {
-    // 使用增强的 JSON 获取方法来获取文档内容
-    return fetchAppleDocJson(url, {
-      includeRelatedApis,
-      includeReferences,
-      includeSimilarApis,
-      includePlatformAnalysis,
-    });
+    try {
+      // 输入验证
+      const urlValidation = validateInput(url, 'URL');
+      if (urlValidation) {
+        return createErrorResponse(urlValidation);
+      }
+
+      // 验证是否为有效的Apple Developer URL
+      if (!isValidAppleDeveloperUrl(url)) {
+        return createErrorResponse({
+          type: 'INVALID_INPUT' as any,
+          message: 'URL must be from developer.apple.com',
+          suggestions: [
+            'Ensure the URL starts with https://developer.apple.com',
+            'Check that the URL is a valid Apple Developer Documentation link',
+          ],
+        });
+      }
+
+      // 使用增强的 JSON 获取方法来获取文档内容
+      return fetchAppleDocJson(url, {
+        includeRelatedApis,
+        includeReferences,
+        includeSimilarApis,
+        includePlatformAnalysis,
+      });
+    } catch (error) {
+      const appError = handleFetchError(error, url);
+      return createErrorResponse(appError);
+    }
   }
 
   private async listTechnologies(category?: string, language?: string, includeBeta: boolean = true) {
@@ -597,134 +587,7 @@ class AppleDeveloperDocsMCPServer {
     }
   }
 
-  private getCacheStats() {
-    const apiStats = apiCache.getStats();
-    const searchStats = searchCache.getStats();
-    const indexStats = indexCache.getStats();
-    const techStats = technologiesCache.getStats();
 
-    const totalCacheSize = apiStats.size + searchStats.size + indexStats.size + techStats.size;
-    const totalMaxSize = apiStats.maxSize + searchStats.maxSize + indexStats.maxSize + techStats.maxSize;
-
-    const statsText = `# Cache Performance Statistics
-
-` +
-      `**Overall Cache Usage:** ${totalCacheSize}/${totalMaxSize} entries (${((totalCacheSize / totalMaxSize) * 100).toFixed(1)}%)
-
-` +
-      `## Individual Cache Statistics
-
-` +
-      `### API Cache (30min TTL)
-` +
-      `- **Entries:** ${apiStats.size}/${apiStats.maxSize}
-` +
-      `- **Usage:** ${((apiStats.size / apiStats.maxSize) * 100).toFixed(1)}%
-
-` +
-      `### Search Cache (10min TTL)
-` +
-      `- **Entries:** ${searchStats.size}/${searchStats.maxSize}
-` +
-      `- **Usage:** ${((searchStats.size / searchStats.maxSize) * 100).toFixed(1)}%
-
-` +
-      `### Framework Index Cache (1hr TTL)
-` +
-      `- **Entries:** ${indexStats.size}/${indexStats.maxSize}
-` +
-      `- **Usage:** ${((indexStats.size / indexStats.maxSize) * 100).toFixed(1)}%
-
-` +
-      `### Technologies Cache (2hr TTL)
-` +
-      `- **Entries:** ${techStats.size}/${techStats.maxSize}
-` +
-      `- **Usage:** ${((techStats.size / techStats.maxSize) * 100).toFixed(1)}%
-
-` +
-      `## Cache Benefits
-
-` +
-      `- **Reduced API Calls:** Cached responses avoid repeated network requests
-` +
-      `- **Improved Performance:** Cached data returns instantly
-` +
-      `- **Resource Efficiency:** Lower bandwidth usage and server load
-
-` +
-      '*Cache automatically expires based on TTL and cleans up periodically*';
-
-    return {
-      content: [
-        {
-          type: 'text' as const,
-          text: statsText,
-        },
-      ],
-    };
-  }
-
-  private clearCache(cacheType: string = 'all') {
-    let clearedCaches: string[] = [];
-
-    switch (cacheType) {
-      case 'all':
-        apiCache.clear();
-        searchCache.clear();
-        indexCache.clear();
-        technologiesCache.clear();
-        clearedCaches = ['API', 'Search', 'Framework Index', 'Technologies'];
-        break;
-      case 'api':
-        apiCache.clear();
-        clearedCaches = ['API'];
-        break;
-      case 'search':
-        searchCache.clear();
-        clearedCaches = ['Search'];
-        break;
-      case 'index':
-        indexCache.clear();
-        clearedCaches = ['Framework Index'];
-        break;
-      case 'technologies':
-        technologiesCache.clear();
-        clearedCaches = ['Technologies'];
-        break;
-      default:
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `Error: Invalid cache type "${cacheType}". Valid types: all, api, search, index, technologies`,
-            },
-          ],
-          isError: true,
-        };
-    }
-
-    const clearText = `# Cache Cleared Successfully
-
-` +
-      `**Cleared Caches:** ${clearedCaches.join(', ')}
-
-` +
-      'All cached data for the selected cache(s) has been removed from memory. ' +
-      `Subsequent requests will fetch fresh data from Apple's servers.
-
-` +
-      '*This action helps free up memory and ensures fresh data retrieval.*';
-
-    return {
-      content: [
-        {
-          type: 'text' as const,
-          text: clearText,
-        },
-      ],
-    };
-  }
 
   private setupErrorHandling() {
     // 处理 SIGINT 以优雅关闭服务器
@@ -761,3 +624,6 @@ server.run().catch((error) => {
   console.error('Fatal error in main():', error);
   process.exit(1);
 });
+
+// Prevent unhandled promise rejection warning
+void server;

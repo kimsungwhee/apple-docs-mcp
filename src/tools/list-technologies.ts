@@ -1,5 +1,7 @@
-import { Tool } from '@modelcontextprotocol/sdk/types.js';
+import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { technologiesCache, generateUrlCacheKey } from '../utils/cache.js';
+import { APPLE_URLS } from '../utils/constants.js';
+import { httpClient } from '../utils/http-client.js';
 
 export const listTechnologiesTool: Tool = {
   name: 'list_technologies',
@@ -73,18 +75,7 @@ export async function handleListTechnologies(
     }
 
     // 获取技术列表
-    const response = await fetch('https://developer.apple.com/tutorials/data/documentation/technologies.json', {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-        'Accept': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch technologies: ${response.status}`);
-    }
-
-    const data = await response.json() as TechnologiesData;
+    const data = await httpClient.getJson<TechnologiesData>(APPLE_URLS.TECHNOLOGIES_JSON);
 
     // 解析技术列表
     const technologies = parseTechnologies(data);

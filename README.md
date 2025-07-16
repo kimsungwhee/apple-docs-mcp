@@ -266,10 +266,10 @@ npm install && npm run build
 
 ### 🛠️ Advanced Usage
 ```
-"Get cache performance statistics"
-"Clear framework index cache"
 "Find related APIs for @State with platform analysis"
 "Resolve all references from SwiftUI documentation"
+"Get platform compatibility analysis for Vision framework"
+"Find similar APIs to UIViewController with deep search"
 ```
 
 ## 🛠️ Available Tools
@@ -284,8 +284,6 @@ npm install && npm run build
 | `resolve_references_batch` | Batch resolve API references | Extract and resolve all references from documentation |
 | `get_platform_compatibility` | Platform compatibility analysis | Version support, beta status, deprecation info |
 | `find_similar_apis` | Discover similar APIs | Apple's official recommendations, topic groupings |
-| `get_cache_stats` | Cache performance metrics | Monitor cache usage and performance |
-| `clear_cache` | Cache management | Clear specific or all caches for fresh data |
 
 ## 🏗️ Technical Architecture
 
@@ -302,8 +300,12 @@ apple-docs-mcp/
 │   │   ├── resolve-references-batch.ts # Batch reference resolution
 │   │   ├── get-platform-compatibility.ts # Platform analysis
 │   │   └── find-similar-apis.ts      # Similar API recommendations
-│   └── utils/
-│       └── cache.ts                  # Memory cache with TTL support
+│   └── utils/                        # Utility functions and helpers
+│       ├── cache.ts                  # Memory cache with TTL support
+│       ├── constants.ts              # Application constants and URLs
+│       ├── error-handler.ts          # Error handling and validation
+│       ├── http-client.ts            # HTTP client with performance tracking
+│       └── url-converter.ts          # URL conversion utilities
 ├── 📦 dist/                          # Compiled JavaScript
 ├── 📄 package.json                   # Package configuration
 └── 📖 README.md                      # This file

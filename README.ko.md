@@ -9,13 +9,15 @@
 
 ## ✨ 기능
 
-- 🔍 **스마트 검색**: 최적화된 결과 순위를 가진 90+ Apple 프레임워크 간 지능적 검색
-- 📚 **프레임워크 탐색기**: 플랫폼 지원 및 API 카테고리를 포함한 포괄적인 프레임워크 정보
-- 🔧 **심볼 세부정보**: 메서드 시그니처, 매개변수, 예제를 포함한 상세한 API 문서
-- 📋 **기술 브라우저**: 모든 Apple 기술과 프레임워크의 카테고리별 정리된 카탈로그
-- 💡 **샘플 코드 액세스**: Apple 공식 샘플 코드 및 튜토리얼에 직접 액세스
-- ⚡ **고성능**: LRU 전략의 지능형 캐싱으로 빠른 응답 시간
+- 🔍 **스마트 검색**: Apple 개발자 문서 전반에 걸친 지능적 검색과 향상된 결과 포맷팅
+- 📚 **완전한 문서 액세스**: 상세한 문서 내용을 위한 Apple JSON API 완전 액세스
+- 🔧 **프레임워크 인덱스**: 모든 Apple 프레임워크의 계층적 API 구조 탐색
+- 📋 **기술 카탈로그**: 카테고리별로 정리된 모든 Apple 기술 및 프레임워크 목록
+- 🔗 **관련 API 발견**: 지능적 추천을 통한 관련, 유사 및 대안 API 찾기
+- 📊 **플랫폼 호환성**: Apple 생태계 전반의 플랫폼 지원 및 버전 호환성 분석
+- ⚡ **고성능**: 콘텐츠 타입별 최적화된 TTL을 가진 메모리 기반 캐싱 시스템
 - 🌐 **멀티플랫폼**: iOS, macOS, watchOS, tvOS, visionOS 문서 지원
+- 🏷️ **베타 및 상태 추적**: 적절한 상태 표시기로 베타, 사용 중단 및 새 API 식별
 
 ## 🚀 빠른 시작
 
@@ -266,25 +268,40 @@ npm install && npm run build
 
 | 도구 | 설명 | 주요 기능 |
 |------|------|----------|
-| `search_documentation` | Apple 문서 스마트 검색 | 90+ 프레임워크, 지능형 순위, 베타 지원 |
-| `get_framework_info` | 상세한 프레임워크 정보 | 플랫폼 지원, API 카테고리, 버전 정보 |
-| `get_symbol_details` | 포괄적인 API 문서 | 메서드 시그니처, 매개변수, 예제 |
-| `get_sample_code` | 샘플 코드 및 튜토리얼 액세스 | Apple 공식 예제, 단계별 가이드 |
-| `list_technologies` | 기술 카탈로그 탐색 | 카테고리별 정리, 플랫폼 필터링 |
+| `search_apple_docs` | Apple 개발자 문서 검색 | 공식 검색 API, 향상된 포맷팅, 플랫폼 필터링 |
+| `get_apple_doc_content` | 상세한 문서 내용 가져오기 | JSON API 액세스, 선택적 향상 분석 (관련/유사 API, 플랫폼 호환성) |
+| `list_technologies` | 모든 Apple 기술 탐색 | 카테고리 필터링, 언어 지원, 베타 상태 |
+| `get_framework_index` | 프레임워크 API 구조 트리 | 계층적 탐색, 깊이 제어, 타입 필터링 |
+| `get_related_apis` | 관련 API 찾기 | 상속, 준수, "참고" 관계 |
+| `resolve_references_batch` | API 참조 일괄 해결 | 문서에서 모든 참조 추출 및 해결 |
+| `get_platform_compatibility` | 플랫폼 호환성 분석 | 버전 지원, 베타 상태, 사용 중단 정보 |
+| `find_similar_apis` | 유사한 API 발견 | Apple 공식 권장사항, 주제 그룹화 |
 
 ## 🏗️ 기술 아키텍처
 
 ```
 apple-docs-mcp/
 ├── 🔧 src/
-│   ├── index.ts          # MCP 서버 진입점
-│   ├── api/              # Apple API 클라이언트 및 캐싱
-│   ├── tools/            # MCP 도구 구현
-│   ├── types/            # TypeScript 정의
-│   └── utils/            # 포매터, 파서, 유틸리티
-├── 📦 dist/              # 컴파일된 JavaScript
-├── 📄 package.json       # 패키지 구성
-└── 📖 README.md          # 이 파일
+│   ├── index.ts                      # MCP 서버 진입점, 모든 도구 포함
+│   ├── tools/                        # MCP 도구 구현
+│   │   ├── search-parser.ts          # HTML 검색 결과 파싱
+│   │   ├── doc-fetcher.ts            # JSON API 문서 가져오기
+│   │   ├── list-technologies.ts      # 기술 카탈로그 처리
+│   │   ├── get-framework-index.ts    # 프레임워크 구조 인덱싱
+│   │   ├── get-related-apis.ts       # 관련 API 발견
+│   │   ├── resolve-references-batch.ts # 일괄 참조 해결
+│   │   ├── get-platform-compatibility.ts # 플랫폼 분석
+│   │   └── find-similar-apis.ts      # 유사한 API 추천
+│   └── utils/                        # 유틸리티 함수 및 헬퍼
+│       ├── cache.ts                  # TTL 지원 메모리 캐시
+│       ├── constants.ts              # 애플리케이션 상수 및 URL
+│       ├── error-handler.ts          # 오류 처리 및 검증
+│       ├── http-client.ts            # 성능 추적 HTTP 클라이언트
+│       └── url-converter.ts          # URL 변환 유틸리티
+├── 📦 dist/                          # 컴파일된 JavaScript
+├── 🧪 tests/                         # 테스트 스위트
+├── 📄 package.json                   # 패키지 구성
+└── 📖 README.md                      # 이 파일
 ```
 
 ### 🚀 성능 기능

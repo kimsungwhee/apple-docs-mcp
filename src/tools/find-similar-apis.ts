@@ -1,4 +1,7 @@
-import { Tool } from '@modelcontextprotocol/sdk/types.js';
+import type { Tool } from '@modelcontextprotocol/sdk/types.js';
+import { convertToJsonApiUrl } from '../utils/url-converter.js';
+import { SEARCH_DEPTH_LIMITS } from '../utils/constants.js';
+import { httpClient } from '../utils/http-client.js';
 
 export const findSimilarApisTool: Tool = {
   name: 'find_similar_apis',
@@ -77,18 +80,7 @@ export async function handleFindSimilarApis(
 
     const jsonApiUrl = convertToJsonApiUrl(apiUrl);
 
-    const response = await fetch(jsonApiUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-        'Accept': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch API data: ${response.status}`);
-    }
-
-    const data = await response.json() as AppleDocData;
+    const data = await httpClient.getJson<AppleDocData>(jsonApiUrl);
 
     // 收集相似API
     const similarApis: SimilarAPI[] = [];
@@ -120,7 +112,7 @@ export async function handleFindSimilarApis(
     uniqueApis.sort((a, b) => b.confidence - a.confidence);
 
     // 限制结果数量
-    const maxResults = searchDepth === 'shallow' ? 5 : searchDepth === 'medium' ? 10 : 15;
+    const maxResults = SEARCH_DEPTH_LIMITS[searchDepth as keyof typeof SEARCH_DEPTH_LIMITS] || SEARCH_DEPTH_LIMITS.medium;
     const limitedApis = uniqueApis.slice(0, maxResults);
 
     return formatSimilarApis(apiUrl, limitedApis, data.metadata?.title);
@@ -210,26 +202,17 @@ async function extractDeepRelatedApis(seedApis: SimilarAPI[]): Promise<SimilarAP
     try {
       const jsonApiUrl = convertToJsonApiUrl(seedApi.url);
 
-      const response = await fetch(jsonApiUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-          'Accept': 'application/json',
-        },
-      });
+      const data = await httpClient.getJson<AppleDocData>(jsonApiUrl);
 
-      if (response.ok) {
-        const data = await response.json() as AppleDocData;
-
-        // 只从"另请参阅"部分获取，避免过度扩展
-        if (data.seeAlsoSections) {
-          const relatedApis = extractSeeAlsoApis(data.seeAlsoSections, data.references);
-          // 降低相似度评分
-          relatedApis.forEach(api => {
-            api.confidence = Math.max(api.confidence - 2, 3);
-            api.similarityType = 'Deep Related';
-          });
-          deepApis.push(...relatedApis);
-        }
+      // 只从"另请参阅"部分获取，避免过度扩展
+      if (data.seeAlsoSections) {
+        const relatedApis = extractSeeAlsoApis(data.seeAlsoSections, data.references);
+        // 降低相似度评分
+        relatedApis.forEach(api => {
+          api.confidence = Math.max(api.confidence - 2, 3);
+          api.similarityType = 'Deep Related';
+        });
+        deepApis.push(...relatedApis);
       }
     } catch (error) {
       console.error(`Failed to fetch deep related API ${seedApi.url}:`, error);
@@ -249,7 +232,7 @@ function createSimilarApi(
   confidence: number,
   references?: Record<string, any>,
 ): SimilarAPI | null {
-  if (references && references[identifier]) {
+  if (references?.[identifier]) {
     const ref = references[identifier];
     return {
       title: ref.title || 'Unknown',
@@ -304,23 +287,7 @@ function deduplicateAndScore(apis: SimilarAPI[]): SimilarAPI[] {
   return Array.from(apiMap.values());
 }
 
-/**
- * 将网页URL转换为JSON API URL
- */
-function convertToJsonApiUrl(webUrl: string): string {
-  if (webUrl.endsWith('/')) {
-    webUrl = webUrl.slice(0, -1);
-  }
 
-  let path = new URL(webUrl).pathname;
-
-  if (path.includes('/documentation/')) {
-    path = path.replace('/documentation/', '');
-    return `https://developer.apple.com/tutorials/data/documentation/${path}.json`;
-  }
-
-  return webUrl;
-}
 
 /**
  * 格式化相似API结果

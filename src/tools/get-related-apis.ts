@@ -1,4 +1,6 @@
-import { Tool } from '@modelcontextprotocol/sdk/types.js';
+import type { Tool } from '@modelcontextprotocol/sdk/types.js';
+import { convertToJsonApiUrl } from '../utils/url-converter.js';
+import { httpClient } from '../utils/http-client.js';
 
 export const getRelatedApisTool: Tool = {
   name: 'get_related_apis',
@@ -75,18 +77,7 @@ export async function handleGetRelatedApis(
     // 将网页URL转换为JSON API URL
     const jsonApiUrl = convertToJsonApiUrl(apiUrl);
 
-    const response = await fetch(jsonApiUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-        'Accept': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch API data: ${response.status}`);
-    }
-
-    const data = await response.json() as AppleDocData;
+    const data = await httpClient.getJson<AppleDocData>(jsonApiUrl);
 
     // 收集所有相关API
     const relatedApis: RelatedAPI[] = [];
@@ -151,23 +142,7 @@ export async function handleGetRelatedApis(
   }
 }
 
-/**
- * 将网页URL转换为JSON API URL
- */
-function convertToJsonApiUrl(webUrl: string): string {
-  if (webUrl.endsWith('/')) {
-    webUrl = webUrl.slice(0, -1);
-  }
 
-  let path = new URL(webUrl).pathname;
-
-  if (path.includes('/documentation/')) {
-    path = path.replace('/documentation/', '');
-    return `https://developer.apple.com/tutorials/data/documentation/${path}.json`;
-  }
-
-  return webUrl;
-}
 
 /**
  * 从标识符提取API信息
@@ -178,7 +153,7 @@ function extractApiFromIdentifier(
   references?: Record<string, any>,
 ): RelatedAPI | null {
   // 先从references中查找
-  if (references && references[identifier]) {
+  if (references?.[identifier]) {
     const ref = references[identifier];
     return {
       title: ref.title || 'Unknown',

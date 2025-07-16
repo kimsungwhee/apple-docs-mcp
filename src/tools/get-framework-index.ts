@@ -1,5 +1,7 @@
-import { Tool } from '@modelcontextprotocol/sdk/types.js';
+import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { indexCache, generateUrlCacheKey } from '../utils/cache.js';
+import { APPLE_URLS } from '../utils/constants.js';
+import { httpClient } from '../utils/http-client.js';
 
 export const getFrameworkIndexTool: Tool = {
   name: 'get_framework_index',
@@ -64,7 +66,7 @@ export async function handleGetFrameworkIndex(
     console.error(`Fetching framework index for: ${framework}`);
 
     // 构建索引 URL
-    const indexUrl = `https://developer.apple.com/tutorials/data/index/${framework.toLowerCase()}`;
+    const indexUrl = `${APPLE_URLS.TUTORIALS_DATA}index/${framework.toLowerCase()}`;
 
     // Generate cache key
     const cacheKey = generateUrlCacheKey(indexUrl, { language, maxDepth, filterType });
@@ -76,21 +78,10 @@ export async function handleGetFrameworkIndex(
       return cachedResult;
     }
 
-    const response = await fetch(indexUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-        'Accept': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch framework index: ${response.status}`);
-    }
-
-    const data = await response.json() as FrameworkIndex;
+    const data = await httpClient.getJson<FrameworkIndex>(indexUrl);
 
     // 检查语言支持
-    if (!data.interfaceLanguages || !data.interfaceLanguages[language]) {
+    if (!data.interfaceLanguages?.[language]) {
       const availableLanguages = Object.keys(data.interfaceLanguages || {});
       return `Language "${language}" not available for ${framework}. Available languages: ${availableLanguages.join(', ')}`;
     }

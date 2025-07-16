@@ -1,4 +1,6 @@
 import { apiCache, generateEnhancedCacheKey } from '../utils/cache.js';
+import { convertToJsonApiUrl } from '../utils/url-converter.js';
+import { httpClient } from '../utils/http-client.js';
 
 /**
  * Interface for Apple Documentation JSON reference
@@ -42,37 +44,7 @@ interface AppleDocJSON {
   };
 }
 
-/**
- * Convert a web URL to a JSON API URL
- */
-function convertToJsonApiUrl(webUrl: string): string {
-  // Remove trailing slash if present
-  if (webUrl.endsWith('/')) {
-    webUrl = webUrl.slice(0, -1);
-  }
 
-  // Extract the path from the URL
-  let path = new URL(webUrl).pathname;
-
-  // For documentation URLs, format for the JSON API
-  if (path.includes('/documentation/')) {
-    // Remove /documentation/ prefix
-    path = path.replace('/documentation/', '');
-    // Convert to JSON API URL format
-    return `https://developer.apple.com/tutorials/data/documentation/${path}.json`;
-  }
-
-  // For tutorial URLs, try to format for the JSON API
-  if (path.includes('/tutorials/')) {
-    // Try to convert tutorials URL to JSON API format
-    // Remove /tutorials/ prefix and add .json
-    const tutorialPath = path.replace('/tutorials/', '');
-    return `https://developer.apple.com/tutorials/data/${tutorialPath}.json`;
-  }
-
-  // If not a recognized URL format, return the original
-  return webUrl;
-}
 
 /**
  * Format JSON documentation content with enhanced analysis
@@ -235,7 +207,7 @@ function formatSpecificAPIContent(jsonData: AppleDocJSON): string {
       switch (section.kind) {
         case 'declarations':
           content += '## Declaration\n\n';
-          if (section.declarations && section.declarations[0] && section.declarations[0].tokens) {
+          if (section.declarations?.[0]?.tokens) {
             const declaration = section.declarations[0].tokens
               .map((token: any) => token.text || '')
               .join('');
@@ -248,7 +220,7 @@ function formatSpecificAPIContent(jsonData: AppleDocJSON): string {
           if (section.parameters && Array.isArray(section.parameters)) {
             section.parameters.forEach((param: any) => {
               content += `**${param.name}**: `;
-              if (param.content && param.content[0] && param.content[0].inlineContent) {
+              if (param.content?.[0]?.inlineContent) {
                 const paramDesc = param.content[0].inlineContent
                   .map((inline: any) => inline.text || '')
                   .join('');
@@ -323,7 +295,7 @@ function formatAPICollectionContent(jsonData: AppleDocJSON): string {
             }
           } else if (item.type === 'unorderedList' && item.items) {
             item.items.forEach((listItem: any) => {
-              if (listItem.content && listItem.content[0] && listItem.content[0].inlineContent) {
+              if (listItem.content?.[0]?.inlineContent) {
                 const listText = listItem.content[0].inlineContent
                   .map((inline: any) => {
                     if (inline.type === 'text') {
@@ -419,27 +391,8 @@ export async function fetchAppleDocJson(
 
     console.error(`Fetching Apple doc JSON from: ${jsonApiUrl}`);
 
-    // Fetch the documentation JSON
-    const response = await fetch(jsonApiUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        // Provide more helpful error message for 404s
-        throw new Error(`Documentation not found (404). This URL may have been moved or removed. You can try:
-• Search for the topic in Apple Developer Documentation
-• Check if this is an outdated link from search results
-• Visit the original URL directly: ${url}`);
-      }
-      throw new Error(`Failed to fetch JSON content: ${response.status} ${response.statusText}`);
-    }
-
-    // Parse the JSON response
-    const jsonData = await response.json() as AppleDocJSON;
+    // Fetch the documentation JSON using HTTP client
+    const jsonData = await httpClient.getJson<AppleDocJSON>(jsonApiUrl);
 
     // If the JSON doesn't have primary content but has references to other docs,
     // fetch the first reference if we haven't exceeded max depth
