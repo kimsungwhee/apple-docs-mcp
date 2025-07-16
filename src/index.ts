@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { parseSearchResults } from './tools/search-parser.js';
 import { fetchAppleDocJson } from './tools/doc-fetcher.js';
 import { handleListTechnologies } from './tools/list-technologies.js';
-import { handleGetFrameworkIndex } from './tools/get-framework-index.js';
+import { searchFrameworkSymbols, searchFrameworkSymbolsTool } from './tools/search-framework-symbols.js';
 import { handleGetRelatedApis } from './tools/get-related-apis.js';
 import { handleResolveReferencesBatch } from './tools/resolve-references-batch.js';
 import { handleGetPlatformCompatibility } from './tools/get-platform-compatibility.js';
@@ -59,11 +59,12 @@ class AppleDeveloperDocsMCPServer {
       includeBeta: z.boolean().default(true).describe('Include beta technologies'),
     });
 
-    const getFrameworkIndexSchema = z.object({
+    const searchFrameworkSymbolsSchema = z.object({
       framework: z.string().describe('Framework name (e.g., "swiftui", "uikit", "foundation")'),
+      symbolType: z.enum(['all', 'class', 'struct', 'enum', 'protocol', 'method', 'property', 'init', 'func', 'var', 'let', 'typealias']).default('all').describe('Type of symbol to search for'),
+      namePattern: z.string().optional().describe('Optional name pattern to filter results (supports * wildcard)'),
       language: z.enum(['swift', 'occ']).default('swift').describe('Programming language'),
-      maxDepth: z.number().min(1).max(10).default(3).describe('Maximum depth to display in the tree'),
-      filterType: z.enum(['all', 'symbol', 'article', 'class', 'struct', 'enum', 'protocol', 'method', 'property', 'init', 'case', 'associatedtype', 'typealias', 'sampleCode', 'overview', 'collection']).default('all').describe('Filter by API type'),
+      limit: z.number().min(1).max(200).default(50).describe('Maximum number of results to return'),
     });
 
     const getRelatedApisSchema = z.object({
@@ -170,36 +171,7 @@ class AppleDeveloperDocsMCPServer {
               required: [],
             },
           },
-          {
-            name: 'get_framework_index',
-            description: 'Get the complete API structure tree for a specific framework, showing all available APIs organized hierarchically',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                framework: {
-                  type: 'string',
-                  description: 'Framework name (e.g., "swiftui", "uikit", "foundation")',
-                },
-                language: {
-                  type: 'string',
-                  enum: ['swift', 'occ'],
-                  description: 'Programming language (default: swift)',
-                },
-                maxDepth: {
-                  type: 'number',
-                  description: 'Maximum depth to display in the tree (default: 3)',
-                  minimum: 1,
-                  maximum: 10,
-                },
-                filterType: {
-                  type: 'string',
-                  enum: ['all', 'symbol', 'article', 'class', 'struct', 'enum', 'protocol', 'method', 'property', 'init', 'case', 'associatedtype', 'typealias', 'sampleCode', 'overview', 'collection'],
-                  description: 'Filter by API type (default: all)',
-                },
-              },
-              required: ['framework'],
-            },
-          },
+          searchFrameworkSymbolsTool,
           {
             name: 'get_related_apis',
             description: 'Get related APIs for a specific Apple Developer Documentation API, including inheritance relationships, conformance types, and similar APIs',
@@ -330,9 +302,9 @@ class AppleDeveloperDocsMCPServer {
             const validatedArgs = listTechnologiesSchema.parse(args);
             return await this.listTechnologies(validatedArgs.category, validatedArgs.language, validatedArgs.includeBeta);
           }
-          case 'get_framework_index': {
-            const validatedArgs = getFrameworkIndexSchema.parse(args);
-            return await this.getFrameworkIndex(validatedArgs.framework, validatedArgs.language, validatedArgs.maxDepth, validatedArgs.filterType);
+          case 'search_framework_symbols': {
+            const validatedArgs = searchFrameworkSymbolsSchema.parse(args);
+            return await this.searchFrameworkSymbols(validatedArgs.framework, validatedArgs.symbolType, validatedArgs.namePattern, validatedArgs.language, validatedArgs.limit);
           }
           case 'get_related_apis': {
             const validatedArgs = getRelatedApisSchema.parse(args);
@@ -462,9 +434,9 @@ class AppleDeveloperDocsMCPServer {
     }
   }
 
-  private async getFrameworkIndex(framework: string, language: string = 'swift', maxDepth: number = 3, filterType: string = 'all') {
+  private async searchFrameworkSymbols(framework: string, symbolType: string = 'all', namePattern?: string, language: string = 'swift', limit: number = 50) {
     try {
-      const result = await handleGetFrameworkIndex(framework, language, maxDepth, filterType);
+      const result = await searchFrameworkSymbols(framework, symbolType, namePattern, language, limit);
       return {
         content: [
           {
@@ -479,7 +451,7 @@ class AppleDeveloperDocsMCPServer {
         content: [
           {
             type: 'text' as const,
-            text: `Error: Failed to get framework index: ${errorMessage}`,
+            text: `Error: Failed to search framework symbols: ${errorMessage}`,
           },
         ],
         isError: true,
@@ -562,7 +534,12 @@ class AppleDeveloperDocsMCPServer {
     }
   }
 
-  private async findSimilarApis(apiUrl: string, searchDepth: string = 'medium', filterByCategory?: string, includeAlternatives: boolean = true) {
+  private async findSimilarApis(
+    apiUrl: string, 
+    searchDepth: string = 'medium', 
+    filterByCategory?: string, 
+    includeAlternatives: boolean = true
+  ) {
     try {
       const result = await handleFindSimilarApis(apiUrl, searchDepth, filterByCategory, includeAlternatives);
       return {
@@ -599,8 +576,8 @@ class AppleDeveloperDocsMCPServer {
       process.exit(0);
     });
 
-    process.on('unhandledRejection', (reason, promise) => {
-      console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    process.on('unhandledRejection', (reason) => {
+      console.error('Unhandled Rejection, reason:', reason);
       process.exit(1);
     });
 

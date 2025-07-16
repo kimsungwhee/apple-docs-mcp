@@ -2,6 +2,9 @@
  * Jest test setup file
  */
 
+// Set test environment
+process.env.NODE_ENV = 'test';
+
 // Mock console.error to avoid noise in tests
 const originalConsoleError = console.error;
 beforeEach(() => {

@@ -16,6 +16,10 @@ export interface AppleDocSearchResult {
 
 /**
  * Parse HTML search results from Apple Developer Documentation
+ * 
+ * Note: Apple Developer search pages use DOM structure for results,
+ * not JavaScript objects. Results are in <li class="search-result"> elements
+ * within a <ul class="search-results"> container.
  *
  * @param html HTML content from the search results page
  * @param query Original search query
