@@ -13,6 +13,7 @@
 - 📚 **完整文档访问**: 完全访问 Apple JSON API 获取详细文档内容
 - 🔧 **框架索引**: 所有 Apple 框架的分层 API 结构浏览
 - 📋 **技术目录**: 按类别组织的所有 Apple 技术和框架列表
+- 📰 **文档更新**: 跟踪 WWDC 公告、技术更新和发布说明
 - 🔗 **相关 API 发现**: 通过智能推荐查找相关、类似和替代 API
 - 📊 **平台兼容性**: 分析 Apple 生态系统中的平台支持和版本兼容性
 - ⚡ **高性能**: 基于内存的缓存系统，按内容类型优化 TTL
@@ -264,6 +265,15 @@ npm install && npm run build
 "分析 Vision 框架的平台兼容性"
 ```
 
+### 📰 文档更新
+```
+"显示最新的 WWDC 更新"
+"SwiftUI 有什么新功能？"
+"获取 iOS 的技术更新"
+"显示 Xcode 的发布说明"
+"查找最新更新中的 beta 功能"
+```
+
 ### 🛠️ 高级用法
 ```
 "查找 @State 相关 API 及平台分析"
@@ -279,8 +289,9 @@ npm install && npm run build
 | `search_apple_docs` | 搜索 Apple 开发者文档 | 官方搜索 API，增强格式化，平台过滤 |
 | `get_apple_doc_content` | 获取详细文档内容 | JSON API 访问，可选增强分析（相关/类似 API，平台兼容性） |
 | `list_technologies` | 浏览所有 Apple 技术 | 类别过滤，语言支持，beta 状态 |
+| `get_documentation_updates` | 跟踪 Apple 文档更新 | WWDC 公告，技术更新，发布说明，beta 过滤 |
 | `get_framework_index` | 框架 API 结构树 | 分层浏览，深度控制，类型过滤 |
-| `get_related_apis` | 查找相关 API | 继承、遵循、“参见”关系 |
+| `get_related_apis` | 查找相关 API | 继承、遵循、"参见"关系 |
 | `resolve_references_batch` | 批量解析 API 引用 | 从文档中提取和解析所有引用 |
 | `get_platform_compatibility` | 平台兼容性分析 | 版本支持，beta 状态，弃用信息 |
 | `find_similar_apis` | 发现类似 API | Apple 官方推荐，主题分组 |
@@ -296,6 +307,7 @@ apple-docs-mcp/
 │   │   ├── search-parser.ts          # HTML 搜索结果解析
 │   │   ├── doc-fetcher.ts            # JSON API 文档获取
 │   │   ├── list-technologies.ts      # 技术目录处理
+│   │   ├── get-documentation-updates.ts # 文档更新跟踪
 │   │   ├── get-framework-index.ts    # 框架结构索引
 │   │   ├── get-related-apis.ts       # 相关 API 发现
 │   │   ├── resolve-references-batch.ts # 批量引用解析
@@ -329,6 +341,7 @@ apple-docs-mcp/
 | 搜索结果 | 10 分钟 | 200 项 | 动态内容，用户特定 |
 | 框架索引 | 1 小时 | 100 项 | 稳定结构，变化较少 |
 | 技术列表 | 2 小时 | 50 项 | 很少变化，内容较大 |
+| 文档更新 | 30 分钟 | 100 项 | 定期更新，WWDC 公告 |
 
 ## 🧪 开发
 

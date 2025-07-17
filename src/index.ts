@@ -12,6 +12,7 @@ import { handleGetRelatedApis } from './tools/get-related-apis.js';
 import { handleResolveReferencesBatch } from './tools/resolve-references-batch.js';
 import { handleGetPlatformCompatibility } from './tools/get-platform-compatibility.js';
 import { handleFindSimilarApis } from './tools/find-similar-apis.js';
+import { handleGetDocumentationUpdates } from './tools/get-documentation-updates.js';
 import { APPLE_URLS } from './utils/constants.js';
 import { isValidAppleDeveloperUrl } from './utils/url-converter.js';
 import { validateInput, createErrorResponse, handleFetchError } from './utils/error-handler.js';
@@ -91,6 +92,15 @@ class AppleDeveloperDocsMCPServer {
       searchDepth: z.enum(['shallow', 'medium', 'deep']).default('medium').describe('Search depth for similarity analysis'),
       filterByCategory: z.string().optional().describe('Filter results by category/topic'),
       includeAlternatives: z.boolean().default(true).describe('Include alternative APIs from the same topic section'),
+    });
+
+    const getDocumentationUpdatesSchema = z.object({
+      category: z.enum(['all', 'wwdc', 'technology', 'release-notes']).default('all').describe('Filter by update category'),
+      technology: z.string().optional().describe('Filter by specific technology/framework name'),
+      year: z.string().optional().describe('Filter WWDC by year (e.g., 2025, 2024)'),
+      searchQuery: z.string().optional().describe('Search for specific keywords in updates'),
+      includeBeta: z.boolean().default(true).describe('Include beta features'),
+      limit: z.number().min(1).max(200).default(50).describe('Maximum number of results to return'),
     });
 
     // const cacheStatsSchema = z.object({});
@@ -273,6 +283,41 @@ class AppleDeveloperDocsMCPServer {
               required: ['apiUrl'],
             },
           },
+          {
+            name: 'get_documentation_updates',
+            description: 'Get the latest Apple Developer Documentation updates, including WWDC announcements, technology updates, and release notes',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                category: {
+                  type: 'string',
+                  enum: ['all', 'wwdc', 'technology', 'release-notes'],
+                  description: 'Filter by update category (default: all)',
+                },
+                technology: {
+                  type: 'string',
+                  description: 'Filter by specific technology/framework name (e.g., SwiftUI, UIKit)',
+                },
+                year: {
+                  type: 'string',
+                  description: 'Filter WWDC by year (e.g., 2025, 2024)',
+                },
+                searchQuery: {
+                  type: 'string',
+                  description: 'Search for specific keywords in updates',
+                },
+                includeBeta: {
+                  type: 'boolean',
+                  description: 'Include beta features (default: true)',
+                },
+                limit: {
+                  type: 'number',
+                  description: 'Maximum number of results to return (default: 50)',
+                },
+              },
+              required: [],
+            },
+          },
 
         ],
       };
@@ -321,6 +366,10 @@ class AppleDeveloperDocsMCPServer {
           case 'find_similar_apis': {
             const validatedArgs = findSimilarApisSchema.parse(args);
             return await this.findSimilarApis(validatedArgs.apiUrl, validatedArgs.searchDepth, validatedArgs.filterByCategory, validatedArgs.includeAlternatives);
+          }
+          case 'get_documentation_updates': {
+            const validatedArgs = getDocumentationUpdatesSchema.parse(args);
+            return await this.getDocumentationUpdates(validatedArgs.category, validatedArgs.technology, validatedArgs.year, validatedArgs.searchQuery, validatedArgs.includeBeta, validatedArgs.limit);
           }
 
           default:
@@ -557,6 +606,38 @@ class AppleDeveloperDocsMCPServer {
           {
             type: 'text' as const,
             text: `Error: Failed to find similar APIs: ${errorMessage}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+
+  private async getDocumentationUpdates(
+    category: string = 'all',
+    technology?: string,
+    year?: string,
+    searchQuery?: string,
+    includeBeta: boolean = true,
+    limit: number = 50,
+  ) {
+    try {
+      const result = await handleGetDocumentationUpdates(category, technology, year, searchQuery, includeBeta, limit);
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: result,
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: `Error: Failed to get documentation updates: ${errorMessage}`,
           },
         ],
         isError: true,

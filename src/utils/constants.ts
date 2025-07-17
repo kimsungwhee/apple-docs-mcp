@@ -25,6 +25,7 @@ export const CACHE_TTL = {
   SEARCH_RESULTS: 10 * 60 * 1000, // 10 minutes
   FRAMEWORK_INDEX: 60 * 60 * 1000, // 1 hour
   TECHNOLOGIES: 2 * 60 * 60 * 1000, // 2 hours
+  UPDATES: 30 * 60 * 1000, // 30 minutes
 } as const;
 
 // Cache Size Configuration
@@ -33,6 +34,7 @@ export const CACHE_SIZE = {
   SEARCH_RESULTS: 200,
   FRAMEWORK_INDEX: 100,
   TECHNOLOGIES: 50,
+  UPDATES: 100,
 } as const;
 
 // Request Configuration
@@ -50,6 +52,8 @@ export const APPLE_URLS = {
   DOCUMENTATION: 'https://developer.apple.com/documentation/',
   TUTORIALS_DATA: 'https://developer.apple.com/tutorials/data/',
   TECHNOLOGIES_JSON: 'https://developer.apple.com/tutorials/data/documentation/technologies.json',
+  UPDATES_JSON: 'https://developer.apple.com/tutorials/data/documentation/Updates.json',
+  UPDATES_INDEX_JSON: 'https://developer.apple.com/tutorials/data/index/updates',
 } as const;
 
 // Error Messages

@@ -30,7 +30,7 @@ export function parseSearchResults(html: string, query: string, searchUrl: strin
   try {
     // Note: Search results are not cached to ensure real-time accuracy
     console.error(`Parsing search results for: ${query} (filter: ${filterType})`);
-    
+
     const $ = cheerio.load(html);
     const results: AppleDocSearchResult[] = [];
 
@@ -49,7 +49,7 @@ export function parseSearchResults(html: string, query: string, searchUrl: strin
       // Extract type from class names
       const classes = resultItem.attr('class')?.split(' ') || [];
       let resultType = 'other';
-      
+
       // Find the actual type class (not 'search-result')
       for (const className of classes) {
         if (className !== 'search-result' && className.trim()) {
@@ -57,13 +57,13 @@ export function parseSearchResults(html: string, query: string, searchUrl: strin
           break;
         }
       }
-      
+
       // Apply type filter - always filter to only supported types
       const allowedTypes = typeMapping[filterType] || typeMapping['all'];
       if (!allowedTypes.includes(resultType)) {
         return; // Skip this result - not supported by get_apple_doc_content
       }
-      
+
       // Additional filter: exclude known unsupported types
       const unsupportedTypes = ['general', 'video', 'forums', 'news'];
       if (unsupportedTypes.includes(resultType)) {
@@ -80,7 +80,7 @@ export function parseSearchResults(html: string, query: string, searchUrl: strin
       if (url && url.startsWith('/')) {
         url = `https://developer.apple.com${url}`;
       }
-      
+
       // Additional URL-based filtering to ensure get_apple_doc_content support
       if (url) {
         const unsupportedPaths = [
@@ -89,9 +89,9 @@ export function parseSearchResults(html: string, query: string, searchUrl: strin
           '/forums/',
           '/news/',
           '/swift-playground/',
-          '/support/'
+          '/support/',
         ];
-        
+
         if (unsupportedPaths.some(path => url.includes(path))) {
           return; // Skip this result - URL type not supported
         }

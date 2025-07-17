@@ -132,6 +132,7 @@ export const apiCache = new MemoryCache(CACHE_SIZE.API_DOCS, CACHE_TTL.API_DOCS)
 export const searchCache = new MemoryCache(CACHE_SIZE.SEARCH_RESULTS, CACHE_TTL.SEARCH_RESULTS);
 export const indexCache = new MemoryCache(CACHE_SIZE.FRAMEWORK_INDEX, CACHE_TTL.FRAMEWORK_INDEX);
 export const technologiesCache = new MemoryCache(CACHE_SIZE.TECHNOLOGIES, CACHE_TTL.TECHNOLOGIES);
+export const updatesCache = new MemoryCache(CACHE_SIZE.UPDATES, CACHE_TTL.UPDATES);
 
 /**
  * Generate cache key for URL-based requests

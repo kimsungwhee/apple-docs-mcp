@@ -13,6 +13,7 @@ A powerful Model Context Protocol (MCP) server that provides seamless access to 
 - 📚 **Complete Documentation Access**: Full access to Apple's JSON API for detailed documentation content
 - 🔧 **Framework Index**: Hierarchical API structure browsing for all Apple frameworks
 - 📋 **Technology Catalog**: Organized listing of all Apple technologies and frameworks by category
+- 📰 **Documentation Updates**: Track WWDC announcements, technology updates, and release notes
 - 🔗 **Related APIs Discovery**: Find related, similar, and alternative APIs with intelligent recommendations
 - 📊 **Platform Compatibility**: Analyze platform support and version compatibility across Apple's ecosystem
 - ⚡ **High Performance**: Memory-based caching system with optimized TTL per content type
@@ -264,6 +265,15 @@ npm install && npm run build
 "Analyze platform compatibility for Vision framework"
 ```
 
+### 📰 Documentation Updates
+```
+"Show me the latest WWDC updates"
+"What's new in SwiftUI?"
+"Get technology updates for iOS"
+"Show me release notes for Xcode"
+"Find beta features in the latest updates"
+```
+
 ### 🛠️ Advanced Usage
 ```
 "Find related APIs for @State with platform analysis"
@@ -279,6 +289,7 @@ npm install && npm run build
 | `search_apple_docs` | Search Apple Developer Documentation | Official search API, enhanced formatting, platform filtering |
 | `get_apple_doc_content` | Get detailed documentation content | JSON API access, optional enhanced analysis (related/similar APIs, platform compatibility) |
 | `list_technologies` | Browse all Apple technologies | Category filtering, language support, beta status |
+| `get_documentation_updates` | Track Apple documentation updates | WWDC announcements, technology updates, release notes, beta filtering |
 | `get_framework_index` | Framework API structure tree | Hierarchical browsing, depth control, type filtering |
 | `get_related_apis` | Find related APIs | Inheritance, conformance, "See Also" relationships |
 | `resolve_references_batch` | Batch resolve API references | Extract and resolve all references from documentation |
@@ -295,6 +306,7 @@ apple-docs-mcp/
 │   │   ├── search-parser.ts          # HTML search result parsing
 │   │   ├── doc-fetcher.ts            # JSON API documentation fetching
 │   │   ├── list-technologies.ts      # Technology catalog handling
+│   │   ├── get-documentation-updates.ts # Documentation updates tracking
 │   │   ├── get-framework-index.ts    # Framework structure indexing
 │   │   ├── get-related-apis.ts       # Related API discovery
 │   │   ├── resolve-references-batch.ts # Batch reference resolution
@@ -328,6 +340,7 @@ apple-docs-mcp/
 | Search Results | 10 minutes | 200 entries | Dynamic content, user-specific |
 | Framework Indexes | 1 hour | 100 entries | Stable structure, less frequent changes |
 | Technologies List | 2 hours | 50 entries | Rarely changes, large content |
+| Documentation Updates | 30 minutes | 100 entries | Regular updates, WWDC announcements |
 
 ## 🧪 Development
 
