@@ -14,6 +14,7 @@
 - 🔧 **프레임워크 인덱스**: 모든 Apple 프레임워크의 계층적 API 구조 탐색
 - 📋 **기술 카탈로그**: 카테고리별로 정리된 모든 Apple 기술 및 프레임워크 목록
 - 📰 **문서 업데이트**: WWDC 발표, 기술 업데이트, 릴리스 노트 추적
+- 🎯 **기술 개요**: Apple 플랫폼 및 기술에 대한 포괄적인 가이드와 계층적 탐색
 - 🔗 **관련 API 발견**: 지능적 추천을 통한 관련, 유사 및 대안 API 찾기
 - 📊 **플랫폼 호환성**: Apple 생태계 전반의 플랫폼 지원 및 버전 호환성 분석
 - ⚡ **고성능**: 콘텐츠 타입별 최적화된 TTL을 가진 메모리 기반 캐싱 시스템
@@ -274,6 +275,15 @@ npm install && npm run build
 "최신 업데이트에서 베타 기능 찾기"
 ```
 
+### 🎯 기술 개요
+```
+"앱 디자인과 UI의 기술 개요 보여줘"
+"게임 개발을 위한 포괄적인 가이드 가져오기"
+"AI 및 머신러닝 개요 탐색"
+"iOS 전용 기술 가이드 보여줘"
+"데이터 관리 기술 개요 가져오기"
+```
+
 ## 🛠️ 사용 가능한 도구
 
 | 도구 | 설명 | 주요 기능 |
@@ -282,6 +292,7 @@ npm install && npm run build
 | `get_apple_doc_content` | 상세한 문서 내용 가져오기 | JSON API 액세스, 선택적 향상 분석 (관련/유사 API, 플랫폼 호환성) |
 | `list_technologies` | 모든 Apple 기술 탐색 | 카테고리 필터링, 언어 지원, 베타 상태 |
 | `get_documentation_updates` | Apple 문서 업데이트 추적 | WWDC 발표, 기술 업데이트, 릴리스 노트, 베타 필터링 |
+| `get_technology_overviews` | 기술 개요 및 가이드 가져오기 | 포괄적인 가이드, 계층적 탐색, 플랫폼 필터링 |
 | `get_framework_index` | 프레임워크 API 구조 트리 | 계층적 탐색, 깊이 제어, 타입 필터링 |
 | `get_related_apis` | 관련 API 찾기 | 상속, 준수, "참고" 관계 |
 | `resolve_references_batch` | API 참조 일괄 해결 | 문서에서 모든 참조 추출 및 해결 |
@@ -299,6 +310,7 @@ apple-docs-mcp/
 │   │   ├── doc-fetcher.ts            # JSON API 문서 가져오기
 │   │   ├── list-technologies.ts      # 기술 카탈로그 처리
 │   │   ├── get-documentation-updates.ts # 문서 업데이트 추적
+│   │   ├── get-technology-overviews.ts # 기술 개요 및 가이드
 │   │   ├── get-framework-index.ts    # 프레임워크 구조 인덱싱
 │   │   ├── get-related-apis.ts       # 관련 API 발견
 │   │   ├── resolve-references-batch.ts # 일괄 참조 해결

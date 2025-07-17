@@ -13,6 +13,7 @@ import { handleResolveReferencesBatch } from './tools/resolve-references-batch.j
 import { handleGetPlatformCompatibility } from './tools/get-platform-compatibility.js';
 import { handleFindSimilarApis } from './tools/find-similar-apis.js';
 import { handleGetDocumentationUpdates } from './tools/get-documentation-updates.js';
+import { handleGetTechnologyOverviews } from './tools/get-technology-overviews.js';
 import { APPLE_URLS } from './utils/constants.js';
 import { isValidAppleDeveloperUrl } from './utils/url-converter.js';
 import { validateInput, createErrorResponse, handleFetchError } from './utils/error-handler.js';
@@ -100,6 +101,14 @@ class AppleDeveloperDocsMCPServer {
       year: z.string().optional().describe('Filter WWDC by year (e.g., 2025, 2024)'),
       searchQuery: z.string().optional().describe('Search for specific keywords in updates'),
       includeBeta: z.boolean().default(true).describe('Include beta features'),
+      limit: z.number().min(1).max(200).default(50).describe('Maximum number of results to return'),
+    });
+
+    const getTechnologyOverviewsSchema = z.object({
+      category: z.string().optional().describe('Filter by specific category (e.g., "app-design-and-ui", "games", "ai-machine-learning")'),
+      platform: z.enum(['all', 'ios', 'macos', 'watchos', 'tvos', 'visionos']).default('all').describe('Filter by platform'),
+      searchQuery: z.string().optional().describe('Search for specific keywords in overviews'),
+      includeSubcategories: z.boolean().default(true).describe('Include subcategories and nested content'),
       limit: z.number().min(1).max(200).default(50).describe('Maximum number of results to return'),
     });
 
@@ -318,6 +327,37 @@ class AppleDeveloperDocsMCPServer {
               required: [],
             },
           },
+          {
+            name: 'get_technology_overviews',
+            description: 'Get Apple Developer Technology Overviews - comprehensive guides for Apple platforms and technologies',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                category: {
+                  type: 'string',
+                  description: 'Filter by specific category (e.g., "app-design-and-ui", "games", "ai-machine-learning")',
+                },
+                platform: {
+                  type: 'string',
+                  enum: ['all', 'ios', 'macos', 'watchos', 'tvos', 'visionos'],
+                  description: 'Filter by platform (default: all)',
+                },
+                searchQuery: {
+                  type: 'string',
+                  description: 'Search for specific keywords in overviews',
+                },
+                includeSubcategories: {
+                  type: 'boolean',
+                  description: 'Include subcategories and nested content (default: true)',
+                },
+                limit: {
+                  type: 'number',
+                  description: 'Maximum number of results to return (default: 50)',
+                },
+              },
+              required: [],
+            },
+          },
 
         ],
       };
@@ -370,6 +410,10 @@ class AppleDeveloperDocsMCPServer {
           case 'get_documentation_updates': {
             const validatedArgs = getDocumentationUpdatesSchema.parse(args);
             return await this.getDocumentationUpdates(validatedArgs.category, validatedArgs.technology, validatedArgs.year, validatedArgs.searchQuery, validatedArgs.includeBeta, validatedArgs.limit);
+          }
+          case 'get_technology_overviews': {
+            const validatedArgs = getTechnologyOverviewsSchema.parse(args);
+            return await this.getTechnologyOverviews(validatedArgs.category, validatedArgs.platform, validatedArgs.searchQuery, validatedArgs.includeSubcategories, validatedArgs.limit);
           }
 
           default:
@@ -645,7 +689,36 @@ class AppleDeveloperDocsMCPServer {
     }
   }
 
-
+  private async getTechnologyOverviews(
+    category?: string,
+    platform: string = 'all',
+    searchQuery?: string,
+    includeSubcategories: boolean = true,
+    limit: number = 50,
+  ) {
+    try {
+      const result = await handleGetTechnologyOverviews(category, platform, searchQuery, includeSubcategories, limit);
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: result,
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: `Error: Failed to get technology overviews: ${errorMessage}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
 
   private setupErrorHandling() {
     // 处理 SIGINT 以优雅关闭服务器

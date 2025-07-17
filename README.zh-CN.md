@@ -14,6 +14,7 @@
 - 🔧 **框架索引**: 所有 Apple 框架的分层 API 结构浏览
 - 📋 **技术目录**: 按类别组织的所有 Apple 技术和框架列表
 - 📰 **文档更新**: 跟踪 WWDC 公告、技术更新和发布说明
+- 🎯 **技术概览**: Apple 平台和技术的综合指南，具有分层导航
 - 🔗 **相关 API 发现**: 通过智能推荐查找相关、类似和替代 API
 - 📊 **平台兼容性**: 分析 Apple 生态系统中的平台支持和版本兼容性
 - ⚡ **高性能**: 基于内存的缓存系统，按内容类型优化 TTL
@@ -274,6 +275,15 @@ npm install && npm run build
 "查找最新更新中的 beta 功能"
 ```
 
+### 🎯 技术概览
+```
+"显示应用设计和 UI 的技术概览"
+"获取游戏开发的综合指南"
+"探索 AI 和机器学习概览"
+"显示 iOS 特定的技术指南"
+"获取数据管理技术概览"
+```
+
 ### 🛠️ 高级用法
 ```
 "查找 @State 相关 API 及平台分析"
@@ -290,6 +300,7 @@ npm install && npm run build
 | `get_apple_doc_content` | 获取详细文档内容 | JSON API 访问，可选增强分析（相关/类似 API，平台兼容性） |
 | `list_technologies` | 浏览所有 Apple 技术 | 类别过滤，语言支持，beta 状态 |
 | `get_documentation_updates` | 跟踪 Apple 文档更新 | WWDC 公告，技术更新，发布说明，beta 过滤 |
+| `get_technology_overviews` | 获取技术概览和指南 | 综合指南，分层导航，平台过滤 |
 | `get_framework_index` | 框架 API 结构树 | 分层浏览，深度控制，类型过滤 |
 | `get_related_apis` | 查找相关 API | 继承、遵循、"参见"关系 |
 | `resolve_references_batch` | 批量解析 API 引用 | 从文档中提取和解析所有引用 |
@@ -308,6 +319,7 @@ apple-docs-mcp/
 │   │   ├── doc-fetcher.ts            # JSON API 文档获取
 │   │   ├── list-technologies.ts      # 技术目录处理
 │   │   ├── get-documentation-updates.ts # 文档更新跟踪
+│   │   ├── get-technology-overviews.ts # 技术概览和指南
 │   │   ├── get-framework-index.ts    # 框架结构索引
 │   │   ├── get-related-apis.ts       # 相关 API 发现
 │   │   ├── resolve-references-batch.ts # 批量引用解析

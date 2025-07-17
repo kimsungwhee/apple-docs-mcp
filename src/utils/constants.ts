@@ -54,6 +54,8 @@ export const APPLE_URLS = {
   TECHNOLOGIES_JSON: 'https://developer.apple.com/tutorials/data/documentation/technologies.json',
   UPDATES_JSON: 'https://developer.apple.com/tutorials/data/documentation/Updates.json',
   UPDATES_INDEX_JSON: 'https://developer.apple.com/tutorials/data/index/updates',
+  TECHNOLOGY_OVERVIEWS_JSON: 'https://developer.apple.com/tutorials/data/documentation/TechnologyOverviews.json',
+  TECHNOLOGY_OVERVIEWS_INDEX_JSON: 'https://developer.apple.com/tutorials/data/index/technologyoverviews',
 } as const;
 
 // Error Messages
