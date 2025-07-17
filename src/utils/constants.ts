@@ -26,6 +26,8 @@ export const CACHE_TTL = {
   FRAMEWORK_INDEX: 60 * 60 * 1000, // 1 hour
   TECHNOLOGIES: 2 * 60 * 60 * 1000, // 2 hours
   UPDATES: 30 * 60 * 1000, // 30 minutes
+  SAMPLE_CODE: 2 * 60 * 60 * 1000, // 2 hours
+  TECHNOLOGY_OVERVIEWS: 2 * 60 * 60 * 1000, // 2 hours
 } as const;
 
 // Cache Size Configuration
@@ -35,6 +37,8 @@ export const CACHE_SIZE = {
   FRAMEWORK_INDEX: 100,
   TECHNOLOGIES: 50,
   UPDATES: 100,
+  SAMPLE_CODE: 100,
+  TECHNOLOGY_OVERVIEWS: 100,
 } as const;
 
 // Request Configuration
@@ -56,6 +60,8 @@ export const APPLE_URLS = {
   UPDATES_INDEX_JSON: 'https://developer.apple.com/tutorials/data/index/updates',
   TECHNOLOGY_OVERVIEWS_JSON: 'https://developer.apple.com/tutorials/data/documentation/TechnologyOverviews.json',
   TECHNOLOGY_OVERVIEWS_INDEX_JSON: 'https://developer.apple.com/tutorials/data/index/technologyoverviews',
+  SAMPLE_CODE_JSON: 'https://developer.apple.com/tutorials/data/documentation/SampleCode.json',
+  SAMPLE_CODE_INDEX_JSON: 'https://developer.apple.com/tutorials/data/index/samplecode',
 } as const;
 
 // Error Messages

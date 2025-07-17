@@ -1,5 +1,5 @@
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
-import { technologiesCache, generateUrlCacheKey } from '../utils/cache.js';
+import { technologyOverviewsCache, generateUrlCacheKey } from '../utils/cache.js';
 import { APPLE_URLS } from '../utils/constants.js';
 import { httpClient } from '../utils/http-client.js';
 
@@ -94,7 +94,7 @@ export async function handleGetTechnologyOverviews(
     });
 
     // Try to get from cache first
-    const cachedResult = technologiesCache.get<string>(cacheKey);
+    const cachedResult = technologyOverviewsCache.get<string>(cacheKey);
     if (cachedResult) {
       console.error('Technology overviews cache hit');
       return cachedResult;
@@ -120,7 +120,7 @@ export async function handleGetTechnologyOverviews(
     const result = formatOverviewsList(filteredOverviews);
 
     // Cache the result
-    technologiesCache.set(cacheKey, result);
+    technologyOverviewsCache.set(cacheKey, result);
 
     return result;
 

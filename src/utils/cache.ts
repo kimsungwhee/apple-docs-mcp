@@ -8,7 +8,7 @@ interface CacheEntry<T> {
   ttl: number; // Time to live in milliseconds
 }
 
-class MemoryCache {
+export class MemoryCache {
   private cache = new Map<string, CacheEntry<any>>();
   private maxSize: number;
   private defaultTTL: number;
@@ -133,6 +133,8 @@ export const searchCache = new MemoryCache(CACHE_SIZE.SEARCH_RESULTS, CACHE_TTL.
 export const indexCache = new MemoryCache(CACHE_SIZE.FRAMEWORK_INDEX, CACHE_TTL.FRAMEWORK_INDEX);
 export const technologiesCache = new MemoryCache(CACHE_SIZE.TECHNOLOGIES, CACHE_TTL.TECHNOLOGIES);
 export const updatesCache = new MemoryCache(CACHE_SIZE.UPDATES, CACHE_TTL.UPDATES);
+export const sampleCodeCache = new MemoryCache(CACHE_SIZE.SAMPLE_CODE, CACHE_TTL.SAMPLE_CODE);
+export const technologyOverviewsCache = new MemoryCache(CACHE_SIZE.TECHNOLOGY_OVERVIEWS, CACHE_TTL.TECHNOLOGY_OVERVIEWS);
 
 /**
  * Generate cache key for URL-based requests

@@ -7,6 +7,9 @@ module.exports = {
     '**/__tests__/**/*.ts',
     '**/?(*.)+(spec|test).ts'
   ],
+  testTimeout: 10000, // 10 seconds timeout for all tests
+  maxWorkers: 1, // Run tests serially to avoid network conflicts
+  forceExit: true, // Force Jest to exit after tests complete
   transform: {
     '^.+\\.ts$': ['ts-jest', {
       useESM: false,

@@ -14,6 +14,7 @@ import { handleGetPlatformCompatibility } from './tools/get-platform-compatibili
 import { handleFindSimilarApis } from './tools/find-similar-apis.js';
 import { handleGetDocumentationUpdates } from './tools/get-documentation-updates.js';
 import { handleGetTechnologyOverviews } from './tools/get-technology-overviews.js';
+import { handleGetSampleCode } from './tools/get-sample-code.js';
 import { APPLE_URLS } from './utils/constants.js';
 import { isValidAppleDeveloperUrl } from './utils/url-converter.js';
 import { validateInput, createErrorResponse, handleFetchError } from './utils/error-handler.js';
@@ -109,6 +110,13 @@ class AppleDeveloperDocsMCPServer {
       platform: z.enum(['all', 'ios', 'macos', 'watchos', 'tvos', 'visionos']).default('all').describe('Filter by platform'),
       searchQuery: z.string().optional().describe('Search for specific keywords in overviews'),
       includeSubcategories: z.boolean().default(true).describe('Include subcategories and nested content'),
+      limit: z.number().min(1).max(200).default(50).describe('Maximum number of results to return'),
+    });
+
+    const getSampleCodeSchema = z.object({
+      framework: z.string().optional().describe('Filter by framework name (e.g., "SwiftUI", "UIKit", "CoreML")'),
+      beta: z.enum(['include', 'exclude', 'only']).default('include').describe('Beta sample handling (include=show all, exclude=hide beta, only=beta only)'),
+      searchQuery: z.string().optional().describe('Search for specific keywords in sample code titles or descriptions'),
       limit: z.number().min(1).max(200).default(50).describe('Maximum number of results to return'),
     });
 
@@ -358,6 +366,33 @@ class AppleDeveloperDocsMCPServer {
               required: [],
             },
           },
+          {
+            name: 'get_sample_code',
+            description: 'Browse and search Apple Developer Sample Code Library - full working example projects demonstrating Apple technologies',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                framework: {
+                  type: 'string',
+                  description: 'Filter by framework name (e.g., "SwiftUI", "UIKit", "CoreML")',
+                },
+                beta: {
+                  type: 'string',
+                  enum: ['include', 'exclude', 'only'],
+                  description: 'Beta sample handling (include=show all, exclude=hide beta, only=beta only)',
+                },
+                searchQuery: {
+                  type: 'string',
+                  description: 'Search for specific keywords in sample code titles or descriptions',
+                },
+                limit: {
+                  type: 'number',
+                  description: 'Maximum number of results to return (default: 50)',
+                },
+              },
+              required: [],
+            },
+          },
 
         ],
       };
@@ -414,6 +449,10 @@ class AppleDeveloperDocsMCPServer {
           case 'get_technology_overviews': {
             const validatedArgs = getTechnologyOverviewsSchema.parse(args);
             return await this.getTechnologyOverviews(validatedArgs.category, validatedArgs.platform, validatedArgs.searchQuery, validatedArgs.includeSubcategories, validatedArgs.limit);
+          }
+          case 'get_sample_code': {
+            const validatedArgs = getSampleCodeSchema.parse(args);
+            return await this.getSampleCode(validatedArgs.framework, validatedArgs.beta, validatedArgs.searchQuery, validatedArgs.limit);
           }
 
           default:
@@ -713,6 +752,36 @@ class AppleDeveloperDocsMCPServer {
           {
             type: 'text' as const,
             text: `Error: Failed to get technology overviews: ${errorMessage}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+
+  private async getSampleCode(
+    framework?: string,
+    beta: 'include' | 'exclude' | 'only' = 'include',
+    searchQuery?: string,
+    limit: number = 50,
+  ) {
+    try {
+      const result = await handleGetSampleCode(framework, beta, searchQuery, limit);
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: result,
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: `Error: Failed to get sample code: ${errorMessage}`,
           },
         ],
         isError: true,

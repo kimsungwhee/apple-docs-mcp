@@ -15,6 +15,7 @@
 - 📋 **技术目录**: 按类别组织的所有 Apple 技术和框架列表
 - 📰 **文档更新**: 跟踪 WWDC 公告、技术更新和发布说明
 - 🎯 **技术概览**: Apple 平台和技术的综合指南，具有分层导航
+- 💻 **示例代码库**: 浏览和搜索演示 Apple 技术的完整工作示例项目
 - 🔗 **相关 API 发现**: 通过智能推荐查找相关、类似和替代 API
 - 📊 **平台兼容性**: 分析 Apple 生态系统中的平台支持和版本兼容性
 - ⚡ **高性能**: 基于内存的缓存系统，按内容类型优化 TTL
@@ -284,6 +285,26 @@ npm install && npm run build
 "获取数据管理技术概览"
 ```
 
+### 💻 示例代码库
+```
+"显示 SwiftUI 示例代码项目"
+"查找机器学习示例代码"
+"获取 UIKit 示例项目"
+"显示精选 WWDC 示例代码"
+"查找 Core Data 示例实现"
+"仅显示测试版示例代码项目"
+```
+
+### 💻 示例代码库
+```
+"显示 SwiftUI 示例代码项目"
+"查找机器学习示例代码"
+"获取 UIKit 示例项目"
+"显示精选 WWDC 示例代码"
+"查找 Core Data 示例实现"
+"仅显示测试版示例代码项目"
+```
+
 ### 🛠️ 高级用法
 ```
 "查找 @State 相关 API 及平台分析"
@@ -301,6 +322,7 @@ npm install && npm run build
 | `list_technologies` | 浏览所有 Apple 技术 | 类别过滤，语言支持，beta 状态 |
 | `get_documentation_updates` | 跟踪 Apple 文档更新 | WWDC 公告，技术更新，发布说明，beta 过滤 |
 | `get_technology_overviews` | 获取技术概览和指南 | 综合指南，分层导航，平台过滤 |
+| `get_sample_code` | 浏览 Apple 示例代码项目 | 框架过滤，测试版状态，搜索，精选示例 |
 | `get_framework_index` | 框架 API 结构树 | 分层浏览，深度控制，类型过滤 |
 | `get_related_apis` | 查找相关 API | 继承、遵循、"参见"关系 |
 | `resolve_references_batch` | 批量解析 API 引用 | 从文档中提取和解析所有引用 |
@@ -320,6 +342,7 @@ apple-docs-mcp/
 │   │   ├── list-technologies.ts      # 技术目录处理
 │   │   ├── get-documentation-updates.ts # 文档更新跟踪
 │   │   ├── get-technology-overviews.ts # 技术概览和指南
+│   │   ├── get-sample-code.ts        # 示例代码库浏览器
 │   │   ├── get-framework-index.ts    # 框架结构索引
 │   │   ├── get-related-apis.ts       # 相关 API 发现
 │   │   ├── resolve-references-batch.ts # 批量引用解析

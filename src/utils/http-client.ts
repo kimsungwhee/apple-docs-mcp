@@ -120,18 +120,22 @@ class HttpClient {
         const response = await fetch(url, options);
         const responseTime = Date.now() - startTime;
 
-        // Update performance stats
-        this.updateStats(response.status, responseTime, true);
+        // Update performance stats only if response is valid
+        if (response) {
+          this.updateStats(response.status, responseTime, true);
+        }
 
-        if (!response.ok) {
-          if (response.status === 404) {
+        if (!response || !response.ok) {
+          if (response && response.status === 404) {
             throw new Error(`${ERROR_MESSAGES.NOT_FOUND} (${response.status})`);
           }
-          if (response.status >= 500 && attempt < retries) {
+          if (response && response.status >= 500 && attempt < retries) {
             // Retry on server errors
             throw new Error(`Server error: ${response.status}`);
           }
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          const status = response ? response.status : 'unknown';
+          const statusText = response ? response.statusText : 'No response';
+          throw new Error(`HTTP ${status}: ${statusText}`);
         }
 
         return response;

@@ -1,12 +1,12 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { handleGetTechnologyOverviews } from '../../src/tools/get-technology-overviews.js';
 import { httpClient } from '../../src/utils/http-client.js';
-import { technologiesCache } from '../../src/utils/cache.js';
+import { technologyOverviewsCache } from '../../src/utils/cache.js';
 
 // Mock dependencies
 jest.mock('../../src/utils/http-client.js');
 jest.mock('../../src/utils/cache.js', () => ({
-  technologiesCache: {
+  technologyOverviewsCache: {
     get: jest.fn(),
     set: jest.fn(),
   },
@@ -132,7 +132,7 @@ describe('get-technology-overviews', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (technologiesCache.get as jest.Mock).mockReturnValue(null);
+    (technologyOverviewsCache.get as jest.Mock).mockReturnValue(null);
     (httpClient.getJson as jest.Mock).mockImplementation((url: unknown) => {
       const urlStr = url as string;
       if (urlStr.includes('TechnologyOverviews.json')) {
@@ -218,7 +218,7 @@ describe('get-technology-overviews', () => {
 
   it('should use cache when available', async () => {
     const cachedResult = '# Cached Technology Overviews\n\nThis is cached content.';
-    (technologiesCache.get as jest.Mock).mockReturnValue(cachedResult);
+    (technologyOverviewsCache.get as jest.Mock).mockReturnValue(cachedResult);
 
     const result = await handleGetTechnologyOverviews();
 
@@ -229,8 +229,8 @@ describe('get-technology-overviews', () => {
   it('should store results in cache', async () => {
     await handleGetTechnologyOverviews();
 
-    expect(technologiesCache.set).toHaveBeenCalled();
-    const [cacheKey, cachedValue] = (technologiesCache.set as jest.Mock).mock.calls[0];
+    expect(technologyOverviewsCache.set).toHaveBeenCalled();
+    const [cacheKey, cachedValue] = (technologyOverviewsCache.set as jest.Mock).mock.calls[0];
     expect(cacheKey).toContain('technology-overviews');
     expect(cachedValue).toContain('Apple Developer Technology Overviews');
   });

@@ -15,6 +15,7 @@ A powerful Model Context Protocol (MCP) server that provides seamless access to 
 - 📋 **Technology Catalog**: Organized listing of all Apple technologies and frameworks by category
 - 📰 **Documentation Updates**: Track WWDC announcements, technology updates, and release notes
 - 🎯 **Technology Overviews**: Comprehensive guides for Apple platforms and technologies with hierarchical navigation
+- 💻 **Sample Code Library**: Browse and search complete working example projects demonstrating Apple technologies
 - 🔗 **Related APIs Discovery**: Find related, similar, and alternative APIs with intelligent recommendations
 - 📊 **Platform Compatibility**: Analyze platform support and version compatibility across Apple's ecosystem
 - ⚡ **High Performance**: Memory-based caching system with optimized TTL per content type
@@ -284,6 +285,16 @@ npm install && npm run build
 "Get data management technology overviews"
 ```
 
+### 💻 Sample Code Library
+```
+"Show SwiftUI sample code projects"
+"Find sample code for machine learning"
+"Get UIKit example projects"
+"Show featured WWDC sample code"
+"Find Core Data sample implementations"
+"Show only beta sample code projects"
+```
+
 ### 🛠️ Advanced Usage
 ```
 "Find related APIs for @State with platform analysis"
@@ -301,6 +312,7 @@ npm install && npm run build
 | `list_technologies` | Browse all Apple technologies | Category filtering, language support, beta status |
 | `get_documentation_updates` | Track Apple documentation updates | WWDC announcements, technology updates, release notes, beta filtering |
 | `get_technology_overviews` | Get technology overviews and guides | Comprehensive guides, hierarchical navigation, platform filtering |
+| `get_sample_code` | Browse Apple sample code projects | Framework filtering, beta status, search, featured samples |
 | `get_framework_index` | Framework API structure tree | Hierarchical browsing, depth control, type filtering |
 | `get_related_apis` | Find related APIs | Inheritance, conformance, "See Also" relationships |
 | `resolve_references_batch` | Batch resolve API references | Extract and resolve all references from documentation |
@@ -319,6 +331,7 @@ apple-docs-mcp/
 │   │   ├── list-technologies.ts      # Technology catalog handling
 │   │   ├── get-documentation-updates.ts # Documentation updates tracking
 │   │   ├── get-technology-overviews.ts # Technology overviews and guides
+│   │   ├── get-sample-code.ts        # Sample code library browser
 │   │   ├── get-framework-index.ts    # Framework structure indexing
 │   │   ├── get-related-apis.ts       # Related API discovery
 │   │   ├── resolve-references-batch.ts # Batch reference resolution
