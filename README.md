@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/kimsungwhee-apple-docs-mcp-badge.png)](https://mseep.ai/app/kimsungwhee-apple-docs-mcp)
+
 # Apple Docs MCP
 
 [![npm version](https://badge.fury.io/js/@kimsungwhee%2Fapple-docs-mcp.svg)](https://badge.fury.io/js/@kimsungwhee%2Fapple-docs-mcp)
