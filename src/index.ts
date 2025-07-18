@@ -104,27 +104,26 @@ export default class AppleDeveloperDocsMCPServer {
   }
 
   public async searchAppleDocs(query: string, type: string = 'all') {
-    // 输入验证
-    const queryValidation = validateInput(query, 'Search query');
-    if (queryValidation) {
-      return createErrorResponse(queryValidation);
+    try {
+      // 输入验证
+      const queryValidation = validateInput(query, 'Search query');
+      if (queryValidation) {
+        return createErrorResponse(queryValidation);
+      }
+
+      // 创建 Apple Developer Documentation 搜索 URL
+      const searchUrl = `${APPLE_URLS.SEARCH}?q=${encodeURIComponent(query)}`;
+
+      logger.info(`Searching Apple docs for: ${query}`);
+
+      // 获取搜索结果页面
+      const html = await httpClient.getText(searchUrl);
+
+      // 解析并返回搜索结果，传递type参数进行过滤
+      return parseSearchResults(html, query, searchUrl, type);
+    } catch (error) {
+      return createStandardErrorResponse(error, 'searchAppleDocs');
     }
-
-    return this.handleAsyncOperation(
-      async () => {
-        // 创建 Apple Developer Documentation 搜索 URL
-        const searchUrl = `${APPLE_URLS.SEARCH}?q=${encodeURIComponent(query)}`;
-
-        logger.info(`Searching Apple docs for: ${query}`);
-
-        // 获取搜索结果页面
-        const html = await httpClient.getText(searchUrl);
-
-        // 解析并返回搜索结果，传递type参数进行过滤
-        return parseSearchResults(html, query, searchUrl, type);
-      },
-      'searchAppleDocs',
-    );
   }
 
   public async getAppleDocContent(
