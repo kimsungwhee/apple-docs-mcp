@@ -59,4 +59,4 @@ export class RateLimiter {
 }
 
 // Create a global rate limiter instance
-export const globalRateLimiter = new RateLimiter(300, RATE_LIMIT.WINDOW_MS); // 300 requests per minute
+export const globalRateLimiter = new RateLimiter(RATE_LIMIT.MAX_REQUESTS_PER_MINUTE, RATE_LIMIT.WINDOW_MS);
