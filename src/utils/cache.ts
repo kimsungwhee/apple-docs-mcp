@@ -20,20 +20,41 @@ export class MemoryCache {
   }
 
   /**
+   * Get the current size of the cache
+   */
+  size(): number {
+    return this.cache.size;
+  }
+
+  /**
+   * Get all entries as array of [key, value] pairs
+   */
+  entries(): [string, unknown][] {
+    const result: [string, unknown][] = [];
+    const now = Date.now();
+    for (const [key, entry] of this.cache.entries()) {
+      if (now - entry.timestamp <= entry.ttl) {
+        result.push([key, entry.data]);
+      }
+    }
+    return result;
+  }
+
+  /**
    * Get value from cache
    */
-  get<T>(key: string): T | null {
+  get<T>(key: string): T | undefined {
     const entry = this.cache.get(key);
     if (!entry) {
       this.misses++;
-      return null;
+      return undefined;
     }
 
     // Check if expired
     if (Date.now() - entry.timestamp > entry.ttl) {
       this.cache.delete(key);
       this.misses++;
-      return null;
+      return undefined;
     }
 
     this.hits++;
@@ -63,7 +84,7 @@ export class MemoryCache {
    * Check if key exists and is not expired
    */
   has(key: string): boolean {
-    return this.get(key) !== null;
+    return this.get(key) !== undefined;
   }
 
   /**
@@ -124,7 +145,7 @@ export class MemoryCache {
   ): Promise<T> {
     // Try to get from cache first
     const cached = this.get<T>(key);
-    if (cached !== null) {
+    if (cached !== undefined) {
       return cached;
     }
 
@@ -204,3 +225,73 @@ export function cached<T>(
     };
   };
 }
+
+/**
+ * Cache decorator (alias for compatibility)
+ */
+export function withCache<T = any>(
+  cache: MemoryCache,
+  keyGenerator?: (...args: any[]) => string,
+  ttl?: number,
+) {
+  return function (_target: any, _propertyName: string, descriptor?: PropertyDescriptor) {
+    // Handle the case where descriptor might be undefined (TypeScript decorators)
+    if (!descriptor) {
+      throw new Error('withCache decorator requires a method descriptor');
+    }
+    
+    const method = descriptor.value;
+    if (!method) {
+      throw new Error('withCache decorator can only be applied to methods');
+    }
+    
+    const isAsync = method.constructor.name === 'AsyncFunction';
+
+    descriptor.value = function (...args: any[]): any {
+      const key = keyGenerator ? keyGenerator(...args) : JSON.stringify(args);
+      
+      // Try to get from cache first
+      const cached = cache.get<T>(key);
+      if (cached !== undefined) {
+        return cached;
+      }
+
+      // Execute the method
+      const result = method.apply(this, args);
+      
+      // Handle both sync and async methods
+      if (isAsync || result instanceof Promise) {
+        return Promise.resolve(result).then((data) => {
+          cache.set(key, data, ttl);
+          return data;
+        }).catch((error) => {
+          // Don't cache errors
+          throw error;
+        });
+      } else {
+        // Sync method
+        cache.set(key, result, ttl);
+        return result;
+      }
+    };
+    
+    return descriptor;
+  };
+}
+
+/**
+ * Get cache instance by name (singleton pattern)
+ */
+const cacheInstances = new Map<string, MemoryCache>();
+
+export function getCacheInstance(
+  name: string,
+  maxSize?: number,
+  defaultTTL?: number,
+): MemoryCache {
+  if (!cacheInstances.has(name)) {
+    cacheInstances.set(name, new MemoryCache(maxSize, defaultTTL));
+  }
+  return cacheInstances.get(name)!;
+}
+

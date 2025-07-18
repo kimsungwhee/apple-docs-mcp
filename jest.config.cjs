@@ -14,7 +14,9 @@ module.exports = {
     '^.+\\.ts$': ['ts-jest', {
       useESM: false,
       tsconfig: {
-        module: 'commonjs'
+        module: 'commonjs',
+        experimentalDecorators: true,
+        emitDecoratorMetadata: true
       }
     }],
   },

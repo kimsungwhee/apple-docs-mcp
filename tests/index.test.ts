@@ -41,7 +41,7 @@ describe('AppleDeveloperDocsMCPServer', () => {
     // Setup mock server
     mockServer = {
       setRequestHandler: jest.fn(),
-      start: jest.fn(),
+      connect: jest.fn(),
     };
     (Server as jest.MockedClass<typeof Server>).mockImplementation(() => mockServer);
 
@@ -193,7 +193,7 @@ describe('AppleDeveloperDocsMCPServer', () => {
       await server.run();
 
       expect(StdioServerTransport).toHaveBeenCalled();
-      expect(mockServer.start).toHaveBeenCalledWith(mockTransport);
+      expect(mockServer.connect).toHaveBeenCalledWith(mockTransport);
     });
   });
 

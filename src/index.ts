@@ -23,7 +23,7 @@ import { httpClient } from './utils/http-client.js';
 import { preloadPopularFrameworks } from './utils/preloader.js';
 import { warmUpCaches, schedulePeriodicCacheRefresh } from './utils/cache-warmer.js';
 
-class AppleDeveloperDocsMCPServer {
+export default class AppleDeveloperDocsMCPServer {
   private server: Server;
 
   constructor() {
@@ -436,9 +436,11 @@ class AppleDeveloperDocsMCPServer {
   }
 }
 
-// 运行服务器
-const server = new AppleDeveloperDocsMCPServer();
-void server.run().catch((error) => {
-  console.error('Fatal error in main():', error);
-  process.exit(1);
-});
+// 运行服务器 (仅在非测试环境中)
+if (process.env.NODE_ENV !== 'test') {
+  const server = new AppleDeveloperDocsMCPServer();
+  void server.run().catch((error) => {
+    console.error('Fatal error in main():', error);
+    process.exit(1);
+  });
+}

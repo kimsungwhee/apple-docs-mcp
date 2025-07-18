@@ -40,8 +40,8 @@ export function convertToJsonApiUrl(webUrl: string): string | null {
       return `https://developer.apple.com/tutorials/data/${tutorialPath}.json`;
     }
 
-    // If not a recognized URL format, return null
-    return null;
+    // If not a recognized URL format, return the original URL
+    return webUrl;
   } catch {
     return null;
   }

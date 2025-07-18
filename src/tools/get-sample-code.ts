@@ -198,7 +198,33 @@ function parseSampleCodes(content: SampleCodeContent, index: SampleCodeIndex): P
     processSampleCodeNodes(nodes, sampleCodes, frameworkMap, featuredIds, '', 0);
   }
 
-  return sampleCodes;
+  // Deduplicate sample codes based on path
+  return deduplicateSampleCodes(sampleCodes);
+}
+
+/**
+ * Deduplicates sample codes based on path
+ */
+function deduplicateSampleCodes(sampleCodes: ParsedSampleCode[]): ParsedSampleCode[] {
+  const uniqueCodes = new Map<string, ParsedSampleCode>();
+  
+  for (const code of sampleCodes) {
+    const existing = uniqueCodes.get(code.path);
+    if (!existing) {
+      uniqueCodes.set(code.path, code);
+    } else {
+      // Merge properties, preferring non-empty values
+      uniqueCodes.set(code.path, {
+        ...existing,
+        framework: code.framework || existing.framework,
+        featured: code.featured || existing.featured,
+        beta: code.beta || existing.beta,
+        depth: Math.min(code.depth, existing.depth),
+      });
+    }
+  }
+  
+  return Array.from(uniqueCodes.values());
 }
 
 /**
@@ -215,14 +241,15 @@ function processSampleCodeNodes(
   for (const node of nodes) {
     if (node.type === 'groupMarker') {
       // This is a framework/category marker
-      const framework = node.title;
+      const framework = normalizeFrameworkName(node.title);
       if (node.children) {
         processSampleCodeNodes(node.children, sampleCodes, frameworkMap, featuredIds, framework, depth + 1);
       }
     } else if (node.type === 'sampleCode' && node.path) {
       // Convert path to doc URL format for matching with framework map
       const docUrl = pathToDocUrl(node.path);
-      const framework = frameworkMap.get(docUrl) || currentFramework;
+      const frameworkFromMap = frameworkMap.get(docUrl);
+      const framework = normalizeFrameworkName(frameworkFromMap || currentFramework);
 
       sampleCodes.push({
         id: node.path,
@@ -243,6 +270,45 @@ function processSampleCodeNodes(
 }
 
 /**
+ * Normalizes framework names for consistency
+ */
+function normalizeFrameworkName(framework: string): string {
+  if (!framework) return '';
+  
+  // Handle common variations
+  const normalized = framework.trim();
+  
+  // Map variations to canonical names
+  const frameworkMappings: Record<string, string> = {
+    'swiftui': 'SwiftUI',
+    'uikit': 'UIKit',
+    'foundation': 'Foundation',
+    'coredata': 'Core Data',
+    'combine': 'Combine',
+    'storekit': 'StoreKit',
+    'arkit': 'ARKit',
+    'realitykit': 'RealityKit',
+    'scenekit': 'SceneKit',
+    'spritekit': 'SpriteKit',
+    'gamekit': 'GameKit',
+    'cloudkit': 'CloudKit',
+    'healthkit': 'HealthKit',
+    'homekit': 'HomeKit',
+    'mapkit': 'MapKit',
+    'musickit': 'MusicKit',
+    'photokit': 'PhotoKit',
+    'pushkit': 'PushKit',
+    'watchkit': 'WatchKit',
+    'wwdc25': 'WWDC25',
+    'wwdc24': 'WWDC24',
+    'wwdc23': 'WWDC23',
+  };
+  
+  const lower = normalized.toLowerCase();
+  return frameworkMappings[lower] || normalized;
+}
+
+/**
  * Converts a path to doc URL format
  */
 function pathToDocUrl(path: string): string {
@@ -255,11 +321,16 @@ function pathToDocUrl(path: string): string {
  */
 function applySampleCodeFilters(sampleCodes: ParsedSampleCode[], filters: SampleCodeFilters): ParsedSampleCode[] {
   return sampleCodes.filter((code) => {
-    // Framework filter
+    // Framework filter - normalize both for comparison
     if (filters.framework) {
-      const frameworkLower = filters.framework.toLowerCase();
-      const codeFramework = (code.framework || '').toLowerCase();
-      if (!codeFramework.includes(frameworkLower)) {
+      const normalizedFilterFramework = normalizeFrameworkName(filters.framework);
+      const normalizedCodeFramework = normalizeFrameworkName(code.framework || '');
+      
+      // Check for exact match or inclusion
+      const frameworkLower = normalizedFilterFramework.toLowerCase();
+      const codeFrameworkLower = normalizedCodeFramework.toLowerCase();
+      
+      if (frameworkLower !== codeFrameworkLower && !codeFrameworkLower.includes(frameworkLower)) {
         return false;
       }
     }
@@ -271,14 +342,43 @@ function applySampleCodeFilters(sampleCodes: ParsedSampleCode[], filters: Sample
       return false;
     }
 
-    // Search query filter
+    // Search query filter - enhanced matching
     if (filters.searchQuery) {
       const query = filters.searchQuery.toLowerCase();
-      const titleMatch = code.title.toLowerCase().includes(query);
-      const frameworkMatch = (code.framework || '').toLowerCase().includes(query);
-      const descriptionMatch = (code.description || '').toLowerCase().includes(query);
-
-      if (!titleMatch && !frameworkMatch && !descriptionMatch) {
+      
+      // Score-based matching for better relevance
+      let matchScore = 0;
+      
+      // Title match (highest weight)
+      const titleLower = code.title.toLowerCase();
+      if (titleLower === query) {
+        matchScore += 10; // Exact match
+      } else if (titleLower.startsWith(query)) {
+        matchScore += 5; // Starts with query
+      } else if (titleLower.includes(query)) {
+        matchScore += 3; // Contains query
+      }
+      
+      // Framework match
+      const frameworkLower = (code.framework || '').toLowerCase();
+      if (frameworkLower.includes(query)) {
+        matchScore += 2;
+      }
+      
+      // Path match (check if query is in the path)
+      const pathLower = code.path.toLowerCase();
+      if (pathLower.includes(query)) {
+        matchScore += 1;
+      }
+      
+      // Description match (if available)
+      const descriptionLower = (code.description || '').toLowerCase();
+      if (descriptionLower.includes(query)) {
+        matchScore += 1;
+      }
+      
+      // Only include if there's at least one match
+      if (matchScore === 0) {
         return false;
       }
     }
@@ -309,7 +409,7 @@ function formatSampleCodeResult(
   // Filter summary
   const filterParts: string[] = [];
   if (options.framework) {
-    filterParts.push(`Framework: ${options.framework}`);
+    filterParts.push(`Framework: ${normalizeFrameworkName(options.framework)}`);
   }
   if (options.beta && options.beta !== 'include') {
     filterParts.push(`Beta: ${options.beta}`);
@@ -325,7 +425,7 @@ function formatSampleCodeResult(
   }
 
   // Results summary
-  lines.push(`Found ${options.totalFound} sample code projects, showing ${options.showing}`);
+  lines.push(`Found ${options.totalFound} sample code projects${options.showing < options.totalFound ? `, showing ${options.showing}` : ''}`);
   lines.push('');
 
   if (sampleCodes.length === 0) {
@@ -333,23 +433,40 @@ function formatSampleCodeResult(
     return lines.join('\n');
   }
 
-  // Group by framework
-  const byFramework = new Map<string, ParsedSampleCode[]>();
-  const noFramework: ParsedSampleCode[] = [];
+  // Group by framework/category with normalization
+  const byCategory = new Map<string, ParsedSampleCode[]>();
+  const noCategory: ParsedSampleCode[] = [];
 
   for (const code of sampleCodes) {
-    if (code.framework) {
-      if (!byFramework.has(code.framework)) {
-        byFramework.set(code.framework, []);
+    const category = code.framework || '';
+    if (category) {
+      // Group WWDC samples together
+      const normalizedCategory = category.match(/^WWDC\d+$/i) ? category.toUpperCase() : category;
+      if (!byCategory.has(normalizedCategory)) {
+        byCategory.set(normalizedCategory, []);
       }
-      byFramework.get(code.framework)!.push(code);
+      byCategory.get(normalizedCategory)!.push(code);
     } else {
-      noFramework.push(code);
+      noCategory.push(code);
     }
   }
 
-  // Sort frameworks alphabetically
-  const sortedFrameworks = Array.from(byFramework.keys()).sort();
+  // Sort categories with WWDC years first (newest to oldest), then alphabetically
+  const sortedCategories = Array.from(byCategory.keys()).sort((a, b) => {
+    const aIsWWDC = a.match(/^WWDC(\d+)$/);
+    const bIsWWDC = b.match(/^WWDC(\d+)$/);
+    
+    if (aIsWWDC && bIsWWDC) {
+      // Sort WWDC by year descending
+      return parseInt(bIsWWDC[1]) - parseInt(aIsWWDC[1]);
+    } else if (aIsWWDC) {
+      return -1; // WWDC comes first
+    } else if (bIsWWDC) {
+      return 1;
+    }
+    
+    return a.localeCompare(b); // Alphabetical for non-WWDC
+  });
 
   // Display featured samples first if any
   const featuredSamples = sampleCodes.filter((c) => c.featured);
@@ -357,33 +474,36 @@ function formatSampleCodeResult(
     lines.push('## ⭐ Featured Samples');
     lines.push('');
     for (const code of featuredSamples) {
-      lines.push(formatSampleCodeItem(code));
+      lines.push(formatSampleCodeItem(code, false)); // Don't show framework in featured section
     }
     lines.push('');
   }
 
-  // Display by framework
-  for (const framework of sortedFrameworks) {
-    const codes = byFramework.get(framework)!;
-    lines.push(`## ${framework}`);
-    lines.push('');
-    for (const code of codes) {
-      if (!code.featured) {
-        // Skip featured items as they're shown above
-        lines.push(formatSampleCodeItem(code));
+  // Display by category
+  for (const category of sortedCategories) {
+    const codes = byCategory.get(category)!;
+    const nonFeaturedCodes = codes.filter(c => !c.featured);
+    
+    if (nonFeaturedCodes.length > 0) {
+      lines.push(`## ${category}`);
+      lines.push('');
+      for (const code of nonFeaturedCodes) {
+        lines.push(formatSampleCodeItem(code, false)); // Framework already shown in section header
       }
+      lines.push('');
     }
-    lines.push('');
   }
 
-  // Display samples without framework
-  if (noFramework.length > 0) {
-    lines.push('## Other');
-    lines.push('');
-    for (const code of noFramework) {
-      if (!code.featured) {
-        lines.push(formatSampleCodeItem(code));
+  // Display samples without category
+  if (noCategory.length > 0) {
+    const nonFeaturedOther = noCategory.filter(c => !c.featured);
+    if (nonFeaturedOther.length > 0) {
+      lines.push('## Other');
+      lines.push('');
+      for (const code of nonFeaturedOther) {
+        lines.push(formatSampleCodeItem(code, false));
       }
+      lines.push('');
     }
   }
 
@@ -393,21 +513,21 @@ function formatSampleCodeResult(
 /**
  * Formats a single sample code item
  */
-function formatSampleCodeItem(code: ParsedSampleCode): string {
+function formatSampleCodeItem(code: ParsedSampleCode, showFramework: boolean = true): string {
   const badges: string[] = [];
   if (code.beta) {
     badges.push('🧪 Beta');
   }
-  if (code.featured) {
-    badges.push('⭐ Featured');
-  }
-
+  
+  // Don't duplicate the featured badge as it's already in the section header
   const badgeStr = badges.length > 0 ? ` ${badges.join(' ')}` : '';
-  const indent = '  '.repeat(Math.max(0, code.depth - 1));
+  
+  // Framework info (only if requested and not in a framework-specific section)
+  const frameworkStr = showFramework && code.framework ? ` (${code.framework})` : '';
 
-  let line = `${indent}### [${code.title}](${code.url})${badgeStr}`;
+  let line = `### [${code.title}](${code.url})${badgeStr}${frameworkStr}`;
   if (code.description) {
-    line += `\n${indent}${code.description}`;
+    line += `\n${code.description}`;
   }
 
   return line;
