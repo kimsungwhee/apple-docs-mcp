@@ -13,7 +13,7 @@ Apple 개발자 문서 MCP 서버 - 모델 컨텍스트 프로토콜을 통해 A
 - 📚 **완전한 문서 액세스**: Swift, Objective-C 및 프레임워크 문서를 위한 Apple JSON API 완전 액세스
 - 🔧 **프레임워크 인덱스**: iOS, macOS, watchOS, tvOS, visionOS 프레임워크의 계층적 API 구조 탐색
 - 📋 **기술 카탈로그**: SwiftUI, UIKit, Metal, Core ML, Vision, ARKit을 포함한 Apple 기술 탐색
-- 📰 **문서 업데이트**: WWDC 2024/2025 발표, iOS 18, macOS 15 및 최신 SDK 릴리스 추적
+- 📰 **문서 업데이트**: WWDC 2024/2025 발표, iOS 26, macOS 26 및 최신 SDK 릴리스 추적
 - 🎯 **기술 개요**: Swift, SwiftUI, UIKit 및 모든 Apple 개발 플랫폼의 포괄적인 가이드
 - 💻 **샘플 코드 라이브러리**: iOS, macOS 및 크로스 플랫폼 개발을 위한 Swift 및 Objective-C 코드 예제
 - 🎥 **WWDC 비디오 라이브러리**: WWDC 2014-2025 세션 검색, 트랜스크립트, Swift/SwiftUI 코드 예제 및 리소스 포함
@@ -21,7 +21,7 @@ Apple 개발자 문서 MCP 서버 - 모델 컨텍스트 프로토콜을 통해 A
 - 📊 **플랫폼 호환성**: iOS 13+, macOS 10.15+, watchOS 6+, tvOS 13+, visionOS 호환성 분석
 - ⚡ **고성능**: Xcode, Swift Playgrounds 및 AI 기반 개발 환경에 최적화
 - 🌐 **멀티플랫폼**: 완전한 iOS, iPadOS, macOS, watchOS, tvOS, visionOS 문서 지원
-- 🏷️ **베타 및 상태 추적**: iOS 18 베타 API, 사용 중단된 UIKit 메서드, 새로운 SwiftUI 기능 추적
+- 🏷️ **베타 및 상태 추적**: iOS 26 베타 API, 사용 중단된 UIKit 메서드, 새로운 SwiftUI 기능 추적
 
 ## 🚀 빠른 시작
 
@@ -262,7 +262,7 @@ npm install && npm run build
 
 ### 📋 기술 발견
 ```
-"iOS 18의 모든 베타 프레임워크 나열"
+"iOS 26의 모든 베타 프레임워크 나열"
 "그래픽 & 게임 기술 보여줘"
 "어떤 머신러닝 프레임워크가 사용 가능한가?"
 "모든 watchOS 프레임워크 탐색"

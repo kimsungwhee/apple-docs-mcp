@@ -13,7 +13,7 @@ Apple 開発者ドキュメント MCP サーバー - モデルコンテキスト
 - 📚 **完全なドキュメントアクセス**: Swift、Objective-C、フレームワークドキュメントのための Apple JSON API への完全アクセス
 - 🔧 **フレームワークインデックス**: iOS、macOS、watchOS、tvOS、visionOS フレームワークの階層 API 構造を閲覧
 - 📋 **テクノロジーカタログ**: SwiftUI、UIKit、Metal、Core ML、Vision、ARKit を含む Apple テクノロジーを探索
-- 📰 **ドキュメント更新**: WWDC 2024/2025 発表、iOS 18、macOS 15、最新 SDK リリースを追跡
+- 📰 **ドキュメント更新**: WWDC 2024/2025 発表、iOS 26、macOS 26、最新 SDK リリースを追跡
 - 🎯 **テクノロジー概要**: Swift、SwiftUI、UIKit、すべての Apple 開発プラットフォームの包括的なガイド
 - 💻 **サンプルコードライブラリ**: iOS、macOS、クロスプラットフォーム開発のための Swift および Objective-C コード例
 - 🎥 **WWDC ビデオライブラリ**: WWDC 2014-2025 セッションを検索、トランスクリプト、Swift/SwiftUI コード例、リソース付き
@@ -21,7 +21,7 @@ Apple 開発者ドキュメント MCP サーバー - モデルコンテキスト
 - 📊 **プラットフォーム互換性**: iOS 13+、macOS 10.15+、watchOS 6+、tvOS 13+、visionOS 互換性分析
 - ⚡ **高性能**: Xcode、Swift Playgrounds、AI 駆動開発環境に最適化
 - 🌐 **マルチプラットフォーム**: 完全な iOS、iPadOS、macOS、watchOS、tvOS、visionOS ドキュメントサポート
-- 🏷️ **ベータ & ステータス追跡**: iOS 18 ベータ API、非推奨 UIKit メソッド、新しい SwiftUI 機能を追跡
+- 🏷️ **ベータ & ステータス追跡**: iOS 26 ベータ API、非推奨 UIKit メソッド、新しい SwiftUI 機能を追跡
 
 ## 🚀 クイックスタート
 
@@ -262,7 +262,7 @@ npm install && npm run build
 
 ### 📋 テクノロジー発見
 ```
-"iOS 18 のすべてのベータフレームワークをリスト"
+"iOS 26 のすべてのベータフレームワークをリスト"
 "グラフィックス & ゲームテクノロジーを表示"
 "どの機械学習フレームワークが利用可能？"
 "すべての watchOS フレームワークを閲覧"

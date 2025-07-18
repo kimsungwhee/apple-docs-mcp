@@ -13,7 +13,7 @@ Apple Developer Documentation MCP Server - Access Apple's official developer doc
 - 📚 **Complete Documentation Access**: Full access to Apple's JSON API for Swift, Objective-C, and framework documentation
 - 🔧 **Framework Index**: Browse hierarchical API structures for iOS, macOS, watchOS, tvOS, visionOS frameworks
 - 📋 **Technology Catalog**: Explore Apple technologies including SwiftUI, UIKit, Metal, Core ML, Vision, and ARKit
-- 📰 **Documentation Updates**: Track WWDC 2024/2025 announcements, iOS 18, macOS 15, and latest SDK releases
+- 📰 **Documentation Updates**: Track WWDC 2024/2025 announcements, iOS 26, macOS 26, and latest SDK releases
 - 🎯 **Technology Overviews**: Comprehensive guides for Swift, SwiftUI, UIKit, and all Apple development platforms
 - 💻 **Sample Code Library**: Swift and Objective-C code examples for iOS, macOS, and cross-platform development
 - 🎥 **WWDC Video Library**: Search WWDC 2014-2025 sessions with transcripts, Swift/SwiftUI code examples, and resources
@@ -21,7 +21,7 @@ Apple Developer Documentation MCP Server - Access Apple's official developer doc
 - 📊 **Platform Compatibility**: iOS 13+, macOS 10.15+, watchOS 6+, tvOS 13+, visionOS compatibility analysis
 - ⚡ **High Performance**: Optimized for Xcode, Swift Playgrounds, and AI-powered development environments
 - 🌐 **Multi-Platform**: Complete iOS, iPadOS, macOS, watchOS, tvOS, and visionOS documentation support
-- 🏷️ **Beta & Status Tracking**: iOS 18 beta APIs, deprecated UIKit methods, new SwiftUI features tracking
+- 🏷️ **Beta & Status Tracking**: iOS 26 beta APIs, deprecated UIKit methods, new SwiftUI features tracking
 
 ## 🚀 Quick Start
 
@@ -268,7 +268,7 @@ npm install && npm run build
 
 ### 📋 Technology & Platform Analysis
 ```
-"List all Beta frameworks in iOS 18"
+"List all Beta frameworks in iOS 26"
 "Show me Graphics & Games technologies"
 "What machine learning frameworks are available?"
 "Analyze platform compatibility for Vision framework"
