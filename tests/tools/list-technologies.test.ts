@@ -244,5 +244,124 @@ describe('list-technologies', () => {
       expect(result).toContain('Languages: swift, occ');
       expect(result).toContain('Categories: Graphics, Games');
     });
+
+    it('should respect limit parameter', async () => {
+      const limitTestResponse = {
+        sections: [
+          {
+            kind: 'technologies',
+            groups: [
+              {
+                name: 'UI Frameworks',
+                technologies: [
+                  {
+                    title: 'SwiftUI',
+                    identifier: 'swiftui',
+                    tags: ['UI'],
+                    languages: ['swift']
+                  },
+                  {
+                    title: 'UIKit',
+                    identifier: 'uikit',
+                    tags: ['UI'],
+                    languages: ['swift', 'occ']
+                  },
+                  {
+                    title: 'AppKit',
+                    identifier: 'appkit',
+                    tags: ['UI'],
+                    languages: ['swift', 'occ']
+                  }
+                ]
+              },
+              {
+                name: 'Data Frameworks',
+                technologies: [
+                  {
+                    title: 'Core Data',
+                    identifier: 'coredata',
+                    tags: ['Data'],
+                    languages: ['swift', 'occ']
+                  },
+                  {
+                    title: 'CloudKit',
+                    identifier: 'cloudkit',
+                    tags: ['Data'],
+                    languages: ['swift', 'occ']
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      };
+
+      mockHttpClient.getJson.mockResolvedValue(limitTestResponse);
+
+      // Test with limit of 2
+      const result = await handleListTechnologies(undefined, undefined, true, 2);
+
+      // Should contain first 2 technologies
+      expect(result).toContain('SwiftUI');
+      expect(result).toContain('UIKit');
+      
+      // Should NOT contain the 3rd and beyond technologies
+      expect(result).not.toContain('AppKit');
+      expect(result).not.toContain('Core Data');
+      expect(result).not.toContain('CloudKit');
+      
+      // Should show correct count
+      expect(result).toContain('Found 2 technologies');
+    });
+
+    it('should handle limit parameter across multiple groups', async () => {
+      const multiGroupResponse = {
+        sections: [
+          {
+            kind: 'technologies',
+            groups: [
+              {
+                name: 'Group A',
+                technologies: [
+                  { title: 'Tech 1', identifier: 'tech1', tags: [], languages: ['swift'] },
+                  { title: 'Tech 2', identifier: 'tech2', tags: [], languages: ['swift'] }
+                ]
+              },
+              {
+                name: 'Group B',
+                technologies: [
+                  { title: 'Tech 3', identifier: 'tech3', tags: [], languages: ['swift'] },
+                  { title: 'Tech 4', identifier: 'tech4', tags: [], languages: ['swift'] }
+                ]
+              }
+            ]
+          }
+        ]
+      };
+
+      mockHttpClient.getJson.mockResolvedValue(multiGroupResponse);
+
+      // Test with limit of 3 (should span across groups)
+      const result = await handleListTechnologies(undefined, undefined, true, 3);
+
+      // Should contain first 3 technologies total
+      expect(result).toContain('Tech 1');
+      expect(result).toContain('Tech 2');
+      expect(result).toContain('Tech 3');
+      
+      // Should NOT contain the 4th technology
+      expect(result).not.toContain('Tech 4');
+      
+      // Should show correct count
+      expect(result).toContain('Found 3 technologies');
+    });
+
+    it('should handle zero limit', async () => {
+      mockHttpClient.getJson.mockResolvedValue(mockTechnologiesResponse);
+
+      const result = await handleListTechnologies(undefined, undefined, true, 0);
+
+      expect(result).toContain('No technologies found matching the specified criteria.');
+    });
   });
 });

@@ -127,6 +127,7 @@ export const toolHandlers: Record<string, ToolHandler> = {
       validatedArgs.category,
       validatedArgs.language,
       validatedArgs.includeBeta,
+      validatedArgs.limit,
     );
   },
 

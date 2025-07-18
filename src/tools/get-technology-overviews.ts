@@ -1,41 +1,7 @@
-import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { technologyOverviewsCache, generateUrlCacheKey } from '../utils/cache.js';
 import { APPLE_URLS } from '../utils/constants.js';
 import { httpClient } from '../utils/http-client.js';
 import { logger } from '../utils/logger.js';
-
-
-export const getTechnologyOverviewsTool: Tool = {
-  name: 'get_technology_overviews',
-  description: 'Get Apple Developer Technology Overviews - comprehensive guides for Apple platforms and technologies',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      category: {
-        type: 'string',
-        description: 'Filter by specific category (e.g., "app-design-and-ui", "games", "ai-machine-learning")',
-      },
-      platform: {
-        type: 'string',
-        enum: ['all', 'ios', 'macos', 'watchos', 'tvos', 'visionos'],
-        description: 'Filter by platform (default: all)',
-      },
-      searchQuery: {
-        type: 'string',
-        description: 'Search for specific keywords in overviews',
-      },
-      includeSubcategories: {
-        type: 'boolean',
-        description: 'Include subcategories and nested content (default: true)',
-      },
-      limit: {
-        type: 'number',
-        description: 'Maximum number of results to return (default: 50)',
-      },
-    },
-    required: [],
-  },
-};
 
 /**
  * Interface for Technology Overviews data

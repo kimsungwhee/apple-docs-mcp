@@ -77,6 +77,10 @@ export const toolDefinitions: Tool[] = [
           type: 'boolean',
           description: 'Include beta technologies (default: true). Beta status is determined by the presence of "Beta" in the tags field.',
         },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of technologies to return (default: 200). Results are limited per category group.',
+        },
       },
       required: [],
     },

@@ -1,36 +1,7 @@
-import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { convertToJsonApiUrl } from '../utils/url-converter.js';
-import { SEARCH_DEPTH_LIMITS, PROCESSING_LIMITS } from '../utils/constants.js';
 import { httpClient } from '../utils/http-client.js';
 import { logger } from '../utils/logger.js';
-
-export const findSimilarApisTool: Tool = {
-  name: 'find_similar_apis',
-  description: 'Find similar and related APIs based on Apple\'s official recommendations, including "See Also" sections and topic groupings',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      apiUrl: {
-        type: 'string',
-        description: 'The Apple Developer Documentation API URL to find similar APIs for',
-      },
-      searchDepth: {
-        type: 'string',
-        enum: ['shallow', 'medium', 'deep'],
-        description: 'Search depth: shallow (direct references), medium (+ topic sections), deep (+ related APIs) (default: medium)',
-      },
-      filterByCategory: {
-        type: 'string',
-        description: 'Filter results by category/topic (optional)',
-      },
-      includeAlternatives: {
-        type: 'boolean',
-        description: 'Include alternative APIs from the same topic section (default: true)',
-      },
-    },
-    required: ['apiUrl'],
-  },
-};
+import { PROCESSING_LIMITS, SEARCH_DEPTH_LIMITS } from '../utils/constants.js';
 
 /**
  * 相似API信息接口

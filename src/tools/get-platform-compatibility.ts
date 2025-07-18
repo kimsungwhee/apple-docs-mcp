@@ -1,32 +1,7 @@
-import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { convertToJsonApiUrl } from '../utils/url-converter.js';
 import { httpClient } from '../utils/http-client.js';
 import { logger } from '../utils/logger.js';
 import { PROCESSING_LIMITS } from '../utils/constants.js';
-
-export const getPlatformCompatibilityTool: Tool = {
-  name: 'get_platform_compatibility',
-  description: 'Analyze platform compatibility for Apple Developer APIs, showing version support, beta status, and deprecation information across different platforms',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      apiUrl: {
-        type: 'string',
-        description: 'The Apple Developer Documentation API URL to analyze platform compatibility for',
-      },
-      compareMode: {
-        type: 'string',
-        enum: ['single', 'framework'],
-        description: 'Analysis mode: single API or entire framework comparison (default: single)',
-      },
-      includeRelated: {
-        type: 'boolean',
-        description: 'Include platform compatibility of related APIs (default: false)',
-      },
-    },
-    required: ['apiUrl'],
-  },
-};
 
 /**
  * 平台兼容性信息接口

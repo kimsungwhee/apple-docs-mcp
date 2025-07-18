@@ -1,44 +1,7 @@
-import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { updatesCache, generateUrlCacheKey } from '../utils/cache.js';
 import { APPLE_URLS } from '../utils/constants.js';
 import { httpClient } from '../utils/http-client.js';
 import { logger } from '../utils/logger.js';
-
-export const getDocumentationUpdatesTool: Tool = {
-  name: 'get_documentation_updates',
-  description: 'Get the latest Apple Developer Documentation updates, including WWDC announcements, technology updates, and release notes',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      category: {
-        type: 'string',
-        enum: ['all', 'wwdc', 'technology', 'release-notes'],
-        description: 'Filter by update category (default: all)',
-      },
-      technology: {
-        type: 'string',
-        description: 'Filter by specific technology/framework name (e.g., SwiftUI, UIKit)',
-      },
-      year: {
-        type: 'string',
-        description: 'Filter WWDC by year (e.g., 2025, 2024)',
-      },
-      searchQuery: {
-        type: 'string',
-        description: 'Search for specific keywords in updates',
-      },
-      includeBeta: {
-        type: 'boolean',
-        description: 'Include beta features (default: true)',
-      },
-      limit: {
-        type: 'number',
-        description: 'Maximum number of results to return (default: 50)',
-      },
-    },
-    required: [],
-  },
-};
 
 /**
  * Interface for Updates data

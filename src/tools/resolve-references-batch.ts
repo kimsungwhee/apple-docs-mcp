@@ -1,33 +1,6 @@
-import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { convertToJsonApiUrl } from '../utils/url-converter.js';
 import { httpClient } from '../utils/http-client.js';
 import { logger } from '../utils/logger.js';
-
-export const resolveReferencesBatchTool: Tool = {
-  name: 'resolve_references_batch',
-  description: 'Batch resolve all references from a specific Apple Developer Documentation page to get detailed information about related APIs and types',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      sourceUrl: {
-        type: 'string',
-        description: 'The Apple Developer Documentation URL to extract and resolve references from',
-      },
-      maxReferences: {
-        type: 'number',
-        description: 'Maximum number of references to resolve (default: 20, max: 50)',
-        minimum: 1,
-        maximum: 50,
-      },
-      filterByType: {
-        type: 'string',
-        enum: ['all', 'symbol', 'collection', 'article', 'protocol', 'class', 'struct', 'enum'],
-        description: 'Filter references by type (default: all)',
-      },
-    },
-    required: ['sourceUrl'],
-  },
-};
 
 /**
  * 解析的引用信息接口

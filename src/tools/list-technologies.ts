@@ -1,32 +1,7 @@
-import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { technologiesCache, generateUrlCacheKey } from '../utils/cache.js';
-import { APPLE_URLS } from '../utils/constants.js';
+import { APPLE_URLS, API_LIMITS } from '../utils/constants.js';
 import { httpClient } from '../utils/http-client.js';
 import { logger } from '../utils/logger.js';
-
-export const listTechnologiesTool: Tool = {
-  name: 'list_technologies',
-  description: 'List all available Apple Developer technologies and frameworks, organized by category',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      category: {
-        type: 'string',
-        description: 'Filter by technology category (optional)',
-      },
-      language: {
-        type: 'string',
-        enum: ['swift', 'occ'],
-        description: 'Filter by programming language (optional)',
-      },
-      includeBeta: {
-        type: 'boolean',
-        description: 'Include beta technologies (default: true)',
-      },
-    },
-    required: [],
-  },
-};
 
 /**
  * 技术信息接口
@@ -61,12 +36,13 @@ export async function handleListTechnologies(
   category?: string,
   language?: string,
   includeBeta: boolean = true,
+  limit: number = API_LIMITS.DEFAULT_TECHNOLOGIES_LIMIT,
 ): Promise<string> {
   try {
     logger.info('Fetching technologies list...');
 
     // Generate cache key
-    const cacheKey = generateUrlCacheKey('technologies', { category, language, includeBeta });
+    const cacheKey = generateUrlCacheKey('technologies', { category, language, includeBeta, limit });
 
     // Try to get from cache first
     const cachedResult = technologiesCache.get<string>(cacheKey);
@@ -86,6 +62,7 @@ export async function handleListTechnologies(
       category,
       language,
       includeBeta,
+      limit,
     });
 
     // 格式化输出
@@ -145,9 +122,10 @@ function applyTechnologyFilters(
     category?: string;
     language?: string;
     includeBeta?: boolean;
+    limit?: number;
   },
 ): TechnologyGroup[] {
-  return groups
+  let filteredGroups = groups
     .map(group => {
       // 分类过滤
       if (filters.category && !group.name.toLowerCase().includes(filters.category.toLowerCase())) {
@@ -174,6 +152,32 @@ function applyTechnologyFilters(
         : null;
     })
     .filter((group): group is TechnologyGroup => group !== null);
+
+  // 应用 limit 限制
+  if (filters.limit !== undefined && filters.limit >= 0) {
+    if (filters.limit === 0) {
+      // 如果 limit 为 0，返回空数组
+      return [];
+    }
+    
+    let totalCount = 0;
+    filteredGroups = filteredGroups.map(group => {
+      const availableSlots = filters.limit! - totalCount;
+      if (availableSlots <= 0) {
+        return null;
+      }
+
+      const limitedTechnologies = group.technologies.slice(0, availableSlots);
+      totalCount += limitedTechnologies.length;
+
+      return {
+        ...group,
+        technologies: limitedTechnologies,
+      };
+    }).filter((group): group is TechnologyGroup => group !== null && group.technologies.length > 0);
+  }
+
+  return filteredGroups;
 }
 
 /**

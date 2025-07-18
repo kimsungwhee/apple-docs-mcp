@@ -164,9 +164,9 @@ export default class AppleDeveloperDocsMCPServer {
     }
   }
 
-  public async listTechnologies(category?: string, language?: string, includeBeta: boolean = true) {
+  public async listTechnologies(category?: string, language?: string, includeBeta: boolean = true, limit: number = API_LIMITS.DEFAULT_TECHNOLOGIES_LIMIT) {
     return this.handleAsyncOperation(
-      () => handleListTechnologies(category, language, includeBeta),
+      () => handleListTechnologies(category, language, includeBeta, limit),
       'listTechnologies',
     );
   }

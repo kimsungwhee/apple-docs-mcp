@@ -1,35 +1,7 @@
-import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { convertToJsonApiUrl } from '../utils/url-converter.js';
 import { httpClient } from '../utils/http-client.js';
 import { logger } from '../utils/logger.js';
 import { PROCESSING_LIMITS } from '../utils/constants.js';
-
-export const getRelatedApisTool: Tool = {
-  name: 'get_related_apis',
-  description: 'Get related APIs for a specific Apple Developer Documentation API, including inheritance relationships, conformance types, and similar APIs',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      apiUrl: {
-        type: 'string',
-        description: 'The Apple Developer Documentation API URL to find related APIs for',
-      },
-      includeInherited: {
-        type: 'boolean',
-        description: 'Include inherited APIs (default: true)',
-      },
-      includeConformance: {
-        type: 'boolean',
-        description: 'Include conformance relationships (default: true)',
-      },
-      includeSeeAlso: {
-        type: 'boolean',
-        description: 'Include "See Also" related APIs (default: true)',
-      },
-    },
-    required: ['apiUrl'],
-  },
-};
 
 /**
  * 关联API信息接口

@@ -134,7 +134,16 @@ describe('Tool Handlers', () => {
       
       await handler(args, mockServer);
       
-      expect(mockServer.listTechnologies).toHaveBeenCalledWith('games', 'swift', false);
+      expect(mockServer.listTechnologies).toHaveBeenCalledWith('games', 'swift', false, 200);
+    });
+
+    it('should handle list_technologies with limit parameter', async () => {
+      const handler = toolHandlers.list_technologies;
+      const args = { category: 'ui', limit: 10 };
+      
+      await handler(args, mockServer);
+      
+      expect(mockServer.listTechnologies).toHaveBeenCalledWith('ui', undefined, true, 10);
     });
 
     it('should handle search_framework_symbols with all parameters', async () => {
