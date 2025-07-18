@@ -307,17 +307,17 @@ npm install && npm run build
 
 | Tool | Description | Key Features |
 |------|-------------|--------------|
-| `search_apple_docs` | Search Apple Developer Documentation | Official search API, enhanced formatting, platform filtering |
+| `search_apple_docs` | Search Apple Developer Documentation | Official search API, find specific APIs, classes, methods |
 | `get_apple_doc_content` | Get detailed documentation content | JSON API access, optional enhanced analysis (related/similar APIs, platform compatibility) |
 | `list_technologies` | Browse all Apple technologies | Category filtering, language support, beta status |
-| `get_documentation_updates` | Track Apple documentation updates | WWDC announcements, technology updates, release notes, beta filtering |
-| `get_technology_overviews` | Get technology overviews and guides | Comprehensive guides, hierarchical navigation, platform filtering |
-| `get_sample_code` | Browse Apple sample code projects | Framework filtering, beta status, search, featured samples |
-| `get_framework_index` | Framework API structure tree | Hierarchical browsing, depth control, type filtering |
+| `search_framework_symbols` | Search symbols in specific framework | Classes, structs, protocols, wildcard patterns, type filtering |
 | `get_related_apis` | Find related APIs | Inheritance, conformance, "See Also" relationships |
 | `resolve_references_batch` | Batch resolve API references | Extract and resolve all references from documentation |
 | `get_platform_compatibility` | Platform compatibility analysis | Version support, beta status, deprecation info |
 | `find_similar_apis` | Discover similar APIs | Apple's official recommendations, topic groupings |
+| `get_documentation_updates` | Track Apple documentation updates | WWDC announcements, technology updates, release notes |
+| `get_technology_overviews` | Get technology overviews and guides | Comprehensive guides, hierarchical navigation, platform filtering |
+| `get_sample_code` | Browse Apple sample code projects | Framework filtering (with limitations), keyword search, beta status |
 
 ## 🏗️ Technical Architecture
 

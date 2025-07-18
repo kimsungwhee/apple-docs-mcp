@@ -246,10 +246,17 @@ function processSampleCodeNodes(
         processSampleCodeNodes(node.children, sampleCodes, frameworkMap, featuredIds, framework, depth + 1);
       }
     } else if (node.type === 'sampleCode' && node.path) {
+      // Try to extract framework from path first
+      const frameworkFromPath = extractFrameworkFromPath(node.path);
+      
       // Convert path to doc URL format for matching with framework map
       const docUrl = pathToDocUrl(node.path);
       const frameworkFromMap = frameworkMap.get(docUrl);
-      const framework = normalizeFrameworkName(frameworkFromMap || currentFramework);
+      
+      // Priority: path > map > groupMarker
+      const framework = normalizeFrameworkName(
+        frameworkFromPath || frameworkFromMap || currentFramework
+      );
 
       sampleCodes.push({
         id: node.path,
@@ -270,6 +277,23 @@ function processSampleCodeNodes(
 }
 
 /**
+ * Extract framework name from URL path
+ */
+function extractFrameworkFromPath(path: string): string | null {
+  // Match pattern like /documentation/framework/...
+  const match = path.match(/^\/documentation\/([^\/]+)\//);
+  if (match) {
+    const framework = match[1];
+    // Don't return generic paths like 'samplecode'
+    if (framework === 'samplecode' || framework === 'documentation') {
+      return null;
+    }
+    return normalizeFrameworkName(framework);
+  }
+  return null;
+}
+
+/**
  * Normalizes framework names for consistency
  */
 function normalizeFrameworkName(framework: string): string {
@@ -278,30 +302,102 @@ function normalizeFrameworkName(framework: string): string {
   // Handle common variations
   const normalized = framework.trim();
   
-  // Map variations to canonical names
+  // Map variations to canonical names (expanded list)
   const frameworkMappings: Record<string, string> = {
+    // UI Frameworks
     'swiftui': 'SwiftUI',
     'uikit': 'UIKit',
+    'appkit': 'AppKit',
+    'widgetkit': 'WidgetKit',
+    'watchkit': 'WatchKit',
+    
+    // Foundation
     'foundation': 'Foundation',
-    'coredata': 'Core Data',
     'combine': 'Combine',
-    'storekit': 'StoreKit',
+    'swift': 'Swift',
+    
+    // Data & Storage
+    'coredata': 'Core Data',
+    'cloudkit': 'CloudKit',
+    'userdefaults': 'UserDefaults',
+    
+    // Graphics & Games
     'arkit': 'ARKit',
     'realitykit': 'RealityKit',
     'scenekit': 'SceneKit',
     'spritekit': 'SpriteKit',
     'gamekit': 'GameKit',
-    'cloudkit': 'CloudKit',
+    'gameplaykit': 'GameplayKit',
+    'metal': 'Metal',
+    'metalkit': 'MetalKit',
+    'coregraphics': 'Core Graphics',
+    'coreimage': 'Core Image',
+    'coreanimation': 'Core Animation',
+    'vision': 'Vision',
+    'visionkit': 'VisionKit',
+    
+    // Services
+    'storekit': 'StoreKit',
+    'storekit2': 'StoreKit',
     'healthkit': 'HealthKit',
     'homekit': 'HomeKit',
     'mapkit': 'MapKit',
     'musickit': 'MusicKit',
     'photokit': 'PhotoKit',
     'pushkit': 'PushKit',
-    'watchkit': 'WatchKit',
+    'callkit': 'CallKit',
+    'passkit': 'PassKit',
+    
+    // ML & AI
+    'coreml': 'CoreML',
+    'createml': 'CreateML',
+    'naturallanguage': 'Natural Language',
+    'speech': 'Speech',
+    'soundanalysis': 'Sound Analysis',
+    'foundationmodels': 'Foundation Models',
+    
+    // Media
+    'avfoundation': 'AVFoundation',
+    'avkit': 'AVKit',
+    'coreaudio': 'Core Audio',
+    'coremedia': 'Core Media',
+    'mediaplayer': 'MediaPlayer',
+    
+    // System
+    'network': 'Network',
+    'networkextension': 'Network Extension',
+    'security': 'Security',
+    'coremotion': 'Core Motion',
+    'corelocation': 'Core Location',
+    'corebluetooth': 'Core Bluetooth',
+    'corenfc': 'Core NFC',
+    'eventkit': 'EventKit',
+    'contacts': 'Contacts',
+    'contactsui': 'ContactsUI',
+    
+    // Web & Connectivity
+    'webkit': 'WebKit',
+    'safariservices': 'Safari Services',
+    'authenticationservices': 'Authentication Services',
+    
+    // Development
+    'xctest': 'XCTest',
+    'xcode': 'Xcode',
+    'swiftdata': 'SwiftData',
+    'swiftcharts': 'Swift Charts',
+    
+    // WWDC
     'wwdc25': 'WWDC25',
     'wwdc24': 'WWDC24',
     'wwdc23': 'WWDC23',
+    'wwdc22': 'WWDC22',
+    'wwdc21': 'WWDC21',
+    
+    // Generic categories (not frameworks but used in grouping)
+    'games': 'Games',
+    'graphics': 'Graphics',
+    'audio': 'Audio and music',
+    'app frameworks': 'App frameworks',
   };
   
   const lower = normalized.toLowerCase();
@@ -330,7 +426,16 @@ function applySampleCodeFilters(sampleCodes: ParsedSampleCode[], filters: Sample
       const frameworkLower = normalizedFilterFramework.toLowerCase();
       const codeFrameworkLower = normalizedCodeFramework.toLowerCase();
       
-      if (frameworkLower !== codeFrameworkLower && !codeFrameworkLower.includes(frameworkLower)) {
+      // Also check if the filter term appears in the title or path
+      const titleLower = code.title.toLowerCase();
+      const pathLower = code.path.toLowerCase();
+      
+      const frameworkMatch = frameworkLower === codeFrameworkLower || 
+                           codeFrameworkLower.includes(frameworkLower) ||
+                           titleLower.includes(frameworkLower) ||
+                           pathLower.includes(frameworkLower);
+      
+      if (!frameworkMatch) {
         return false;
       }
     }

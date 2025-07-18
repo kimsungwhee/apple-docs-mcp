@@ -11,18 +11,18 @@ import { searchFrameworkSymbolsTool } from './search-framework-symbols.js';
 export const toolDefinitions: Tool[] = [
   {
     name: 'search_apple_docs',
-    description: 'Search Apple Developer Documentation for APIs, frameworks, guides, samples, and videos',
+    description: 'Search Apple Developer Documentation for APIs, frameworks, guides, samples, and videos. Best for finding specific APIs, classes, or methods. For browsing sample code projects, consider using get_sample_code instead.',
     inputSchema: {
       type: 'object',
       properties: {
         query: {
           type: 'string',
-          description: 'Search query for Apple Developer Documentation',
+          description: 'Search query for Apple Developer Documentation. Tips: Use specific API names (e.g., "UIViewController"), framework names (e.g., "SwiftUI"), or technical terms. Avoid generic terms like "how to" or "tutorial".',
         },
         type: {
           type: 'string',
           enum: ['all', 'documentation', 'sample'],
-          description: 'Type of content to filter (all=show all results, documentation=API references only, sample=code samples only)',
+          description: 'Type of content to filter (all=show all results, documentation=API references only, sample=code samples only). Note: "sample" returns individual code snippets, not full sample projects - use get_sample_code for browsing complete sample projects.',
         },
       },
       required: ['query'],
@@ -251,22 +251,22 @@ export const toolDefinitions: Tool[] = [
   },
   {
     name: 'get_sample_code',
-    description: 'Browse and search Apple Developer Sample Code Library - full working example projects demonstrating Apple technologies',
+    description: 'Browse and search Apple Developer Sample Code Library. Note: Framework filtering may have limitations - some samples might be categorized under generic groups. For best results, try searching by keywords in addition to or instead of framework filtering.',
     inputSchema: {
       type: 'object',
       properties: {
         framework: {
           type: 'string',
-          description: 'Filter by framework name (e.g., "SwiftUI", "UIKit", "CoreML")',
+          description: 'Filter by framework name (case-insensitive). Common frameworks: SwiftUI, UIKit, Foundation, CoreML, ARKit, RealityKit, Core Data, Combine, StoreKit, CloudKit, HealthKit, MapKit, etc. Note: Some frameworks (e.g., WidgetKit, GameKit) may not have dedicated categories and their samples might appear under broader groups like "Graphics" or "Games". Try using searchQuery for better results with these frameworks.',
         },
         beta: {
           type: 'string',
           enum: ['include', 'exclude', 'only'],
-          description: 'Beta sample handling (include=show all, exclude=hide beta, only=beta only)',
+          description: 'Beta sample handling (include=show all, exclude=hide beta, only=beta only). Default: include',
         },
         searchQuery: {
           type: 'string',
-          description: 'Search for specific keywords in sample code titles or descriptions',
+          description: 'Search keywords in sample titles, descriptions, or content. Can be combined with framework filter for more precise results. Examples: "animation", "widget", "game center", "machine learning". This often works better than framework filtering for finding specific types of samples.',
         },
         limit: {
           type: 'number',
