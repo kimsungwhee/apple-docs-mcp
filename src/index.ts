@@ -133,36 +133,35 @@ export default class AppleDeveloperDocsMCPServer {
     includeSimilarApis: boolean = false,
     includePlatformAnalysis: boolean = false,
   ) {
-    // 输入验证
-    const urlValidation = validateInput(url, 'URL');
-    if (urlValidation) {
-      return createErrorResponse(urlValidation);
-    }
+    try {
+      // 输入验证
+      const urlValidation = validateInput(url, 'URL');
+      if (urlValidation) {
+        return createErrorResponse(urlValidation);
+      }
 
-    // 验证是否为有效的Apple Developer URL
-    if (!isValidAppleDeveloperUrl(url)) {
-      return createErrorResponse({
-        type: ErrorType.INVALID_INPUT,
-        message: 'URL must be from developer.apple.com',
-        suggestions: [
-          'Ensure the URL starts with https://developer.apple.com',
-          'Check that the URL is a valid Apple Developer Documentation link',
-        ],
-      });
-    }
-
-    return this.handleAsyncOperation(
-      async () => {
-        // 使用增强的 JSON 获取方法来获取文档内容
-        return fetchAppleDocJson(url, {
-          includeRelatedApis,
-          includeReferences,
-          includeSimilarApis,
-          includePlatformAnalysis,
+      // 验证是否为有效的Apple Developer URL
+      if (!isValidAppleDeveloperUrl(url)) {
+        return createErrorResponse({
+          type: ErrorType.INVALID_INPUT,
+          message: 'URL must be from developer.apple.com',
+          suggestions: [
+            'Ensure the URL starts with https://developer.apple.com',
+            'Check that the URL is a valid Apple Developer Documentation link',
+          ],
         });
-      },
-      'getAppleDocContent',
-    );
+      }
+
+      // fetchAppleDocJson 已经返回正确的MCP响应格式，直接返回
+      return await fetchAppleDocJson(url, {
+        includeRelatedApis,
+        includeReferences,
+        includeSimilarApis,
+        includePlatformAnalysis,
+      });
+    } catch (error) {
+      return createStandardErrorResponse(error, 'getAppleDocContent');
+    }
   }
 
   public async listTechnologies(category?: string, language?: string, includeBeta: boolean = true) {

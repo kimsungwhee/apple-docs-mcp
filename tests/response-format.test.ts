@@ -75,7 +75,12 @@ jest.mock('../src/tools/get-sample-code.js', () => ({
 }));
 
 jest.mock('../src/tools/doc-fetcher.js', () => ({
-  fetchAppleDocJson: jest.fn().mockResolvedValue('Mock doc content')
+  fetchAppleDocJson: jest.fn().mockResolvedValue({
+    content: [{
+      type: 'text',
+      text: 'Mock doc content'
+    }]
+  })
 }));
 
 describe('Response Format Validation', () => {
@@ -245,6 +250,66 @@ describe('Response Format Validation', () => {
       } catch {
         // This is expected - text should not be valid JSON
       }
+    });
+
+    it('should not return nested content objects in getAppleDocContent', async () => {
+      const response = await server.getAppleDocContent('https://developer.apple.com/documentation/uikit/uiviewcontroller');
+      
+      // Specifically check that text is not an object with content property
+      const textContent = response.content[0].text;
+      expect(typeof textContent).toBe('string');
+      expect(textContent).not.toHaveProperty('content');
+      
+      // Ensure we don't have the problematic nested structure:
+      // { content: [{ type: 'text', text: { content: [...] } }] }
+      if (typeof textContent === 'object') {
+        fail(`getAppleDocContent returned object instead of string: ${JSON.stringify(textContent)}`);
+      }
+    });
+
+    it('should prevent double-wrapping in getAppleDocContent when fetchAppleDocJson returns MCP format', async () => {
+      const response = await server.getAppleDocContent('https://developer.apple.com/documentation/swiftui/view');
+      
+      // Verify the response structure is correct
+      validateResponseFormat(response);
+      
+      // Check that the response is not double-wrapped
+      expect(response.content).toBeDefined();
+      expect(Array.isArray(response.content)).toBe(true);
+      
+      const firstItem = response.content[0];
+      expect(firstItem.type).toBe('text');
+      expect(typeof firstItem.text).toBe('string');
+      
+      // Ensure the text content is not a stringified MCP response
+      try {
+        const parsed = JSON.parse(firstItem.text);
+        if (parsed && typeof parsed === 'object' && parsed.content && Array.isArray(parsed.content)) {
+          fail('getAppleDocContent text appears to be stringified MCP response - this indicates double-wrapping');
+        }
+      } catch {
+        // This is expected - text should not be valid JSON representing an MCP response
+      }
+    });
+
+    it('should handle getAppleDocContent with enhanced options without nesting', async () => {
+      // Test with all enhanced options enabled
+      const response = await server.getAppleDocContent(
+        'https://developer.apple.com/documentation/swiftui/view',
+        true,  // includeRelatedApis
+        true,  // includeReferences
+        true,  // includeSimilarApis
+        true   // includePlatformAnalysis
+      );
+      
+      validateResponseFormat(response);
+      
+      const textContent = response.content[0].text;
+      expect(typeof textContent).toBe('string');
+      expect(textContent).not.toHaveProperty('content');
+      
+      // Verify that enhanced content was requested (mock should still return simple content)
+      expect(textContent).toContain('Mock doc content');
     });
   });
 
