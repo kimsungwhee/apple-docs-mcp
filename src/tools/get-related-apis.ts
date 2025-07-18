@@ -76,6 +76,10 @@ export async function handleGetRelatedApis(
 
     // 将网页URL转换为JSON API URL
     const jsonApiUrl = convertToJsonApiUrl(apiUrl);
+    
+    if (!jsonApiUrl) {
+      throw new Error('Invalid Apple Developer Documentation URL');
+    }
 
     const data = await httpClient.getJson<AppleDocData>(jsonApiUrl);
 

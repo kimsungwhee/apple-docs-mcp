@@ -1,253 +1,183 @@
 import * as cheerio from 'cheerio';
+import { parseSearchResult, SearchResult } from './search-result-parser.js';
+import { API_LIMITS } from '../utils/constants.js';
 
 /**
- * Interface for Apple Doc Search Results
+ * Formats search results for display
  */
-export interface AppleDocSearchResult {
-  title: string;
-  url: string;
-  description: string;
-  type: string;
-  platform?: string;
-  isBeta?: boolean;
-  isDeprecated?: boolean;
+export function formatSearchResults(
+  results: SearchResult[],
+  query: string,
+  filterType: string,
+  searchUrl: string
+): string {
+  let content = '';
+  
+  // Add header
+  content += `# Apple Documentation Search Results\n\n`;
+  content += `**Query:** "${query}"\n`;
+  content += `**Filter:** ${filterType}\n`;
+  content += `**Results found:** ${results.length}\n\n`;
+  
+  if (results.length === 0) {
+    content += formatNoResultsMessage(query, filterType, searchUrl);
+    return content;
+  }
+  
+  // Group results by type
+  const groupedResults = groupResultsByType(results);
+  
+  // Format each group
+  Object.entries(groupedResults).forEach(([type, typeResults]) => {
+    content += formatResultGroup(type, typeResults);
+  });
+  
+  // Add footer
+  content += formatSearchFooter(searchUrl);
+  
+  return content;
 }
 
 /**
- * Parse HTML search results from Apple Developer Documentation
- *
- * Note: Apple Developer search pages use DOM structure for results,
- * not JavaScript objects. Results are in <li class="search-result"> elements
- * within a <ul class="search-results"> container.
- *
- * @param html HTML content from the search results page
- * @param query Original search query
- * @param searchUrl URL of the search
- * @param filterType Type filter (all, documentation, guide, sample, article)
- * @returns Formatted search results or error response
+ * Format no results message
  */
-export function parseSearchResults(html: string, query: string, searchUrl: string, filterType: string = 'all') {
-  try {
-    // Note: Search results are not cached to ensure real-time accuracy
-    console.error(`Parsing search results for: ${query} (filter: ${filterType})`);
+function formatNoResultsMessage(query: string, filterType: string, searchUrl: string): string {
+  let content = '## No Results Found\n\n';
+  content += `No ${filterType === 'all' ? '' : filterType + ' '}results found for "${query}".\n\n`;
+  content += '### Suggestions:\n';
+  content += '- Try using different keywords\n';
+  content += '- Check spelling\n';
+  content += '- Use more general terms\n';
+  content += '- Try searching for framework names (e.g., "SwiftUI", "UIKit")\n\n';
+  content += `[View search on Apple Developer](${searchUrl})`;
+  return content;
+}
 
-    const $ = cheerio.load(html);
-    const results: AppleDocSearchResult[] = [];
-
-    // Type mapping for filtering
-    // Only include types that support get_apple_doc_content
-    const typeMapping: Record<string, string[]> = {
-      'all': ['documentation', 'sample_code'], // Only supported types
-      'documentation': ['documentation'], // API reference documentation
-      'sample': ['sample_code'], // Code samples
-    };
-
-    // Find all search result items
-    $('.search-result').each((_, element) => {
-      const resultItem = $(element);
-
-      // Extract type from class names
-      const classes = resultItem.attr('class')?.split(' ') || [];
-      let resultType = 'other';
-
-      // Find the actual type class (not 'search-result')
-      for (const className of classes) {
-        if (className !== 'search-result' && className.trim()) {
-          resultType = className;
-          break;
-        }
-      }
-
-      // Apply type filter - always filter to only supported types
-      const allowedTypes = typeMapping[filterType] || typeMapping['all'];
-      if (!allowedTypes.includes(resultType)) {
-        return; // Skip this result - not supported by get_apple_doc_content
-      }
-
-      // Additional filter: exclude known unsupported types
-      const unsupportedTypes = ['general', 'video', 'forums', 'news'];
-      if (unsupportedTypes.includes(resultType)) {
-        return; // Skip this result - type not supported
-      }
-
-      // Extract title
-      const titleElement = resultItem.find('.result-title');
-      const title = titleElement.text().trim();
-
-      // Extract URL
-      const urlElement = titleElement.find('a');
-      let url = urlElement.attr('href') || '';
-      if (url && url.startsWith('/')) {
-        url = `https://developer.apple.com${url}`;
-      }
-
-      // Additional URL-based filtering to ensure get_apple_doc_content support
-      if (url) {
-        const unsupportedPaths = [
-          '/tutorials/app-dev-training/',
-          '/videos/',
-          '/forums/',
-          '/news/',
-          '/swift-playground/',
-          '/support/',
-        ];
-
-        if (unsupportedPaths.some(path => url.includes(path))) {
-          return; // Skip this result - URL type not supported
-        }
-      }
-
-      // Extract description
-      const description = resultItem.find('.result-description').text().trim();
-
-      // Extract beta/deprecated status
-      const isBeta = description.toLowerCase().includes('beta') ||
-                     title.toLowerCase().includes('beta') ||
-                     resultItem.find('.beta-badge, .badge-beta').length > 0;
-
-      const isDeprecated = description.toLowerCase().includes('deprecated') ||
-                          title.toLowerCase().includes('deprecated') ||
-                          resultItem.find('.deprecated-badge').length > 0;
-
-      // Extract meaningful platform and source information
-      let platform = '';
-
-      // Check for platform badges/tags in various locations
-      const platformElement = resultItem.find('.platform, .result-platform, .badge, .tag');
-      if (platformElement.length > 0) {
-        const platformText = platformElement.text().trim();
-        // Only include meaningful platform info (iOS, macOS, watchOS, etc.)
-        const meaningfulPlatforms = ['iOS', 'macOS', 'watchOS', 'tvOS', 'visionOS', 'iPadOS'];
-        if (meaningfulPlatforms.some(p => platformText.includes(p))) {
-          platform = platformText;
-        }
-      }
-
-      // Extract content source/type from URL if no meaningful platform found
-      if (!platform && url) {
-        if (url.includes('/videos/play/wwdc')) {
-          const year = url.match(/wwdc(\d{4})/)?.[1];
-          platform = year ? `WWDC ${year}` : 'WWDC';
-        } else if (url.includes('/news/')) {
-          platform = 'News';
-        } else if (url.includes('/support/')) {
-          platform = 'Support';
-        } else if (url.includes('/documentation/')) {
-          // For API documentation, extract framework from URL if possible
-          const frameworkMatch = url.match(/\/documentation\/([^\/]+)/);
-          if (frameworkMatch && frameworkMatch[1] !== 'technologies') {
-            platform = frameworkMatch[1].charAt(0).toUpperCase() + frameworkMatch[1].slice(1);
-          }
-        }
-      }
-
-      if (title && url) {
-        results.push({
-          title,
-          url,
-          description,
-          type: resultType,
-          platform: platform || undefined,
-          isBeta,
-          isDeprecated,
-        });
-      }
-    });
-
-    // If no results were found
-    if (results.length === 0) {
-      // Don't cache empty results - they might be due to temporary issues
-      console.error(`No results found for "${query}" - not caching empty result`);
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: `No results found for "${query}". You can view the search page directly at: ${searchUrl}`,
-          },
-        ],
-      };
+/**
+ * Group results by type
+ */
+function groupResultsByType(results: SearchResult[]): Record<string, SearchResult[]> {
+  const groups: Record<string, SearchResult[]> = {};
+  
+  results.forEach(result => {
+    const displayType = getDisplayType(result.type);
+    if (!groups[displayType]) {
+      groups[displayType] = [];
     }
+    groups[displayType].push(result);
+  });
+  
+  return groups;
+}
 
-    // Format results for display
-    const formattedResults = results.map(result => {
-      const metadata = [];
+/**
+ * Get display type for result
+ */
+function getDisplayType(type: string): string {
+  const typeDisplayNames: Record<string, string> = {
+    'documentation': '📚 API Documentation',
+    'documentation-article': '📄 Articles',
+    'documentation-tutorial': '📖 Tutorials',
+    'sample-code': '💻 Sample Code',
+    'guide': '📋 Guides',
+  };
+  
+  return typeDisplayNames[type] || '📝 Other';
+}
 
-      // Add status badges
-      if (result.isBeta) {
-        metadata.push('Beta');
+/**
+ * Format a group of results
+ */
+function formatResultGroup(type: string, results: SearchResult[]): string {
+  let content = `## ${type}\n\n`;
+  
+  results.forEach((result, index) => {
+    content += formatSingleResult(result, index + 1);
+  });
+  
+  return content;
+}
+
+/**
+ * Format a single search result
+ */
+function formatSingleResult(result: SearchResult, index: number): string {
+  let content = `### ${index}. ${result.title}`;
+  
+  // Add badges
+  const badges = [];
+  if (result.beta) badges.push('🧪 Beta');
+  if (badges.length > 0) {
+    content += ` ${badges.join(' ')}`;
+  }
+  
+  content += '\n\n';
+  
+  // Add metadata
+  if (result.framework) {
+    content += `**Framework:** ${result.framework}\n`;
+  }
+  content += `**Type:** ${result.type.replace(/-/g, ' ')}\n`;
+  
+  // Add description
+  if (result.description) {
+    content += `**Description:** ${result.description}\n`;
+  }
+  
+  // Add URL
+  content += `**URL:** ${result.url}\n\n`;
+  
+  return content;
+}
+
+/**
+ * Format search footer
+ */
+function formatSearchFooter(searchUrl: string): string {
+  return `---\n\n[View all results on Apple Developer](${searchUrl})`;
+}
+
+/**
+ * Parse search results with reduced complexity
+ */
+export function parseSearchResults(
+  html: string,
+  query: string,
+  searchUrl: string,
+  filterType: string = 'all'
+): { content: Array<{ type: string; text: string }> } {
+  try {
+    const $ = cheerio.load(html);
+    const results: SearchResult[] = [];
+    
+    // Parse each search result (with limit)
+    $('.search-result').each((_, element) => {
+      if (results.length >= API_LIMITS.MAX_SEARCH_RESULTS) {
+        return false; // Stop parsing when limit reached
       }
-      if (result.isDeprecated) {
-        metadata.push('Deprecated');
+      const result = parseSearchResult($(element), filterType);
+      if (result) {
+        results.push(result);
       }
-
-      // Add content type
-      const contentTypeMap: Record<string, string> = {
-        'documentation': 'Documentation',
-        'sample_code': 'Sample Code',
-      };
-
-      const contentType = contentTypeMap[result.type] || result.type;
-      metadata.push(contentType);
-
-      // Add platform info if available and meaningful
-      if (result.platform && result.platform !== 'DOCUMENTATION' && result.platform.toLowerCase() !== 'documentation') {
-        metadata.push(result.platform);
-      }
-
-      const metadataText = metadata.length > 0 ? `\n*${metadata.join(' | ')}*` : '';
-      return `## [${result.title}](${result.url})\n${result.description}${metadataText}\n`;
-    }).join('\n');
-
-    const result = {
-      content: [
-        {
-          type: 'text' as const,
-          text: `# Search Results for "${query}"\n\n${formattedResults}\n\nView all results: ${searchUrl}`,
-        },
-      ],
+      return true; // Continue parsing
+    });
+    
+    // Format results
+    const formattedContent = formatSearchResults(results, query, filterType, searchUrl);
+    
+    return {
+      content: [{
+        type: 'text',
+        text: formattedContent,
+      }],
     };
-
-    // Note: Search results are not cached to ensure real-time accuracy
-    return result;
   } catch (error) {
     console.error('Error parsing search results:', error);
     return {
-      content: [
-        {
-          type: 'text' as const,
-          text: `Error parsing search results for "${query}". You can view the search page directly at: ${searchUrl}`,
-        },
-      ],
-      isError: true,
+      content: [{
+        type: 'text',
+        text: `Error parsing search results: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      }],
     };
   }
-}
-
-/**
- * Filter search results by content type
- *
- * @param results The search results to filter
- * @param type The type to filter by
- * @returns Filtered results
- */
-export function filterResultsByType(results: AppleDocSearchResult[], type: string): AppleDocSearchResult[] {
-  if (type === 'all') {
-    return results;
-  }
-
-  return results.filter(result => {
-    if (type === 'api' && result.type === 'documentation') {
-      return true;
-    }
-    if (type === 'guide' && result.type === 'documentation') {
-      return true;
-    }
-    if (type === 'sample' && result.type === 'sample') {
-      return true;
-    }
-    if (type === 'video' && result.type === 'video') {
-      return true;
-    }
-    return false;
-  });
 }

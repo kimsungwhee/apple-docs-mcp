@@ -91,74 +91,74 @@ export async function handleGetSampleCode(
   searchQuery?: string,
   limit: number = 50,
 ): Promise<string> {
-  try {
-    // Generate cache key
-    const cacheKey = generateUrlCacheKey('sample-code', {
-      framework,
-      beta,
-      searchQuery,
-      limit,
-    });
+  // Generate cache key
+  const cacheKey = generateUrlCacheKey('sample-code', {
+    framework,
+    beta,
+    searchQuery,
+    limit,
+  });
 
-    // Try to get from cache first
-    const cachedResult = sampleCodeCache.get<string>(cacheKey);
-    if (cachedResult) {
-      return cachedResult;
-    }
-
-    // Fetch both JSON files
-    const [contentResponse, indexResponse] = await Promise.all([
-      httpClient.get(APPLE_URLS.SAMPLE_CODE_JSON),
-      httpClient.get(APPLE_URLS.SAMPLE_CODE_INDEX_JSON),
-    ]);
-
-    if (!contentResponse.ok) {
-      throw new Error(`Failed to fetch sample code content: ${contentResponse.statusText}`);
-    }
-    if (!indexResponse.ok) {
-      throw new Error(`Failed to fetch sample code index: ${indexResponse.statusText}`);
-    }
-
-    const contentData = await contentResponse.json() as SampleCodeContent;
-    const indexData = await indexResponse.json() as SampleCodeIndex;
-
-
-    // Parse the sample codes
-    const sampleCodes = parseSampleCodes(contentData, indexData);
-
-    // Apply filters
-    const filters: SampleCodeFilters = {
-      framework,
-      beta,
-      searchQuery,
-    };
-    const filteredSampleCodes = applySampleCodeFilters(sampleCodes, filters);
-
-    // Sort by relevance (featured first, then alphabetically)
-    const sortedSampleCodes = filteredSampleCodes.sort((a, b) => {
-      if (a.featured && !b.featured) return -1;
-      if (!a.featured && b.featured) return 1;
-      return a.title.localeCompare(b.title);
-    });
-
-    // Apply limit
-    const limitedSampleCodes = sortedSampleCodes.slice(0, limit);
-
-    // Format the result
-    const result = formatSampleCodeResult(limitedSampleCodes, {
-      framework,
-      beta,
-      searchQuery,
-      totalFound: filteredSampleCodes.length,
-      showing: limitedSampleCodes.length,
-    });
-
-    // Cache the result
-    sampleCodeCache.set(cacheKey, result);
-    return result;
-  } catch (error) {
-    throw error;
+  // Try to get from cache first
+  const cachedResult = sampleCodeCache.get<string>(cacheKey);
+  if (cachedResult) {
+    return cachedResult;
   }
+
+  // Fetch both JSON files
+  const [contentResponse, indexResponse] = await Promise.all([
+    httpClient.get(APPLE_URLS.SAMPLE_CODE_JSON),
+    httpClient.get(APPLE_URLS.SAMPLE_CODE_INDEX_JSON),
+  ]);
+
+  if (!contentResponse.ok) {
+    throw new Error(`Failed to fetch sample code content: ${contentResponse.statusText}`);
+  }
+  if (!indexResponse.ok) {
+    throw new Error(`Failed to fetch sample code index: ${indexResponse.statusText}`);
+  }
+
+  const contentData = await contentResponse.json() as SampleCodeContent;
+  const indexData = await indexResponse.json() as SampleCodeIndex;
+
+
+  // Parse the sample codes
+  const sampleCodes = parseSampleCodes(contentData, indexData);
+
+  // Apply filters
+  const filters: SampleCodeFilters = {
+    framework,
+    beta,
+    searchQuery,
+  };
+  const filteredSampleCodes = applySampleCodeFilters(sampleCodes, filters);
+
+  // Sort by relevance (featured first, then alphabetically)
+  const sortedSampleCodes = filteredSampleCodes.sort((a, b) => {
+    if (a.featured && !b.featured) {
+      return -1;
+    }
+    if (!a.featured && b.featured) {
+      return 1;
+    }
+    return a.title.localeCompare(b.title);
+  });
+
+  // Apply limit
+  const limitedSampleCodes = sortedSampleCodes.slice(0, limit);
+
+  // Format the result
+  const result = formatSampleCodeResult(limitedSampleCodes, {
+    framework,
+    beta,
+    searchQuery,
+    totalFound: filteredSampleCodes.length,
+    showing: limitedSampleCodes.length,
+  });
+
+  // Cache the result
+  sampleCodeCache.set(cacheKey, result);
+  return result;
 }
 
 /**
@@ -319,7 +319,7 @@ function formatSampleCodeResult(
   }
 
   if (filterParts.length > 0) {
-    lines.push(`## Filters Applied`);
+    lines.push('## Filters Applied');
     lines.push(filterParts.join(', '));
     lines.push('');
   }
@@ -395,8 +395,12 @@ function formatSampleCodeResult(
  */
 function formatSampleCodeItem(code: ParsedSampleCode): string {
   const badges: string[] = [];
-  if (code.beta) badges.push('🧪 Beta');
-  if (code.featured) badges.push('⭐ Featured');
+  if (code.beta) {
+    badges.push('🧪 Beta');
+  }
+  if (code.featured) {
+    badges.push('⭐ Featured');
+  }
 
   const badgeStr = badges.length > 0 ? ` ${badges.join(' ')}` : '';
   const indent = '  '.repeat(Math.max(0, code.depth - 1));

@@ -96,6 +96,10 @@ async function analyzeSingleApiCompatibility(
   includeRelated: boolean,
 ): Promise<string> {
   const jsonApiUrl = convertToJsonApiUrl(apiUrl);
+  
+  if (!jsonApiUrl) {
+    throw new Error('Invalid Apple Developer Documentation URL');
+  }
 
   const data = await httpClient.getJson<AppleDocData>(jsonApiUrl);
 
@@ -166,6 +170,11 @@ async function analyzeRelatedCompatibility(
         try {
           const relatedUrl = `https://developer.apple.com${ref.url}`;
           const relatedJsonUrl = convertToJsonApiUrl(relatedUrl);
+          
+          if (!relatedJsonUrl) {
+            console.error(`Failed to convert URL: ${relatedUrl}`);
+            continue;
+          }
 
           const relatedData = await httpClient.getJson<AppleDocData>(relatedJsonUrl);
           if (relatedData.metadata?.platforms) {

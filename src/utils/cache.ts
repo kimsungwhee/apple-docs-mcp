@@ -2,16 +2,14 @@
  * Simple in-memory cache with TTL (Time To Live) support
  */
 
-interface CacheEntry<T> {
-  data: T;
-  timestamp: number;
-  ttl: number; // Time to live in milliseconds
-}
+import type { CacheEntry } from '../types/cache.js';
 
 export class MemoryCache {
-  private cache = new Map<string, CacheEntry<any>>();
+  private cache = new Map<string, CacheEntry<unknown>>();
   private maxSize: number;
   private defaultTTL: number;
+  private hits = 0;
+  private misses = 0;
 
   constructor(maxSize: number = 1000, defaultTTL: number = 30 * 60 * 1000) { // 30 minutes default
     this.maxSize = maxSize;
@@ -27,15 +25,18 @@ export class MemoryCache {
   get<T>(key: string): T | null {
     const entry = this.cache.get(key);
     if (!entry) {
+      this.misses++;
       return null;
     }
 
     // Check if expired
     if (Date.now() - entry.timestamp > entry.ttl) {
       this.cache.delete(key);
+      this.misses++;
       return null;
     }
 
+    this.hits++;
     return entry.data as T;
   }
 
@@ -54,7 +55,7 @@ export class MemoryCache {
     this.cache.set(key, {
       data: value,
       timestamp: Date.now(),
-      ttl: ttl || this.defaultTTL,
+      ttl: ttl ?? this.defaultTTL,
     });
   }
 
@@ -94,10 +95,22 @@ export class MemoryCache {
   /**
    * Get cache statistics
    */
-  getStats(): { size: number; maxSize: number; hitRate?: number } {
+  getStats(): { 
+    size: number; 
+    maxSize: number; 
+    hitRate: string;
+    hits: number;
+    misses: number;
+  } {
+    const total = this.hits + this.misses;
+    const hitRate = total > 0 ? (this.hits / total * 100).toFixed(2) + '%' : '0.00%';
+    
     return {
       size: this.cache.size,
       maxSize: this.maxSize,
+      hitRate,
+      hits: this.hits,
+      misses: this.misses,
     };
   }
 
@@ -134,12 +147,15 @@ export const indexCache = new MemoryCache(CACHE_SIZE.FRAMEWORK_INDEX, CACHE_TTL.
 export const technologiesCache = new MemoryCache(CACHE_SIZE.TECHNOLOGIES, CACHE_TTL.TECHNOLOGIES);
 export const updatesCache = new MemoryCache(CACHE_SIZE.UPDATES, CACHE_TTL.UPDATES);
 export const sampleCodeCache = new MemoryCache(CACHE_SIZE.SAMPLE_CODE, CACHE_TTL.SAMPLE_CODE);
-export const technologyOverviewsCache = new MemoryCache(CACHE_SIZE.TECHNOLOGY_OVERVIEWS, CACHE_TTL.TECHNOLOGY_OVERVIEWS);
+export const technologyOverviewsCache = new MemoryCache(
+  CACHE_SIZE.TECHNOLOGY_OVERVIEWS,
+  CACHE_TTL.TECHNOLOGY_OVERVIEWS,
+);
 
 /**
  * Generate cache key for URL-based requests
  */
-export function generateUrlCacheKey(url: string, params?: Record<string, any>): string {
+export function generateUrlCacheKey(url: string, params?: Record<string, unknown>): string {
   let key = url;
   if (params) {
     const sortedParams = Object.keys(params)
@@ -171,13 +187,13 @@ export function generateEnhancedCacheKey(
  */
 export function cached<T>(
   cache: MemoryCache,
-  keyGenerator: (...args: any[]) => string,
+  keyGenerator: (...args: unknown[]) => string,
   ttl?: number,
 ) {
-  return function (_target: any, _propertyName: string, descriptor: PropertyDescriptor) {
+  return function (_target: unknown, _propertyName: string, descriptor: PropertyDescriptor) {
     const method = descriptor.value;
 
-    descriptor.value = async function (...args: any[]): Promise<T> {
+    descriptor.value = async function (...args: unknown[]): Promise<T> {
       const key = keyGenerator(...args);
 
       return cache.getOrSet(

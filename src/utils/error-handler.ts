@@ -3,27 +3,17 @@
  */
 
 import { ERROR_MESSAGES } from './constants.js';
+import type { AppError, ErrorResponse } from '../types/error.js';
+import { ErrorType } from '../types/error.js';
 
-export enum ErrorType {
-  NETWORK_ERROR = 'NETWORK_ERROR',
-  PARSE_ERROR = 'PARSE_ERROR',
-  NOT_FOUND = 'NOT_FOUND',
-  INVALID_INPUT = 'INVALID_INPUT',
-  TIMEOUT = 'TIMEOUT',
-  UNKNOWN = 'UNKNOWN',
-}
-
-export interface AppError {
-  type: ErrorType;
-  message: string;
-  originalError?: Error;
-  suggestions?: string[];
-}
+// Re-export for backward compatibility
+export type { AppError };
+export { ErrorType };
 
 /**
  * Create a standardized error response
  */
-export function createErrorResponse(error: AppError): any {
+export function createErrorResponse(error: AppError): ErrorResponse {
   let message = `Error: ${error.message}`;
 
   if (error.suggestions && error.suggestions.length > 0) {
@@ -135,7 +125,7 @@ export function validateInput(value: string, fieldName: string, minLength: numbe
  */
 export function logError(error: AppError, context?: string): void {
   if (process.env.NODE_ENV === 'development') {
-    console.error(`[${context || 'ERROR'}]`, {
+    console.error(`[${context ?? 'ERROR'}]`, {
       type: error.type,
       message: error.message,
       originalError: error.originalError,

@@ -48,11 +48,12 @@ describe('parseSearchResults', () => {
 
       const result = parseSearchResults(html, 'test', mockSearchUrl);
 
-      expect(result.content[0].text).toContain('# Search Results for "test"');
-      expect(result.content[0].text).toContain('## [UIView]');
-      expect(result.content[0].text).toContain('## [UIViewController]');
+      expect(result.content[0].text).toContain('# Apple Documentation Search Results');
+      expect(result.content[0].text).toContain('**Query:** "test"');
+      expect(result.content[0].text).toContain('### 1. UIView');
+      expect(result.content[0].text).toContain('### 2. UIViewController');
       expect(result.content[0].text).toContain('An object that manages the content');
-      expect(result.content[0].text).toContain('*Documentation | Uikit*');
+      expect(result.content[0].text).toContain('**Framework:** Uikit');
     });
 
     it('should handle different result types', () => {
@@ -102,7 +103,7 @@ describe('parseSearchResults', () => {
       const result = parseSearchResults(html, 'test', mockSearchUrl);
 
       expect(result.content[0].text).toContain('No results found for "test"');
-      expect(result.content[0].text).toContain('You can view the search page directly at:');
+      expect(result.content[0].text).toContain('### Suggestions:');
     });
 
     it('should extract module names from URLs', () => {
@@ -130,8 +131,8 @@ describe('parseSearchResults', () => {
       const result = parseSearchResults(html, 'test', mockSearchUrl);
       const text = result.content[0].text;
 
-      expect(text).toContain('*Documentation | Swiftui*');
-      expect(text).toContain('*Documentation | Foundation*');
+      expect(text).toContain('**Framework:** Swiftui');
+      expect(text).toContain('**Framework:** Foundation');
     });
 
     it('should limit results when too many', () => {
@@ -155,10 +156,11 @@ describe('parseSearchResults', () => {
       const result = parseSearchResults(html, 'test', mockSearchUrl);
       const text = result.content[0].text;
 
-      // Should show all results (no limit in current implementation)
-      expect(text).toContain('## [Result 0]');
-      expect(text).toContain('## [Result 99]');
-      expect(text).toContain('View all results');
+      // Should show limited results
+      expect(text).toContain('### 1. Result 0');
+      expect(text).toContain('### 50. Result 49');
+      expect(text).not.toContain('Result 99');
+      expect(text).toContain('[View all results on Apple Developer]');
     });
   });
 
@@ -169,7 +171,7 @@ describe('parseSearchResults', () => {
       const result = parseSearchResults(html, 'test', mockSearchUrl);
 
       expect(result.content[0].text).toContain('No results found');
-      expect(result.content[0].text).toContain('You can view the search page directly at:');
+      expect(result.content[0].text).toContain('### Suggestions:');
     });
 
     it('should handle malformed HTML', () => {
@@ -228,7 +230,7 @@ describe('parseSearchResults', () => {
       const text = result.content[0].text;
 
       // Should include valid result
-      expect(text).toContain('## [Valid Result]');
+      expect(text).toContain('### 1. Valid Result');
       // Should skip invalid results
       expect(text).not.toContain('No title');
       expect(text).not.toContain('No URL');
@@ -253,7 +255,7 @@ describe('parseSearchResults', () => {
       const specialQuery = 'test & <special> "quoted"';
       const result = parseSearchResults(html, specialQuery, mockSearchUrl);
 
-      expect(result.content[0].text).toContain('# Search Results for "test & <special> "quoted""');
+      expect(result.content[0].text).toContain('**Query:** "test & <special> "quoted""');
     });
 
     it('should handle beta and deprecated indicators', () => {

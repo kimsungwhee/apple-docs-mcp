@@ -85,6 +85,10 @@ export async function handleResolveReferencesBatch(
 
     // 将网页URL转换为JSON API URL
     const jsonApiUrl = convertToJsonApiUrl(sourceUrl);
+    
+    if (!jsonApiUrl) {
+      throw new Error('Invalid Apple Developer Documentation URL');
+    }
 
     const data = await httpClient.getJson<AppleDocData>(jsonApiUrl);
 

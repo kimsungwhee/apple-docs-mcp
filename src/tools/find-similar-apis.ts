@@ -57,9 +57,13 @@ interface TopicSection {
 }
 
 interface AppleDocData {
+  identifier?: string;
+  title?: string;
   metadata?: {
     title?: string;
     symbolKind?: string;
+    roleHeading?: string;
+    platforms?: Array<{ name: string; introducedAt?: string }>;
   };
   seeAlsoSections?: SeeAlsoSection[];
   topicSections?: TopicSection[];
@@ -79,22 +83,41 @@ export async function handleFindSimilarApis(
     console.error(`Finding similar APIs for: ${apiUrl}`);
 
     const jsonApiUrl = convertToJsonApiUrl(apiUrl);
+    
+    // Check if conversion failed
+    if (!jsonApiUrl) {
+      throw new Error('Invalid Apple Developer Documentation URL');
+    }
 
-    const data = await httpClient.getJson<AppleDocData>(jsonApiUrl);
+    const response = await httpClient.getJson<any>(jsonApiUrl);
+    
+    // Handle response structure - check if data is wrapped
+    let data: AppleDocData;
+    let references: Record<string, any> | undefined;
+    
+    if (response.data) {
+      // Response has a data property, extract it
+      data = response.data;
+      references = response.references || data.references;
+    } else {
+      // Response is the data itself
+      data = response;
+      references = data.references;
+    }
 
     // 收集相似API
     const similarApis: SimilarAPI[] = [];
 
     // 1. 从"另请参阅"部分收集
     if (data.seeAlsoSections) {
-      const seeAlsoApis = extractSeeAlsoApis(data.seeAlsoSections, data.references, filterByCategory);
+      const seeAlsoApis = extractSeeAlsoApis(data.seeAlsoSections, references, filterByCategory);
       similarApis.push(...seeAlsoApis);
     }
 
     // 2. 从主题部分收集（medium 和 deep 模式）
     if (searchDepth === 'medium' || searchDepth === 'deep') {
       if (data.topicSections && includeAlternatives) {
-        const topicApis = extractTopicApis(data.topicSections, data.references, filterByCategory);
+        const topicApis = extractTopicApis(data.topicSections, references, filterByCategory);
         similarApis.push(...topicApis);
       }
     }
@@ -115,11 +138,17 @@ export async function handleFindSimilarApis(
     const maxResults = SEARCH_DEPTH_LIMITS[searchDepth as keyof typeof SEARCH_DEPTH_LIMITS] || SEARCH_DEPTH_LIMITS.medium;
     const limitedApis = uniqueApis.slice(0, maxResults);
 
-    return formatSimilarApis(apiUrl, limitedApis, data.metadata?.title);
+    // Get the title from data
+    const title = data.title || data.metadata?.title || data.identifier?.split('/').pop() || 'API';
+
+    return formatSimilarApis(apiUrl, limitedApis, title, data);
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    return `Error: Failed to find similar APIs: ${errorMessage}`;
+    if (errorMessage.includes('Invalid Apple Developer Documentation URL')) {
+      throw error;
+    }
+    throw new Error(errorMessage);
   }
 }
 
@@ -201,12 +230,29 @@ async function extractDeepRelatedApis(seedApis: SimilarAPI[]): Promise<SimilarAP
   for (const seedApi of seedApis) {
     try {
       const jsonApiUrl = convertToJsonApiUrl(seedApi.url);
+      
+      if (!jsonApiUrl) {
+        console.error(`Failed to convert URL: ${seedApi.url}`);
+        continue;
+      }
 
-      const data = await httpClient.getJson<AppleDocData>(jsonApiUrl);
+      const response = await httpClient.getJson<any>(jsonApiUrl);
+      
+      // Handle response structure
+      let data: AppleDocData;
+      let references: Record<string, any> | undefined;
+      
+      if (response.data) {
+        data = response.data;
+        references = response.references || data.references;
+      } else {
+        data = response;
+        references = data.references;
+      }
 
       // 只从"另请参阅"部分获取，避免过度扩展
       if (data.seeAlsoSections) {
-        const relatedApis = extractSeeAlsoApis(data.seeAlsoSections, data.references);
+        const relatedApis = extractSeeAlsoApis(data.seeAlsoSections, references);
         // 降低相似度评分
         relatedApis.forEach(api => {
           api.confidence = Math.max(api.confidence - 2, 3);
@@ -296,22 +342,42 @@ function formatSimilarApis(
   originalUrl: string,
   similarApis: SimilarAPI[],
   originalApiName?: string,
+  originalData?: AppleDocData,
 ): string {
-  if (similarApis.length === 0) {
-    return `No similar APIs found for: ${originalUrl}`;
-  }
-
   const apiName = originalApiName || new URL(originalUrl).pathname.split('/').pop() || 'API';
   let content = `# Similar APIs to ${apiName}\n\n`;
+  
+  if (similarApis.length === 0) {
+    content += `No similar APIs found`;
+    return content;
+  }
+  
+  // Add metadata about the original API if available
+  if (originalData?.metadata) {
+    const roleHeading = originalData.metadata.roleHeading || '';
+    const platforms = originalData.metadata.platforms?.map(p => `${p.name} ${p.introducedAt || ''}+`).join(', ') || '';
+    if (roleHeading || platforms) {
+      content += `${roleHeading}${platforms ? ' · ' + platforms : ''}\n\n`;
+    }
+  }
+  
   content += `**Source:** [${originalUrl}](${originalUrl})\n\n`;
   content += `**Found ${similarApis.length} similar APIs (sorted by relevance):**\n\n`;
 
-  // 按相似度类型分组
-  const groupedApis = groupApisBySimilarityType(similarApis);
-
-  for (const [similarityType, apis] of Object.entries(groupedApis)) {
-    content += `## ${similarityType} (${apis.length})\n\n`;
-
+  // Group by category instead of similarity type for better organization
+  const groupedByCategory = new Map<string, SimilarAPI[]>();
+  
+  for (const api of similarApis) {
+    const key = `${api.similarityType}: ${api.category}`;
+    if (!groupedByCategory.has(key)) {
+      groupedByCategory.set(key, []);
+    }
+    groupedByCategory.get(key)!.push(api);
+  }
+  
+  for (const [categoryKey, apis] of groupedByCategory) {
+    content += `## ${categoryKey}\n\n`;
+    
     for (const api of apis) {
       content += formatSingleSimilarApi(api);
     }
@@ -335,21 +401,6 @@ function formatSimilarApis(
   return content;
 }
 
-/**
- * 按相似度类型分组
- */
-function groupApisBySimilarityType(apis: SimilarAPI[]): Record<string, SimilarAPI[]> {
-  const groups: Record<string, SimilarAPI[]> = {};
-
-  for (const api of apis) {
-    if (!groups[api.similarityType]) {
-      groups[api.similarityType] = [];
-    }
-    groups[api.similarityType].push(api);
-  }
-
-  return groups;
-}
 
 /**
  * 格式化单个相似API

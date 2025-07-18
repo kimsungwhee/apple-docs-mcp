@@ -4,6 +4,7 @@
 
 import { REQUEST_CONFIG, ERROR_MESSAGES } from './constants.js';
 import { handleFetchError } from './error-handler.js';
+import { globalRateLimiter } from './rate-limiter.js';
 
 interface RequestOptions {
   timeout?: number;
@@ -58,6 +59,11 @@ class HttpClient {
     };
 
     return this.executeWithQueue(async () => {
+      // Check rate limit
+      if (!globalRateLimiter.canMakeRequest()) {
+        throw new Error('Rate limit exceeded. Please try again later.');
+      }
+      
       return this.fetchWithRetry(url, {
         method: 'GET',
         headers: defaultHeaders,
@@ -125,7 +131,7 @@ class HttpClient {
           this.updateStats(response.status, responseTime, true);
         }
 
-        if (!response || !response.ok) {
+        if (!response?.ok) {
           if (response && response.status === 404) {
             throw new Error(`${ERROR_MESSAGES.NOT_FOUND} (${response.status})`);
           }
@@ -163,7 +169,7 @@ class HttpClient {
     const responseTime = Date.now() - startTime;
     this.updateStats(0, responseTime, false);
 
-    throw lastError || new Error('Request failed after retries');
+    throw lastError ?? new Error('Request failed after retries');
   }
 
   /**
@@ -195,7 +201,7 @@ class HttpClient {
   /**
    * Get JSON response with error handling
    */
-  async getJson<T = any>(url: string, options: RequestOptions = {}): Promise<T> {
+  async getJson<T = unknown>(url: string, options: RequestOptions = {}): Promise<T> {
     try {
       const response = await this.get(url, options);
       return await response.json() as T;

@@ -182,7 +182,7 @@ function parseOverviews(overviewsData: TechnologyOverviewsData, overviewsIndex: 
  */
 function processIndexSection(sections: TechnologyOverviewsIndexSection[], overviews: OverviewItem[], depth: number, parentSection: string | null) {
   let currentSection = parentSection;
-  
+
   sections.forEach(section => {
     // Track current section from group markers
     if (section.type === 'groupMarker') {
@@ -195,8 +195,8 @@ function processIndexSection(sections: TechnologyOverviewsIndexSection[], overvi
     }
 
     // Check if this section already exists in overviews
-    const existingOverview = overviews.find(o => 
-      o.url.includes(section.path) || o.title === section.title
+    const existingOverview = overviews.find(o =>
+      o.url.includes(section.path) || o.title === section.title,
     );
 
     if (existingOverview) {
@@ -256,24 +256,24 @@ function applyOverviewsFilters(
   // Category filter
   if (filters.category) {
     const categoryLower = filters.category.toLowerCase();
-    
+
     // First, find all items that match the category
     const categoryItems = overviews.filter(overview => {
       return overview.category.toLowerCase() === categoryLower ||
              overview.title.toLowerCase() === categoryLower.replace(/-/g, ' ') ||
              overview.path?.toLowerCase().includes(`/${categoryLower}`);
     });
-    
+
     // If we found category items, also include their children
     if (categoryItems.length > 0) {
       const categoryPaths = categoryItems.map(item => item.path || item.url);
-      
+
       filtered = overviews.filter(overview => {
         // Include the category items themselves
         if (categoryItems.includes(overview)) {
           return true;
         }
-        
+
         // Include children of category items
         if (overview.path || overview.url) {
           const overviewPath = (overview.path || overview.url).replace('https://developer.apple.com', '');
@@ -282,7 +282,7 @@ function applyOverviewsFilters(
             return overviewPath.startsWith(cleanCategoryPath) && overviewPath !== cleanCategoryPath;
           });
         }
-        
+
         return false;
       });
     } else {
@@ -297,7 +297,7 @@ function applyOverviewsFilters(
     filtered = filtered.filter(overview =>
       overview.title.toLowerCase().includes(platformLower) ||
       overview.description.toLowerCase().includes(platformLower) ||
-      overview.path?.toLowerCase().includes(platformLower)
+      overview.path?.toLowerCase().includes(platformLower),
     );
   }
 
@@ -306,7 +306,7 @@ function applyOverviewsFilters(
     const queryLower = filters.searchQuery.toLowerCase();
     filtered = filtered.filter(overview =>
       overview.title.toLowerCase().includes(queryLower) ||
-      overview.description.toLowerCase().includes(queryLower)
+      overview.description.toLowerCase().includes(queryLower),
     );
   }
 
@@ -321,7 +321,7 @@ function applyOverviewsFilters(
     // Count top-level items
     let topLevelCount = 0;
     const limitedResults: OverviewItem[] = [];
-    
+
     for (const item of filtered) {
       if (item.depth === 0) {
         if (topLevelCount >= filters.limit) {
@@ -331,7 +331,7 @@ function applyOverviewsFilters(
       }
       limitedResults.push(item);
     }
-    
+
     filtered = limitedResults;
   }
 
@@ -359,14 +359,16 @@ function formatOverviewsList(overviews: OverviewItem[]): string {
 
     // Sort items by depth and title
     items.sort((a, b) => {
-      if (a.depth !== b.depth) return a.depth - b.depth;
+      if (a.depth !== b.depth) {
+        return a.depth - b.depth;
+      }
       return a.title.localeCompare(b.title);
     });
 
     // Format items with proper indentation
     items.forEach(item => {
       const indent = '  '.repeat(item.depth);
-      
+
       // Title with link
       content += `${indent}### [${item.title}](${item.url})\n`;
 
@@ -396,19 +398,19 @@ function groupOverviewsByCategory(overviews: OverviewItem[]): Record<string, Ove
   return overviews.reduce((acc, overview) => {
     // Use sectionTitle for top-level items, otherwise use the parent category
     let groupKey = overview.sectionTitle;
-    
+
     // If no section title or it's a nested item, try to group by top-level category
     if (!groupKey && overview.depth > 0) {
       // Extract top-level category from the path
       const pathParts = overview.category.split('-');
       groupKey = formatCategoryTitle(pathParts[0]);
     }
-    
+
     // Default to formatted category
     if (!groupKey) {
       groupKey = formatCategoryTitle(overview.category);
     }
-    
+
     if (!acc[groupKey]) {
       acc[groupKey] = [];
     }
