@@ -1,0 +1,156 @@
+{
+  "id": "290",
+  "year": "2025",
+  "url": "https://developer.apple.com/videos/play/wwdc2025/290/",
+  "title": "Set the scene with SwiftUI in visionOS",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Design"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, I’m Miguel, an engineer on the SwiftUI team. In this video, we’ll cover some of the incredible new capabilities added to scenes in visionOS 26. And perhaps we’ll learn how to stage some of our own.\n\nvisionOS has three scene types: windows, volumes, and immersive spaces. Apps can combine these together to create unique and exciting experiences. Today, we’ll see new APIs that apply to all three types, and some that are more focused on volumes and immersive spaces. My friends Maks, Amanda, and Trevor are working on some exciting improvements to BOTanist, a game about helping a robot grow beautiful plants in a floating garden.\n\nAs for me, I’ve been working on my own app, building scenes and decor to help our robot friends bring Shakespeare’s characters to life and take on the world of acting.\n\nWhen opening my app, I’m greeted with a stage selection screen. Let's create a new one.\n\nNow I can set the scene by moving the BOTanist all around the stage.\n\nWith this, I can have a robot friend reenact my favorite plays like Robo and Juliet.\n\nLet’s see how I can improve my app with the new scene APIs of visionOS 26.\n\nFirst, we’ll take a look at new lifecycle APIs to define behaviors when launching and locking windows to rooms. Second, I’ll introduce new volumetric enhancements that adapt to people's surroundings. Next, I’ll add a RemoteImmersiveSpace to preview my scene on Apple Vision Pro from a macOS app.\n\nThen, for existing UIKit apps, we’ll wrap up by adding these amazing volumetric and immersive experiences with the new scene bridging APIs.\n\nSo let’s get started with launching and locking.\n\nvisionOS 26 brings over some macOS lifecycle APIs that will come in quite handy. We’ll cover APIs to manage scene restoration and app launch as well as an API to create unique windows.\n\nIn visionOS 26, people can now persist windows, volumes, and even the new widgets by locking them to particular rooms in their physical surroundings. This helps virtual content feel more present in their space. These locked windows are tied to the room they were used in. Come back to that room at a later time, and the windows spring back to life. Scene restoration with locking is awesome. I can keep all my windows around and get back to them whenever I want.\n\nIn general, people will expect to be able to lock all their windows in place, and for the system to restore them. So, prefer restoration for most scenes. The system will do this for you automatically.\n\nHowever, for some windows, it might not make sense to persist them this way.\n\nConsider disabling scene restoration for transient elements like a welcome screen, context-dependent UI like a tools window tied to a specific app state, or completed one-time actions like a login prompt.\n\nI added an immersive mode to my app so people can fully appreciate our favorite robot in action. The toolbar detaches into a separate tools window in front of them, giving easy access to the stage controls while immersed.\n\nNote that immersive spaces are not restored. So, when coming back to this room, the immersive space will not be brought back. However, if someone had locked the tools window in their space, it would show up all alone with nothing to modify.\n\nI can avoid this unexpected state by adding the restorationBehavior(.disabled) modifier to my WindowGroup to explicitly opt the tools window out of restoration and locking in place.\n\nNow, when coming back to this room at a later time, the extra window does not come back. Launching the app shows the first window for a fresh start.\n\nIn UIKit, you can disable restoration for your UI scenes using the new destructionConditions API with a .systemDisconnection property. Check out the documentation to learn more.\n\nIn some cases, your app might benefit from dynamically changing which scene to start with.\n\nFor example, I want to add a welcome window on the app’s first launch to greet people before the stage selection.\n\nTo customize which window to display on launch based on my app state, I can use the defaultLaunchBehavior modifier.\n\nHere, I’ll prioritize the welcome window by marking it as presented if it's the first time launching the app.\n\nI can toggle off this value once that window appears, as I won’t need to show the window anymore.\n\nNote that the role of the chosen launch window must match the preferred default scene session role property in the Application Scene Manifest of your Info.plist.\n\nThis means if I set my default scene session role to Window, only regular window scenes will be considered by the system during app launch.\n\nIn that case, volumes will be ignored, even if I try to prioritize them with defaultLaunchBehavior. So be sure to match your desired scene with that session role.\n\nThe defaultLaunchBehavior modifier has one additional trick up its sleeve that may be useful for us. I talked about how I don’t want the tools panel to return when I come back to a room, and how I could use restorationBehavior to fix that. I've got a similar problem here. Currently, if I dismiss the immersive space by pressing the crown and close the Tools window, I’ll find this window coming back when launching the app again.\n\nThis leaves us in that same unexpected state that restoration would have. Instead, I want to resume the app from a safe state by starting with a stage creation window.\n\nI can do this by adding the defaultLaunchBehavior(.suppressed) modifier to my tools window. This tells the system not to bring this window back when relaunching the app from the Home view.\n\nIn general, you should prefer the .suppressed defaultLaunchBehavior on secondary scenes to avoid getting people stuck in an unexpected state.\n\nIn UIKit, you can achieve the same behavior by adding the userInitiatedDismissal option to your UIScene's destructionConditions.\n\nvisionOS 26 also adds support for making unique windows. These are windows that cannot be duplicated. Only one unique instance can exist at a time.\n\nJust like on the Mac, you declare them using the Window API instead of WindowGroup.\n\nUse these to prevent duplication of important interfaces, like a game window or a video call.\n\nOr use them to provide supplemental functionality that doesn’t require more than one instance.\n\nI don’t need more than one instance of the welcome window. So I’ll replace it with a unique Window.\n\nHowever, I’ll keep the main stage volume as a WindowGroup to allow creating multiple stages simultaneously.\n\nAmazing. My app's lifecycle is better than ever. We customized which windows should show out when locking in place and during app launch. And we made sure to keep our windows unique when it made sense.\n\nThere’s a slew of new enhancements to volumes in visionOS 26 that can help take your volumes to even greater depths.\n\nI’ll talk about the new surface snapping feature, advancements to presentations, and the Clipping Margins API.\n\nLet's dive right in.\n\nNew in visionOS 26, people can snap windows and volumes to their physical environment. They can do so by gently moving the window close to the surface. For restorable windows, this is what locks them in place for persistence. People can snap the back of windows to vertical surfaces like a wall. They can also snap the bottom of volumes to horizontal surfaces, like the floor or a table. And widgets, which are new in visionOS 26, can be snapped to either kind.\n\nLearn more about adding widgets to your visionOS app with “What’s new in widgets.” For windows and volumes, you can even get information about the snapping event.\n\nWith my app, I can snap the volume to a table and have it anchored horizontally. This is a start. However, I’d like to make the stage feel more present in my space. I want to have the robot stand directly on the table when the volume is snapped to it.\n\nWe can get some information about the snapping state using the new SurfaceSnappingInfo API.\n\nThe API gives us a simple isSnapped property to determine the general snapping status of our window.\n\nFor more advanced use cases, we can get the ARKit classification of the snapped surface. Note that this level of detail requires user permission. I'll show you how.\n\nTo enable detailed snapped surface information, I first need to set the 'Application Wants Detailed Surface Info' key to YES, as well as the 'Privacy World-Sensing Usage-Description' with a description to display when asking for permission. These two keys can be set in the app's Info.plist.\n\nOnce that’s done, I can jump into the code. Here, I get the surfaceSnappingInfo from the environment.\n\nIn the onChange, I check if the scene is currently snapped. And I check if I’m authorized to access the classification of the snapping surface. Checking the authorizationStatus will automatically ask the person for permission if needed.\n\nNow, when snapped to a table, I want to hide the platform under the stage. I’m using a state variable to keep track of this.\n\nWith these changes, I can snap my volume to a table and the robot can act its heart out in my own environment. Awesome! I’ve also made it so that walking around the table hides the walls that are in my way, so I can always see into my volume.\n\nI did this by reacting to changes in point of view of the scene using the onVolumeViewpointChange modifier. Check out how Owen added it to BOTanist in “Dive deep into volumes and immersive spaces” from WWDC24 to learn more.\n\nI also want people to be able to place new props all around the stage. I can add a popover in my volume's toolbar with different props to add. Awesome! I can finally recreate The Tragedy of King Gear.\n\nPreviously, presentations were only supported in Windows. With visionOS 2.4, support for nested presentations was added, allowing for things like popovers presented from sheets or context menus presented from ornaments.\n\nNow, with visionOS 26, presentations gained a whole new set of sources. You are free to present from within volumes, ornaments of volumes, attachments to RealityViews, or directly in RealityKit using the PresentationComponent.\n\nTo learn more about using presentations in RealityKit with attachments and the PresentationComponent, see “Better Together: SwiftUI and RealityKit.” This isn't limited to a small subset. All presentation types are available, that is menus, tooltips, popovers, sheets, alerts, and confirmation dialogs. Check out the documentation to learn how to create these presentations with SwiftUI.\n\nThese presentations all have special visual treatments to keep them visible when occluded by 3D content.\n\nBy default, the presentation will subtly blend in with the occluding content.\n\nHowever, this can be customized to prominently break through or hide behind the occluding content. Use the subtle, prominent, or none options to customize this.\n\nThese options can be applied to presentations using the presentationBreakthroughEffect modifier. For elements other than presentations, you can achieve the same effect with a breakthroughEffect modifier.\n\nWith presentations, I can now add custom UI anywhere I want. Let's try to add some more.\n\nI added another popover menu to change the stage decor. With this, I can transport our robot friend away from the old theater and onto a tropical island. Perfect for The Tempest! This set has a lot of potential. However, I think it could use some more pizzazz. How about a waterfall? Oh, and some thunderous clouds. Still, I want to make sure that these don’t crowd the center of the action. I can use the new Clipping Margins for this.\n\nWith Volumes, the new preferredWindowClippingMargins API lets you render content outside of your scene bounds.\n\nThis content is not interactive. Thus, you should use it for visual flourish only.\n\nNote that these bounds may not be granted by the system. To account for this, read the granted margins with the windowClippingMargins environment variable. Let's see it in action. I can specify my desired clipping margins with the preferredWindowClippingMargins API. Here, I want margins at the bottom. I’m making sure to convert my maxWaterfallHeight, which is in meters, into points by multiplying with the pointsPerMeter factor I got from PhysicalMetric.\n\nI then read the granted margins with the windowClippingMargins environment variable. With this, I can scale my waterfall to render within the margins.\n\nI’m taking the minimum of the margins and the waterfall height to be sure we always render the entire waterfall model, regardless of what was granted.\n\nAnd there we go. That looks much better. The clouds add a nice stormy ambiance, and the waterfall renders below the base plate without shifting the content up, keeping our focus on the island and its robot. I hope the BOTanist is freshly oiled.\n\nAnd with that, our latest theatrical production feels more real than ever. With surface snapping and clipping margins, the content adapts to our physical space. And with presentations, I can create powerful interfaces to craft the perfect scene.\n\nNow, let’s see what I can do to improve the immersive experience of my app.\n\nImmersive spaces bring your spatial experiences all around you. And visionOS 26 brings in some great new ways to do even more with immersive spaces. I'll introduce a world recentering event, new capabilities with immersion styles, remote immersive space on macOS, and advances to Compositor-based immersive spaces for rendering with Metal. When navigating in their space, people can long press the digital crown to recenter the app’s experience around them. If your app uses ARKit data, this can invalidate positions you might have stored for later use.\n\nYou can listen to the world recentering event with the new onWorldRecenter view modifier to be alerted about this.\n\nThis is quite useful to recompute and store positions based on the new coordinate system.\n\nvisionOS 26 also comes with some new customizations to the different immersion styles available to immersive spaces.\n\nThe progressive immersion style is a great way to partially present an immersive space while keeping people grounded in the real world. The immersive content is presented inside a portal that can be resized by turning the digital crown. This range of immersion can be customized in the progressive immersion style.\n\nIn visionOS 26 you can also customize the aspect ratio of this portal. You can use the existing landscape aspect ratio or the new portrait aspect ratio. Consider using the portrait aspect ratio for vertical experiences such as when bringing your iPhone games to Apple Vision Pro or for experiences that contain a high degree of motion, as having stable surroundings in the periphery can help people feel more comfortable.\n\nYou can specify this aspect ratio with a parameter to the progressive style, as you might with the immersion range. In addition to the progressive style, there’s also new customization for immersive spaces in the mixed immersion style.\n\nWhen setting the immersion style to mixed, the immersive space’s content blends in with people’s surroundings. This is the default style in my app.\n\nIn visionOS 26, immersive space content can blend in with system environments too. This means I can watch my robot’s latest production while on the moon.\n\nUse the immersiveEnvironmentBehavior scene modifier with the coexist behavior to allow this. Do this if your mixed immersive space does not require users to be aware of their real world surroundings.\n\nI love the props I've added to my app, but I just know people will want to bring in their own models when creating new scenes. They might create these models in their favorite macOS apps.\n\nTo support using these models directly from their Mac, I brought my app to macOS with the same stage creation capabilities.\n\nFor faster iteration, wouldn’t it be cool if people could preview their scenes as an immersive space directly without transferring their stage from macOS to visionOS? visionOS 26 and macOS Tahoe add RemoteImmersiveSpaces to help me do just that. With remote immersive spaces, you can use CompositorLayer to render content with Metal using app code and resources from your Mac and display it as an immersive experience on your Vision Pro. Let’s see it work in action in my app.\n\nOn my Mac app, I built a new immersive space using Metal and added a “Preview in Vision Pro“ button. Clicking on this asks me to select a target Vision Pro device.\n\nOver on my Vision Pro, I’ll accept the connection request.\n\nAnd just like that, my ImmersiSpace opens up and I can see the new props I’ve added in my robot’s latest show.\n\nI did this by adding a RemoteImmersiveSpace scene containing my CompositorLayer. This will be presented on visionOS, whereas the rest of my scenes, like my main stage, will still present directly on the Mac.\n\nTo learn more in adapting your CompositorLayer and ARKitSession to a remote Vision Pro device, check out “What’s new in Metal rendering for immersive apps.” Using CompositorLayer in my remote immersive space gives me a lot of power to create immersive experiences with Metal. However, CompositorLayer is not a View, and so it cannot be used in contexts that require Views, like my ImmersiveContent. So far, this has meant environment variables and View modifiers were not available to CompositorLayer.\n\nvisionOS 26 adds a new CompositorContent builder type, which lets you use the full power of SwiftUI with CompositorLayer. You can now access environment variables, add modifiers, or use state variables just as you can with SwiftUI views.\n\nCompositorContent brings over a whole lot of useful environment variables like scenePhase and openWindow, and some modifiers like onImmersionChange and onWorldRecenter.\n\nAll of these make CompositorLayer much more powerful to use in both remote immersive spaces, and regular ones running directly on visionOS.\n\nUpgrading my app to use CompositorContent has been a great way to revisit some of the Immersive Space modifiers that are available to me and to see how they can be applied to my app.\n\nSo that’s what’s new with immersive spaces. We've got a world recentering event, new customizations for the immersion styles, immersive spaces from the Mac with RemoteImmersiveSpace, and CompositorContent.\n\nMy app is looking amazing with all these capabilities. In fact, I think I want to add some of these cool volumetric experiences to more of my apps.\n\nHowever, some of my apps were built with UIKit, and UIKit doesn’t support volumes and immersive spaces. But now, it does with scene bridging. Scene bridging lets you take existing UIKit apps into the next dimension by adding SwiftUI volumes and immersive spaces.\n\nConsider Safari. It uses SwiftUI views, but is built with the UIKit lifecycle. Safari is making great use of scene bridging for their new Spatial Browsing feature. Let's see how we can do this too.\n\nTo bridge a SwiftUI scene into my UIKit app, I start by creating a class type that extends from UIHostingSceneDelegate. With this type, I can declare my SwiftUI scenes in the rootScene property using the familiar scene body syntax.\n\nI can now request this scene as I would any other UIKit scene by creating a UISceneSessionActivationRequest. In this case, I pass in my hosting delegate class, which declares my scenes, and the ID of the scene I’d like to open.\n\nAll that’s left to do is to send this request with activateSceneSession.\n\nYou can also respond to external events by setting your hosting delegate class in configurationForConnecting. This API also comes with a matching AppKit API to bridge SwiftUI scenes into your existing macOS AppKit apps.\n\nMy app is now taking full advantage of the new capabilities of visionOS 26, like locking in place, snapping to surfaces, and opening remotely from a Mac. I'm excited to show it off to my friends.\n\nNow, take a look at your apps. Audit your scenes and make sure they take full advantage of locking in place and restoration. Adapt your scenes to people’s surroundings with snapping and clipping margins. And immerse your macOS app's content on Vision Pro with remote immersive spaces.\n\nThe curtain falls, but in our app, the show goes on, one scene at a time. Thanks for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:10",
+      "title": "Disabling restoration",
+      "language": "swift",
+      "code": "// Disabling restoration\n\nWindowGroup(\"Tools\", id: \"tools\") {\n    ToolsView()\n}\n.restorationBehavior(.disabled)"
+    },
+    {
+      "timestamp": "4:36",
+      "title": "Disabling restoration in UIKit",
+      "language": "swift",
+      "code": "// Disabling restoration\n\nwindowScene.destructionConditions = [\n    .systemDisconnection\n]"
+    },
+    {
+      "timestamp": "5:02",
+      "title": "Specifying launch window",
+      "language": "swift",
+      "code": "// Specifying launch window\n\n@AppStorage(\"isFirstLaunch\") private var isFirstLaunch = true\n\nvar body: some Scene {\n    WindowGroup(\"Stage Selection\", id: \"selection\") {\n        SelectionView()\n    }\n\n    WindowGroup(\"Welcome\", id: \"welcome\") {\n        WelcomeView()\n            .onAppear {\n                isFirstLaunch = false\n            }\n    }\n    .defaultLaunchBehavior(isFirstLaunch ? .presented : .automatic)\n\n    // ...\n}"
+    },
+    {
+      "timestamp": "6:39",
+      "title": "\"suppressed\" behavior",
+      "language": "swift",
+      "code": "// \"suppressed\" behavior\n\nWindowGroup(\"Tools\", id: \"tools\") {\n    ToolsView()\n}\n.restorationBehavior(.disabled)\n.defaultLaunchBehavior(.suppressed)"
+    },
+    {
+      "timestamp": "7:44",
+      "title": "Unique window",
+      "language": "swift",
+      "code": "// Unique window\n\n@AppStorage(\"isFirstLaunch\") private var isFirstLaunch = true\n\nvar body: some Scene {\n    // ...\n\n    Window(\"Welcome\", id: \"welcome\") {\n        WelcomeView()\n            .onAppear {\n                isFirstLaunch = false\n            }\n    }\n    .defaultLaunchBehavior(isFirstLaunch ? .presented : .automatic)\n\n    WindowGroup(\"Main Stage\", id: \"main\") {\n        StageView()\n    }\n\n    // ...\n}"
+    },
+    {
+      "timestamp": "10:24",
+      "title": "Surface snapping",
+      "language": "swift",
+      "code": "// Surface snapping\n\n@Environment(\\.surfaceSnappingInfo) private var snappingInfo\n@State private var hidePlatform = false\n\nvar body: some View { \n    RealityView { /* ... */ }\n    .onChange(of: snappingInfo) {\n        if snappingInfo.isSnapped &&\n            SurfaceSnappingInfo.authorizationStatus == .authorized\n        {\n            switch snappingInfo.classification {\n                case .table:\n                    hidePlatform = true\n                default:\n                    hidePlatform = false\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "14:41",
+      "title": "Clipping margins",
+      "language": "swift",
+      "code": "// Clipping margins\n\n@Environment(\\.windowClippingMargins) private var windowMargins\n@PhysicalMetric(from: .meters) private var pointsPerMeter = 1\n\nvar body: some View {\n    RealityView { content in\n        // ...\n        waterfall = createWaterfallEntity()\n        content.add(waterfall)\n    } update: { content in\n        waterfall.scale.y = Float(min(\n            windowMargins.bottom / pointsPerMeter,\n            maxWaterfallHeight))\n        // ...\n    }\n    .preferredWindowClippingMargins(.bottom, maxWaterfallHeight * pointsPerMeter)\n}"
+    },
+    {
+      "timestamp": "16:44",
+      "title": "World recenter",
+      "language": "swift",
+      "code": "// World recenter\n\nvar body: some View {\n    RealityView { content in\n        // ...\n    }\n    .onWorldRecenter {\n        recomputePositions()\n    }\n}"
+    },
+    {
+      "timestamp": "17:58",
+      "title": "Progressive immersion style",
+      "language": "swift",
+      "code": "// Progressive immersion style\n\n@State private var selectedStyle: ImmersionStyle = .progressive\n\nvar body: some Scene {\n    ImmersiveSpace(id: \"space\") {\n        ImmersiveView()\n    }\n    .immersionStyle(\n        selection: $selectedStyle,\n        in: .progressive(aspectRatio: .portrait))\n}"
+    },
+    {
+      "timestamp": "18:37",
+      "title": "Mixed immersion style",
+      "language": "swift",
+      "code": "// Mixed immersion style\n\n@State private var selectedStyle: ImmersionStyle = .progressive\n\nvar body: some Scene {\n    ImmersiveSpace(id: \"space\") {\n        ImmersiveView()\n    }\n    .immersionStyle(selection: $selectedStyle, in: .mixed)\n    .immersiveEnvironmentBehavior(.coexist)\n}"
+    },
+    {
+      "timestamp": "20:14",
+      "title": "Remote immersive space",
+      "language": "swift",
+      "code": "// Remote immersive space\n\n// Presented on visionOS\nRemoteImmersiveSpace(id: \"preview-space\") {\n    CompositorLayer(configuration: config) { /* ... */ }\n}\n\n// Presented on macOS\nWindowGroup(\"Main Stage\", id: \"main\") {\n    StageView()\n}"
+    },
+    {
+      "timestamp": "20:48",
+      "title": "'CompositorLayer' is a 'CompositorContent'",
+      "language": "swift",
+      "code": "// 'CompositorLayer' is a 'CompositorContent'\n\nstruct ImmersiveContent: CompositorContent {\n    @Environment(\\.scenePhase) private var scenePhase\n\n    var body: some CompositorContent {\n        CompositorLayer { renderer in\n            // ...\n        }\n        .onImmersionChange { oldImmersion, newImmersion in\n            // ...\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "23:00",
+      "title": "Scene bridging",
+      "language": "swift",
+      "code": "// Scene bridging\n\nimport UIKit\nimport SwiftUI\n\n// Declare the scenes\nclass MyHostingSceneDelegate: NSObject, UIHostingSceneDelegate {\n    static var rootScene: some Scene {\n        WindowGroup(id: \"my-volume\") {\n            ContentView()\n        }\n        .windowStyle(.volumetric)\n    }\n}\n\n// Create a request for the scene\nlet requestWithId = UISceneSessionActivationRequest(\n    hostingDelegateClass: MyHostingSceneDelegate.self, id: \"my-volume\")!\n\n// Send a request\nUIApplication.shared.activateSceneSession(for: requestWithId)"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Adopting best practices for persistent UI",
+        "url": "https://developer.apple.com/documentation/visionOS/adopting-best-practices-for-scene-restoration"
+      },
+      {
+        "title": "Canyon Crosser: Building a volumetric hike-planning app",
+        "url": "https://developer.apple.com/documentation/visionOS/canyon-crosser-building-a-volumetric-hike-planning-app"
+      },
+      {
+        "title": "Petite Asteroids: Building a volumetric visionOS game",
+        "url": "https://developer.apple.com/documentation/visionOS/petite-asteroids-building-a-volumetric-visionos-game"
+      },
+      {
+        "title": "Tracking accessories in volumetric windows",
+        "url": "https://developer.apple.com/documentation/ARKit/tracking-accessories-in-volumetric-windows"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/290/4/fb07fe18-8745-4cfd-8448-1879b8f207dc/downloads/wwdc2025-290_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/290/4/fb07fe18-8745-4cfd-8448-1879b8f207dc/downloads/wwdc2025-290_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "274",
+      "year": "2025",
+      "title": "Better together: SwiftUI and RealityKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/274"
+    },
+    {
+      "id": "294",
+      "year": "2025",
+      "title": "What’s new in Metal rendering for immersive apps",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/294"
+    },
+    {
+      "id": "278",
+      "year": "2025",
+      "title": "What’s new in widgets",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/278"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:34:53.524Z"
+}

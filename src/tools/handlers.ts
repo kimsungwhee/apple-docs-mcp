@@ -15,6 +15,22 @@ import {
   getTechnologyOverviewsSchema,
   getSampleCodeSchema,
 } from '../schemas/index.js';
+import {
+  listWWDCVideosSchema,
+  searchWWDCContentSchema,
+  getWWDCVideoSchema,
+  getWWDCCodeExamplesSchema,
+  browseWWDCTopicsSchema,
+  findRelatedWWDCVideosSchema,
+} from '../schemas/wwdc.schemas.js';
+import {
+  handleListWWDCVideos,
+  handleSearchWWDCContent,
+  handleGetWWDCVideo,
+  handleGetWWDCCodeExamples,
+  handleBrowseWWDCTopics,
+  handleFindRelatedWWDCVideos,
+} from './wwdc/wwdc-handlers.js';
 
 /**
  * Tool handler function type
@@ -212,6 +228,77 @@ export const toolHandlers: Record<string, ToolHandler> = {
       validatedArgs.limit,
     );
   },
+
+  // WWDC tools
+  list_wwdc_videos: async (args, _server) => {
+    const validatedArgs = listWWDCVideosSchema.parse(args);
+    const result = await handleListWWDCVideos(
+      validatedArgs.year,
+      validatedArgs.topic,
+      validatedArgs.hasCode,
+      validatedArgs.limit,
+    );
+    return { content: [{ type: 'text', text: result }] };
+  },
+
+  search_wwdc_content: async (args, _server) => {
+    const validatedArgs = searchWWDCContentSchema.parse(args);
+    const result = await handleSearchWWDCContent(
+      validatedArgs.query,
+      validatedArgs.searchIn,
+      validatedArgs.year,
+      validatedArgs.language,
+      validatedArgs.limit,
+    );
+    return { content: [{ type: 'text', text: result }] };
+  },
+
+  get_wwdc_video: async (args, _server) => {
+    const validatedArgs = getWWDCVideoSchema.parse(args);
+    const result = await handleGetWWDCVideo(
+      validatedArgs.year,
+      validatedArgs.videoId,
+      validatedArgs.includeTranscript,
+      validatedArgs.includeCode,
+    );
+    return { content: [{ type: 'text', text: result }] };
+  },
+
+  get_wwdc_code_examples: async (args, _server) => {
+    const validatedArgs = getWWDCCodeExamplesSchema.parse(args);
+    const result = await handleGetWWDCCodeExamples(
+      validatedArgs.framework,
+      validatedArgs.topic,
+      validatedArgs.year,
+      validatedArgs.language,
+      validatedArgs.limit,
+    );
+    return { content: [{ type: 'text', text: result }] };
+  },
+
+  browse_wwdc_topics: async (args, _server) => {
+    const validatedArgs = browseWWDCTopicsSchema.parse(args);
+    const result = await handleBrowseWWDCTopics(
+      validatedArgs.topicId,
+      validatedArgs.includeVideos,
+      validatedArgs.year,
+      validatedArgs.limit,
+    );
+    return { content: [{ type: 'text', text: result }] };
+  },
+
+  find_related_wwdc_videos: async (args, _server) => {
+    const validatedArgs = findRelatedWWDCVideosSchema.parse(args);
+    const result = await handleFindRelatedWWDCVideos(
+      validatedArgs.videoId,
+      validatedArgs.year,
+      validatedArgs.includeExplicitRelated,
+      validatedArgs.includeTopicRelated,
+      validatedArgs.includeYearRelated,
+      validatedArgs.limit,
+    );
+    return { content: [{ type: 'text', text: result }] };
+  },
 };
 
 /**
@@ -222,9 +309,21 @@ export async function handleToolCall(
   args: unknown,
   server: any,
 ): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> {
-  const handler = toolHandlers[toolName];
-  if (!handler) {
-    throw new Error(`Unknown tool: ${toolName}`);
+  try {
+    const handler = toolHandlers[toolName];
+    if (!handler) {
+      throw new Error(`Unknown tool: ${toolName}`);
+    }
+    
+    return await handler(args, server) as { content: Array<{ type: string; text: string }>; isError?: boolean };
+  } catch (error) {
+    // Return error response for validation errors and unknown tools
+    return {
+      content: [{
+        type: 'text',
+        text: `Error: ${error instanceof Error ? error.message : String(error)}`
+      }],
+      isError: true
+    };
   }
-  return await handler(args, server) as { content: Array<{ type: string; text: string }>; isError?: boolean };
 }

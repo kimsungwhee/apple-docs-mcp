@@ -10,31 +10,31 @@ import { normalizeFrameworkName } from '../utils/framework-mapper.js';
  */
 export const searchFrameworkSymbolsTool: Tool = {
   name: 'search_framework_symbols',
-  description: 'Search for symbols (classes, structs, protocols, etc.) in a specific Apple framework. Provides hierarchical browsing of framework APIs with type filtering and wildcard search support.',
+  description: 'Browse and search symbols within a specific Apple framework. Perfect for exploring framework APIs, finding all views/controllers/delegates in a framework, or discovering available types. Use after list_technologies to get framework identifiers.',
   inputSchema: {
     type: 'object',
     properties: {
       framework: {
         type: 'string',
-        description: 'Framework name in lowercase (e.g., "uikit", "swiftui", "foundation", "combine", "coredata", "metal", "arkit", "gamekit", "cloudkit", "storekit", "healthkit", "mapkit", "avfoundation", "coregraphics", "coreml"). Use list_technologies to find exact framework identifiers.',
+        description: 'Framework identifier in lowercase. Common: "uikit", "swiftui", "foundation", "combine", "coredata". Get exact names from list_technologies. Example: "swiftui" for SwiftUI framework.',
       },
       symbolType: {
         type: 'string',
         enum: ['all', 'class', 'struct', 'enum', 'protocol', 'method', 'property', 'init', 'func', 'var', 'let', 'typealias'],
-        description: 'Type of symbol to search for. "all" returns all types. Types: class (classes), struct (structures), enum (enumerations), protocol (protocols), method/func (functions), property/var (properties), init (initializers), let (constants), typealias (type aliases). Default: all',
+        description: 'Filter by symbol type. Use "class" for UIViewController subclasses, "protocol" for delegates, "struct" for value types. Default: "all" shows everything.',
       },
       namePattern: {
         type: 'string',
-        description: 'Optional name pattern to filter results. Supports wildcards: * (any characters), ? (single character). Examples: "*View" (ends with View), "UI*Controller" (starts with UI, ends with Controller), "NS?" (NS followed by one character). Case-sensitive.',
+        description: 'Filter by name pattern. Use "*View" for all views, "UI*" for UI-prefixed symbols, "*Delegate" for delegates. Case-sensitive. Leave empty for all symbols.',
       },
       language: {
         type: 'string',
         enum: ['swift', 'occ'],
-        description: 'Programming language (swift = Swift, occ = Objective-C). Some symbols may only be available in one language. Default: swift',
+        description: 'Language preference. Some APIs differ between Swift and Objective-C. Default: "swift"',
       },
       limit: {
         type: 'number',
-        description: `Maximum number of results to return (default: ${API_LIMITS.DEFAULT_FRAMEWORK_SYMBOLS_LIMIT}, max: ${API_LIMITS.MAX_FRAMEWORK_SYMBOLS_LIMIT}). Note: Results include nested symbols, so actual count may vary.`,
+        description: `Results limit (default: ${API_LIMITS.DEFAULT_FRAMEWORK_SYMBOLS_LIMIT}, max: ${API_LIMITS.MAX_FRAMEWORK_SYMBOLS_LIMIT}). Includes nested symbols.`,
         minimum: 1,
         maximum: API_LIMITS.MAX_FRAMEWORK_SYMBOLS_LIMIT,
       },

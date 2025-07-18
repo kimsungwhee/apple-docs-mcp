@@ -1,0 +1,196 @@
+{
+  "id": "110343",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/110343/",
+  "title": "SwiftUI on iPad: Add toolbars, titles, and more",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Harry: Hi, I'm Harry, an engineer on the SwiftUI team. Welcome to the second part of the SwiftUI on iPad series. In the first part of this series, my colleague Raj dove deep into how you can use lists, tables, selection, and split views to really make your apps shine using the iPad's larger screens and various input devices. If you haven't seen that session, I highly recommend starting with that. I really enjoyed seeing Raj build out the Places app and I wanted to add some features of my own. So in this session I'll be looking at something near and dear to my heart, toolbars! In SwiftUI, the toolbar API configures many system bars like the navigation bar or bottom bar on iOS or the window toolbar on macOS. Toolbars provide quick actions to a lot of your most common features. Creating a good toolbar can really improve the productivity of people using your app.\n\nI've been spending a lot of time thinking about toolbars and how Places could use some of the new toolbar features in iOS 16. I'd like to start by briefly showing you what I've built to give you a taste of what is now possible on iPad.\n\nAfter all my changes, here is the updated Places app.\n\nYou might notice some new features, like leading aligned navigation titles, title menus, title menu headers, and centered aligned toolbar items. If you've used a Mac, you might also be familiar with features like Toolbar customization, which allows people to make toolbars uniquely their own. These powerful Mac features are making their debut on the iPad.\n\nTo start this session, I'll show some enhancements to the toolbar API. Then I'll walk you through some new APIs for titles and documents. So let's dive right in with toolbars. Now, many of you have already configured toolbars in your own iOS app and to optimize for a smaller screen, you might've added a menu like I did when I first looked at Places.\n\nMy menu looked like this in code.\n\nYou can see I have a toolbar item with a primary action placement. Inside, I have a more menu, with a few controls as the menu's content. Let's see what this looks like on iPad.\n\nAs you might have guessed, it doesn't really take advantage of the space available there. What's great, though, is that in iOS 16, toolbars can implement these kind of menus on your behalf. We call these overflow menus and to make best use of them, I'll want to restructure the content of my toolbar.\n\nI'll start by converting the toolbar item into a toolbar item group. I'll then remove the menu and make its content the content of the toolbar item group. This group inserts individual toolbar items for each view in the group. On iPad and Mac, this is all that's needed to automatically move items into an overflow menu when needed. There's more I can do here, but before I can get to that, I'll need to think about the placement of my toolbar items.\n\nPlacements define the area in which a toolbar item is rendered. Different placements can resolve to the same area. You can think of a navigation bar as having three distinct areas: the leading, the center, and the trailing area. The leading and trailing areas typically contain controls. While the center contains your app's navigation title. Let's look at this in the context of Places.\n\nIn Places my primary action toolbar item group resolves to the trailing area on iPad or Mac. Primary actions represent the most common action available to the user for a particular screen.\n\nIn iOS 16, there's a new placement called secondary action. These items represent controls that are not the most used controls, but still warrant their own toolbar items. Actions like favoriting and editing aren't the most important in Places, so I'll make them secondary actions.\n\nBy default, secondary actions will not be visible in the toolbar. Instead, they live in the overflow menu. You can change that behavior by using the new toolbarRole modifier.\n\nThis modifier influences the behavior of a toolbar by assigning it a semantic role. Here I pass an editor role which tells the navigation bar that it should be optimized for editing content. The navigation bar interprets this as a desire to have more space to render toolbar items and so it moves the navigation title from the center area to the leading area. This makes room for secondary actions to be placed in the center before moving to the overflow menu. In compact size classes, the navigation bar doesn't change and continues to render the title in the center.\n\nUsing the secondary action and toolbar role API really lets Places start to take advantage of the iPad's size. With the center available to me, I can add more items to my toolbar, like a noise button, or a comfort level button, or a trash button. But if I start adding a lot of items, my toolbar might become unwieldy for some users. MacOS has long supported customizable toolbars which lets each person choose the toolbar best for them and I'm excited to say that now iPadOS also supports user customization. You can use the existing toolbar customization API that's worked on macOS to adopt this feature. Let's look at that now.\n\nOnly toolbar items are customizable so I'll first split up my toolbar item group into individual toolbar items. Note that there is no functional difference after this change. Customization also requires every item in the toolbar to be associated with a unique identifier so I'll add IDs to each of my items. It's important for these IDs to be unique and consistent across app launches. When a user customizes their toolbar, SwiftUI persists these IDs and uses them to look up the associated view to render. Finally, I'll add an ID to the toolbar modifier as a whole. Altogether, this opts the toolbar into supporting customization.\n\nUnique to customizable toolbars, toolbar items have the ability to not be initially present in the toolbar. These items start their life in the customization popover and can be added to the toolbar later. Because these items aren't initially present, this is a good option for actions that are more useful to specific workflows. Let's check them out.\n\nI want to hide some of my current toolbar items to make my new items easier to see.\n\nNow let's add a toolbar item that contains a share link. Share links are new in SwiftUI and rely on a new protocol called transferable. For more information on Transferable and ShareLink, be sure to check out the Meet Transferable session. With my toolbar item in place, I'll provide a value of false to the shows by default parameter which makes this item not be initially present in the bar.\n\nNow you can see my share link living its best life in the customization popover. And I'm able to drag it from the customization popover into the bar. People are going to love that. With my share link in place, I started to think about the relationship between my toolbar items. After moving the share link into the bar, I noticed that my image and map adjustment items are separated, but I think of these items as a group of quick editing control, and I'd like to model that relationship in the toolbar itself.\n\niOS 16 and macOS Ventura support modeling this relationship by using ControlGroup. I'll show you how. You can see I have two individual toolbar items for my image and map adjustment actions. To group them together, I'll first move them to the same item. Then I'll wrap them in a control group.\n\nA user can now add or remove them from the toolbar as a unit. That's pretty cool, but I can take this even further using a new API available on ControlGroup. By providing a label to the control group, this group of items can collapse into its own smaller menu before moving into the overflow menu.\n\nThe toolbar is really starting to come together. There's one last change I'd like to make. Adding a new place is a common and important action, so I'd like to add a toolbar item for that.\n\nTo do that, I'll add a new button to my toolbar, but this time I'll use the primary action placement as I consider the new button to be the most common action.\n\nThis placement highlights an important distinction between iOS and macOS. All items within a customizable toolbar modifier support customization on macOS, but on iPadOS, only secondary actions do. So my new button here renders in the trailing area of the bar and is not customizable by the user. Wow! That was a lot about toolbars and those aren't the only improvements. Navigation titles gained some new features as well around menus, documents, and more. Let's take documents as an example. There are lot of kinds of documents. You might be familiar with documents that are managed by the document group API. Document groups come with a lot of built-in functionality for representing and managing their documents. All of what I'm about to talk about comes for free when using document groups.\n\nIn Places, though, an individual place can be considered a document even though Places isn't using a document group. It has properties that you can edit, you can add or remove them to the Places app, and you can share a place with your friends. Let's look at how we can show off this relationship in a non-document group based app. I already associate the name of the place as the navigation title of the view. So I'm already associating a piece of the place to the title of my toolbar. In iOS 16, I can take that even further by using new navigation title modifiers. Navigation titles now support presenting a menu. You can kind of think of this like the File menu on macOS. To create one of these menus, provide a set of actions to the navigation title, just like you would a normal menu. Notice that the title now has a menu indicator attached to it that presents a menu populated with your actions. And that's not all navigation titles can do. One of my favorite parts is its new ability to support editable titles. You can pass a binding to your navigation title and this tells the toolbar that you support editing the title. All you're missing is a way to actually start editing. You can use the new RenameButton inside your titles menus actions to accomplish this.\n\nTapping on the rename button allows you to start renaming the title. Just like you can associate a navigation title to your view, you can now also associate a document, like my place. When provided a document, the title menu renders a specialized header that shows a preview of that document. The preview can be dragged and there's quick access to share the document. To get one of these headers, associate your navigation document to your view using the new navigation document modifier. You can do this by providing a type that conforms to transferable, or by providing a URL directly. Here I'll provide a URL that will open the Maps app to the place I'm viewing. The navigation document modifier will also configure the proxy icon of the window toolbar on macOS when providing a URL.\n\nAfter all that, I think I'll take a break from updating my app's toolbars. Can you believe all the features I've added in this time? I can't wait to start using them. I covered a lot in my journey to improve the Places experience on iPad. Toolbars on iPad have gained a lot of new features like overflow menus and user customization. Use the secondary action placement and customization APIs to really make the most of the larger space available on iPad and Mac.\n\nTitles have gained some new ways to represent themselves in the toolbar. Use a navigation title or create a title menu or support title renaming. And remember to use the navigation document modifier when appropriate. I hope you've enjoyed the SwiftUI on iPad series. With all the improvements in tables, selection, toolbars, and more, go out and take your iPad apps to the next level. Thank you, and have a great WW.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "0:01",
+      "title": "Explicit More Menu",
+      "language": "swift",
+      "code": "PlaceDetailContent(place: $place)\n    .toolbar {\n        ToolbarItem(placement: .primaryAction) {\n            Menu {\n                FavoriteToggle(place: $place)\n                AdjustImageButton(place: $place)\n                AdjustMapButton(place: $place)\n            } label: {\n                Label(\n                    \"More\", \n                    systemImage: \"ellipsis.circle\")\n            }\n        }\n    }"
+    },
+    {
+      "timestamp": "0:02",
+      "title": "Menu in ToolbarItemGroup",
+      "language": "swift",
+      "code": "PlaceDetailContent(place: $place)\n    .toolbar {\n        ToolbarItemGroup(placement: .primaryAction) {\n            Menu {\n                FavoriteToggle(place: $place)\n                AdjustImageButton(place: $place)\n                AdjustMapButton(place: $place)\n            } label: {\n                Label(\"More\", systemImage: \"ellipsis.circle\")\n            }\n        }\n    }"
+    },
+    {
+      "timestamp": "0:03",
+      "title": "ToolbarItemGroup with Menu Content",
+      "language": "swift",
+      "code": "PlaceDetailContent(place: $place)\n    .toolbar {\n        ToolbarItemGroup(placement: .primaryAction) {\n            FavoriteToggle(place: $place)\n            AdjustImageButton(place: $place)\n            AdjustMapButton(place: $place)\n        }\n    }"
+    },
+    {
+      "timestamp": "0:04",
+      "title": "Secondary Action ToolbarItemGroup",
+      "language": "swift",
+      "code": "PlaceDetailContent(place: $place)\n    .toolbar {\n        ToolbarItemGroup(placement: .secondaryAction) {\n            FavoriteToggle(place: $place)\n            AdjustImageButton(place: $place)\n            AdjustMapButton(place: $place)\n        }\n    }"
+    },
+    {
+      "timestamp": "0:05",
+      "title": "Toolbar Role",
+      "language": "swift",
+      "code": "PlaceDetailContent(place: $place)\n    .toolbar {\n        ToolbarItemGroup(placement: .secondaryAction) {\n            FavoriteToggle(place: $place)\n            AdjustImageButton(place: $place)\n            AdjustMapButton(place: $place)\n        }\n    }\n    .toolbarRole(.editor)"
+    },
+    {
+      "timestamp": "0:06",
+      "title": "Individual ToolbarItems",
+      "language": "swift",
+      "code": "PlaceDetailContent(place: $place)\n    .toolbar {\n        ToolbarItem(placement: .secondaryAction) {\n            FavoriteToggle(place: $place)\n        }\n        ToolbarItem(placement: .secondaryAction) {\n            AdjustImageButton(place: $place)\n        }\n        ToolbarItem(placement: .secondaryAction) {\n            AdjustMapButton(place: $place)\n        }\n    }\n    .toolbarRole(.editor)"
+    },
+    {
+      "timestamp": "0:07",
+      "title": "Customizable ToolbarItems",
+      "language": "swift",
+      "code": "PlaceDetailContent(place: $place)\n    .toolbar(id: \"place\") {\n        ToolbarItem(id: \"favorite\", placement: .secondaryAction) {\n            FavoriteToggle(place: $place)\n        }\n        ToolbarItem(id: \"image\", placement: .secondaryAction) {\n            AdjustImageButton(place: $place)\n        }\n        ToolbarItem(id: \"map\", placement: .secondaryAction) {\n            AdjustMapButton(place: $place)\n        }\n    }\n    .toolbarRole(.editor)"
+    },
+    {
+      "timestamp": "0:08",
+      "title": "ShareLink ToolbarItem",
+      "language": "swift",
+      "code": "PlaceDetailContent(place: $place)\n    .toolbar(id: \"place\") {\n        ToolbarItem(id: \"favorite\", placement: .secondaryAction) {\n            FavoriteToggle(place: $place)\n        }\n        ToolbarItem(id: \"image\", placement: .secondaryAction) {\n            AdjustImageButton(place: $place)\n        }\n        ToolbarItem(id: \"map\", placement: .secondaryAction) {\n            AdjustMapButton(place: $place)\n        }\n        ToolbarItem(id: \"share\", placement: .secondaryAction) {\n            ShareLink(item: place)\n        }\n    }\n    .toolbarRole(.editor)"
+    },
+    {
+      "timestamp": "0:09",
+      "title": "Non-default ShareLink ToolbarItem",
+      "language": "swift",
+      "code": "PlaceDetailContent(place: $place)\n    .toolbar(id: \"place\") {\n        ToolbarItem(id: \"favorite\", placement: .secondaryAction) {\n            FavoriteToggle(place: $place)\n        }\n        ToolbarItem(id: \"image\", placement: .secondaryAction) {\n            AdjustImageButton(place: $place)\n        }\n        ToolbarItem(id: \"map\", placement: .secondaryAction) {\n            AdjustMapButton(place: $place)\n        }\n        ToolbarItem(id: \"share\", placement: .secondaryAction, showsByDefault: false) {\n            ShareLink(item: place)\n        }\n    }\n    .toolbarRole(.editor)"
+    },
+    {
+      "timestamp": "0:10",
+      "title": "ControlGroup in ToolbarItem",
+      "language": "swift",
+      "code": "PlaceDetailContent(place: $place)\n    .toolbar(id: \"place\") {\n        ToolbarItem(id: \"favorite\", placement: .secondaryAction) {\n            FavoriteToggle(place: $place)\n        }\n        ToolbarItem(id: \"image\", placement: .secondaryAction) {\n            ControlGroup {\n                AdjustImageButton(place: $place)\n                AdjustMapButton(place: $place)\n            }\n        }\n        ToolbarItem(id: \"share\", placement: .secondaryAction, showsByDefault: false) {\n            ShareLink(item: place)\n        }\n    }\n    .toolbarRole(.editor)"
+    },
+    {
+      "timestamp": "0:11",
+      "title": "ControlGroup in ToolbarItem with Label",
+      "language": "swift",
+      "code": "PlaceDetailContent(place: $place)\n    .toolbar(id: \"place\") {\n        ToolbarItem(id: \"favorite\", placement: .secondaryAction) {\n            FavoriteToggle(place: $place)\n        }\n        ToolbarItem(id: \"image\", placement: .secondaryAction) {\n            ControlGroup {\n                AdjustImageButton(place: $place)\n                AdjustMapButton(place: $place)\n            } label: {\n                Label(\"Edits\", systemImage: \"wand.and.stars\")\n            }\n        }\n    }\n    .toolbarRole(.editor)"
+    },
+    {
+      "timestamp": "0:12",
+      "title": "NewButton ToolbarItem",
+      "language": "swift",
+      "code": "PlaceDetailContent(place: $place)\n    .toolbar(id: \"place\") {\n        ToolbarItem(id: \"new\", placement: .primaryAction) {\n            NewButton()\n        }\n        ToolbarItem(id: \"favorite\", placement: .secondaryAction) {\n            FavoriteToggle(place: $place)\n        }\n        ToolbarItem(id: \"image\", placement: .secondaryAction) {\n            ControlGroup {\n                AdjustImageButton(place: $place)\n                AdjustMapButton(place: $place)\n            } label: {\n                Label(\"Edits\", systemImage: \"wand.and.stars\")\n            }\n        }\n        ToolbarItem(id: \"share\", placement: .secondaryAction, showsByDefault: false) {\n            ShareLink(item: place)\n        }\n    }\n    .toolbarRole(.editor)"
+    },
+    {
+      "timestamp": "0:13",
+      "title": "Navigation Title",
+      "language": "swift",
+      "code": "PlaceDetailContent(place: $place)\n    // toolbar customizations ...\n    .navigationTitle(place.name)"
+    },
+    {
+      "timestamp": "0:14",
+      "title": "Navigation Title with Menu",
+      "language": "swift",
+      "code": "PlaceDetailContent(place: $place)\n    // toolbar customizations ...\n    .navigationTitle(place.name) {\n        MyPrintButton()\n    }"
+    },
+    {
+      "timestamp": "0:15",
+      "title": "Editable Navigation Title with Menu",
+      "language": "swift",
+      "code": "PlaceDetailContent(place: $place)\n    // toolbar customizations ...\n    .navigationTitle($place.name) {\n        MyPrintButton()\n    }"
+    },
+    {
+      "timestamp": "0:16",
+      "title": "Editable Navigation Title with RenameButton",
+      "language": "swift",
+      "code": "PlaceDetailContent(place: $place)\n    // toolbar customizations ...\n    .navigationTitle($place.name) {\n        MyPrintButton()\n        RenameButton()\n    }"
+    },
+    {
+      "timestamp": "0:17",
+      "title": "Navigation Document",
+      "language": "swift",
+      "code": "PlaceDetailContent(place: $place)\n    // toolbar customizations ...\n    .navigationTitle($place.name) {\n        MyPrintButton()\n        RenameButton()\n    }\n    .navigationDocument(place.url)"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Configure your apps navigation titles",
+        "url": "https://developer.apple.com/documentation/SwiftUI/Configure-Your-Apps-Navigation-Titles"
+      },
+      {
+        "title": "ControlGroup",
+        "url": "https://developer.apple.com/documentation/SwiftUI/ControlGroup"
+      },
+      {
+        "title": "ShareLink",
+        "url": "https://developer.apple.com/documentation/SwiftUI/ShareLink"
+      },
+      {
+        "title": "ToolbarItem",
+        "url": "https://developer.apple.com/documentation/SwiftUI/ToolbarItem"
+      },
+      {
+        "title": "ToolbarRole",
+        "url": "https://developer.apple.com/documentation/SwiftUI/ToolbarRole"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/110343/4/61E55FAE-4837-4DAF-912C-8D101B7DF820/downloads/wwdc2022-110343_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/110343/4/61E55FAE-4837-4DAF-912C-8D101B7DF820/downloads/wwdc2022-110343_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10056",
+      "year": "2023",
+      "title": "Build better document-based apps",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10056"
+    },
+    {
+      "id": "10061",
+      "year": "2022",
+      "title": "Bring multiple windows to your SwiftUI app",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10061"
+    },
+    {
+      "id": "10058",
+      "year": "2022",
+      "title": "SwiftUI on iPad: Organize your interface",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10058"
+    },
+    {
+      "id": "10052",
+      "year": "2022",
+      "title": "What's new in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10052"
+    },
+    {
+      "id": "10009",
+      "year": "2022",
+      "title": "What’s new in iPad app design",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10009"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:53:37.317Z"
+}

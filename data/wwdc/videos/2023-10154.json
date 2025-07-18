@@ -1,0 +1,138 @@
+{
+  "id": "10154",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10154/",
+  "title": "Build an app with SwiftData",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Essentials"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Julia: Hello! My name is Julia. I'm a SwiftUI Engineer. Recently, we've introduced SwiftData, a new way to persist your model layer in Swift. In today's session, let's see how to seamlessly integrate SwiftData in a SwiftUI app. We will discuss the new SwiftUI features that allow for smooth integration with SwiftData models. To cover your basics, watch the \"Meet SwiftData\" session first if you haven’t already. To see how SwiftData and SwiftUI play together, let’s build a flashcards app. For some time, I’ve wanted to make a tool that can help me remember dates and authors of great inventions, and SwiftData is perfect for this task. It will help to persist the flashcard decks, so I can open and click through them whenever I got a minute. I want this app to work everywhere: on Mac, iPhone, Watch, and TV, and SwiftData has my back. It is available across all the platforms. This is a code-along. During this session, I will be building an app with you. Hit pause now, and download the companion Xcode projects: an archive with the prepared starting point, and the finished one. Open the starter project, and go to the ContentView file. Throughout this session, we will leverage a new Xcode feature, embedded interactive live Previews for Mac. In the Previews section, there's a grid with some flash cards. A click on any card transitions into a view where we can scroll the cards one by one. Do you remember who invented the compiler? Click the card. It flips and gives an answer! The app is populated with sample cards stored in memory, and if we run the app and add new ones, they will disappear when we close the app. This is where SwiftData comes in. We will use it to persist the flashcards we create. Today, we will talk about everything you need to know to start using SwiftData, checking off one item after another in this to-do list that I put together for us. You have just met the app we will build. Next, we’ll take a look at the starter project and its model class. Then, step by step, we will convert and amend it to use SwiftData as its storage. We’ll learn how to expand the model class to become SwiftData model, how to query the data and update the view on every change in the model layer, create and save models, and conveniently bind UI elements to them. And at the end, as a bonus, we’ll see how easy it is to create a document-based app when SwiftData takes care of the storage. In the starter project, I defined a Card model that represents a single flash card, some views, and supporting files to save us time. Every card stores the text for the front and back sides and the creation date. It is a pretty typical model. Let’s update it so that SwiftData can store it for us. First, import SwiftData into this file. And next, the main change that we need to make is adding the @Model macro to the definition. And now, the class is fully persistable with SwiftData. No more typing. That’s it! And even more: with @Model, the Card gets conformance to the Observable protocol, and we will use it instead of ObservableObject. Remove the conformance to the Observable object as well as @Published property wrappers. We previously used the ObservedObject conformance to edit the card directly from the UI in the CardEditorView file. To adopt Observable here, we replace the \"ObservedObject\" property wrapper with \"Bindable.\" It allows the text fields to bind directly to the card's front... and back text. Done! New Observable macro and Bindable property wrapper allow to effortlessly set up the data flow in an application with even less code than before. When a View uses a property of an Observable type in its body, it will be updated automatically when the given property changes. And it has never been that easy to bind a model's mutable state to UI elements! I encourage you to watch the WWDC23 session, \"Discover Observation with SwiftUI.\" You'll be surprised how Observable simplifies the data flow code with or without SwiftData. And that’s all you need to know about the models. Nothing more. How cool is that? Next, to query models from SwiftData and display them in the UI, let’s switch to ContentView. Instead of the SampleDeck.contents, we will display the cards that SwiftData has.\n\nAnd there’s a single change that I need to make to bind the cards array to SwiftData storage: replace @State property wrapper with @Query. That’s it! As we can see in the preview, there are no more cards to display, probably because we haven’t saved any. Use @Query whenever you want to display models, managed by SwiftData, in the UI. @Query is a new property wrapper that queries the models from SwiftData. It also triggers the view updated on every change of the models, similarly to how @State would do that. Every view can have as many queried properties as it needs. Query offers lightweight syntax to configure sorting, ordering, filtering, and even animating changes. Under the hood, it uses a model context of the view as the data source. How do we provide @Query with a model context? We'll get one from a model container. SwiftUI vends a new view and scene modifier for a convenient setup of the view’s ModelContainer. To use SwiftData, any application has to set up at least one ModelContainer. It creates the whole storage stack, including the context that @Query will use. A View has a single model container, but an application can create and use as many containers as it needs for different view hierarchies. If the application does not set up its modelContainer, its windows and the views it creates can not save or query models via SwiftData. Many applications need a single model container. In this case, you can set it up for the whole window group scene. The window and its views will inherit the container, as well as any other windows created from the same group. All of these views will write and read from a single container. Some apps need a few storage stacks, and they can set up several model containers for different windows. SwiftUI also allows for a granular setup on a view level. Different views in the same window can have separate containers, and saving in one container won’t affect another. Now, let's set up the modelContainer to provide the Query with a source of data. I open the app definition...\n\nAnd set a model container for app's windows. Note that the subviews can create, read, update, and delete only the model types listed in the view modifier. And we are done with the setup! Although, I want to take one extra step: provide my previews with sample data. In the app, I have defined an in-memory container with sample cards. Let's open the \"PreviewSampleData\" file and include it in the target. This file contains the definition of a container with the sample data. I will use it in the ContentView to fill my preview with sample cards.  Now that @Query has a source of data, the preview displays the cards! And this is all the setup that’s required to have SwiftData stack ready and generate a preview. Next, I want to make sure that SwiftData tracks and saves the new cards that I create, as well as the changes made to the existing ones. To do that, I will use the model context of the view. To access the model context, SwiftUI offers a new environment variable. Similarly to model container, each view has a single context, but an application, in general, can have as many as it needs. In our app, the context is already configured. This environment variable was populated automatically when we set the model container earlier. Let’s switch back to Xcode. We will need to access the modelContext to save and update the cards.   We insert the newly created card in the model context to make SwiftData aware of the model we want to store.\n\nYou might think that after inserting the model, you need to save the context, calling \"modelContext.save(),\" but you don't need to do that. A nice detail about SwiftData is that it autosaves the model context. The autosaves are triggered by UI-related events and user input. We don’t need to worry about saving because SwiftData does it for us. There are only a few cases when you want to make sure that all the changes are persisted immediately, for example, before sharing the SwiftData storage or sending it over. In these cases, call \"save()\" explicitly. Now that our app can save and query the cards, let’s create one! I run the app... and press plus button to create a card. Let's add that Compiler card that we saw before.  Now, let’s quit the app, launch it again, and see if our new card is there.\n\nAnd here it is! Now you know how to access the model context of the view and add cards. Done! Let’s open a new window. It displays the same deck as the first one, which makes sense, since both windows use the same model container and access the same data. It would be nice, though, if the app could open different flash card decks in different windows. Essentially, it means that I want to treat every deck as a separate document. Then, I can share these documents with friends. Document-based apps is a concept used on macOS, iOS, and iPadOS. It describes the certain types of applications that allow users to create, open, view, or edit different types of documents. Every document is a file, and users can store, copy, and share them. And I am excited to let you know that SwiftUI supports SwiftData-backed document apps. Let’s try this approach. I open the FlashCardApp file. Document-based apps exist on iOS and macOS, and on these platforms, we'll switch to using the DocumentGroup initializer.\n\nI will be passing in the model type Card.self, content type, and a view builder. Let's take a short detour and talk about the second parameter, content type, in more detail! SwiftData Document-based apps need to declare custom content types. Each SwiftData document is built from a unique set of models and so has a unique representation on disk. In the context of documents, you can think of a content type as of a binary file format, like JPEG. Another type of documents, a package, is a directory with a fixed structure on disk, like an Xcode project. For example, all the JPEG images have the same binary structure. Otherwise, photo editors wouldn’t know how to read them. Similarly, all the Xcode projects contain certain directories and files. When the user opens the deck, we need the operating system to associate the deck format and file extension with our app. That’s why we need to declare the content type. SwiftData documents are packages: if you mark some properties of a SwiftData model with the “externalStorage” attribute, all the externally stored items will be a part of the document package. In the UTType+FlashCards file, I have a definition of the new content type, so we can conveniently use it in code. We'll put the same definition in the Info.plist.\n\nWe are about to declare a new content type in the operating system. We need to specify the file extension to help to distinguish the card decks created by our app from any other documents. For this sample app, we’ll use “sampledeck” as an extension.\n\nI will also add a short description, like Flash Cards Deck.\n\nThe identifier should be exactly the same as the one in the code.\n\nBecause SwiftData documents are packages, we have to make sure our type conforms to com.apple.package. And now, let’s use the content type that we declared. I am returning to the app definition and passing the content type to the DocumentGroup. The view builder looks identical.\n\nNotably, we don’t set up the model container. The document infrastructure will set up one for each document. Let's run the application and see how it looks now! The app launches with the open panel. Standard behavior for Document-based applications. I'll create a new document and add a card there. The document now has a toolbar subtitle indicating that it has unsaved changes. I press Command+S, and the save dialog appears. Note that the deck will be saved with the same file extension that we put in the Info.plist earlier. I'll save the new deck, and here it is, my first flashcards deck, on the Desktop. I can also press Command+N to create a new deck, or Command+O to open one. These shortcuts, as well as many other features, Document-based applications get automatically. Just to recap, today, we’ve learned how to use SwiftData storage in SwiftUI apps. We talked about the new @Model macro, @Query property wrapper, and the new Environment variable for model context, and saw how easy it is to use SwiftData as a storage for your documents. Thanks for joining me today, and have fun building apps! ♪ ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:33",
+      "title": "Defining a SwiftData model",
+      "language": "swift",
+      "code": "@Model\nfinal class Card {\n    var front: String\n    var back: String\n    var creationDate: Date\n\n    init(front: String, back: String, creationDate: Date = .now) {\n        self.front = front\n        self.back = back\n        self.creationDate = creationDate\n    }\n}"
+    },
+    {
+      "timestamp": "4:25",
+      "title": "Binding to a SwiftData model",
+      "language": "swift",
+      "code": "@Bindable var card: Card"
+    },
+    {
+      "timestamp": "5:52",
+      "title": "Query models from SwiftData storage",
+      "language": "swift",
+      "code": "@Query private var cards: [Card]"
+    },
+    {
+      "timestamp": "8:27",
+      "title": "Setting up a model container for the window group",
+      "language": "swift",
+      "code": "WindowGroup {\n    ContentView()\n}\n.modelContainer(for: Card.self)"
+    },
+    {
+      "timestamp": "9:24",
+      "title": "Providing a preview with sample data",
+      "language": "swift",
+      "code": "#Preview {\n    ContentView()\n        .frame(minWidth: 500, minHeight: 500)\n        .modelContainer(previewContainer)\n}"
+    },
+    {
+      "timestamp": "10:30",
+      "title": "Accessing the model context of the ContentView",
+      "language": "swift",
+      "code": "@Environment(\\.modelContext) private var modelContext"
+    },
+    {
+      "timestamp": "10:51",
+      "title": "Insert a new model in the context",
+      "language": "swift",
+      "code": "let newCard = Card(front: \"Sample Front\", back: \"Sample Back\")\nmodelContext.insert(object: newCard)"
+    },
+    {
+      "timestamp": "13:34",
+      "title": "Start document-based application setup",
+      "language": "swift",
+      "code": "@main\nstruct SwiftDataFlashCardSample: App {\n    var body: some Scene {\n        #if os(iOS) || os(macOS)\n        DocumentGroup(editing: Card.self, contentType: <#UTType#>) {\n            <#code#>\n        }\n        #else\n        WindowGroup {\n            ContentView()\n                .modelContainer(for: Card.self)\n        }\n        #endif\n    }\n}"
+    },
+    {
+      "timestamp": "16:51",
+      "title": "Finish document-based application setup",
+      "language": "swift",
+      "code": "@main\nstruct SwiftDataFlashCardSample: App {\n    var body: some Scene {\n        #if os(iOS) || os(macOS)\n        DocumentGroup(editing: Card.self, contentType: .flashCards) {\n            ContentView()\n        }\n        #else\n        WindowGroup {\n            ContentView()\n                .modelContainer(for: Card.self)\n        }\n        #endif\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Building a document-based app using SwiftData",
+        "url": "https://developer.apple.com/documentation/SwiftUI/Building-a-document-based-app-using-SwiftData"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10154/6/00F52EA1-7867-49C3-9DA6-88D0D9D637E1/downloads/wwdc2023-10154_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10154/6/00F52EA1-7867-49C3-9DA6-88D0D9D637E1/downloads/wwdc2023-10154_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10149",
+      "year": "2023",
+      "title": "Discover Observation in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10149"
+    },
+    {
+      "id": "10196",
+      "year": "2023",
+      "title": "Dive deeper into SwiftData",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10196"
+    },
+    {
+      "id": "10187",
+      "year": "2023",
+      "title": "Meet SwiftData",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10187"
+    },
+    {
+      "id": "10189",
+      "year": "2023",
+      "title": "Migrate to SwiftData",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10189"
+    },
+    {
+      "id": "10195",
+      "year": "2023",
+      "title": "Model your schema with SwiftData",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10195"
+    },
+    {
+      "id": "10148",
+      "year": "2023",
+      "title": "What’s new in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10148"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:21:37.574Z"
+}

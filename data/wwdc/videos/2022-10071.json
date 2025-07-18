@@ -1,0 +1,132 @@
+{
+  "id": "10071",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10071/",
+  "title": "Adopt desktop-class editing interactions",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Andy: Hi there. Welcome to \"Adopt desktop class editing interactions.\" I'm Andy, a UIKit frameworks engineer, and I will be joined later by my colleague, James. The iPad is continuously evolving, without compromising the interactions that make it simple and easy to use. In this video, you'll learn about the exciting new editing interactions that will transform your app to become more desktop class. First, I'll go over the new edit menus, which received a major facelift in iOS 16.\n\nLater, James will dive into the new system find and replace experience. In iOS 16, the edit menu features an all-new design that remains familiar but is more interactive and is easier to discover actions.\n\nThe edit menu now has alternate presentations based on the input method used. For touch interactions, the edit menu still has the familiar compact appearance, but with an improved paging behavior, allowing actions to be more discoverable than before.\n\nWith the Magic Keyboard or a trackpad, a context menu is presented on secondary or right click for a more desktop class experience. Similarly, touch interaction on the iPhone will display the new edit menu.\n\nAnd for Mac Catalyst apps, context menus that Mac users are familiar with is presented. In iOS 16, the text edit menu gets a major power-up with new data detectors integration. This includes inline unit and currency conversions, as well as smart lookup which displays contextual actions depending on the selected text. For example, if you select an address in Safari, you will get Maps-based actions, like \"Get Directions\" or \"Open in Maps,\" on top of the existing edit menu actions. The best part is, there is no adoption required! These features are available in every text edit menu, including text interaction views, WebKit and Safari, as well as PDFKit.\n\nTo insert actions into a text view's menu, implement the new TextViewDelegate method to customize the displayed menu for text in the given range with system provided actions. If you don't need to customize anything, return nil to get the standard system menu. There are also similar methods on UITextFieldDelegate and UITextInput to customize the menu there too. Please note that inserting menu items using UIMenuController is now deprecated in iOS 16, and you should instead move to use the new methods to add menu elements into your text edit menus, because where we're going, we don't need menu controllers! Here is an example of a text view with some custom actions. When a menu is presented on some text selection, a custom \"Highlight\" and \"Insert Photo\" action is shown after the system suggested actions. Selecting the highlight action performs a highlight on the text as expected. Next, when the menu is presented without any text selection where there is nothing to highlight, the menu only displays the \"Insert Photo\" action after the system suggested actions. I'll show you how to add these actions using the new API. To insert actions into the menu dynamically on presentation, implement the UITextViewDelegate method textView editMenuForTextIn range suggestedActions In this example, I only want to add the \"Highlight\" action when there is selected text, so I can add the action dynamically through this method.\n\nThe \"Insert Photo\" action is always valid, so I can add it into the array to always display the action in the menu. Finally, I'll append my actions to the system suggested actions, which includes items like Cut, Copy, and Paste, and return the menu. And that's it! UIEditMenuInteraction is the UIInteraction API that powers the new edit menu.\n\nThe interaction allows you to programmatically present the lightweight edit menu outside of text views based on your own gesture, and has native support to present a context menu on secondary click. In iOS 16, UIMenuController and all of its related APIs are replaced by the new edit menu interaction.\n\nTo present an edit menu from scratch, first, create the interaction and add it to the view. Next, configure a gesture recognizer to present the menu from. To ensure that the menu only appears on direct touch and not from indirect pointer clicks, be sure to set the allowedTouchTypes property of the gesture recognizer to be direct touch only. Then, add the gesture recognizer to the view. Finally, when the gesture recognizer fires, determine if there is content at the location of the gesture that could display the menu. Then, create an edit menu configuration with a source point at the gesture's location. The source point is used to determine performable actions in the interaction's view to display in the menu.\n\nOnce configured, call presentEditMenu(with: configuration) to show the menu.\n\nWhen I right-click anywhere within the selected \"Jello there!\" view, a context menu is presented with performable system actions for the app's content. Even more, when I tap on the selected view, the edit menu is presented where my touch occurred, showing the same actions as the context menu. This is good, but it can be better. While it is nice that the menu appears where the touch occurred, it's actually blocking the selected view's content. Moreover, I want to insert a new \"Duplicate\" action into the menu, which is not a system default action. Let's go back and change this. To show the menu around the selected view, implement the delegate method editMenuInteraction targetRectFor configuration This method returns a CGRect used to determine where to present the menu from and is in the coordinate space of the interaction's view. If the method is not implemented or a null CGRect is provided, the menu will be presented from the source point of the configuration. In this case, to prevent the menu from occluding the selected view, return its frame. Next, to add the \"Duplicate\" action, implement editMenuInteraction menuFor configuration suggestedActions and append the custom action after the system suggested actions, similar to how you would insert actions into a text view's menu before.\n\nNow, when I tap again on the selected view, the menu no longer occludes \"Jello there!\" and instead presents around it. The new \"Duplicate\" action is also included when the menu is presented, all with just a few lines of code. Brilliant! For Mac Catalyst apps, the edit menu bridges to the familiar context menus that users expect on the Mac when they right click on the interaction's view. For iPad idiom Mac Catalyst apps, programmatically presented edit menus also bridge into context menus. Please note that programmatic presentation of the edit menu is not supported for Mac idiom apps. To offer seamless bridging between different presentation styles, UIEditMenuInteraction is built on top of the UIMenuElement family of APIs. These offer more flexibility and customizability than before, including support for submenus and images. If this is your first time using UIMenus, watch \"Modernizing Your UI for iOS 13\" to learn more about menus and actions. Building on top of UIMenuElement also means that the edit menu has access to a wide variety of APIs, like UIMenuSystem, that support menus already. The edit menu uses the existing UIMenuSystem.context system to build its menus. To find out more about the menu builder, as well as a deeper dive on responder chain traversal and command validation, watch \"Taking your iPad apps to the next level.\" Speaking of menus, there are several new enhancements to UIMenu in iOS 16. UIMenu now has a preferred element size property that allows you to choose between different layouts in the context menu. The small size gives the menu a more compact side-by-side appearance, fitting more actions in a single row. The medium size also displays actions in a side-by-side appearance but with a little more detail. This is used by the text edit menu to display the standard edit menu. And finally, the large element size gives the menu its default, full-width appearance. Additionally, there is a new .keepsMenuPresented attribute on UIMenuElement to keep menus presented after an action is performed. Use this attribute to allow actions to be performed multiple times without re-presenting the menu. That's just the tip of the iceberg for the new edit menu. Extend text editing functionality by customizing the text edit menu. Make sure that your actions have titles and images so that the menus look complete in different presentation styles. Most importantly, adopt the new UIEditMenuInteraction for better customizability and improved consistency across platforms and different input methods. Adding support for the new edit menu is a great first step. To complete the desktop class editing experience, I'll hand it over to James to talk about the new system find and replace experience.\n\nJames Magahern: Ah, there it is! Hi, I'm James Magahern, a UIKit engineer, and I'm here to talk about find and replace. New in iOS 16, we introduced a new UI component for finding and replacing text in apps. It's standard across the system and included with many of the built-in apps, and allows your users to flex their muscle memory with even more commonly used editing shortcuts. This is the new find panel running on iPad. We will automatically transition from floating inline with the shortcut bar when a hardware keyboard is attached, to resting on top of the software keyboard when used without a hardware keyboard. On iPhone, we'll adapt to the smaller screen size by using a more compact layout. Automatic dismissal, minimization, and keyboard avoidance are all taken care of by the system. When running your app on a Mac, we'll present the find panel inline with your content, behaving just like the AppKit find bar, and using a familiar layout that users expect on the Mac.\n\nIf you're using UITextView, WKWebView, or PDFViews to display text content in your apps, all you need to do to get started is set isFindInteractionEnabled to true on the built-in find interaction. It's that simple! In addition, if you're using QuickLook to display text content, this will already be available without any work from you.\n\nWith a hardware keyboard, all of the standard system shortcuts like command+F for find, command+G for find next, command+shift+G for find previous, et cetera, will work just as expected. Access to these commands are available via the menu bar when running on a Mac. All you need to do is make sure the view displaying the content can and does become first responder. For users who are not using a hardware keyboard, you can invoke the find interaction programmatically via presentFindNavigator, on the included find interaction property. It might be a good idea to make this available via a navigation bar item, for example.\n\nWhen running on a Mac, there's a couple other things to keep in mind. For instance, on iOS, the find panel is presented as part of the software keyboard or shortcut bar. On the Mac, we'll display it inline with your content. If you're installing the find interaction on a scroll view, we’ll automatically adjust the content insets to accommodate the find panel, and adapt to trait collection changes automatically. You should otherwise make sure that there's enough room to host the find panel in your UI on macOS.\n\nAdditionally, we'll show a menu containing a standard set of find options available when tapping on the magnifying glass icon. You can customize the contents of this menu by using the optionsMenuProvider property on UIFindInteraction. This will be more important with custom implementations. And that's all it takes if you're using one of the built-in views that I mentioned before. If your app is displaying textual content by other means, like a completely custom view or something like a list view, shown here, you can still add the find interaction to your app. Let me show you how.\n\nThe good news about find interaction is that you can install it on any arbitrary view. If you have an existing find and replace implementation in your app, it's a snap to bridge over to UIFindInteraction and take advantage of the system's UI. If you don't already have an existing find implementation for your custom view, it's still super easy to get started, especially if you've already implemented the UITextInput protocol in order to work with the system keyboard. Here's how UIFindInteraction works with custom views. After installing UIFindInteraction on your custom view, set up a find interaction delegate. The find interaction delegate, besides being notified about when a find session begins or ends, is responsible for dealing out UIFindSessions. UIFindSession is an abstract base class that encapsulates all of the state for a given session, such as the currently highlighted result. It also services all actions requested from the UI, such as \"go to the next result,\" or \"search for this string.\" If you want to manage all of this state yourself, you can choose to vend a subclass of UIFindSession from your find interaction delegate.\n\nThis is a good option if you already have an existing find and replace implementation in your app, and want to bridge it over to the system UI. Otherwise, it would be a much better idea to let the system take care of the state for you, and instead adopt the UITextSearching protocol on whatever class encapsulates the content of the document being displayed. To do this, you would return a UITextSearchingFindSession, and connect it with your document class.\n\nThis is the best option if you don't yet have a find implementation for your custom view. Here's how to do this in code.\n\nThis example has a custom document class and a custom view which displays this document. The UIFindInteraction will be installed on this view, and a UITextSearchingFindSession will be provided with this document as the \"searchable object.\" Make sure either your view controller or your custom view can become first responder so keyboard shortcuts work as expected.\n\nCreate the find interaction, and provide a session delegate to deal out find sessions. Here, the view controller is the session delegate. Then, when asked for a find session by the interaction, just return a new UITextSearchingFindSession providing your document as the searchable object. You will of course need to make sure that your document class conforms to the UITextSearching protocol.\n\nThe class which implements the UITextSearching protocol is responsible for actually finding text in your document. The system will call performTextSearch, and hand you an aggregator object to which you can provide results. The aggregator works with UITextRange to represent results in your document. This is another abstract class that you can use to encapsulate whatever data makes sense for how you store text. For example, this could represent a DOM range for clients who use WebKit to render text. The aggregator is also thread-safe, so you can provide it results on a background thread. Finally, since the find interaction doesn't know how to display results using your custom view, you'll also need to decorate results for a given style when decorate() is called. The UITextSearching find session and protocol also support multiplexing across multiple visible documents using the same interaction.\n\nIn other words, if your app displays content in a manner similar to Mail's conversation view, where each \"document\" in that case is a mail message, you can install a single find interaction on the root level collection view and perform a find across all documents at the same time, allowing your users to jump between results in different documents with ease. So that's all it takes to get started with the new find interaction in iOS 16. For system views that display a lot of text content, make sure to enable isFindInteractionEnabled. Move your existing find implementation to UIFindInteraction. Implement UITextSearching and use UITextSearchingFindSession if you don't yet have text searching in your app. And lastly, check and make sure you don't have any conflicting keyboard shortcuts in your app. And that is what it takes to refresh your app's editing interactions for iOS 16 and make them truly desktop class.\n\nTry the new text edit menu in your app, and adopt the edit menu interaction for custom UI. And boost productivity by making your app's text content searchable. I'm looking forward to finding these great new features in your app. Thanks for watching! Make sure to like, comment, and subscribe.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:42",
+      "title": "Adding items into text edit menus",
+      "language": "swift",
+      "code": "func textView(\n    _ textView: UITextView, \n    editMenuForTextIn range: NSRange, \n    suggestedActions: [UIMenuElement]) -> UIMenu?"
+    },
+    {
+      "timestamp": "4:03",
+      "title": "Adding actions into a text view's menu",
+      "language": "swift",
+      "code": "func textView(\n    _ textView: UITextView,\n    editMenuForTextIn range: NSRange,\n    suggestedActions: [UIMenuElement]\n) -> UIMenu? {\n    var additionalActions: [UIMenuElement] = []\n    if range.length > 0 {\n        let highlightAction = UIAction(title: \"Highlight\", ...)\n        additionalActions.append(highlightAction)\n    }\n    let insertPhotoAction = UIAction(title: \"Insert Photo\", ...)\n    additionalActions.append(insertPhotoAction)\n    return UIMenu(children: suggestedActions + additionalActions)\n}"
+    },
+    {
+      "timestamp": "5:24",
+      "title": "Presenting an edit menu with a custom gesture",
+      "language": "swift",
+      "code": "let editMenuInteraction = UIEditMenuInteraction(delegate: self)\nview.addInteraction(editMenuInteraction)\n\nlet tapRecognizer = UITapGestureRecognizer(target: self, action: #selector(didTap(_:)))\ntapRecognizer.allowedTouchTypes = [UITouch.TouchType.direct.rawValue as NSNumber]\nview.addGestureRecognizer(tapRecognizer)\n\n@objc func didTap(_ recognizer: UITapGestureRecognizer) {\n    let location = recognizer.location(in: self.view)\n    if self.hasSelectedObjectView(at: location) {\n        let configuration = UIEditMenuConfiguration(identifier: nil, sourcePoint: location)\n        editMenuInteraction.presentEditMenu(with: configuration)\n    }\n}"
+    },
+    {
+      "timestamp": "7:13",
+      "title": "Implementing UIEditMenuInteractionDelegate",
+      "language": "swift",
+      "code": "func editMenuInteraction(\n    _ interaction: UIEditMenuInteraction,\n    targetRectFor configuration: UIEditMenuConfiguration\n) -> CGRect {\n    guard let selectedView = objectView(at: configuration.sourcePoint) else { return .null }\n    return selectedView.frame\n}\n\nfunc editMenuInteraction(\n    _ interaction: UIEditMenuInteraction,\n    menuFor configuration: UIEditMenuConfiguration,\n    suggestedActions: [UIMenuElement]\n) -> UIMenu? {\n    let duplicateAction = UIAction(title: \"Duplicate\") { ... }\n    return UIMenu(children: suggestedActions + [duplicateAction])\n}"
+    },
+    {
+      "timestamp": "10:34",
+      "title": "Using the \"keeps menu presented\" attribute",
+      "language": "swift",
+      "code": "UIAction(title: \"Increase\",\n         image: UIImage(systemName: \"increase.indent\"),\n         attributes: .keepsMenuPresented) { ... }\n\nUIAction(title: \"Decrease\",\n         image: UIImage(systemName: \"decrease.indent\"),\n         attributes: .keepsMenuPresented) { ... }"
+    },
+    {
+      "timestamp": "12:46",
+      "title": "Find with system views",
+      "language": "swift",
+      "code": "open var findInteraction: UIFindInteraction? { get }\ntextView.isFindInteractionEnabled = true"
+    },
+    {
+      "timestamp": "17:22",
+      "title": "Installing a UIFindInteraction on a custom view",
+      "language": "swift",
+      "code": "let customDocument = MyDocument(string: \"\")\nlazy var customView = MyTextView(document: customDocument)\n\nlazy var findInteraction = UIFindInteraction(sessionDelegate: self)\n\noverride var canBecomeFirstResponder: Bool { true }\n\noverride func viewDidLoad() {\n    customView.addInteraction(findInteraction)\n}\n\nfunc findInteraction(_ interaction: UIFindInteraction, sessionFor view: UIView) -> UIFindSession? {\n    return UITextSearchingFindSession(searchableObject: customDocument)\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Building a desktop-class iPad app",
+        "url": "https://developer.apple.com/documentation/UIKit/building-a-desktop-class-ipad-app"
+      },
+      {
+        "title": "Supporting desktop-class features in your iPad app",
+        "url": "https://developer.apple.com/documentation/UIKit/supporting-desktop-class-features-in-your-ipad-app"
+      },
+      {
+        "title": "UIEditMenuInteraction",
+        "url": "https://developer.apple.com/documentation/UIKit/UIEditMenuInteraction"
+      },
+      {
+        "title": "UIFindInteraction",
+        "url": "https://developer.apple.com/documentation/UIKit/UIFindInteraction"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10071/4/A7198C26-97D7-49C3-8FE7-907808F342DE/downloads/wwdc2022-10071_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10071/4/A7198C26-97D7-49C3-8FE7-907808F342DE/downloads/wwdc2022-10071_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10070",
+      "year": "2022",
+      "title": "Build a desktop-class iPad app",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10070"
+    },
+    {
+      "id": "10069",
+      "year": "2022",
+      "title": "Meet desktop-class iPad",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10069"
+    },
+    {
+      "id": "10068",
+      "year": "2022",
+      "title": "What's new in UIKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10068"
+    },
+    {
+      "id": "224",
+      "year": "2019",
+      "title": "Modernizing Your UI for iOS 13",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/224"
+    },
+    {
+      "id": "235",
+      "year": "2019",
+      "title": "Taking iPad Apps for Mac to the Next Level",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/235"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:53:48.458Z"
+}

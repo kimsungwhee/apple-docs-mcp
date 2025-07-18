@@ -1,0 +1,93 @@
+{
+  "id": "10005",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10005/",
+  "title": "Connect Bluetooth devices to Apple Watch",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Health & Fitness",
+    "System Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi. My name is Yann, and I'd like to tell you about a new way to connect your Bluetooth devices to Apple Watch. First, I'll review how Core Bluetooth works on watchOS 7. Then I'll talk about an exciting new feature in watchOS 8. And I'll discuss the best ways to design your accessories and your app to work with Apple Watch. Let's start with how Core Bluetooth works today. You can only connect to Bluetooth devices while your app is in the foreground or during a background session. This is great when a person wants to focus on your app to get information from their accessory. But what if you wanted to have a complication with information from your accessory? Currently, the complication could not be updated unless a person opened your app. Now in watchOS 8, you can connect your Bluetooth accessory during Background App Refresh. This enables you to update your complications with information from your accessory or send local notification if its battery is running low. With my example temperature sensor, now I can update the temperature in a complication, so I can see it whenever I glance at my watch. We are using a temperature sensor in our example, but it could be any accessory that someone would want to see at-a-glance information about.\n\nTo start using Bluetooth during Background App Refresh, simply add bluetooth-central to UIBackgroundModes in your Info.plist. This may also appear as \"Required background modes\" and \"App communicates using CoreBluetooth.\" Here's a table showing differences between platforms. These are the current supported configurations for Bluetooth Low Energy. Let's dive into how your accessory communicates with Apple Watch.\n\nLet's say a user has already paired with your accessory and they open your Watch app. Your app tries to connect to your accessory, and as soon as an advertisement is seen, a Bluetooth LE connection is established. When a user exits your watchOS app, the Bluetooth connection will terminate. The Bluetooth connection won't be available until the next time your watchOS app has runtime available. Let's analyze what happens during your next background app refresh on watchOS 8. Your app initiate a connection to a known peripheral, and the next time an advertisement is received, Apple Watch will connect to your accessory. As soon as you're finished retrieving data, you can terminate the Bluetooth connection and process the data. Background App Refresh can happen at any time, so your accessory should advertise as often as possible when it has an important update to display on Apple Watch.\n\nNow, let's say your accessory advertises very rarely to conserve power. It is possible that no advertisement will be received during the Background App Refresh and no connection will occur. Background App Refresh is not guaranteed to happen at a specific time, so your accessory must advertise frequently whenever it has important updates. One possible strategy is to buffer sensor data on your accessory. When it's close to the buffer limit, increase its advertisement rates to increase the chances of reconnection to Apple Watch. As a guide, you should advertise at least every two seconds in ideal RF conditions.\n\nIf you expect your device to work in a more challenging RF condition, your accessory should advertise more frequently to increase the chances of reconnection. Let's look at how your app will interact with Core Bluetooth and how watchOS will interact with your Bluetooth accessory. This is a time diagram flow. Time advances from top to the bottom. Let's start with what happens when your app is in the foreground. Your accessory is advertising. You can scan for a new device to detect your Bluetooth accessory. Once your device has been discovered, you can initiate a connection to it. As soon as Apple Watch receives an advertisement, it will connect. Once you're done with the Bluetooth connection, you can call cancelPeripheralConnection, which will disconnect your Bluetooth device. Then, at a later point, when the Apple Watch screen goes off, your watchOS app will be suspended. Now, let's take a look at what happens in the next Background App Refresh.\n\nNote that the time elapsed is not to scale. If your app needs to reconnect to your Bluetooth accessory, it can initiate a connection. Here the connection gets established. As mentioned before, we highly recommend to only connect to your accessory for only the amount of time you need. You should retrieve the data you need and then request a disconnection during Background App Refresh. In this case, data transfer completes and the app cancel the peripheral connection.\n\nLet's look at another potential user flow. In this one, the Bluetooth Accessory is not near the Apple Watch or not advertising during the Background App Refresh. Here's how you should manage this during Background App Refresh period. First, you will connect to a peripheral, but there are no advertisements. When the expiration handler is called, you should ask to cancel the connection. This way, you will have a clean slate and can ask to reconnect at the beginning of the next Background App Refresh. It is also a good practice to cancel the connection before the expiration handler is called in order to save battery. If you need to reconnect at the next Background App Refresh, you can issue a connectPeripheral again. As soon as Apple Watch sees the advertisement, it will connect to your accessory. At this point, you can fetch and download all the data you need. Then, you can disconnect as soon as you are done with the connection. Let's look at the final flow, where we see what happens if you don't disconnect during Background App Refresh. Initiate a connection. As soon as Apple Watch sees advertisement, it will establish a connection. Here, let's say your app didn't have time to retrieve all the data before Background App Refresh expires. In this case, Core Bluetooth would automatically terminate the connection at the end of the next Background App Refresh.\n\nAt the next Background App Refresh, your app will get the event didDisconnectPeripheral. At this point, if your app needs to, it can initiate a Bluetooth connection or it can wait till the next Background App Refresh. We highly recommend to only connect to your accessory for only the amount of time it needs. Your app should request a disconnection during the Background App Refresh.\n\nLet's take a closer look at the code to implement this.\n\nWhen someone launches your app in the foreground, it can discover peripheral and connect to them. The didDiscoverPeripheral delegate method is called when an advertisement is detected. If you have used CoreBluetooth in the past, this is familiar.\n\nNow let's look at what happens during Background App Refresh.\n\nThe handleBackgroundTasks delegate method is called. You can start any of your background work, and in our case, we want to connect to our Bluetooth peripheral. During the Background App Refresh, just before termination, you also get a notification that the Background App Refresh is about to finish. This is a new API in watchOS 8. You can use this to cancel any existing work and prepare your application to go into suspended mode. Then set the task as completed. Also, when getting background runtime, you need to determine what will be the behavior when your Bluetooth device disconnects. Remember that the callback didDisconnectPeripheral can happen while in the foreground or in Background App Refresh and happens on all platforms.\n\nHere, when we have the didDisconnectPeripheral, we call a function called didCompleteDisconnection that resides in your WatchKit Extension delegate. This way, the behavior of this function is specific to watchOS. What the function didCompleteDisconnection does is verify that we are in a Background App Refresh and if so, indicates that the task is complete. This will terminate the Background App Refresh.\n\nLet's talk about best practices for using Core Bluetooth on Apple Watch. For first-time device setup, your app must be running in the foreground, meaning the user is actively using your Watch app. Scan for new peripherals at this time. Once your app discovers a peripheral, it can set up the initial Bluetooth connection. It can also pair to your device if needed. Once your app exits the foreground, it cannot scan for new peripheral. Instead, it should request a connection to a previously discovered peripheral. Once connected, retrieve the data needed. Once finished retrieving the data, your app should disconnect from the peripheral to preserve battery. If your app doesn't disconnect before Background App Refresh ends, Core Bluetooth will automatically disconnect from your accessory. You can only reconnect when your app has runtime.\n\nI encourage you to join our lab this week if you have any questions about Core Bluetooth. Thanks. [music]",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "7:35",
+      "title": "didDiscoverPeripheral",
+      "language": "swift",
+      "code": "func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String: Any], rssi RSSI: NSNumber ) {\n\n    // Add to an array of discovered peripherals,\n    // then connect to the peripheral.\n\n    central.connect(peripheral, options: nil)\n\n}"
+    },
+    {
+      "timestamp": "7:55",
+      "title": "handleBackgroundTasks",
+      "language": "swift",
+      "code": "func handle(_ backgroundTasks: Set<WKRefreshBackgroundTask>) {\n    for task in backgroundTasks {\n        if let refreshTask = task as? WKApplicationRefreshBackgroundTask {\n            // Insert your code to start background work here.\n            central.connect(peripheral, options: nil)\n            refreshTask.expirationHandler = {\n                // Insert your code to cancel existing work here.\n                if let peripheral = self.bluetoothReceiver.connectedPeripheral {\n                    self.central.cancelPeripheralConnection(peripheral)\n                }\n                refreshTask.setTaskCompletedWithSnapshot(false)\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "8:51",
+      "title": "didDisconnectPeripheral",
+      "language": "swift",
+      "code": "// If the app gets woken up to handle a background refresh task, this method will be called\n// if a peripheral was disconnected when the app had previously transitioned to the\n// background.\nfunc centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {\n    connectedPeripheral = nil\n    delegate?.didCompleteDisconnection(from: peripheral)\n}"
+    },
+    {
+      "timestamp": "9:08",
+      "title": "didCompleteDisconnection",
+      "language": "swift",
+      "code": "// In your WatchKit Extension delegate:\n\nfunc didCompleteDisconnection(from peripheral: CBPeripheral) {\n    if let refreshTask = currentRefreshTask {\n        task.setTaskCompletedWithSnapshot(false)\n        currentRefreshTask = nil\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Background execution",
+        "url": "https://developer.apple.com/documentation/WatchKit/background-execution"
+      },
+      {
+        "title": "Core Bluetooth",
+        "url": "https://developer.apple.com/documentation/CoreBluetooth"
+      },
+      {
+        "title": "Interacting with Bluetooth peripherals during background app refresh",
+        "url": "https://developer.apple.com/documentation/WatchKit/interacting-with-bluetooth-peripherals-during-background-app-refresh"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10005/6/F54416C7-9591-4AE8-AE9D-365C4BAC2D7E/downloads/wwdc2021-10005_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10005/6/F54416C7-9591-4AE8-AE9D-365C4BAC2D7E/downloads/wwdc2021-10005_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10135",
+      "year": "2022",
+      "title": "Get timely alerts from Bluetooth devices on watchOS",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10135"
+    },
+    {
+      "id": "10002",
+      "year": "2021",
+      "title": "What's new in watchOS 8",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10002"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:37:58.365Z"
+}

@@ -1,0 +1,98 @@
+{
+  "id": "10687",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10687/",
+  "title": "Triage test failures with XCTIssue",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nHi, my name is Wil, and I work on testing and automation in XCode. In this session we're going to learn about new APIs and other improvements to how you investigate test failures in your projects. Investigation of test failures is the single most critical piece of maintaining any active test suite. Difficult to diagnose failures cost you time. They cost too much time. At the wrong point in your release schedule, they can even lead to bugs shipping in products. With any growing project, code changes will sometimes cause tests to fail. Either locally, or in continuous integration. And when they do fail, you'll be considering the following questions.\n\nWhat failed? How did it fail? Why? And perhaps, most of all, where in my source code, did the failure happen? In Xcode 12, we've added new APIs, and enhanced the UI for test failure reporting to make answering these questions more efficient.\n\nIt's worth noting the answer to these questions are so important, that there's a whole session dedicated to coding patterns you can use to further improve this process. For more about that check out, \"Write Tests to Fail.\" We've organized the content for this session in four sections. Swift errors in tests, rich failure objects, call stacks for test failures, and advanced workflows. We'll explore each of these topics in turn. But first, let's take a look at how failures are presented in Xcode 12.\n\nI have here a little project called PlayGarden, that I've been working on with my three-year-old daughter. PlayGarden helps us keep track of all the plants, toys and furniture in our backyard. Now even at age three, my daughter has fully embraced test-driven development. So, it's not surprising we have tests for all the view classes representing elements in our garden. We noticed recently there was a lot of duplicated code in these tests, so we refactored it into some utilities. I'm going to run one of these tests now. I've introduced an artificial failure, so we can see how that's presented in Xcode 12.\n\nRight away, you might have noticed that the test is marked as failing. But the only annotation we can see is gray. This tells us the failure happened in a call underneath the annotated line, but not at that line itself. We can explore this further by switching to the Issue Navigator.\n\nThe Issue Navigator shows the test failure here, but it shows more than that. Underneath the failure is a call stack in your test code.\n\nIf I click on a frame, the source editor takes me to that location.\n\nHere the annotation is red, because this is the actual point of failure. Now if I move through the rest of the frames, the Issue Navigator and the source editor take me on a tour of my code, working back from the failure to the point in the test where it was triggered. This helps me quickly understand all the context around the test failure, cutting down on the time needed to fix the issue.\n\nThere's another way we can explore this data. Let's switch to the test report. This is a great way to investigate test failures, particularly if you're working with a result bundle from a continuous integration system.\n\nIn the report for our most recent test run we have the failing test here in red. If we expand that, we see the failure message along with the file and line where it was recorded. But let's scroll down a little further.\n\nNow we can see the same call stack we saw in the Issue Navigator giving us another way to explore your code.\n\nYou'll notice as I hover over a frame in the call stack, that two buttons appear to the right of the frame. The first of these is the Jump button, which navigates to the source code location.\n\nI'll go back to the report, so that we can explore the second button. New in Xcode 12, the Assistant button opens a secondary editor next to the test report, which shows the reference source location. This lets us view the test report, and the source code, side by side. And we can explore the failure of call stack in the same way that we did within Issue Navigator.\n\nSo, that's our look at how test failures are presented in Xcode 12.\n\nNow I'd like to talk about using Swift errors in your tests.\n\nOne of the ways XCTest supports idiomatic coding patterns in Swift, is by making it possible for test functions to throw.\n\nWhen a test does throw, the error is used to formulate the failure message. This means, instead of having boilerplate for handling errors like this, your tests can be written like this. Much cleaner. But, until recently, these failures could not provide the source code location, file and line, that was traditionally part of test failures recorded by XCTAssert. Because of this limitation, some developers still use error handling boilerplate. Happily, improvements to the Swift runtime and iOS, and tvOS 13.4 and macOS 10.15.4, made it possible for XCTest to begin reporting the source code locations for thrown errors and tests. This means that you get great context for these errors without any other extra handling code.\n\nAlong with the source code location improvements, we added APIs, so the same level of convenience is available in your test's setUp() and tearDown(). These new APIs are variants of the original setUp() and tearDown() methods shown here.\n\nThe new setUpWithError() will run before the original setUp() method. And the new tearDownWithError() will be called after the original tearDown() method. You'll see both of these methods in the templates provided for new test files.\n\nIt's possible to use both variants of these APIs in the same test case. But generally, we encourage you to switch your tests over to the new methods, unless you need to preserve the old methods because of inheritance.\n\nNow I'd like to switch gears and talk about rich failure objects.\n\nXCTest has always recorded failures as four discrete values. The failure message, the file path, and line number, where the failure was recorded, and a flag indicating whether the failure was expected.\n\nExpected failures are those recorded by XCTAssert. Unexpected failures generally indicate that XCTest has caught an unhandled exception thrown by the test code.\n\nThese values were passed by XCTAssert into the record failure API, which ensures that failures are logged and ratted to Xcode for display.\n\nIn Xcode 12 these disparate values have been encapsulated by a new object XCTIssue.\n\nIn addition, there are new kinds of failure data. An explicit type of numeration, a detailed description, an underlying error and Attachments.\n\nXCTAttachment is an API for capturing arbitrary data with test runs. Attachments can either be added to the test itself, or to an activity created by XCTContext. Attachments can also be added to XCTIssue, making it possible to associate custom diagnostics with your test failures.\n\nXCTestCase has new API for recording test failures. This API, record(_issue:), is used by all XCTAsserts and can be invoked directly, or even overridden. The record failure API, that we've showed a few slides back, has been deprecated.\n\nIf you're calling recordFailure directly, or are overriding it to customize failure recording, we encourage you to update to record(_issue:) at your earliest convenience.\n\nWhen using record(_issue:), you may need to know how to modify XCTIssues. In Swift, issues are immutable when declared with let. Declaring with var allows you to modify them.\n\nIn Objective-C, XCTIssue has immutable subclass and also conforms to NS mutableCopy.\n\nXCTIssue enhances failure triage in many ways. But it's call stacks may be the most transformative.\n\nAt the beginning of this session, I suggested that one of the most important questions to answer about a test failure is where? This is why the core test failure data has always included a file path and line number captured at bill time, using compiler tokens like pound file path.\n\nA single source code location is great for simple tests. But isn't as useful when test code is factored into functions shared by more than one test. Consider this example.\n\nHere are two tests both calling out to the same shared function.\n\nWhen there's a failure, the annotation appears next to the assertion. The test method itself becomes confusing, because it's marked as failing, but has no further information to help the developer answer the where question.\n\nThis can be mitigated if the helper function captures the source location where it was invoked. And explicitly uses that in its XCTAssert calls. That improves the presentation and the test method, but if the helper has more than one assertion, than the ambiguity has simply been shifted.\n\nFortunately, XCTIssue captures and symbolicates call stacks. This means that there's considerably more context for failures in complex test code.\n\nHere's how that same failure looks when we capture the call stack. Very much like what we saw in the demo earlier. Answering the where question is a totally different experience. A gray annotation in the test method indicates the line under which the failure occurred. And a red annotation in the helper method highlights the failure itself.\n\nNo extra code was required to pass down a location and you don't have to choose which location is annotated. You get the best of both worlds, with no extra effort.\n\nFinally, I'd like to show you some more advanced workflows made possible by these new APIs.\n\nFirst, you can implement custom assertions by creating XCTIssue instances directly, and calling record(_issue:). Here's an example of an assertion that validates some data, and includes it as an attachment to the issue that it records.\n\nIn the initial creation of the issue, I'm using var, because the rest of the code makes some modifications to the struct. We could also pass all the information up-front to a longer initializer. But I think it's a bit easier to read this way.\n\nNext, I'm adding the data as an attachment to the issue. This means that the data will appear with the failure in the Xcode test report, enabling me to inspect it during triage and determine why it failed validation.\n\nHere, I'm capturing the location where my custom assertion was called. This isn't required, but can result in clear presentation, since the code you see here isn't likely to be useful in understanding the failure itself.\n\nFinally we call record(_issue:), which logs the issue, and sends it to Xcode.\n\nThe other advanced workflow I wanna show you is how you can override record(_issue:) to observe, suppress, or modify failures recorded in your test class. This method is the funnel point through which every failure passes. Overrides have total control over the output of your test class.\n\nOur first example overrides record(_issue:) for observation. It's important to call super, to ensure the issue continues along the recording chain. You can also observe issues using XCTestObservationCenter. But the approach here is useful if you only want to observe failures in one class.\n\nIf your override does not call super, you will have suppressed the issue. You will not continue along the recording chain. And nothing will be logged or reported to Xcode.\n\nModification is the most common reason for overriding record(_issue:). This pattern makes it possible to add attachments, which can be great diagnostic aides. Example here shows adding a simple string attachment, but the API can handle a broad range of types.\n\nAnd that wraps up our session. A few key points I hope you take away.\n\nTriaging test failures is one of the most important parts of caring for your test suites. Having call stacks makes it easy to track down the locations in your code that are most relevant to a failure.\n\nThis, in turn, supports more natural patterns in your test code, freeing you up to focus on code reuse and other good practices. XCTIssue also supports attachments, which lets you add custom diagnostic data, helping you answer the how and why of your test failures.\n\nThanks for watching. [chimes]",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "9:52",
+      "title": "Implement a custom test assertion using XCTIssue",
+      "language": "swift",
+      "code": "func assertSomething(about data: Data,\n                         file: StaticString = #filePath,\n                         line: UInt = #line) {\n\n        // Call out to custom validation function.\n        if !isValid(data) {\n\n            // Create issue, declare with var for mutability.\n            var issue = XCTIssue(type: .assertionFailure, compactDescription: \"Invalid data\")\n\n            // Attach the invalid data.\n            issue.add(XCTAttachment(data: data))\n\n            // Capture the call site location as the point of failure.\n            let location = XCTSourceCodeLocation(filePath: file, lineNumber: line)\n            issue.sourceCodeContext = XCTSourceCodeContext(location: location)\n\n            // Record the issue.\n            self.record(issue)\n        }\n    }"
+    },
+    {
+      "timestamp": "11:12",
+      "title": "Override record(_ issue:) for observation",
+      "language": "swift",
+      "code": "override func record(_ issue: XCTIssue) {\n        \n    // Observe, introspect, log, etc.:\n    if shouldLog(issue) {\n        print(\"I just observed an issue!\")\n    }\n\n    // Don't forget to call super!\n    super.record(issue)\n}"
+    },
+    {
+      "timestamp": "11:30",
+      "title": "Override record(_ issue:) to suppress failures",
+      "language": "swift",
+      "code": "override func record(_ issue: XCTIssue) {\n\n    // If you don't want to record it, just return.\n    if shouldSuppress(issue) {\n        return\n    }\n\n    // Otherwise pass it to super.\n    super.record(issue)\n}"
+    },
+    {
+      "timestamp": "11:39",
+      "title": "Override record(_ issue:) to add an attachment",
+      "language": "swift",
+      "code": "override func record(_ issue: XCTIssue) {\n    \n    // Redeclare using var to enable mutation.\n    var issue = issue\n\n    // Add a simple attachment.\n    issue.add(XCTAttachment(string: \"hello\"))\n    \n    // Pass it to super.\n    super.record(issue)\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10687/4/9416FDA9-FC21-48ED-BBCC-ABF5C5A9B0DA/wwdc2020_10687_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10687/4/9416FDA9-FC21-48ED-BBCC-ABF5C5A9B0DA/wwdc2020_10687_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10077",
+      "year": "2020",
+      "title": "Eliminate animation hitches with XCTest",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10077"
+    },
+    {
+      "id": "10221",
+      "year": "2020",
+      "title": "Get your test results faster",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10221"
+    },
+    {
+      "id": "10220",
+      "year": "2020",
+      "title": "Handle interruptions and alerts in UI tests",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10220"
+    },
+    {
+      "id": "10091",
+      "year": "2020",
+      "title": "Write tests to fail",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10091"
+    },
+    {
+      "id": "10164",
+      "year": "2020",
+      "title": "XCTSkip your tests",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10164"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:15:48.843Z"
+}

@@ -1,0 +1,140 @@
+{
+  "id": "10017",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10017/",
+  "title": "Explore the machine learning development experience",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Machine Learning & AI"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Ciao, my name is Geppy Parziale, and I am a machine learning engineer here at Apple. Today, I want to walk you through the journey of building an app that uses machine learning to solve a problem that would usually require an expert to perform some very specialized work.\n\nThis journey gives me the opportunity to show you how to add open source machine learning models to your apps and create fantastic new experiences. During the journey, I will also highlight a few of the many tools, frameworks, and APIs available for you in the Apple development ecosystem to build apps using machine learning.\n\nWhen building an app, you, the developer, go through a series of decisions that hopefully will bring the best experience to your users. And this is also true when adding machine learning functionality to applications.\n\nDuring the development, you could ask: should I use machine learning to build this feature? How can I get a machine learning model? How do I make that model compatible with Apple platforms? Will that model work for my specific use case? Does it run on the Apple Neural Engine? So let's take this journey together. I want to build an app that allows me to add realistic colors to my family black and white photos that I found in an old box in my basement.\n\nOf course, a professional photographer could do this with some manual work, spending some time in a photo editing tool. Instead, what if I want to automate this process and apply the colorization in just a few seconds? This seems to be a perfect task for machine learning.\n\nApple offers a tremendous amount of frameworks and tools that can help you build and integrate ML functionality in your apps. They provide everything from data processing to model training and inference. For this journey, I am going to use a few of them. But remember, you have many to choose from depending on the specific machine learning task that you are developing. The process I use when developing a machine learning feature in my apps goes through a set of stages.\n\nFirst, I search for the right machine learning model in either scientific publication or specialized website.\n\nI searched for photo colorization, and I found a model called Colorizer that may work for what I need. Here is an example of the colorization I can get using this model.\n\nHere is another one.\n\nAnd here is another one. Really great. Let me show you how it works. The Colorizer model expects a black and white image as input. The Python source code I found converts any RGB image to a LAB color space image.\n\nThis color space has 3 channels: one represents the image lightness or L channel, and the other two represent the color components. The color components are discarded while the lightness becomes the input of the colorizer model.\n\nThe model then estimates two new color components that, combined with the input L channel, provide the resulting image with color.\n\nIt's time now to make this model compatible with my app. To achieve this, I can convert the original PyTorch model to Core ML format using coremltools. Here is the simple Python script I used to convert the PyTorch model to Core ML.\n\nFirst, I import the PyTorch model architecture and weights.\n\nThen I trace the imported model. Finally, I convert the PyTorch model to Core ML and save it.\n\nOnce the model is in the Core ML format, I need to verify that the conversion worked correctly. I can do that directly in Python again using coremltools. And this is easy. I import the image in RGB color space and convert it to Lab color space.\n\nThen I separate the lightness from the color channels and discard them.\n\nI run the prediction using the Core ML model.\n\nAnd finally, compose the input lightness with the estimated color components and convert to RGB.\n\nThis allows me to verify that functionality of the converted model matches the functionality of the original PyTorch model. I call this stage Model Verification. However, there is another important check to be done. I need to understand if this model can run fast enough on my target device. So I would need to assess the model on device and make sure it would provide the best user experience. The new Core ML Performance report, available now in Xcode 14, performs a time-based analysis of a Core ML model. I just need to drag and drop the model into Xcode and create a performance report in a few seconds.\n\nUsing this tool, I can see that estimated prediction time is almost 90 milliseconds on an iPad Pro with M1 and iPadOS 16.\n\nAnd this is perfect for my photo colorization app. If you want to know more about Performance Report in Xcode, I suggest you to watch this year’s session \"Optimize your Core ML usage\". So Performance Report can help you make an assessment of the model and make sure it provides the best on-device user experience.\n\nNow that I am sure about the functionality and performance of my model, let me integrate it into my app.\n\nThe integration process is identical to what I have done until now in Python, but this time I can do it seamlessly in Swift using Xcode and all the other tools you are familiar with.\n\nRemember the model, now in Core ML format, expects a single channel image representing its lightness.\n\nSo similarly to what I did previously in Python, I need to convert any RGB input image to an image using the Lab color space.\n\nI could write this transformation in multiple ways: directly in Swift with vImage, or using Metal.\n\nExploring deeper in the documentation, I found that the Core Image framework provides something that can help me with this.\n\nSo let me show you how to achieve the RGB to LAB conversion and run the prediction using the Core ML model.\n\nHere is the Swift code to extract the lightness from an RGB image and pass it to the Core ML model. First, I convert the RGB image into LAB and extract the lightness.\n\nThen, I convert lightness to a CGImage and prepare the input for the Core ML model.\n\nFinally, I run the prediction. To extract the L channel from the input RGB image, I first convert the RGB image into a LAB image, using the new CIFilter convertRGBtoLab. The values of the lightness are set between 0 and 100.\n\nThen, I multiply the Lab image with a color matrix and discard the color channels and return the lightness to the caller. Let's now analyze what happens at the output of the model.\n\nThe Core ML model returns two MLShapedArrays containing the estimated color components.\n\nSo after the prediction, I convert the two MLShapedArray into two CIImages.\n\nFinally, I combine them with the model input lightness. This generates a new LAB image that I convert to RGB and return it.\n\nTo convert the two MLShapedArrays into two CIImages, I first extract the values from each shaped array. Then, I create two core images representing the two color channels and return them. To combine the lightness with the estimated color channels, I use a custom CIKernel that takes the three channels as input and returns a CIImage.\n\nThen, I use the new CIFilter convertLabToRGB to convert the Lab image to RGB and return it to the caller. This is the source code for the custom CIKernel I use to combine the lightness with the two estimated color channels in a single CIImage.\n\nFor more information about the new CI filters to convert RGB images to LAB images and vice versa, please refer to the session \"Display EDR content with Core Image, Metal, and SwiftUI.\" Now that I completed the integration of this ML feature in my app, let's see it in action. But wait. How will I colorize my old family photos in real time with my application? I could spend some time to digitize each of them and import them in my app.\n\nI think I have a better idea. What if I use my iPad camera to scan these photos and colorize them live? I think it would be really fun, and I have everything I need to accomplish this. But first, I have to solve a problem.\n\nMy model needs 90 milliseconds to process an image. If I want to process a video, I would need something faster.\n\nFor a smooth user experience, I'd like to run the device camera at least 30 fps.\n\nThat means the camera will produce a frame about every 30 milliseconds.\n\nBut since the model needs about 90 milliseconds to colorize a video frame, I am going to lose 2 or 3 frames during each colorization.\n\nThe total prediction time of a model is a function of both its architecture as well as the compute units operations it gets mapped to. Looking at the performance report again, I notice that my model has a total of 61 operations running on a combination of the neural engine and CPU.\n\nIf I want a faster prediction time, I will have to change the model.\n\nI decided to experiment with the model's architecture and explore some alternatives that may be faster. However, a change in the architecture means I need to retrain the network.\n\nApple offers different solutions that allow me to train machine learning models directly on my Mac.\n\nIn my case, since the original model was developed in PyTorch, I decided to use the new PyTorch on Metal, so I can take advantage of the tremendous hardware acceleration provided by Apple Silicon.\n\nIf you are interested in knowing more about the PyTorch accelerated with Metal, please check the session, \"Accelerate machine learning with Metal\" Because of this change, our journey needs to take a step back.\n\nAfter retraining, I will have to convert the result to Core ML format and run the verification again.\n\nThis time, model integration consists of simply swapping the old model with the new one. After retraining a few candidate alternative models, I have verified one that will meet my requirements. Here it is with the corresponding performance report. It runs entirely on the neural engine and the prediction time is now around 16 milliseconds, which works for video.\n\nBut Performance Report tells me only one aspect of the performance of my app.\n\nIndeed, after running my app, I notice immediately that colorization is not as smooth as I expect. So what happens in my app at runtime? In order to understand that, I can use the new Core ML template in Instruments.\n\nAnalyzing the initial portion of the Core ML trace, after loading the model, I notice that the app accumulates predictions. And this is unexpected. Instead, I'd expect to have a single prediction per frame.\n\nZooming in the trace and checking the very first predictions, I observe that the app requests a second Core ML prediction before the first one is finished.\n\nHere, the Neural Engine is still working on the first request when the second is given to Core ML.\n\nSimilarly, the third prediction starts while still processing the second one. Even after four predictions, the lag between the request and execution is already about 20 milliseconds. Instead, I need to make sure that a new prediction starts only if the previous one is finished to avoid cascading these lags.\n\nWhile fixing this problem, I also found out that I accidentally set the camera frame rate to 60 fps instead of the desired 30fps.\n\nAfter making sure that the apps process a new frame after the previous prediction completes and setting the camera frame rate to 30 fps, I can see that Core ML dispatches correctly a single prediction to the Apple Neural Engine, and now the app runs smoothly.\n\nSo we reached the end of our journey.\n\nLet's test the app on my old family photos.\n\nHere are my black and white photos that I found in my basement. They capture some of the places in Italy I visited a long time ago.\n\nHere is a great photo of the Colosseum in Rome.\n\nThe color of the walls and the sky are so realistic.\n\nLet's check this one.\n\nThis is Castel del Monte in the South of Italy. Really nice.\n\nAnd this is my hometown, Grottaglie. Adding colors to these images triggered so many memories.\n\nNotice that I am applying the colorization only to the photo while keeping the rest of the scene black and white.\n\nHere, I am taking advantage of the rectangle detection algorithm available in the Vision framework. Using VNDetectRectangleRequest, I can isolate the photo in the scene and use it as input to the Colorizer model.\n\nAnd now let me recap.\n\nDuring our journey, I explored the enormous amount of frameworks, APIs, and tools Apple provides to prepare, integrate, and evaluate machine learning functionality for your apps. I started this journey identifying a problem that required an open source machine learning model to solve it.\n\nI found an open source model with desired functionality and made it compatible with Apple platforms. I assessed the model performance directly on the device using the new Performance Report. I integrated the model in my app using the tools and the frameworks you are familiar with.\n\nI optimized the model using the new Core ML Template in Instruments. With Apple tools and frameworks, I can take care of each phase of the development process directly on Apple devices and platforms from data preparation, training, integration, and optimization.\n\nToday, we just scratched the surface of what you, the developer, can achieve with the frameworks and tools Apple provides you. Please, refer to previous sessions, linked to this, for additional inspiring ideas to bring machine learning to your apps. Explore and try frameworks and tools. Take advantage of the great synergy between software and hardware to accelerate your machine learning features and enrich the user experience of your apps. Have a great WWDC, and arrivederci.  ♪ ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:06",
+      "title": "Colorization pre-processing",
+      "language": "swift",
+      "code": "from skimage import color\n\nin_lab = color.rgb2lab(in_rgb)\nin_l = in_lab[:,:,0]"
+    },
+    {
+      "timestamp": "3:39",
+      "title": "Colorization post-processing",
+      "language": "swift",
+      "code": "from skimage import color\nimport numpy as np\nimport torch\n\nout_lab = torch.cat((in_l, out_ab), dim=1)\nout_rgb = color.lab2rgb(out_lab.data.numpy()[0,…].transpose((1,2,0)))"
+    },
+    {
+      "timestamp": "3:56",
+      "title": "Convert colorizer model to Core ML",
+      "language": "swift",
+      "code": "import coremltools as ct\nimport torch\nimport Colorizer\n\ntorch_model = Colorizer().eval()\n\nexample_input = torch.rand([1, 1, 256, 256])\ntraced_model = torch.jit.trace(torch_model, example_input)\n\ncoreml_model = ct.convert(traced_model, \n                          inputs=[ct.TensorType(name=\"input\", shape=example_input.shape)])\n\ncoreml_model.save(\"Colorizer.mlpackage\")"
+    },
+    {
+      "timestamp": "4:26",
+      "title": "Core ML model verification using Core ML Tools",
+      "language": "swift",
+      "code": "import coremltools as ct\nfrom PIL import Image\nfrom skimage import color\n\nin_img = Image.open(“image.png\").convert(\"RGB\")\nin_rgb = np.array(in_img)\nin_lab = color.rgb2lab(in_rgb, channel_axis=2)\n\nlab_components = np.split(in_lab, indices_or_sections=3, axis=-1)\n(in_l, _, _) = [\n    np.expand_dims(array.transpose((2, 0, 1)).astype(np.float32), 0)\n    for array in lab_components\n]\nout_ab = coreml_model.predict({\"input\": in_l})[0]\n\nout_lab = np.squeeze(np.concatenate([in_l, out_ab], axis=1), axis=0).transpose((1, 2, 0))\nout_rgb = color.lab2rgb(out_lab, channel_axis=2).astype(np.uint8)\nout_img = Image.fromarray(out_rgb)"
+    },
+    {
+      "timestamp": "7:11",
+      "title": "Colorization in Swift",
+      "language": "swift",
+      "code": "import CoreImage\nimport CoreML\n\nfunc colorize(image inputImage: CIImage) throws -> CIImage {\n\n    let lightness: CIImage = extractLightness(from: inputImage)\n\n    let modelInput = try ColorizerInput(inputWith: lightness.cgImage!)\n    \n    let modelOutput: ColorizerOutput = try colorizer.prediction(input: modelInput)\n\n    let (aChannel, bChannel): (CIImage, CIImage) = extractColorChannels(from: modelOutput)\n\n    let colorizedImage = reconstructRGBImage(l: lightness, a: aChannel, b: bChannel)\n    return colorizedImage\n}"
+    },
+    {
+      "timestamp": "7:41",
+      "title": "Extract lightness from RGB image using Core Image",
+      "language": "swift",
+      "code": "import CoreImage.CIFilterBuiltins\n\nfunc extractLightness(from inputImage: CIImage) -> CIImage {\n\n    let rgbToLabFilter = CIFilter.convertRGBtoLab()\n    rgbToLabFilter.inputImage = inputImage\n    rgbToLabFilter.normalize = true\n    let labImage = rgbToLabFilter.outputImage\n\n    let matrixFilter = CIFilter.colorMatrix()\n    matrixFilter.inputImage = labImage\n    matrixFilter.rVector = CIVector(x: 1, y: 0, z: 0)\n    matrixFilter.gVector = CIVector(x: 1, y: 0, z: 0)\n    matrixFilter.bVector = CIVector(x: 1, y: 0, z: 0)\n    let lightness = matrixFilter.outputImage!\n    return lightness\n}"
+    },
+    {
+      "timestamp": "8:31",
+      "title": "Create two color channel CIImages from model output",
+      "language": "swift",
+      "code": "func extractColorChannels(from output: ColorizerOutput) -> (CIImage, CIImage) {\n\n    let outA: [Float] = output.output_aShapedArray.scalars\n    let outB: [Float] = output.output_bShapedArray.scalars\n    let dataA = Data(bytes: outA, count: outA.count * MemoryLayout<Float>.stride)\n    let dataB = Data(bytes: outB, count: outB.count * MemoryLayout<Float>.stride)\n\n    let outImageA = CIImage(bitmapData: dataA,\n        bytesPerRow: 4 * 256,\n        size: CGSize(width: 256, height: 256),\n        format: CIFormat.Lh,\n        colorSpace: CGColorSpaceCreateDeviceGray())\n    let outImageB = CIImage(bitmapData: dataB,\n        bytesPerRow: 4 * 256,\n        size: CGSize(width: 256, height: 256),\n        format: CIFormat.Lh,\n        colorSpace: CGColorSpaceCreateDeviceGray())\n   return (outImageA, outImageB)\n}"
+    },
+    {
+      "timestamp": "8:51",
+      "title": "Reconstruct RGB image from Lab images",
+      "language": "swift",
+      "code": "func reconstructRGBImage(l lightness: CIImage,\n                         a aChannel: CIImage,\n                         b bChannel: CIImage) -> CIImage {\n    guard\n        let kernel = try? CIKernel.kernels(withMetalString: source)[0] as? CIColorKernel,\n        let kernelOutputImage = kernel.apply(extent: lightness.extent,\n                                             arguments: [lightness, aChannel, bChannel])\n    else { fatalError() }\n\n    let labToRGBFilter = CIFilter.convertLabToRGBFilter()\n    labToRGBFilter.inputImage = kernelOutputImage\n    labToRGBFilter.normalize = true\n    let rgbImage = labToRGBFilter.outputImage!\n    return rgbImage\n}"
+    },
+    {
+      "timestamp": "9:08",
+      "title": "Custom CIKernel to combine L, a* and b* channels.",
+      "language": "swift",
+      "code": "let source = \"\"\"\n#include <CoreImage/CoreImage.h>\n[[stichable]] float4 labCombine(coreimage::sample_t imL, coreimage::sample_t imA, coreimage::sample_t imB)\n{\n   return float4(imL.r, imA.r, imB.r, imL.a);\n}\n\"\"\""
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Core ML",
+        "url": "https://developer.apple.com/documentation/CoreML"
+      },
+      {
+        "title": "Core ML Tools PyTorch Conversion Documentation",
+        "url": "https://coremltools.readme.io/docs/pytorch-conversion"
+      },
+      {
+        "title": "Integrating a Core ML Model into Your App",
+        "url": "https://developer.apple.com/documentation/CoreML/integrating-a-core-ml-model-into-your-app"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10017/3/6F4C9F52-725A-4AD2-83BD-A3D43D29A914/downloads/wwdc2022-10017_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10017/3/6F4C9F52-725A-4AD2-83BD-A3D43D29A914/downloads/wwdc2022-10017_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10049",
+      "year": "2023",
+      "title": "Improve Core ML integration with async prediction",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10049"
+    },
+    {
+      "id": "10063",
+      "year": "2022",
+      "title": "Accelerate machine learning with Metal",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10063"
+    },
+    {
+      "id": "10114",
+      "year": "2022",
+      "title": "Display EDR content with Core Image, Metal, and SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10114"
+    },
+    {
+      "id": "10027",
+      "year": "2022",
+      "title": "Optimize your Core ML usage",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10027"
+    },
+    {
+      "id": "10153",
+      "year": "2020",
+      "title": "Get models on device using Core ML Converters",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10153"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:40:27.065Z"
+}

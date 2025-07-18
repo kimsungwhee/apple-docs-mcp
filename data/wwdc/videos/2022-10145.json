@@ -1,0 +1,62 @@
+{
+  "id": "10145",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10145/",
+  "title": "What’s new in HLS Interstitials",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "- Hello all. I'm Prashant, and welcome to WWDC. In 2021, we introduced HLS Interstitials. They offer a really simple way to schedule ads and other interstitials in your HLS streams. This year, we've added features that let you better optimize your ad inventory and also fine tune your presentation. So come, let's find out what's new in HLS Interstitials. In this talk, we'll start with a quick overview of how HLS Interstitials work. And we'll follow that by discussing the new ad cueing options that we've added. After that, we'll see how you can fine tune your ad experience, especially in live scenarios using the SNAP attributes. We'll then go over some of the new query parameters that we've added to the HLS specification, and finally we'll discuss the changes to the AVFoundation APIs that incorporate these new features. But before we dive into the new features, let's quickly refresh ourselves with HLS Interstitials. With HLS Interstitials, ads are treated as separate assets that can be scheduled onto a program timeline. They need not be stitched in with discontinuity tags anymore. Instead, they can be directly referenced via their multivariant playlist. This makes it really simple to schedule ads, as you'd only need to point to their multivariant playlist from your primary content.\n\nThis is your typical media playlist that shows a primary content timeline. Say you want to schedule two ads during playback. You'd like for the first ad to appear some 5 seconds into playback. For that, you'd simply specify the start time of the ad using a DATERANGE tag.\n\nAnd you'd like for the second ad to appear at 15 seconds. For that, you'd add another DATERANGE tag to the playlist. It's as simple as that.\n\nIt could also be that your primary content has some ads already stitched in. You can even replace these ads by specifying a resume offset that equals the duration of the stitched-in ad.\n\nApart from this, HLS interstitials also lets you specify navigation restrictions for your ads, and you can even schedule early return in live scenarios, among other things. For more information, you can check out \"Dynamically insert midrolls and prerolls in HLS\" from WWDC 2021. While you can schedule ads along the content's timeline, this year we've added attributes that force the placement of the ad to the beginning or at the end of playback. For that we've added the following new cueing options that you can specify using the CUE attribute. This attribute can take on one or a combination of the following values. A value of PRE would make the ad appear before the presentation of the primary content begins. This is especially useful in live scenarios where you'd want to schedule a premium ad spot before tuning into the program. A value of POST would indicate that the ad should appear after the presentation of your primary content. This might be useful for event streams where you'd like to schedule end credits, say, at the conclusion of a live event.\n\nAnd a value of ONCE would make the ad appear only once. So if the user were to seek back to before the ad, they would no longer see the ad play again. A great application of this would be for rating screens which are typically shown just the one time at the start of playback.\n\nThis shows a playlist example where you have ads scheduled as pre and post rolls. Note that the preroll is scheduled to play only once. And we also have an ad scheduled to play once at some 10 seconds into playback.\n\nNow, scheduling ads in live scenarios comes with its own set of challenges. For instance, your packager might be using one clock to set the program date time tags in the playlist while the encoder that is producing the media is driven by a different clock. Now, these two clocks need not necessarily be in sync. For instance, in this example, the difference in the date time tags associated with segment 0 and segment 100 is about 800 seconds.\n\nHowever, the accumulated media duration would be slightly less than that as individual segment durations are under eight seconds.\n\nIn such scenarios where your packager clock is slightly faster than the encoder clock, the actual mediatime where the ad starts might fall somewhere inside the slate. And if you're expected to rejoin the main content at an offset that equals the ad duration as shown here, you'd actually end up missing some of the primary content that follows the slate.\n\nYou can now use the SNAP attribute with the OUT value to snap out of the primary content at a segment boundary that is closest to the intended ad start time. And similarly use the SNAP attribute with the IN value to snap back in the primary content that is closest to the ad return time. Note that we expect you to use the SNAP attributes only for live scenarios, as this notion of clock drift shouldn't exist when dealing with pre-packaged video on demand content.\n\nHere we see a live playlist where the ad is scheduled to both snap-out and snap-in.\n\nThis year, we've also added some query parameters that will help you optimize your ad inventory as well as with session management. Now, when you're tuning into a live stream in the middle of an ad pod, you'd be interested to know how far that ad pod has progressed so that you can show your most valuable inventory in the time remaining.\n\nFor that, we've added the HLS_start_offset query parameter. The HLS_start_offset query parameter will be supplied with the request for the interstitials' Asset-list URL. For live content, this would specify the offset into the Asset-list where playback would begin when joining a live stream, and for video on demand content, it would be the offset into the Asset-list when seeking into a region replaced by the interstitial.\n\nIn this sample, we have a live playlist with a 15-second ad scheduled to start at 5 seconds from the top of the playlist. The highlighted segments shown here would be replaced by the interstitial. Now during live join, the client would typically be some 3 target durations behind the live edge. At that point, the 15-second ad pod that is scheduled would've played out for 10 seconds. So this is supplied as part of the HLS_start_offset query parameter. Now that the client only has 5 seconds of ad time remaining, the server can construct the Asset-list such that it places its most valuable ads in the last 5 seconds of that list.\n\nAt your server, you might probably need a way to track the same playback session across multiple ad requests so that you can avoid serving someone the same ad over and over.\n\nSo to associate ad requests with primary playback sessions, we've added the HLS_primary_id query parameter. If a client sets the playback session id request header for all http requests of a particular playback session, they can then supply this session ID as part of the HLS_primary_id query parameter to the X-Asset-URI and X-Asset-List requests. Clients that do not set the session id request header should create a unique value for every primary playback session and use that as the HLS_primary_id query parameter for both primary and interstitial asset requests. You might recall that AVFoundation offers the AVPlayerInterstitialController and the AVPlayerInterstitialEvent objects that let you schedule ads on the client side. Now we've added support for the cue and SNAP options to the AVPlayerInterstitialEvent object as well. You can specify the cueing options, whether you want the ad to be scheduled as a preroll or a post roll, via the Cue property. The play once option that is signaled via the Cue attribute in the DATERANGE tag is set as a Boolean via the willPlayOnce property. The option to snap out is signaled via alignsStartWithPrimarySegmentBoundary property and to snap in, you'd set the alignsResumptionWithPrimarySegmentBoundary property.\n\nAs AVPlayerInterstitialEvent continues to grow, we figured it might be better to separate the setting of the properties from the creation of the object. So we've now made the AVPlayerInterstitialEvent object mutable. You can now create the object with just the primary item and start time of the event. And you can then specify the different configuration options by setting the relevant properties.\n\nNote that once the event is set on the controller, any subsequent changes to the event object will not be reflected at the controller, since the controller makes a copy of these objects. For the changes to take effect, you'd have to set the event once again on the controller. To wrap up, you can now schedule your ads as pre or post rolls using the X-CUE attribute. You can also force your ads to play only once by setting the X-CUE to once. To manage clock drift in live scenarios, you'd use the X-SNAP attribute. For constructing your asset lists during live join, you can use the HLS_start_offset query parameter and you'd use the HLS_primary_id query parameter to relate interstitial requests with primary playback sessions. Did you know that if you use HLS interstitials to schedule ads, AVFoundation automatically manages them while in Shareplay? For more information, check out the \"Display ads and other interstitials in SharePlay\" talk. That's it for me, folks. Thank you.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "7:58",
+      "title": "Client schedules an ad pod at 10s into primary asset",
+      "language": "swift",
+      "code": "// Client schedules an ad pod at 10s into primary asset\n let player  = AVPlayer( url: movieURL )  // no ads in primary asset\n let controller = AVPlayerInterstitialEventController( primaryPlayer: player )\n let adPodTemplates = [AVPlayerItem( url: ad1URL ), AVPlayerItem( url: ad2URL )]\n let event = AVPlayerInterstitialEvent( primaryItem: player.currentItem,\n                              time: CMTime( seconds: 10, preferredTimescale: 1 ),\n                                      )\n event.templateItems = adPodTemplates\n event.identifier = \"Ad1\"\n event.restrictions = []\n event.resumptionOffset = .zero\n event.playoutLimit = .invalid\n event.cue = .none\n \n controller.events = [event]\n player.currentItem.translatesPlayerInterstitialEvents = true\n let vc = AVPlayerViewController()\n vc.player = player\n player.play()"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10145/4/1BA9D9C4-C8EC-4D33-A67A-2DFEBD032041/downloads/wwdc2022-10145_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10145/4/1BA9D9C4-C8EC-4D33-A67A-2DFEBD032041/downloads/wwdc2022-10145_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "110380",
+      "year": "2022",
+      "title": "Display ads and interstitials in SharePlay",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110380"
+    },
+    {
+      "id": "10140",
+      "year": "2021",
+      "title": "Explore dynamic pre-rolls and mid-rolls in HLS",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10140"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:23:04.439Z"
+}

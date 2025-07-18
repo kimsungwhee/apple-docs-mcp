@@ -1,0 +1,60 @@
+{
+  "id": "10232",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10232/",
+  "title": "Adapt ad insertion to Low-Latency HLS",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": false,
+  "transcript": {
+    "fullText": "♪ Voiceover: Hello, and welcome to WWDC.\n\nRoger Pantos: My name is Roger Pantos, and today we are going to talk about inserting ads into low-latency HLS.\n\nTo set the stage for that, let's start with a quick review of how regular live HLS works.\n\nUsually in a live HLS, the server adds a new segment every target duration, and the client reloads that playlist every target duration to see what's changed.\n\nSo, the timing model for the client is defined entirely by the current playlist and the segments inside it.\n\nThe first segment in the current playlist defines the earliest seeakable point, and the end of the last segment represents what's currently the live edge of the presentation.\n\nNow that's important because clients use the position of that live edge to make some essential decisions such as how close it is safe to play without stalling.\n\nSo, let's take a look at playlists in a graphical way.\n\nWe'll start with a playlist that has four six-second segments.\n\nSix seconds later, a new segment is added, and the playlist is updated to roll the first segment out of the playlist.\n\nWe're showing it here is gray because it is no longer part of the live window.\n\nNow the end of segment five is the live edge.\n\nNext we'll add a new segment, and the process repeats.\n\nNow one consequence of this is that if every segment is six seconds, then each segment has a six-second publishing delay.\n\nIn other words, you have to wait for six seconds before any part of that segment becomes available for playback, even the first few frames.\n\nThat's a long time if you want to play really close to live.\n\nSo, enter low-latency HLS and partial segments.\n\nPartial segments are like looking through a microscope at the live edge of the presentation.\n\nThe way it works is that every regular segment at the live edge, called a parent segment, is accompanied by a series of shorter partial segments.\n\nAnd these offer the same media, just with a lower publishing latency.\n\nSo in this case, that client can get the first media from segment five after only two seconds instead of waiting for six seconds.\n\nTwo seconds after that, it can get a little bit more, and then two seconds after that, the final part of segment five appears along with segment five itself.\n\nNow there's nothing magic about six seconds and two seconds here you can use any combination durations.\n\nHere we've looked at low-latency HLS and how it differs from regular live HLS for delivering program content.\n\nLet's stick a pin in that for just a second and go back to regular live HLS, so we can talk about ad insertion.\n\nNow there are a few different variations, but the basic idea is that you'll start with a source feed for your program that includes markers for where the ads can be inserted.\n\nNow these markers are often not on regular segment boundaries, so you're packager may need to add a short segment, so the ad can start exactly on a segment boundary.\n\nWhen it's time to pick an ad, you're decisioning engine will choose one out of your available inventory, and then your packager will begin replacing program segments with the ad segments, separating them with discontinuity tags.\n\nThe packager will then continue to spool out ad segments one per target duration until it reaches the end of the ad, and then it goes back to regular program segments.\n\nSo to go back to our diagram, it's going to look like this: we start with these three program segments in blue.\n\nWhen an ad comes up, we place one last short-program segment to align with the start of the ad boundary.\n\nThen we wait six seconds, and then we lay down the first ad segment.\n\nThen, six seconds after that, we lay down a second ad segment.\n\nAt the end of the ad, it might not end exactly on a segment boundary, so we might have, again, a short segment -- this time, a short ad segment -- and then we wait six seconds more, and then we lay down the first program segment after the ad.\n\nThis is ad insertion for regular live HLS.\n\nFor low-latency HLS, you'll do much of the same thing but with program segments added to the mix.\n\nSo here we have the same stream, but for low latency it has partial segments as well.\n\nIt updates faster, so after two seconds, you get another partial segment and then you'll get a short partial segment to line up to the ad boundary along with the parent segment.\n\nAt this point we'll start spooling out the ad.\n\nThe packager needs to maintain the same low-latency timing model, which means every two seconds, it will add a partial segment from the ad.\n\nSo then two seconds after that, we'll get another, and two seconds after that, we'll get the last one along with the parent segment from the ad.\n\nThis then continues through the next ad segment, and then the ad ends on a short partial segment to line up with the ad boundary just like the partial segments did.\n\nAfter that, the program partial segments and parent segments resume, and you're back to the program.\n\nSo inserting ads into low latency HLS is very similar to doing it with regular live HLS.\n\nThe biggest difference is that before ads are spooled out as regular segments they get doled out as partial segments first, so the playlist can update more frequently at the live edge and then the parents segments follow.\n\nThe overall segmentation stays the same in terms of where the ad boundaries are, where the discontinuities are placed, where key rotation happens, et cetera.\n\nAnd just as when you're serving program content, the origin has to implement blocking playlist reload for ads as well to preserve the low-latency timing model.\n\nWe've got a separate video about blocking playlist reload if you'd like to learn more about it.\n\nIt's part of the new HLS Origin API.\n\nAnd speaking of the Origin API, another consideration for ad delivery is preload hinting.\n\nPreload hinting is a technique used by low-latency HLS to lower segment delivery time.\n\nWe also have a video talking about that this year.\n\nBut the basic requirement is that every playlist has to contain the URL of the next partial segment that we expect to have show up in the playlist, carried in a preload hint tag.\n\nAd content must be hinted just like program content, but it's a little easier to implement for ads because unlike programmed content where the server has to block until each partial segment has been completely produced, with prerecorded content, we don't have to block, and so you can serve it up from a regular origin.\n\nLet's take a look at an example of what preload hinting looks like for an ad.\n\nHere's a low-latency playlist, and segment 7 is the last thing that's currently available.\n\nBut we also have a couple of preload hint tags at the end.\n\nBecause we're transitioning to an ad, the first one tells us that the client should load a new media initialization section.\n\nThe second one gives us the URL for the first partial segment of the ad.\n\nTwo seconds later, when the live edge of the presentation reaches the ad, the playlist will update to look like this.\n\nNow we can see that there is a discontinuity following the program segment 7, followed by a map tag for the ad, followed by the first partial segment of the ad.\n\nThe preload hint tag has been updated to hit the second partial segment of the ad, which we expect will show up as its own part tag two seconds from now when it goes live.\n\nThen we'll hit the third partial segment, and so on.\n\nLike clockwork, right? Well, not always.\n\nOne phenomena you might be familiar with is called early return.\n\nUsually you see this when something really exciting happens in a live broadcast during an ad break and the producer wants to cut back to the program right away so you don't miss it.\n\nJust like in regular live HLS, you'll stop serving ad segments before you get to the end of the ad.\n\nIf you've got an agile packager, you might be able to end it at the last published partial segment, in which case you would conjure up a short parent segment that ends at the same place.\n\nThen, you'd signal a discontinuity and resume feeding program segments.\n\nIn this case, a hint you served earlier, before you knew you were going to return early, might need to change.\n\nSo just set it to the next program partial segment instead.\n\nThe client will switch back to loading program content, and you'll have your early return.\n\nSo, to wrap up our discussion of inserting ads into low-latency HLS, it's pretty similar to inserting ads in regular live HLS, but with one difference: ads get spooled out more frequently as partial segments.\n\nYour packager does need to implement blocking playlist reload for both ads and program content.\n\nAnd it has to supply preload hints for both as well.\n\nAlthough your ad origin does not need to enforce the blocking symantics because ads themselves are prerecorded.\n\nWe know that for many of you, ads are essential part of your low-latency content delivery strategy.\n\nSo we hope that what we've covered here helps you to deliver them with low-latency HLS.\n\nThank you.\n\n♪",
+    "segments": []
+  },
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10232/4/D14B77B1-D4C9-4BD0-A395-843696269639/wwdc2020_10232_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10232/4/D14B77B1-D4C9-4BD0-A395-843696269639/wwdc2020_10232_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10229",
+      "year": "2020",
+      "title": "Discover HLS Blocking Preload Hints",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10229"
+    },
+    {
+      "id": "10230",
+      "year": "2020",
+      "title": "Optimize live streams with HLS Playlist Delta Updates",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10230"
+    },
+    {
+      "id": "10231",
+      "year": "2020",
+      "title": "Reduce latency with HLS Blocking Playlist Reload",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10231"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:24:48.727Z"
+}

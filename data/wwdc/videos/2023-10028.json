@@ -1,0 +1,135 @@
+{
+  "id": "10028",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10028/",
+  "title": "Bring widgets to life",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services",
+    "Essentials"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Luca: Hi! My name is Luca and I’m an engineer on the SwiftUI team. Today we are going to discuss how you can bring widgets to life with some new, exciting capabilities. Widgets are a beloved part of the iOS and macOS experience and now, with interactivity and animations, they are even more powerful.\n\nInteractivity allows your user to directly manipulate the data in your widget, creating powerful interaction to execute the most important actions in your app. And animations bring widgets to life by helping users get a sense of how the content has changed and what’s the result of their actions. I’m super excited about all of these new capabilities, so let’s get started. First, we are going to cover animations and how easy it is to make your widget look great. After that, I’m going to walk you through how to add interactivity to your widgets. Let’s start with animations. Throughout this talk, we are going to use an app that my friend Nils has been working on to keep track of the caffeine intake during the day. It already has a widget that shows the total amount of caffeine and the last drink I had today. If I recompile my widget with the latest SDK, every time the content of the widget changes, the system is going to animate the transition between the entries with a default animation. We are going to add some tweaks here to make it look even better, but before we jump into Xcode, let me briefly talk about how animations work with widgets. In a regular SwiftUI app, you use state to drive changes to your view. And animations are driven by state mutations using modifiers like withAnimation. But Widgets work slightly differently. Widget don't have state. Instead, they create a timeline made of entries, which correspond to different views rendered at specific times. SwiftUI determines what is the same and what is different between the entries, and animates the parts that have changed. By default, widgets get an implicit spring animation and various implicit content transitions, but you can use all the transition, animation, and content transition APIs that SwiftUI provides out of the box to customize how your widget animates. I won’t go into more details about how all the animation primitives of SwiftUI work. For that, there is a fantastic talk called “Explore SwiftUI Animation.” Okay, time to open up Xcode and show you how, with a few tweaks, your widget can be as fancy as latte art on your morning cappuccino and how the new Xcode Preview API can help you iterate quickly on these animations.\n\nHere we have all the views that comprised my widget. The main view has a VStack with two views, the first showing the total amount of caffeine and the second, the last drink I had today, if present. Note how I am using the containerBackground modifier here to define the background for my widget. This allows it to show up in all the new supported locations on the Mac and iPad. Normally, to be able to see your widget animating, you would need to have a bunch of entries and wait for their moment to appear on screen, but that can be tedious and would slow you down, but luckily we have a great solution with the new Preview API we are introducing this year. I can define a new preview for a widget in systemSmall and pass the type defining my widget. and now I can specify how to render a timeline with some entries I've defined earlier. When I do that in the canvas, I can now see a preview of my timeline and how every entry would look like. But check this out! When I click through the preview, I can see how my widget will animate when transitioning between entries. This is pretty cool! And this is only scratching the surface of what this new Preview API is capable of. Make sure to check out the session \"Build programmatic UI with Xcode Previews\" to learn more about this new powerful API. Okay, time to start tweaking these animations. The first thing I want to do is start with the text for the caffeine amount. Right now it is just cross-fading with the next value, but I really want to add some drama to the value going up. In this case, the view is not changing, but only the text content is, and to animated that, we can use a content transition. And I'm going to choose add a numeric text with the value of my caffeine. This is a content transition that is made specifically for important numeric value that we want to give prominence when they change. I think its looking great! Now, I want to focus on the view showing the last drink. I want to add a transition to emphasize that a new drink is coming in. The first thing I want to do is to use the ID modifier to associate the identity of this view with specific log it is rendering. This will inform SwiftUI that whenever this log changes, this is a new view and we need to transition to the new one. And now I can specify a transition. I think a push will be good. From which edge? I think from bottom is a good choice. Okay, you already know what to do now. Back to the preview canvas.\n\nAnd yeah, I like this transition from the bottom. One last tweak. I get a little jittery when I drink that much coffee, and I want that reflected with the animation curve for this transition. What's great is that, like in a regular SwiftUI app, I can use the animation modifier and choose a smooth spring with a shorter duration and bind that animation to my log value. And now, the animation would match my caffeination. I feel pretty good about what we have now, so let's switch our attention to interactivity. With interactivity, you can execute actions right from the widget! Before we jump into Xcode, I want to take a moment to discuss the architecture of how widgets work. This will allow you to create a better mental model for how interactivity works. When you create a widget, you define a widget extension, which is discovered by the system and run as an independent process. Widgets define a timeline provider that returns a series of entries, which are effectively the widget’s model. If a widget is visible, the system launches the widget extension process and asks its timeline provider for entries. These entries are fed back into the view builder that is part of your widget configuration and used to generate a series of views based on these entries. After that, the system generates a representation of these views and archives it on disk. When its time to display a specific entry, the system decodes and renders the archived representation of your widget in its process. Let me pause for a second and reiterate this last point. Your view code only runs during archiving. A separate representation of that view is rendered by the system process. But if your data is not static, you might want to update those entries. You can do that by calling the reloadTimelines function in your app whenever you are updating data that is displayed by your widget. This will repeat the process I've just described, regenerate new entries, and archive new copies of the views on disk. There are three important takeaways with this architecture. First, when your widget is visible, your code is not running. You drive changes to the widget content by updating its timeline entries, and this is also true of interactive widgets. Typically, updates to widgets are done on a best effort basis, but importantly, reloads initiated from an interaction are always guaranteed to occur. With this out of the way, let’s look at how to add interactivity. What’s great is that you can use controls that you are already familiar with, like Button and Toggle, to make part of your widget interactive. But remember, since widgets are rendered in a different process, SwiftUI won’t execute your closure, nor mutate your bindings, in your process space. So we need a way to represent actions that can be executed by the widget extension and be invoked by the system. Thankfully, there is already a solution to this problem: App Intents. You might have used app intents to expose actions for your app to Shortcuts or Siri. And now, the same intents can be used to represent the actions in your widget. At its very core, AppIntent is a protocol that allows you to define, in code, actions that can be executed by the system. For example, here, I’m defining an app intent to toggle a todo item in a todo app. An intent defines a number of parameters as inputs and an async function called perform, where you will have the business logic to run your intent. App Intents are very powerful, and there is a lot more to know about them, so be sure to checkout the “Dive into App Intents” and \"Explore enhancements to App Intents” sessions from WWDC22 and 23. And to support the ability to execute App Intent right from the UI, when you import both SwiftUI and AppIntents, There is a new family of initializers on Button and Toggle that accept an AppIntent as an argument and will execute that intent when these controls are interacted with. Note that only Button and Toggle using AppIntent are supported in interactive widgets. Other controls won’t work. And of course, those initializers work in apps as well, which is cool because you can share the app intent logic between your widget and your app. Let’s go back to Xcode and our coffee tracker app and add some interactivity. Currently, the user can log a new drink only by opening the app, but where interactive widget shines is as accelerator to surface the most important actions in your app, and for my app, this is definitely the logging of a new drink. So lets add that to a file I've already created. The first thing I want to do is to define a type that conforms to AppIntent to log a new drink. We'll give it a human-readable title that can be used by the system, and then implement the perform requirements by logging an espresso to our store and returning an empty intent result. Something that I want to call your attention to is that perform is an async function and you should take full advantage of it if you are doing any asynchronous work, such as writing to a database exactly like I'm doing here when I'm awaiting the log writing operation. As soon as your perform returns, the system will immediately initiate a reload of your widget timeline, giving you the opportunity to update the content of your widget. So again, make sure to have persisted all the information necessary to reload your updated widget before returning from perform. I've hard coded the drink to be an espresso, but, of course, we want to be able to pass the specific drink to log. To do that we can add a stored property with the @Parameter property wrapper and an initializer that populates the all parameters. It is important that I use this property wrapper because only the stored properties that are annotated with it are going to be persisted and will be available when the intent is performed in your widget extension. Before we add the button to invoke this intent, I want to highlight an important ecosystem benefit of using App Intents here. This app intent I've just defined is going to be available in Shortcut and Siri, so the investment in defining it here will pay dividend to your user experience beyond widgets. And now we are ready to add the button to the widget. Let's create a new view holding our buttons. In this view I'm using this button initializer that take an app intent, so we can pass the one we just defined. And let's add this view to the rest of the widget with some spacers. Now we have everything in place, let's see how this is working out on the widget by building and running. A little tip here: you can actually have directly build the target for the widget extension and Xcode will install the widget right on the home screen for you. My widget now has the button I've just defined. If I tap on it, I can log this last cup of espresso. But there is also one additional change I want to make so that my widget provides the best user experience possible. When your app intent finishes to perform, it will cause a widget to reload its timeline. This can introduce a small latency from the action, to the resulting change in the UI. But this latency can become more pronounced with iPhone widget on Mac so we are providing a solution out of the box for it. For example, in my widget, the value showing the total amount of caffeine won't update until an updated entry arrived. We can annotate this view with the invalidatableContent modifier. I've added this widget from my iPhone to my Mac. Let's tap on the button. The view showing the caffeine amount shows a system effect to indicate that its value is invalidated until an update comes in. We just saw Button in action and how with the invalidatableContent modifier, you can help users improve the perception of latency. Use this modifier judiciously. You don't need to annotate every single view that might change. You should use this modifier with views that are meaningful to set the right expectation with your users. Toggle goes one step further and will optimistically update its presentation when interacted with without having to wait for a roundtrip to the widget extension and back. This is done automatically, on your behalf, at archive time, by pre-rendering the toggle style in both configurations. Make sure, if you define your own toggle style, to check the configuration isOn property from the style and use that to switch the appearance. This concludes our overview for interactivity and animations. With animations and interactivity, you have the opportunity to infuse new life into your widgets and with widgets now in all these new locations, you can bring these little, delightful interactions to your users wherever they are. So make sure to fine tune the animations for your widgets with the help of the new Xcode Preview APIs and look out for the most important actions in your app and surface them in your widget, giving your user powerful interactions whenever and wherever they need them. Thanks you! ♪ ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:54",
+      "title": "Usage for the container background modifier",
+      "language": "swift",
+      "code": ".containerBackground(for: .widget) {\n    Color.cosmicLatte\n}"
+    },
+    {
+      "timestamp": "4:22",
+      "title": "Define a preview for the caffeine tracker widget",
+      "language": "swift",
+      "code": "#Preview(as: WidgetFamily.systemSmall) {\n    CaffeineTrackerWidget()\n} timeline: {\n    CaffeineLogEntry.log1\n    CaffeineLogEntry.log2\n    CaffeineLogEntry.log3\n    CaffeineLogEntry.log4\n}"
+    },
+    {
+      "timestamp": "5:41",
+      "title": "Add a numeric text content transition",
+      "language": "swift",
+      "code": "struct TotalCaffeineView: View {\n    let totalCaffeine: Measurement<UnitMass>\n\n    var body: some View {\n        VStack(alignment: .leading) {\n            Text(\"Total Caffeine\")\n                .font(.caption)\n\n            Text(totalCaffeine.formatted())\n                .font(.title)\n                .minimumScaleFactor(0.8)\n                .contentTransition(.numericText(value: totalCaffeine.value))\n        }\n        .foregroundColor(.espresso)\n        .bold()\n        .frame(maxWidth: .infinity, alignment: .leading)\n    }\n}"
+    },
+    {
+      "timestamp": "6:21",
+      "title": "Set up transition on LastDrinkView",
+      "language": "swift",
+      "code": "struct LastDrinkView: View {\n    let log: CaffeineLog\n\n    var body: some View {\n        VStack(alignment: .leading) {\n            Text(log.drink.name)\n                .bold()\n            Text(\"\\(log.date, format: Self.dateFormatStyle) · \\(caffeineAmount)\")\n        }\n        .font(.caption)\n        .id(log)\n        .transition(.push(from: .bottom))\n    }\n\n    var caffeineAmount: String {\n        log.drink.caffeine.formatted()\n    }\n\n    static var dateFormatStyle = Date.FormatStyle(\n        date: .omitted, time: .shortened)\n}"
+    },
+    {
+      "timestamp": "7:18",
+      "title": "Configuring animation for the transition",
+      "language": "swift",
+      "code": "struct LastDrinkView: View {\n    let log: CaffeineLog\n\n    var body: some View {\n        VStack(alignment: .leading) {\n            Text(log.drink.name)\n                .bold()\n            Text(\"\\(log.date, format: Self.dateFormatStyle) · \\(caffeineAmount)\")\n        }\n        .font(.caption)\n        .id(log)\n        .transition(.push(from: .bottom))\n        .animation(.smooth(duration: 1.8), value: log)\n    }\n\n    var caffeineAmount: String {\n        log.drink.caffeine.formatted()\n    }\n\n    static var dateFormatStyle = Date.FormatStyle(\n        date: .omitted, time: .shortened)\n}"
+    },
+    {
+      "timestamp": "9:18",
+      "title": "Reload the timeline for a widget",
+      "language": "swift",
+      "code": "WidgetCenter.shared.reloadTimelines(ofKind: \"LocationForecast\")"
+    },
+    {
+      "timestamp": "13:06",
+      "title": "App intent to log a caffeine drink",
+      "language": "swift",
+      "code": "import AppIntents\n\nstruct LogDrinkIntent: AppIntent {\n    static var title: LocalizedStringResource = \"Log a drink\"\n    static var description = IntentDescription(\"Log a drink and its caffeine amount.\")\n\n    @Parameter(title: \"Drink\", optionsProvider: DrinksOptionsProvider())\n    var drink: Drink\n\n    init() {}\n\n    init(drink: Drink) {\n        self.drink = drink\n    }\n\n    func perform() async throws -> some IntentResult {\n        await DrinksLogStore.shared.log(drink: drink)\n        return .result()\n    }\n}"
+    },
+    {
+      "timestamp": "15:10",
+      "title": "Create view to log a new drink",
+      "language": "swift",
+      "code": "struct LogDrinkView: View {\n    var body: some View {\n        Button(intent: LogDrinkIntent(drink: .espresso)) {\n            Label(\"Espresso\", systemImage: \"plus\")\n                .font(.caption)\n        }\n        .tint(.espresso)\n    }\n}"
+    },
+    {
+      "timestamp": "16:28",
+      "title": "Use the invalidatable content modifier",
+      "language": "swift",
+      "code": "struct TotalCaffeineView: View {\n    let totalCaffeine: Measurement<UnitMass>\n\n    var body: some View {\n        VStack(alignment: .leading) {\n            Text(\"Total Caffeine\")\n                .font(.caption)\n\n            Text(totalCaffeine.formatted())\n                .font(.title)\n                .minimumScaleFactor(0.8)\n                .contentTransition(.numericText(value: totalCaffeine.value))\n                .invalidatableContent()\n        }\n        .foregroundColor(.espresso)\n        .bold()\n        .frame(maxWidth: .infinity, alignment: .leading)\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10028/4/3BBB0693-B39D-476B-AC4A-2F1A8BB53FCE/downloads/wwdc2023-10028_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10028/4/3BBB0693-B39D-476B-AC4A-2F1A8BB53FCE/downloads/wwdc2023-10028_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10027",
+      "year": "2023",
+      "title": "Bring widgets to new places",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10027"
+    },
+    {
+      "id": "10252",
+      "year": "2023",
+      "title": "Build programmatic UI with Xcode Previews",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10252"
+    },
+    {
+      "id": "10103",
+      "year": "2023",
+      "title": "Explore enhancements to App Intents",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10103"
+    },
+    {
+      "id": "10184",
+      "year": "2023",
+      "title": "Meet ActivityKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10184"
+    },
+    {
+      "id": "10185",
+      "year": "2023",
+      "title": "Update Live Activities with push notifications",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10185"
+    },
+    {
+      "id": "10032",
+      "year": "2022",
+      "title": "Dive into App Intents",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10032"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:13:32.949Z"
+}

@@ -1,0 +1,112 @@
+{
+  "id": "10031",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10031/",
+  "title": "Update your app for watchOS 10",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Nina: Hello. My name is Nina Paripovic, and I'm a watchOS software engineer. In this code-along session, we'll take an existing app built with the watchOS 9 SDK and update it for watchOS 10. We'll talk about the new design paradigms and SwiftUI APIs you can use to make your app look beautiful alongside the system-wide redesign. The sample project is linked in the Resources list associated with this session. I encourage you to start that download now so that we're ready to build for watchOS 10 together. Before we jump in, let's take a look at our existing project. The app we'll be updating is Backyard Birds, an app that lets you create and manage beautiful backyard gardens and their curious visitors. In the app today, there is a list of backyards. Each backyard has a detail view which shows us its activity and condition. If food or water is running low, they can be topped up. We can also see all of our bird visitors in each backyard. watchOS 10 brings an exciting, fresh new look to watch apps. If you haven't already, check out \"Meet watchOS 10\" as well as \"Design and build apps for watchOS 10\" to get more info on the design principles we are going to apply in this session. Now, let's open up Xcode to get started with updating our app.\n\nHere is our current Backyard Birds app built for and running on watchOS 9. We see the list of backyards, which transition to a backyard detail. First, let's build against the watchOS10 SDK.\n\nThe app is already looking great. We see new system features, like the large title that transitions as we scroll and the new material that blurs content underneath the navigation bar. Tapping on a backyard animates the cell, and we have automatically adopted the systemwide toolbar button styling we see in the top left. If we scroll and then tap on Refill, it presents a modal with our new blurred background material.\n\nPeople who use Backyard Birds care most about what's happening in their own backyard. Currently, when they launch the app, the first thing they do is tap on a backyard in the list to see what's happening in the detail view. In watchOS 10, we can make things easier by modifying the structure of the app with NavigationSplitView. This will allow people to launch directly into the detail view of their backyard and then pop back up to the list when they want to visit their friends' yards. Since the detail view is the most important part of our app, we can bring emphasis to it by implementing NavigationSplitView.\n\nNavigationSplitView is great when we have this strong source list and detail relationship. It allows people to focus on the detail by directly launching to it, while still being able to easily switch over to another yard from the source list.\n\nWe're already using it for Backyard Birds on iOS and iPadOS. Looks like NavigationSplitView would be a great fit for our app.\n\nIn ContentView, we are going to swap out the NavigationStack for a NavigationSplitView. Then we are going to move the contents of our navigationDestination into the detail of the NavigationSplitView. Finally, we'll adopt the new list selection APIs, available in watchOS 10, that will drive which detail view is presented by the NavigationSplitView. To start, let's swap out the NavigationStack for a NavigationSplitView.\n\nWe can leave the Backyard List where it is at the root of the NavigationSplitView. Let's remove the navigationDestination modifier and move BackyardView into the detail view builder. Since selectedBackyard is an optional, let's make sure to unwrap it and provide a fallback view.\n\nFinally, let's use a list initializer that takes a selection binding. When you provide a value for the selection parameter of a list, the selection binding drives which detail view we present within our NavigationSplitView.\n\nNice. We now see the detail view for our selected yard by default. Since we launch directly to the detail, we can remove the navigationTitle. We can navigate back to see the rest of our backyards using the source list button. And tapping back into the detail view gives us a beautiful full-screen animation. Right now, the backyard view is a long list of scrollable content. Our list is already broken up into three different sections with distinct sets of functionality, the today view, the habitat view and the visitors view. We'll be able to improve the visual clarity of our app by instead using a TabView and creating tabs for each section.\n\nTabView gives us a way to break up content into full-screen views, with each tab having a clear and distinct purpose. I want to keep Digital Crown functionality for quick scrolling through views. The new vertical page style lets me do this with TabView. People can quickly navigate between tabs and even scroll within a single tab.\n\nLet's jump back to Xcode and update the detail view to use a TabView.\n\nIn BackyardView, let's move each section into its own respective view and replace the List with a TabView. Since each page of the TabView takes up the full size of the screen, we don't need the sections and dividers. Let's make sure to add the section headers back in as navigationTitles.\n\nLastly, let's use the tabViewStyle modifier and specify that we want verticalPage. We're almost there. As we paginate, we see views settling into each tab. To make it easier for people to quickly view all of the visitors, we can wrap our VisitorView in a List.\n\nNow, the TabView will designate one tab to its child List view. If the list exceeds the height of the screen, the view will become scrollable.\n\nIf you have scrollable content within a vertical TabView, place it in the last tab whenever possible.\n\nI'm also going to break up the habitat view into two separate tabs, so that people can easily distinguish between food and water levels.\n\nFor this, I've created my own gauge that fits better within a TabView.\n\nIn our TabView, let's replace HabitatView with our new GaugeView by creating one instance for food and one for water.\n\nThat's looking great. Now all we need to do is add back the refill functionality. For this, I am going to use a toolbar. Toolbar has been elevated in watchOS 10 with brand-new placement options, consistent across all screen sizes. The new bottom bar placement is a great place to put controls. I'm going to make use of this placement option by adding in the Refill button to the bottom bar.\n\nBack in the new HabitatGaugeView, we'll add a toolbar and then use a ToolbarGroup to specify we want bottom bar placement. I'll use a spacer to add the button to the trailing corner of the toolbar.\n\nWe now have a lot more space, and it's easier to focus on the Habitat summary. I want to do more to help orient people as they navigate through the TabView. Additionally, if the food and water of a backyard is low, I want to bring attention to this. We can achieve this by applying a background gradient. The title for each tab is helpful, but color would be a great way to increase glanceability and reinforce where we are within the detail view. We can also use it to highlight the state of our backyard if food or water is running low. The system gradient is a nice way to relay this while maintaining contrast against foreground elements. Let's use the container background modifier with a color gradient to achieve this. Let's first remove our original background. We can add a function to the BackyardView that determines the background color based on the current food and water level. If levels are low, the background will be red to indicate that it's time for a refill. I'll also add some helpful computed variables. Now we can pass this computed property to the containerBackground modifier.\n\nThe modifier takes in a ShapeStyle where we'll pass in the color gradient as well as a ContainerBackgroundPlacement. Here, we'll specify it's for a TabView.\n\nI also want to change the gauge color when the background changes. Let's pass in the same computed color variable.\n\nLet's apply the containerBackground modifier to the other views within the TabView, using the app's accent color.\n\nAs we scroll, you can see that the gradient contrasts nicely against the foreground elements. And as we tap on the toolbar button, we can see how the background gradient changes.\n\nAs a final touch, I want to make use of materials to highlight important information. Materials have been available across platforms and are new to watch apps in watchOS10.\n\nThey're a nice way to distinguish between foreground and background elements while also adding a visual flourish. Finally, they can surface or reinforce information on screen. There's a couple places in the app where we can use materials and vibrancy. Let's take a look. To start, I want to replace the shadow backdrop from the backyard title and instead use a material background. The background of the cell is colorful, and adding in a material will help provide clarity to the title.\n\nPeople really care about the number of bird visitors in each backyard, which you can see in the summary view. It would be great to surface it in the list view, so that people can see it without going into the detail view of a backyard. I'll add it as another overlay and provide a material background to the number. watchOS apps tend to use dark backgrounds, so the material defaults to dark variants. Because the backyards are light and colorful, I'm going to switch these to the light variant.\n\nAnd with that, our Backyard Birds app has now been updated for watchOS 10.\n\nLet's review all the big changes we've just made. We've added in the NavigationSplitView to our list. We then replaced the List with a Vertical TabView. We added functionality to the toolbar with each backyard, as well as some beautiful gradients. To finish, we made use of materials to surface useful information. Thanks for coding along with me. This is a big year for Apple Watch, and I encourage you to explore more sessions. To go further with Backyard Birds, head over to \"Build widgets for the Smart Stack on Apple Watch\". I can't wait to see the updates you'll make so your app shines on watchOS 10.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:02",
+      "title": "NavigationSplitView",
+      "language": "swift",
+      "code": "NavigationSplitView {\n    List(backyardsData.backyards, selection: $selectedBackyard) { backyard in\n        BackyardCell(backyard: backyard)\n    }\n    .listStyle(.carousel)\n} detail: {\n    if let selectedBackyard {\n        BackyardView(backyard: selectedBackyard)\n    } else {\n        BackyardUnavailableView()\n    }\n}"
+    },
+    {
+      "timestamp": "6:18",
+      "title": "Vertical TabView",
+      "language": "swift",
+      "code": "TabView {\n    TodayView()\n        .navigationTitle(\"Today\")\n    HabitatGaugeView(level: $waterLevel, habitatType: .water, tintColor: .blue)\n        .navigationTitle(\"Water\")\n    HabitatGaugeView(level: $foodLevel, habitatType: .food, tintColor: .green)\n        .navigationTitle(\"Food\")\n    List {\n        VisitorView()\n            .navigationTitle(\"Visitors\")\n    }\n}\n.tabViewStyle(.verticalPage)"
+    },
+    {
+      "timestamp": "8:37",
+      "title": "Add refill button to Toolbar",
+      "language": "swift",
+      "code": ".toolbar {\n    ToolbarItemGroup(placement: .bottomBar) {\n        Spacer()\n        Button {\n            level = Int(min(100, Double(level) + 5))\n        } label: {\n            Label(\"Add\", systemImage: \"plus\")\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "9:48",
+      "title": "HabitatGaugeView background color function and variables",
+      "language": "swift",
+      "code": "func backgroundColor(_ level: Int, for type: HabitatType) -> Color {\n    let color: Color = type == .food ? .green : .blue\n    return level < 40 ? .red : color\n}\n\nvar waterColor: Color {\n    backgroundColor(waterLevel, for: .water)\n}\n\nvar foodColor: Color {\n    backgroundColor(foodLevel, for: .food)\n}"
+    },
+    {
+      "timestamp": "10:10",
+      "title": ".containerBackground within TabView",
+      "language": "swift",
+      "code": "TabView {\n    TodayView()\n        .navigationTitle(\"Today\")\n        .containerBackground(Color.accentColor.gradient, for: .tabView)\n    HabitatGaugeView(level: $waterLevel, habitatType: .water, tintColor: waterColor)\n        .navigationTitle(\"Water\")\n        .containerBackground(waterColor.gradient, for: .tabView)\n    HabitatGaugeView(level: $foodLevel, habitatType: .food, tintColor: foodColor)\n        .navigationTitle(\"Food\")\n        .containerBackground(foodColor.gradient, for: .tabView)\n    List {\n        VisitorView()\n            .navigationTitle(\"Visitors\")\n            .containerBackground(Color.accentColor.gradient, for: .tabView)\n    }\n}\n.tabViewStyle(.verticalPage)\n.environmentObject(backyard)\n.navigationTitle(backyard.displayName)"
+    },
+    {
+      "timestamp": "11:38",
+      "title": "Add material to the backyard name",
+      "language": "swift",
+      "code": ".foregroundStyle(.secondary)\n.background(Material.ultraThin, in: RoundedRectangle(cornerRadius: 7))"
+    },
+    {
+      "timestamp": "12:15",
+      "title": "Visitor score overlay with materials",
+      "language": "swift",
+      "code": ".overlay(alignment: .topTrailing) {\n    Text(\"\\(backyard.visitorScore)\")\n        .frame(width: 25, height: 25)\n        .foregroundStyle(.secondary)\n        .background(.ultraThinMaterial, in: .circle)\n        .padding(.top, 5)\n}"
+    },
+    {
+      "timestamp": "12:20",
+      "title": "Light materials",
+      "language": "swift",
+      "code": ".environment(\\.colorScheme, .light)"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Human Interface Guidelines: watchOS",
+        "url": "https://developer.apple.com/design/human-interface-guidelines/designing-for-watchos"
+      },
+      {
+        "title": "Updating your app and widgets for watchOS 10",
+        "url": "https://developer.apple.com/documentation/watchOS-Apps/updating-your-app-and-widgets-for-watchos-10"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10031/4/365BFCEA-3567-4F2E-85DC-D6DF144F9B5C/downloads/wwdc2023-10031_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10031/4/365BFCEA-3567-4F2E-85DC-D6DF144F9B5C/downloads/wwdc2023-10031_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10138",
+      "year": "2023",
+      "title": "Design and build apps for watchOS 10",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10138"
+    },
+    {
+      "id": "10026",
+      "year": "2023",
+      "title": "Meet watchOS 10",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10026"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:52:58.498Z"
+}

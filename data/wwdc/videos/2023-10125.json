@@ -1,0 +1,151 @@
+{
+  "id": "10125",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10125/",
+  "title": "Bring your game to Mac, Part 3: Render with Metal",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools",
+    "Graphics & Games"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Georgi: Hello and welcome! I’m Georgi Rakidov, Software Engineer in GPU, Graphics, and Display Software. This session is the third of a three-part series that helps you bring your game to Mac. The first session covers how you can use the new Game Porting Toolkit to run your umodified Windows game on the Mac to evaluate your graphics, audio, and display features the second session shows how much development time you can save by compiling your existing HLSL shaders to Metal using the new Metal Shader Converter tool. This session completes the process of bringing your game to Mac by giving you detailed insights about how to port your renderer to Metal and get great performance out of Apple Silicon. As you port your renderer to Metal, you’ll notice your engine requires mapping the concepts from other platform graphics APIs to Metal. To help you with that, this session covers four topics, with Metal best practices, so you can leverage the powerful architecture of Apple GPUs. Each game is responsible for making GPU resources, including textures and data buffers, available to the GPU, and configuring how your shaders can access them. Your game can leverage the powerful graphics architecture of Apple processors by optimizing how it submits commands to the GPU. Games typically implement modern rendering techniques by using indirect rendering. MetalFX helps games save time for each frame by rendering to a lower resolution and then upscaling with MetalFX to the final resolution. When it comes to managing resources, each engine has to decide how the GPU accesses each texture, data buffer, and so on. On Metal, it's important to think about providing shaders access to resources with bindings, and Making resources resident into GPU-accessible memory and keeping access to them synchronized. Resource bindings and shaders go together. Start by translating your existing shaders with the Metal Shader Converter, which is a new tool this year, that can save you a lot of time porting your shaders to Metal. You can learn more from the \"Compile your Shaders\" session in this series. Metal Shader Converter gives you two binding models to choose from. With \"Automatic layout,\" the converter generates the binding information automatically, or you can pass binding information to Metal Shader Converter with \"Explicit Layout.\" Explicit layout is very flexible and can be helpful when you need to implement binding models from other platforms. For example, some API designs use a shader root signature, and here is a typical one with four entries: a descriptor table that points to a series of textures, a buffer root parameter, a 32-bit constant, and another descriptor table that points to a series of samplers. Each descriptor table is a resource array that contains elements of the same type, such as all textures, all samplers, or all buffers. Metal's argument buffers are more flexible in that elements can be of multiple types. But if your engine expects a homogenous array, you can easily encode them with an argument buffer. This example encodes the equivalent of a texture descriptor table. It starts by allocating a Metal buffer that serves as a texture descriptor table by storing the Metal resource ID for each texture. As it creates each texture, the code stores its resourceID directly into the table. The nice part is you can run code like this up front and outside of your rendering loop! The process for encoding a sampler descriptor table is almost the same. Just like with textures, the code starts by creating a Metal buffer that serves as the sampler descriptor table. As the code configures each sampler's descriptor, it sets the supportArgumentBuffers property to yes. After the code creates the sampler with the descriptor, it saves the sampler's resourceID in the table. You can also use an argument buffer to represent the top-level root signature itself. This example defines a structure for the root signature and creates a Metal buffer that can store one instance of it. The code assigns each field of the structure's fields with appropriate values, including GPU addresses for the texture and sampler tables. That’s all it takes to convert a root signature. Argument buffers are super-efficient in Metal 3! Now you can just bind the top-level argument buffer to a shader. This part is done in the render loop, but you can create the descriptor tables and root structure beforehand outside the render loop. Metal 3 argument buffers provide a flexible, performant way to translate other binding models, including root signatures and descriptor tables. Resources need to be resident during the execution of a given pass or render stage in order for shaders to access them. And if a resource is shared between passes, the order of execution of those passes has to be synchronized. The usage of bindless resources with Metal argument buffers requires explicit residency management on all GPU architectures, and Metal provides efficient ways to control residency. The recommendation is to group all read-only resources in big heaps. That way, you can just call useHeap once per encoder and all your read-only resources will be made resident for the duration of that pass or render stage, ready to be accessed by the shaders. This is how you can do it. Create a heap with the necessary size to allocate all your read-only resources, then allocate each resource out of this heap. And at render time, just call useHeap to make all these resources resident. For writable resources, the story is a bit different. Consider allocating writable resources individually and calling useResource with the right usage flags. In this case, Metal will handle synchronization for you and optimize for performance. This will help you avoid the burden to manually synchronize resources across Metal encoders. Similar to before, you start by allocating the resources, this time not backed by a heap. Then, only for the encoders that are going to access these resources, call useResource with the right usage flags. In this example, the encoder is writing to the texture and reading from the buffer. Here is a table with this recommendation. Both, read-only and writable resources, are accessed from a top-level argument buffer. In the ideal case, set just once per encoder. Read-only resources, grouped in heaps, hazard tracking mode set to Untracked. To make all resources in the heap resident, call useHeap once per encoder. Writable resources, allocated individually, leave hazard tracking and synchronization to Metal. And for each resource call, useResource once per encoder. This is an efficient approach! It implements a bindless model with low CPU overhead, and the Application doesn't have to worry about hazard tracking and synchronization, complicated tasks that require serious effort, and development time. For more details in bindless, residency, and synchronization, refer to the session “Go bindless with Metal 3.” Once you have resource bindings, residency, and synchronization implemented in the code, to render anything on screen, the engine will have to send commands to the renderer. The Apple Processor has many features to optimize command execution. The GPU is a Tile-Based Deferred Renderer, or TBDR, with a unified memory architecture where the CPU and the GPU are sharing system memory. Also, the GPU has a fast, on-chip memory called Tile Memory. To leverage this architecture, Metal has a notion of passes, and your goal is to group rendering commands into passes and properly configure those passes. For a deeper dive into TBDR architecture, please refer to the related presentations “Bring your Metal app to Apple Silicon Macs” and \"Harness AppleGPUs with Metal.\" Other APIs can have a continuous stream mixing GPU commands of different types, and your engine might assume this. Translating commands to Metal, you first create a command buffer. Then, depending on the type of commands, Graphics, Compute, or Blit, you group them into passes. You write the commands for each pass into the command buffer using a command encoder. At the end, when all the commands are encoded, submit the command buffer to the command queue for execution by the GPU. Your engine can consider four best practices to efficiently translate rendering commands to Metal. Start by batching copies up front before rendering starts, group commands of the same type, and avoid having empty encoders to clear render targets. And finally, optimize your Metal Load and Store actions to minimize memory bandwidth. These best practices are easy to explain by using an example. Say you have the following sequence: a render target clear, a draw, a copy, a dispatch, and another draw. In particular, look at all the memory traffic between system and tile memory generated in this sequence. This is not ideal! The copy in the middle of the stream copies uniform data for subsequent draws, in this case, Draw 1. The recommendation is, if possible, to move and batch these copies before rendering to avoid interrupting the rendering pass. After the change, the copy is now first, then the clear, draw 0, dispatch, and draw 1. If there is no dependency between the two draw calls and the dispatch, you should reorder them so you can batch draws and dispatches together. In this example, after switching the order of the draw and the dispatch calls, you now have two render passes after each other. This scenario is perfect for merging them into a single render pass if they share the same render targets, saving significant memory bandwidth. That way, you remove some unnecessary memory traffic, as data doesn't need to go from tile memory to system memory and back between the two draws. This is already better, but could be optimized further. The clear is an empty encoder, with only one purpose: to clear the render targets used by the next draws. In Metal, there is a very efficient way to do this. Just use LoadActionClear for the first render pass that uses the render targets. This is much better, but there is one more recommendation You can optimize load and store actions. You only have to store in the system memory the content of the render targets that will be used in the next passes. From this example, assume after draw 1, only the first render target will be used. All other render targets are intermediate and the content doesn’t need to be preserved. Metal allows control of the store action for each render target. In this case, you can use StoreActionStore for the first render target and StoreActionDontCare for the other ones. And that's it! This is the initial commands sequence. There are five round trips between tile memory and system memory. And this is how the commands sequence looks after a few easy optimizations. Only one final flush from tile memory to system memory. The memory bandwidth is greatly reduced! And that has been achieved by moving copies before rendering, grouping commands of the same type, avoid clearing render targets with empty encoders, and optimizing load and store actions. The GPU tools can help you identify these issues. Metal Debugger in Xcode automatically finds optimization opportunities, so you can get the best performance in your game. It allows you to inspect and understand the dependencies of your Metal passes, and comes with a full-featured suite of debugging and profiling tools. It's easy to use Metal Debugger to identify the issues that were mentioned. When I capture a Metal workload, Metal Debugger shows the Summary viewer. The Insights section at the bottom shows me optimization opportunities that come grouped into four categories: Memory, Bandwidth, Performance, and API Usage. There are two bandwidth insights I’d like to highlight in this workload. The first one is for unused resources. When I select an Insight, I can find a summary and some actionable advice to address it in the right panel. The GBuffer pass is storing more attachments than it needs to. In this case, the GBuffer pass loads the albedo/alpha texture and stores it. However, since the albedo texture isn’t used later in this frame, the store is redundant, so we can fix this by setting the store action to DontCare. Let’s check the next Insight. Combining render passes can help with reducing bandwidth, and here, the insight suggests that I can combine GBuffer and Forward passes into a single pass. I can also learn more about what these passes are reading and writing by clicking the Reveal in Dependencies button on the right to find this render pass in the Dependencies viewer. The Dependencies viewer is a great tool to inspect dependencies between passes! Here, I can see at a glance the load and store actions, shown above and below the render attachments. All the attachments in this pass have store action store, but only the color 0 and the depth attachment are used in the future pass. The previous insight revealed this. Zoom out a little, and the data edges are shown flowing from the GBuffer pass to the Forward pass. As the insight indicated, the GBuffer and Forward passes can be merged to save bandwidth, as they’re storing and loading from the same attachments. Merging these two passes will save bandwidth and improve performance. That was just one example of how you can use Metal Debugger to find optimization opportunities in your game. To learn more about Metal Debugger, please check out the related sessions “Gain insights into your Metal app with Xcode 12” and \"Discover Metal debugging, profiling, and asset creation tools.\" Indirect rendering is an important functionality that high-end games use to implement advanced rendering techniques. This topic will review how ExecuteIndirect works and how to translate this particular command to Metal. With indirect rendering, instead of encoding multiple draw commands, their arguments are stored in a regular buffer in memory and only one ExecuteIndirect command is encoded referencing the buffer and specifying how many draw calls the GPU has to execute by fetching arguments for each one of them from the buffer. The main idea of this approach is to be able to populate content of the indirect buffer by a compute shader scheduled for execution before the ExecuteIndirect command. This way, the GPU prepares work for itself and decides what to render. Execution of commands with indirect arguments is a key feature to implement advanced techniques such as a GPU-driven rendering loop. There are two ways to translate this command to Metal, by using Draw Indirect and Metal Indirect Command Buffers, or ICBs. In Metal, the renderer has to translate each ExecuteIndirect to a series of API calls to DrawIndirect. Each one references the buffer and provides an offset for the draw arguments. Here is the code. Look through the maximum number of draw calls this ExecuteIndirect might have. For each one, encode a separate draw specifying the indirect arguments buffer and offset in that buffer. At the end of iteration, move the offset to point to the next set of indirect arguments. This approach is very easy to implement and will work in almost all situations. However, if you have scenes with thousands of draw calls and performance in your game is limited by the CPU encoding time, you should consider Indirect Command Buffers in Metal. ICBs are a superset of buffers with indirect draw arguments. In addition to draw arguments, you can also set buffer bindings and render Pipeline State Objects from the GPU. To schedule commands from an ICB for execution on the GPU, you have to encode executeCommandsInBuffer command. Usually with ExecuteIndirect, all draw calls share the same Pipeline State Object. And each time the PSO changes, you have to encode a new ExecuteIndirect command. If you are using ICBs, it is not required to split the indirect execution commands by state changes that often. All PSOs and buffer bindings could be set from the ICB, so you don’t have to encode them. Depending on the structure of the scene, this might significantly reduce the encoding time. To leverage ICBs, it’s not necessary to modify existing shaders that populate indirect arguments. You can share the same shaders with other platforms and compile them with the Metal Shader Converter then translate draw arguments to ICBs by adding a small compute kernel after indirect argument generation and before the indirect rendering pass. To encode the ICB in your compute kernel, write it in the Metal Shading Language. As input to the shader, there is a pointer to the indirect arguments you want to translate. Next, check if the arguments are valid, and only then will you encode the command. In the encodeCommand function, set the render pipeline state, buffer bindings, and the draw call. This translates the draw arguments to a render command in the indirect command buffer. And that’s how to translate Indirect rendering to Metal. You can use a series of draw indirect commands or Metal Indirect command buffers. If you want to learn how to use indirect rendering to implement advanced rendering techniques, check out the “Modern Rendering with Metal” Sample Code. Once your game is producing correct images by binding resources to its pipelines and properly encoding commands into command buffers, you can leverage upscaling to get more performance out of your players' devices. Upscaling via MetalFX helps games save time for each frame by reducing the amount of GPU work. MetalFX is a turnkey solution to implement your upscaling pipeline. It works by scaling a lower resolution image up to the target output resolution in less time than it takes to render at the output resolution directly. MetalFX was introduced last year for the Mac, and it offers high performance upscaling! MetalFX supports two upscaling algorithms, \"Spatial\" for the best performance and \"Temporal\" for quality approaching native rendering on the output resolution. Integrating MetalFX in the engine will improve the player's experience by rendering in higher resolutions with better performance. New features this year include support for iOS, up to 3X upscaling, and support in Metal-cpp.\n\nIf your engine already supports an existing upscaling solution on other platforms, MetalFX integration won’t require much coding and modification on the engine side. To support MetalFX, you need upscaling support in the engine. Another requirement is the renderer to manually control the level of detail for texture sampling in materials shaders. Temporal upscaling requires jitter sequence and motion vectors. You probably already have those if your engine supports temporal anti-aliasing. MetalFX’s temporal upscaling can take rendering’s exposure into account, and you have two options. If your renderer supports a 1 by 1 exposure texture, then use that. Otherwise, you can enable the autoexposure feature and see if it improves the quality. Don’t forget to reset the history on camera cuts and extreme camera movements. For more details on how to integrate MetalFX in your applications, refer to the Documentation and “Boost performance with MetalFX upscaling” from last year. Metal gives some powerful options to make the most of your app's rendering time. You can manage resources and bind them as efficiently as possible. Based on how your shaders access them, ensure the passes that share resources run in the right order, and make resources resident and available for the GPU. Your app can leverage the full potential of Apple’s powerful graphics architecture by locating and applying optimization opportunities with Metal Debugger in Xcode and optimizing your command submission. Let the GPU decide for itself what work to do by implementing indirect rendering, which can be the key for many modern rendering techniques. Up your rendering game by upscaling your renderings with MetalFX, which can save your app valuable time in the render loop. For more rendering tips and guidelines, check out \"Optimize Metal Performance for Apple silicon Macs.\" Thank you for watching! ♪ ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:55",
+      "title": "Encode the texture tables.",
+      "language": "swift",
+      "code": "// Encode the texture tables outside of the rendering loop.\n\n\nid<MTLBuffer> textureTable  = [device newBufferWithLength:sizeof(MTLResourceID) * texturesCount\n                                                  options:MTLResourceStorageModeShared];\n\n\nMTLResourceID* textureTableCPUPtr = (MTLResourceID*)textureTable.contents;\nfor (uint32_t i = 0; i < texturesCount; ++i)\n{\n    // create the textures.\n    id<MTLTexture> texture = [device newTextureWithDescriptor:textureDesc[i]];\n\n    // encode texture in argument buffer\n    textureTableCPUPtr[i] = texture.gpuResourceID;\n}"
+    },
+    {
+      "timestamp": "4:33",
+      "title": "Encode the sampler tables.",
+      "language": "swift",
+      "code": "// Encode the sampler tables outside of the rendering loop.\n\n\nid<MTLBuffer> samplerTable  = [device newBufferWithLength:sizeof(MTLResourceID) * samplersCount\n                                                  options:MTLResourceStorageModeShared];\n\nMTLResourceID* samplerTableCPUPtr = (MTLResourceID*)samplerTable.contents;\nfor (uint32_t i = 0; i < samplersCount; ++i)\n{\n    // create sampler descriptor\n    MTLSamplerDescriptor* desc  = [MTLSamplerDescriptor new];\n    desc.supportArgumentBuffers = YES;\n    . . .\n\n    // create a sampler\n    id<MTLSamplerState> sampler = [device newSamplerStateWithDescriptor:desc];\n\n    // encode the sampler in argument buffer\n    samplerTableCPUPtr[i] = sampler.gpuResourceID;\n}"
+    },
+    {
+      "timestamp": "5:05",
+      "title": "Encode the top level argument buffer.",
+      "language": "swift",
+      "code": "// Encode the top level argument buffer.\n\n\nstruct TopLevelAB\n{\n    MTLResourceID* textureTable;\n    float*         myBuffer;\n    uint32_t       myConstant;\n    MTLResourceID* samplerTable;\n};\n\nid<MTLBuffer> topAB = [device newBufferWithLength:sizeof(TopLevelAB)\n                                          options:MTLResourceStorageModeShared];\n\n\nTopLevelAB* topABCPUPtr     = (TopLevelAB*)topAB.contents;\ntopABCPUPtr->textureTable   = (MTLResourceID*)textureTable.gpuAddress;\ntopABCPUPtr->myBuffer       = (float*)myBuffer.gpuAddress;\ntopABCPUPtr->myConstant     = 128;\ntopABCPUPtr->samplerTable   = (MTLResourceID*)samplerTable.gpuAddress;"
+    },
+    {
+      "timestamp": "6:49",
+      "title": "Allocate the read-only resources.",
+      "language": "swift",
+      "code": "// Allocate the read-only resources from a heap.\n\nMTLHeapDescriptor* heapDesc = [MTLHeapDescriptor new];\nheapDesc.size               = requiredSize;\nheapDesc.type               = MTLHeapTypeAutomatic;\n\nid<MTLHeap> heap = [device newHeapWithDescriptor:heapDesc];\n\n\n\n// Allocate the textures and the buffers from the heap.\n\nid<MTLTexture> texture = [heap newTextureWithDescriptor:desc];\nid<MTLBuffer>  buffer = [heap newBufferWithLength:length options:options];\n. . .\n\n\n// Make the heap resident once for each encoder that uses it.\n\n[encoder useHeap:heap];"
+    },
+    {
+      "timestamp": "7:34",
+      "title": "Allocate the writable resources.",
+      "language": "swift",
+      "code": "// Allocate the writable resources individually.\n\nid<MTLTexture> textureRW = [device newTextureWithDescriptor:desc];\nid<MTLBuffer>  bufferRW  = [device newBufferWithLength:length options:options];\n\n\n\n// Mark these resources resident when they're needed in the current encoder.\n// Specify the resource usage in the encoder using MTLResourceUsage.\n\n[encoder useResource:textureRW usage:MTLResourceUsageWrite stages:stage];\n[encoder useResource:bufferRW  usage:MTLResourceUsageRead  stages:stage];"
+    },
+    {
+      "timestamp": "19:31",
+      "title": "Encode the execute indirect",
+      "language": "swift",
+      "code": "// Encode the execute indirect command as a series of indirect draw calls.\n\nfor (uint32_t i = 0; i < maxDrawCount; ++i)\n{\n    // Encode the current indirect draw call.\n    [renderEncoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle\n                       \t\t\t\t indexType:MTLIndexTypeUInt16\n                             indexBuffer:indexBuffer\n                       indexBufferOffset:indexBufferOffset\n                          indirectBuffer:drawArgumentsBuffer\n                    indirectBufferOffset:drawArgumentsBufferOffset];\n    \n    // Advance the draw arguments buffer offset to the next indirect arguments.\n    drawArgumentsBufferOffset += sizeof(MTLDrawIndexedPrimitivesIndirectArguments);\n}"
+    },
+    {
+      "timestamp": "21:48",
+      "title": "Translate the indirect draw arguments to ICB.",
+      "language": "swift",
+      "code": "// Kernel written in Metal Shading Language to translate the indirect draw arguments to an ICB. \n\n\nkernel void translateToICB(device const Command* indirectCommands [[ buffer(0) ]],\n                           device const ICBContainerAB* icb [[ buffer(1) ]],\n                           . . .)\n{\n    . . .\n   \n    device const Command* indirectCommand = &indirectCommands[commandIndex];\n    device const MTLDrawIndexedPrimitivesIndirectArguments* args =\n    &command->mdiBuffer[mdiIndex];\n    \n    render_command drawCall(icb->buffer, indirectCommand->mdiCmdStart + mdiIndex);\n\n    if(args->indexCount > 0 && args->instanceCount > 0) {\n        encodeCommand(indirectCommand, args, drawCall);\n    }\n    else {\n        cmd.reset();\n    }\n}\n\n// Encode a render command on the GPU.\nvoid encodeCommand(device const Command* indirectCommand,\n                   device const MTLDrawIndexedPrimitivesIndirectArguments* args,\n                   thread render_command& drawCall)\n{\n    drawCall.set_render_pipeline_state(indirectCommand->pso);\n    \n    for(ushort i = 0; i < indirectCommand->vertexBuffersCount; ++i) {\n        drawCall.set_vertex_buffer(indirectCommand->vertexBuffer[i].buffer,\n                              indirectCommand->vertexBuffer[i].slot);\n    }\n    \n    for(ushort i = 0; i < indirectCommand->fragmentBuffersCount; ++i) {\n        drawCall.set_fragment_buffer(indirectCommand->fragmentBuffer[i].buffer,\n                                indirectCommand->fragmentBuffer[i].slot);\n    }\n\n    drawCall.draw_indexed_primitives(primitive_type::triangle,\n                                args->indexCount,\n                                indirectCommand->indexBuffer + args->indexStart,\n                                args->instanceCount,\n                                args->baseVertex,\n                                args->baseInstance);\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Applying temporal antialiasing and upscaling using MetalFX",
+        "url": "https://developer.apple.com/documentation/MetalFX/applying-temporal-antialiasing-and-upscaling-using-metalfx"
+      },
+      {
+        "title": "Metal",
+        "url": "https://developer.apple.com/documentation/Metal"
+      },
+      {
+        "title": "MetalFX",
+        "url": "https://developer.apple.com/documentation/MetalFX"
+      },
+      {
+        "title": "Modern Rendering with Metal",
+        "url": "https://developer.apple.com/documentation/Metal/modern-rendering-with-metal"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10125/4/1283FC25-C4D6-40B5-AAEC-221E3E4C6D16/downloads/wwdc2023-10125_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10125/4/1283FC25-C4D6-40B5-AAEC-221E3E4C6D16/downloads/wwdc2023-10125_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10123",
+      "year": "2023",
+      "title": "Bring your game to Mac, Part 1: Make a game plan",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10123"
+    },
+    {
+      "id": "10124",
+      "year": "2023",
+      "title": "Bring your game to Mac, Part 2: Compile your shaders",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10124"
+    },
+    {
+      "id": "10103",
+      "year": "2022",
+      "title": "Boost performance with MetalFX Upscaling",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10103"
+    },
+    {
+      "id": "10157",
+      "year": "2021",
+      "title": "Discover Metal debugging, profiling, and asset creation tools",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10157"
+    },
+    {
+      "id": "10631",
+      "year": "2020",
+      "title": "Bring your Metal app to Apple silicon Macs",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10631"
+    },
+    {
+      "id": "10605",
+      "year": "2020",
+      "title": "Gain insights into your Metal app with Xcode 12",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10605"
+    },
+    {
+      "id": "10602",
+      "year": "2020",
+      "title": "Harness Apple GPUs with Metal",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10602"
+    },
+    {
+      "id": "10632",
+      "year": "2020",
+      "title": "Optimize Metal Performance for Apple silicon Macs",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10632"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:41:52.509Z"
+}

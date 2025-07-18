@@ -1,0 +1,206 @@
+{
+  "id": "10105",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10105/",
+  "title": "Build for iPad",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nHello, I'm Kurt. Welcome to WWDC. I'm here to talk about \"Build for iPad.\" We're here to talk about making your app work great on the iPad using new features and a new look in iOS 14.\n\nWe've redesigned our apps, like Mail, Notes and Home to take advantage of the power of the iPad. I'm going to point out some specific UI features that you can implement too. Mail has a new look with multiple columns. You can easily see just your e-mail or all of your mailboxes. With just a few simple gestures, you can hide or show exactly what you want.\n\nThe sidebar list design is simple and clear. When I tap the edit button, now there are a lot more controls available. It's easy to build a simple list and then add accessories to it. In Notes, we've made it easier to get work done without all of the extra taps. For example, I brought up the color picker to choose a color for my marker. When I draw in the document, it automatically dismisses the color picker without needing a tap. Here's another example. The new design of Home on iPad has a sidebar with a list. When you use Catalyst to bring your app to the Mac, all of these features work there too, but they also use the new Mac design. We'll tell you how you can do the same with your app using new functionality in UIKit. Multi-column split view is now available. We'll give you an overview.\n\nWe'll talk about how to implement lists in those columns and how to get the right look. We'll talk about reducing modality in your UI, and we'll give a case study how the Shortcut app did all those things. So, let's begin. The heart of a multi-column app is UISplitViewController. It's a container view controller that provides the structure around the content that you provide in your view controllers. In iOS 14, there's new API that makes it easy to set up and work with.\n\nUse this new initializer that specifies a style. Using this initializer enables new behavior and more new API.\n\nThe style says up front how many columns you want. Use the double-column style for two columns. We call these primary and secondary.\n\nThen you specify which view controller goes in which column by calling setViewController for a specific column.\n\nFor example, Home can provide one view controller for the primary column and another view controller for the secondary column.\n\nThree columns is just as easy. Use the triple-column style. What goes between primary and secondary? We call the new column in the middle \"supplementary.\" Again, call setViewController to provide the view controller for the supplementary column. For instance, here's how Mail sets up their supplementary column. That's all you have to do to get double- and triple-column layouts. We've said this before, but to emphasize, we recommend you have one app for iPad and iPhone.\n\nIf your app is structured into columns, use UISplitViewController as your window's root view controller.\n\nIt handles the columns for you by showing the right view controllers in the right places at the right time.\n\nWhat happens is based on size classes.\n\nThere are cases when there is a lot of horizontal space, like iPad full screen and large iPhones in landscape. We call this the regular width size class.\n\nBecause there is so much room, UISplitViewController can show multiple columns side by side.\n\nIn other cases, there's not so much horizontal space, like iPad apps in slide over and iPhones in portrait. We call that the compact width size class.\n\nThere's clearly no room to show multiple columns, so what do we do? You can choose to specify a separate view controller that's used when the width is compact, and it can use a different navigation scheme that's tailored for the space available. You give us another view controller for that column by calling setViewControllerForCompact.\n\nThat's all. We do the rest. For example, here's Shortcuts. They use a tab bar controller to implement a different method of navigation that works in that smaller area. To sum up, don't think of it as designing an iPad app and an iPhone app. Instead, you're designing two experiences-- regular width, which has multiple columns, and compact width, which doesn't. Let's go back to talking about multiple columns. There are a lot of ways we can lay out those columns depending on how much space we have and how big they are. We call these display modes.\n\nWe can show the secondary column only. That's when you're focusing on your content and you've hidden all of the other columns. You can show a single column beside your secondary or over, above the secondary.\n\nIf there are three columns, there are even more choices. You can have two columns beside the secondary, or over it, or they can even displace it, pushing it aside.\n\nTo move between these display modes, SplitViewController automatically creates appropriate buttons and makes them appear in the right places. For example, here we're showing and hiding the columns in Notes by pressing buttons. You can also swipe from the edge to show more columns and tap to hide all of the columns.\n\nThe buttons and gestures are enabled by the property presentsWithGesture. By default, it's \"true,\" but set it to \"false\" and those buttons and gestures go away. The property showsSecondaryOnlyButton enables an additional button which hides all but the secondary column. You just saw that in Notes. The preferredSplitBehavior property can be set to determine what display modes the buttons and gestures will use. For example, if you prefer that the columns are side by side in your app, use the tile behavior. Pressing the button will move through these display modes. The displace behavior is similar, but when three columns are shown, we push the secondary column partially off-screen.\n\nThe overlay behavior, of course, uses the overlay display modes.\n\nAt any time, you can request that a column be hidden or shown. Just say which column you want to change. UISplitViewController will automatically do a smooth transition to fulfill your request.\n\nFinally, if you know your app always wants the same layout, specify that with preferredDisplayMode. For instance, an app like Reminders that always wants to have two columns side by side, would set preferredDisplayMode to oneBesideSecondary. I said the buttons get added automatically. How does that work? Because each column now has a navigation controller that's automatically created for you. And each navigation controller has a navigation bar at the top and an optional toolbar at the bottom. That means that UIKit can put buttons in those bars, and so can you using the standard methods.\n\nThere are a lot more details. We recommend you check out the documentation to learn more about new delegate methods, ways of controlling the widths of columns and also how to animate alongside the transitions. The Human Interface Guidelines also explain how split views are intended to be used.\n\nNow let's talk about the contents of each column. Often, you want to show lists in your primary and supplementary columns. For instance, Mail shows a list of mailboxes in the primary view and a list of mail messages in the supplementary view.\n\nThe modern way to show lists is using UICollectionView. It's very powerful and very flexible, and it's what we recommend going forward. There's an overview video that explains all the new API-- \"Advances in UICollectionView.\" I'm going to focus on a specific topic-- getting the right appearance for the primary and supplementary columns, and I'll give you a recipe to follow. Let's dive into how to set up a collection view. This will be similar for all lists, but we'll work through an example that has items that are kinds of weather. Each item shows an image and a title. We do this setup once when we create the collection view. To make the collection view, we need a layout. That specifies the details about how the items are arranged in a vertical list. And we make a layout based on a list configuration. That specifies the default appearance of cells, whether there are headers and footers and other details. When we write the code, it's from the inside out. First we make a list configuration. That's a UICollectionLayoutListConfiguration using the sidebar appearance. There are other appearances and properties you can change, but start with the defaults.\n\nThen make the layout a UICollectionViewCompositionalLayout using the list method, which makes it a simple, vertically scrolling list, and it's based on that configuration you already created. Finally, create the collection view and give it the layout. We do all of this once, and we don't have to touch it again.\n\nNext, we connect your data to the contents of the cells in the list, and this is where the details of your app come in. In this example, I have a simple structure called MyItem. It contains a title and an image, and my data store is an array of these structures. Here's one instance of it where the title is \"Sunny\" and the image is a system image showing the sun. Now we need some code to take an instance of this structure and show it in a cell. There's a new simple method in iOS 14. You create a CellRegistration. That says that given a cell of a certain type and data of a certain type, here's the code to run to put the data in the cell. For a list, you want the cell type to be UICollectionViewListCell. There are a lot of possibilities for how this cell can look. It's very general. The way we're setting up the content, it will contain an image view and a label next to each other. I'm showing question marks right now because we haven't filled them in yet. The data type is up to you. In this example, it's MyItem. Now let's fill in the code.\n\nWe make a cellRegistration with those types and give it a closure to run. The closure's given the cell, the index path on the collection view and the item. Next we use the new contentConfiguration API to specify the cell contents. There are several built-in content configurations for different looking cells, but usually you want to use the default for the cell. We just take our item's properties and transfer them into the content configuration and then, finally, apply that content to the cell.\n\nWhen your code is called, it fills in the cell, and you see the results.\n\nFinally, we'll connect the last piece-- make a UICollectionViewDiffableDataSource. This tells the collection view what items to show, and it's based on your data store. You push items from your data store into it. Then the data source calls its closure to create cells to display.\n\nThere's a lot going on here, but all lists will follow the same pattern. Create the data source providing a type for the section since collection views can contain multiple sections. Each section has items of type MyItem. This data source is initialized with a specific collectionView. When the data source wants a cell, this closure is called with an index path and an item. You need to return a cell.\n\nYou call dequeueConfiguredReusableCell using the cell registration you created earlier, and it's responsible for setting up each cell. Everything else is handled for you, including all the details of reusing cells for good performance.\n\nThis code will be the same for most lists. The interesting parts are the type of your item and the cell registration.\n\nHere are the results. Nice lists with the right appearance. Note that we automatically adjust the background color for selected cells to be different in each column. All of this appearance is customizable. Every one of those objects we created earlier has properties that you can change. For example, when you're showing a list of content, not navigation, you want to use a slightly different appearance in the supplementary column. Use the appearanceSidebarPlain when you set up the collection view. You see the different look. The background is white, there are separators and other subtle differences. The Human Interface Guidelines say that if you have a list of content, like items in a collection or folder, then use the sidebar plain appearance. This is very common in the supplementary column. With Collection View, you can do a lot more. Here are some examples in Mail and Files. You can add accessories like check marks. You can reorder items by dragging them. You can use the outline features to collapse and expand items in a hierarchy. And you can add swipe actions to rows, for example, to remove a folder.\n\nIf you're still using UITableView, we highly recommend you switch to UICollectionView.\n\nThat makes it easy to add all these features and get all the new styles and appearances.\n\nLast, let's talk briefly about reducing modality.\n\nIn iOS 14, we tried to get the interface out of the way in some common scenarios.\n\nThis reduces the amount of tapping around you need to do to get your tasks done.\n\nIn Notes, we've made the interface more fluid. I'm bringing up the color picker to choose a color for my marker.\n\nAnd then I just draw in the document. It automatically dismisses the color picker.\n\nI didn't have to tap once to dismiss the popover and then touch again to start drawing.\n\nAll of those extra taps used to add up.\n\nHere's another example. I'm in Contacts and I press a button to show a menu. Traditionally, at this point, we'd put up a dimming view. But then we would require you to tap outside the menu to dismiss it. Now, in iOS 14, touching outside the menu dismisses it and you can keep scrolling with that same touch.\n\nWe implemented that in UIKit, so you get it automatically.\n\nWe encourage you to do similar things in your app. Every app is different, so we don't have an exact recipe. But we do suggest, watch for user actions like incoming events or scrolling, and use them as a signal to dismiss any transient UI that might be in the way.\n\nNow you know how to use multiple columns and Lists, and you understand how we've reduced modality. The Shortcuts app adopted all of these, and we think it's a great example.\n\nWith that I'll hand off to Natalia to explain how Shortcuts did it.\n\nI'm going to tell you about how the Shortcuts app was redesigned for the iPad. What you learn here today will help you build a great iPad experience for your users. Let's dive right in.\n\nThis is Shortcuts on the iPad. We redesigned it to take full advantage of the large iPad display. For better navigation, we replaced the tab bar with a sidebar.\n\nThis enabled us to provide more navigation options. And since the sidebar is collapsible, the display becomes customizable. Let me tell you more about how we did it.\n\nAs Kurt said before, the Split View Controller is the driving force behind the multi-column layouts.\n\nSo, first I'm going to tell you how we redesigned Shortcuts using the new Split View Controller API.\n\nThen I'm going to talk more about the sidebar. You will see all the parts that it's made of. By the end of this talk, you'll have a good idea of how these new UIKit APIs come together to create a great iPad experience.\n\nFirst, let's look at the Split View Controller.\n\nSplit View Controller is the backbone of Shortcuts. It's the API that allows us to have these two different view controllers coexist side by side.\n\nOn the left is what the Split View refers to as its primary column. In Shortcuts, that's the view controller driving the navigation. Whenever we tap on one of the cells there, the view controller on the right changes. And the view controller on the right is known as a secondary column. Let's see how to set up this layout in code.\n\nFirst, we initialize a Split View Controller.\n\nIn iOS 14, we get access to this new initializer that takes in a style.\n\nThat style describes how many columns we want to show in the Split View. We want our layout to have two columns, so we're passing doubleColumn into the initializer.\n\nIf we wanted to have three columns instead, we would simply pass in a tripleColumn style.\n\nNext, we need to set view controllers that will show in each column.\n\nIn the primary column, the one we saw on the left, we want to see a sidebar, and a sidebar is just a view controller with a few specific styles.\n\nThat's what our Sidebar View Controller is, and we're going to use that in the primary column. We do that by calling setViewController for primary.\n\nThen the secondary column. And this one's a bit different since we want it to be dynamic. Whenever we tap on one of the cells in the sidebar, we want to update the secondary column.\n\nSo, first we need to know when the cell is selected so we can react to it. And for that, we conform to UICollectionView delegate and implement didSelectItemAt indexPath. Then, we show the DetailViewController in the secondary column by calling showDetailViewController.\n\nSo now we have the Sidebar View Controller in the primary column and the Detail View Controller showing on demand in the secondary column.\n\nNow, this is great for the iPad, but we also redesigned Shortcuts on the iPhone. There we didn't have space for two columns, so we implemented an entirely different layout.\n\nIn compact width, we have a tab bar in the list view, so the navigation options that were in the sidebar in regular width are split between the tab bar and the list view in compact width. Now, this is a very different layout. But what we're looking at here is using the same UISplitViewController API that we just talked about. Let's see how that's possible.\n\nAside from the primary column and the secondary column, UISplitViewController also has a notion of compact column, and that's the column that we see when the device is in compact width. And so, just like with the other columns, we simply call setViewController for compact, and the compact layout is done.\n\nThis is really powerful because we're free to establish our own separate compact flow, but we don't need to worry about switching between layouts. All of that is done for us by the Split View Controller.\n\nThe one thing to know about using this approach is the fact that we are working with two separate view hierarchies, the one in regular width and the one in compact width. So while the Split View Controller knows which hierarchy should be used based on the current trait collection, we need to make sure that the user is in the right place as the size classes change. Let's look at an example.\n\nLet's say we open the app and navigate to the Apple Watch folder. Then we decide to open another app in side by side.\n\nThat causes the Shortcuts app to move from regular width to compact width. And without us doing anything, the Split View Controller displays the compact hierarchy, which is great. But that's not the hierarchy we just navigated. So by default, it will put us back at the beginning of the flow.\n\nSo, we need to make sure that these transitions are smooth. Here's how we're doing it.\n\nThe Root View Controller is the parent of the Split View Controller.\n\nThat's where all the navigation happens. Each Detail View Controller that can be displayed in the secondary column conforms to a protocol, and that protocol requires the view controller to provide a method that re-creates it. When the size class is about to change, we look at the current Detail View Controller and re-create it using the protocol method.\n\nOnce we do that, we plug it into the new view hierarchy, and that's how we make sure the state is restored. Let's talk more about the sidebar.\n\nNow we know that the sidebar is just a view controller with a few specific styles. But let's take a closer look. Here's the sidebar. You can clearly see there's a large title, a left bar button that let's us collapse the sidebar and a right bar button that toggles the editing mode. But what's inside of the sidebar? It's a collection view filled with new list cells. Let's look at the code, starting with the collection view layout.\n\nThe Sidebar Collection View is using compositional layout with the default configuration. The one thing that stands out is the sectionProvider. The sectionProvider allows us to configure every section in the collection. The section we are providing is using the new ListConfiguration with the sidebar appearance. And that pretty much sets up the layout for us. The section itself is a new list section. We pass in the configuration and we're done. This is the entire layout. Now let's look at the cells.\n\nFirst, we need to set up our cells. We're used to registering the cells for later dequeuing by calling Register on the collectionView. With the new cell registration API, there's a new way to do that.\n\nWe can register and configure the cells in one place in a type safe way. We don't need to worry about keeping track of forUse identifiers anymore. We just set up cellRegistration and pass it directly into the data source.\n\nSo this is how we register the cells. Let's see how we configure them.\n\nIn the past, whenever we wanted to make collection view cells nice and custom, we would end up creating a subclass. We don't need to do that anymore. And that's thanks to the new UIContentConfiguration API. We can mix and match configurations to get the cells exactly as we want them. We can create completely custom configurations or we can take advantage of existing premade configurations. For example, here we're simply using the predefined defaultContentConfiguration. This returns the default configuration with sidebar cell styling as the cell is contained in a list with sidebar appearance. So we're just setting the title and the image, and everything else is taken care of.\n\nSo that's it for Shortcuts on the iPad.\n\nGreat iPad apps allow users to take full advantage of the beautiful, large display. So try adding a sidebar to your iPad app and be creative. If your content needs more than two columns, use a supplementary column.\n\nUse collection views with predefined configurations. Collection views are much more powerful than table views, and predefined configurations are an easy way to add functionality and polish to your app.\n\nAnd finally, get the interface out of the way. Lean on gestures and enable users to move within your app freely without the interruption of modals that take up all this space. And remember to check out the links attached to this video. There's so much more to learn about these new APIs.\n\nThank you for watching. We can't wait to see your apps\nbuilt for iPad.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:57",
+      "title": "Create two column UISplitViewController",
+      "language": "swift",
+      "code": "let splitViewController = UISplitViewController(style: .doubleColumn)"
+    },
+    {
+      "timestamp": "2:13",
+      "title": "Set view controllers for primary and secondary columns",
+      "language": "swift",
+      "code": "splitViewController.setViewController(sidebarViewController, for: .primary)\nsplitViewController.setViewController(myHomeViewController, for: .secondary)"
+    },
+    {
+      "timestamp": "2:28",
+      "title": "Create three column UISplitViewController",
+      "language": "swift",
+      "code": "let splitViewController = UISplitViewController(style: .tripleColumn)"
+    },
+    {
+      "timestamp": "2:29",
+      "title": "Set view controller for supplementary column",
+      "language": "swift",
+      "code": "splitViewController.setViewController(inboxViewController, for: .supplementary)"
+    },
+    {
+      "timestamp": "4:02",
+      "title": "Set view controller for compact column",
+      "language": "swift",
+      "code": "splitViewController.setViewController(tabBarController, for: .compact)"
+    },
+    {
+      "timestamp": "5:29",
+      "title": "Set preferredSplitBehavior to .tile",
+      "language": "swift",
+      "code": "splitViewController.preferredSplitBehavior = .tile"
+    },
+    {
+      "timestamp": "5:44",
+      "title": "Set preferredSplitBehavior to .displace",
+      "language": "swift",
+      "code": "splitViewController.preferredSplitBehavior = .displace"
+    },
+    {
+      "timestamp": "5:51",
+      "title": "Set preferredSplitBehavior to .overlay",
+      "language": "swift",
+      "code": "splitViewController.preferredSplitBehavior = .overlay"
+    },
+    {
+      "timestamp": "5:56",
+      "title": "Hide and show columns",
+      "language": "swift",
+      "code": "splitViewController.hideColumn(.primary)\n\nsplitViewController.showColumn(.supplementary)"
+    },
+    {
+      "timestamp": "6:08",
+      "title": "Set preferredDisplayMode",
+      "language": "swift",
+      "code": "splitViewController.preferredDisplayMode = .oneBesideSecondary"
+    },
+    {
+      "timestamp": "8:06",
+      "title": "Collection view setup for sidebar list",
+      "language": "swift",
+      "code": "let configuration = UICollectionLayoutListConfiguration(appearance: .sidebar)\nlet layout = UICollectionViewCompositionalLayout.list(using: configuration)\nlet collectionView = UICollectionView(frame: frame, collectionViewLayout: layout)"
+    },
+    {
+      "timestamp": "8:38",
+      "title": "Define a type for an example data structure",
+      "language": "swift",
+      "code": "struct MyItem: Hashable {\n    let title: String\n    let image: UIImage\n}"
+    },
+    {
+      "timestamp": "9:36",
+      "title": "Create cell registration",
+      "language": "swift",
+      "code": "let cellRegistration = UICollectionView.CellRegistration<UICollectionViewListCell, MyItem> \n{ cell, indexPath, item in\n\n    var content = cell.defaultContentConfiguration()\n\n    content.text = item.title\n    content.image = item.image\n\n    cell.contentConfiguration = content\n}"
+    },
+    {
+      "timestamp": "10:31",
+      "title": "Create diffable data source",
+      "language": "swift",
+      "code": "let dataSource = UICollectionViewDiffableDataSource<Section, MyItem>\n   (collectionView: collectionView)\n{ collectionView, indexPath, item in\n   return collectionView.dequeueConfiguredReusableCell(using: cellRegistration, \n                                                       for: indexPath,\n                                                       item: item)\n}"
+    },
+    {
+      "timestamp": "11:29",
+      "title": "Collection view setup for sidebar plain list",
+      "language": "swift",
+      "code": "let configuration = UICollectionLayoutListConfiguration(appearance: .sidebarPlain)\nlet layout = UICollectionViewCompositionalLayout.list(using: configuration)\nlet collectionView = UICollectionView(frame: frame, collectionViewLayout: layout)"
+    },
+    {
+      "timestamp": "15:35",
+      "title": "Example: Initializing UISplitViewController",
+      "language": "swift",
+      "code": "let splitViewController = UISplitViewController(style: .doubleColumn)\n\n// Primary column\n\nlet sidebar = SidebarViewController()\nsplitViewController.setViewController(sidebar, for: .primary)\n\n\n// Secondary column\n\nfunc collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {\n    splitViewController.showDetailViewController(DetailViewController(), sender: self)\n}"
+    },
+    {
+      "timestamp": "17:50",
+      "title": "Example: Setting a view controller for compact width",
+      "language": "swift",
+      "code": "let tabBarController = createTabBarController()\n\nsplitViewController.setViewController(tabBarController, for: .compact)"
+    },
+    {
+      "timestamp": "20:39",
+      "title": "Example: Sidebar Collection View setup",
+      "language": "swift",
+      "code": "let layout = UICollectionViewCompositionalLayout(sectionProvider: sectionProvider,\n         configuration: UICollectionViewCompositionalLayoutConfiguration())\n\nfunc sectionProvider(_ section: Int, environment: NSCollectionLayoutEnvironment)\n-> NSCollectionLayoutSection {\n    var configuration = UICollectionLayoutListConfiguration(appearance: .sidebar)\n\n    if (environment.traitCollection.horizontalSizeClass == .compact) {\n        configuration.headerMode = .firstItemInSection\n    } else {\n        configuration.headerMode = .none\n    }\n\n    return NSCollectionLayoutSection.list(using: configuration, layoutEnvironment: environment)\n}"
+    },
+    {
+      "timestamp": "21:13",
+      "title": "Example: Cell Registration",
+      "language": "swift",
+      "code": "struct Section: Hashable { … }\n\nstruct Item: Hashable { … }\n\n\nlet cellRegistration = UICollectionView.CellRegistration<UICollectionViewListCell, Item> { cell, indexPath, item in\n    // Configure the cell\n}\n\n\nlet dataSource = UICollectionViewDiffableDataSource<Section, Item>(collectionView: collectionView) { collectionView, indexPath, item in\n    return collectionView.dequeueConfiguredReusableCell(using: cellRegistration, for: indexPath, item: item)\n}"
+    },
+    {
+      "timestamp": "21:48",
+      "title": "Example: Cell registration",
+      "language": "swift",
+      "code": "let cellRegistration = UICollectionView.CellRegistration<UICollectionViewListCell, Item> { cell, indexPath, item in\n\n    var content = cell.defaultContentConfiguration()\n\n    content.text = item.title\n    content.image = item.image\n\n    cell.contentConfiguration = content\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Human Interface Guidelines: Sidebars",
+        "url": "https://developer.apple.com/design/human-interface-guidelines/ios/bars/sidebars"
+      },
+      {
+        "title": "Human Interface Guidelines: Split views",
+        "url": "https://developer.apple.com/design/human-interface-guidelines/ios/views/split-views/"
+      },
+      {
+        "title": "UISplitViewController",
+        "url": "https://developer.apple.com/documentation/UIKit/UISplitViewController"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10105/2/8B0CF78F-98E7-440E-B226-565F58288462/wwdc2020_10105_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10105/2/8B0CF78F-98E7-440E-B226-565F58288462/wwdc2020_10105_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10097",
+      "year": "2020",
+      "title": "Advances in UICollectionView",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10097"
+    },
+    {
+      "id": "10026",
+      "year": "2020",
+      "title": "Lists in UICollectionView",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10026"
+    },
+    {
+      "id": "10027",
+      "year": "2020",
+      "title": "Modern cell configuration",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10027"
+    },
+    {
+      "id": "215",
+      "year": "2019",
+      "title": "Advances in Collection View Layout",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/215"
+    },
+    {
+      "id": "220",
+      "year": "2019",
+      "title": "Advances in UI Data Sources",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/220"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:57:41.113Z"
+}

@@ -1,0 +1,141 @@
+{
+  "id": "10250",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10250/",
+  "title": "Prototype with Xcode Playgrounds",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools",
+    "Essentials"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Dariusz: Hi, I'm Dariusz, and I'm an engineer on the Xcode Playgrounds team. I would like to show you how the improvements in Xcode Playgrounds make it easier to prototype new features in your project. There are many scenarios where Xcode Playgrounds can improve your workflow. First of all, they allow you to skip rebuilding and relaunching the project whenever you want to prototype a new feature or simply try out a small change in your code. They also make it much easier to execute code that otherwise would be quite difficult to reach, like the logic responsible for generating an order summary in a shopping app. Of course, such code can and should be verified with tests, but Playgrounds can be a great starting point for developing them as well. It's also a perfect environment for trying out code before introducing new dependencies to your project.\n\nI'd like to show you how Xcode Playgrounds are helping me in my project. I've been working on a small app that's meant to help me with my wildlife photography. At the moment, my app helps me with keeping track of the species that I've already found and photographed. Now, I'd like this app to help me with one quite important aspect of wildlife photography, which is actually finding the animals in the first place. I want to introduce a new tab for a checklist view. I already started implementing the view, and I'm quite happy with this user interface. Each bird has a checkbox, which will allow me to track my progress. However, with over 2,000 birds on the list, I probably won't feel like I'm advancing much. It would be great to narrow this list down a bit. To do that, I will have to adjust the birdsToShow computed property in my custom ChecklistView. At the moment, it simply creates my BirdProvider type configured for North America and returns all the bird species found on the whole continent. To avoid the frequent rebuilding and relaunching the project and then navigating to the ChecklistView to see my changes, I will try to adjust this code in an Xcode Playground. I will start by adding a new playground to my project.\n\nThis is an iOS app, so I'll stick with the iOS templates. I'll type \"playground\" in the filter bar and select a blank playground.\n\nIn this case, I will probably get rid of the playground once I try out a few things, so I can keep the default \"MyPlayground\" name.\n\nI'll get rid of the default contents of the playground.\n\nTo iterate even faster, I'll switch to \"Automatically run\" in the menu that shows up when I long click the run button on the bottom bar.\n\nThis causes the playground to automatically execute the whole code whenever I stop making changes. Notice that the playgrounds added to projects have two settings enabled by default: Build Active Scheme and Import App Types. They will ensure that the active scheme is built before each playground execution and that the app target modules are automatically imported. This makes it much easier to work with the types defined within your project. I can close the inspector to give some more room for the playground.\n\nLet's start by declaring a BirdProvider instance like we saw in the birdsToShow property of my ChecklistView.\n\nThe result sidebar to the right of the editor shows me that this declaration has generated a playground result. I can use the inline result toggle to see more details.\n\nThe inline result shows the details of this BirdProvider instance along with its two properties: the birds array and the provided region. Now in Xcode 15, each row also has a type information label, which shows a short summary of the type, and I can use the tooltips for each row to see more details.\n\nFor example, the tooltip tells me that the BirdProvider type comes from my app module and that the region enum was defined within that struct. Let's expand the array row to see more details about the birds.\n\nNotice that when I start to interact with the inline result view, Xcode 15 highlights the source code that produced the result. In this case, the view displays the value assigned to the birdProvider constant. This makes it much easier to understand the displayed values. Let's take a closer look at the array elements.\n\nWe saw the nice summaries for the region and birds array properties, but by default, the rows representing each bird only tell us about the array indexes. That's because the custom Bird type has no description defined. We can improve this by making the Bird type conform to CustomStringConvertible protocol. I could add an extension here in a playground or in its Sources directory. Both these options would only affect the Bird type in the playground's scope, and we wouldn't get the nice new descriptions in other places that rely on them, like the debugger. That's why I'll add the extension in the file that defines the Bird type.\n\nWith the new description definition, each row should show me the common and scientific name of the bird. Let's go back to the playground and see the new description in action.\n\nIn the automatic mode of playground execution, the playground will automatically re-execute when you reopen it. Let's expand the birds array row again to check the descriptions.\n\nThis is much better. Now it's clear what the rows represent without expanding them, but let's take a look at other properties of the Bird type.\n\nI have already found and photographed some of these birds, and you can see that some of them already have the photo property, like this Atlantic puffin.\n\nOnce I click on its row, the photo is displayed in the new split view-based user interface, which allows me to see the structure of the object along with the preview.\n\nBy default, there is no such preview for my custom Bird type when I click on its row. It would be great to already see the photo here, as I'm not that familiar with all the species names. To achieve that, I can use the CustomPlaygroundDisplayConvertible protocol. As the name of the protocol suggests, this conformance only affects the playground representation, so this time, I'll add the extension in the playground's Sources directory.\n\nI'll import the app module to access the Bird type and add a simple extension that returns the photo property as the playgroundDescription.\n\nNotice that I'm explicitly casting photo to Any in the return statement. Without it, the compiler would warn me that we are losing an important piece of information about the value being an optional. This is fine in this case, as Xcode Playgrounds handles optionals by only creating a custom description for objects that don't return nil in the playgroundDescription property. Let's go back to the playground again to check the new descriptions.\n\nIn Xcode 15, the playgroundDescription returned by types conforming to CustomPlaygroundDisplayConvertible will be displayed in the split view along the object's structure.\n\nNow, the birds that already have a photo will quickly show it without the need of expanding the row. This will make it much easier to work with large collections of this custom type. But today, I'd like to focus on birds that don't have the photos yet. Let's close this inline result and filter out all the birds that have a photo already.\n\nYou can see that those two sidebar annotations look a bit different. That's because there are multiple expressions on the new line. I can click on the new control to see the familiar summaries for each expression.\n\nHovering over the inline result toggles highlights their source code ranges. This makes it clear that the array is the result assigned to the birdsToFind constant and true is the latest value produced by the closure passed to the filter function.\n\nThe result sidebar tells me that the number of all birds that I'm yet to photograph is still over 1,800, which is quite intimidating. While this might ultimately be the goal, I'd like to make it lower by focusing on a smaller group of birds, for example owls. June is a great month to go owling, but that's a topic for another session or two. Let's filter out the birds from other families.\n\nThe array only has five elements now, which is way more encouraging. I'd like to try out my custom ChecklistView with this small group of birds. To do that, I'll create a ChecklistView instance and add each bird one by one.\n\nLet's open the inline result for the ChecklistView.\n\nAs a UIView subclass, it now also shows a few properties along with the snapshot. I can switch to the Value history mode, which now also uses the new split-view-based user interface.\n\nThis allows me to see what the ChecklistView looked like in each loop iteration.\n\nIt actually helped me find a problem with my view, which incorrectly says \"birds\" in the header for just one bird. I should be able to fix this by adjusting the strings defined in the new String Catalog.\n\nThe first row seems to be the one that is used in the header of my Checklist View. I'll bring up the context menu and select Vary By Plural.\n\nOnce I do that, the affected rows change their state to \"Needs review.\" I'll adjust the singular form of this string.\n\nTo learn more about the new String Catalogs, make sure to check the \"Discover String Catalogs\" session. Let's go back to the playground and see what the checklist looks like now with this change.\n\nThe headers look correct in each loop iteration. I can close this inline result now.\n\nI think my ChecklistView is ready to use. I'll quickly bring the code that we used to narrow down the list of birds to my project.\n\nI'll copy these three lines to the birdsToShow property in my ChecklistView.\n\nI will also add a return statement with the new, much smaller array of birds.\n\nBefore I rerun my project, I'd like to prototype one more feature. You could see that each row in my custom Checklist View had a disclosure indicator. Once I select a row in the list, it opens a simple map view. It's not that useful yet, but I would like to fetch the data about the most recent sighting of the selected bird and show it on the map. To achieve that, I will have to adjust the sightingsToShow(for bird:) function in my ChecklistView. To help with that, I have already added one dependency to my project. The BirdSightings package makes it easy to fetch the data from one of the citizen-science websites, where people report their sightings. I haven't used that package before, so I'm not that familiar with its API yet. Luckily, the package includes documentation in form of a playground that shows a few examples.\n\nThis is a great way to allow the clients of your package to try out the provided API. It looks like we will need to provide two arguments to the fetchSightings function: the code of the bird to look for and the location to look around. I can execute this playground to learn more about the expected results.\n\nLet's go back to our playground and try to use it.\n\nI can close the navigator to give me more room in the editor area.\n\nBefore we call the function, I need to add two import statements. I'll import the CoreLocation framework to be able to work with coordinates and the BirdSighting framework to use its API.\n\nFor the function arguments, we can simply start with the first bird from the list.\n\nLooks like we will be searching for the short-eared owl. Notice that I used the force-unwrapping here. I don't have to worry that much about error handling in the Playgrounds environment, but it's important to keep that in mind when bringing the code to your project.\n\nAs for location, I will probably use my current location most of the time, but the ability to provide specific coordinates will be great for two things: testing my code and planning all the road trips. Let's try to see what we can find around Apple Park.\n\nBefore I introduce a network call, I will switch to the manual mode of playground execution to make sure that I can avoid unnecessary calls. Such requests can take a while, and I want to iterate on my new feature as fast as possible. To do that, I will once again bring up the menu on the bottom bar and select Manually Run.\n\nNow, I have full control over the parts of the code that should be executed. Let's add the fetching code.\n\nThe control in the source editor gutter shows me that executing those two lines would not re-execute all the lines we already executed above. Let's execute the new lines and see if we get any data.\n\nLuckily, there are some sightings. Let's take a look at the first one, which should be the most recent.\n\nLooks like short-eared owls were most recently seen at Changmen Cliffs Reserve. I'm not that familiar yet with all the birdwatching hotspots in the area, so it will be great to see the data about the sighting in my SightingMapView. Let's initialize it with the fetched sighting data.\n\nFor such complex user interface elements like map views, we can use the playgrounds live view to see the large, fully interactive preview. To use it, I first need to import the PlaygroundSupport framework.\n\nNow, I'm ready to set up the live view and execute the playground.\n\nI modified the already executed part of the playground by adding the import statement at the top of the file, so the control in the source editor gutter tells me that it will need to re-execute the whole file. I will lose results from the last execution, but that shouldn't be a problem in this case, so I'll go ahead and execute the playground.\n\nI don't recall any islands too close to Apple Park. Since the live view is fully interactive, I can zoom out a little like I would in an iPhone simulator to see where we are.\n\nLooks like we are way too far east. Let's close the live view in the Editor Options and try to see where the problem was introduced.\n\nMy SightingMapView was initialized with the mostRecentSighting constant, so let's check its value. Instead of opening the inline result, I can take a quick look at the value by clicking the eye icon in the sidebar.\n\nIn Xcode 15, we improved the playground results for some of the MapKit and CoreLocation types. Playgrounds can now show a preview for CLLocationCoordinate2D, so let's take a look at the location property.\n\nThis seems to be pointing at the same location, so this doesn't seem to be caused by my SightingMapView. We got the wrong location from the BirdSightings package, so it could either be caused by a problem in the package, or I passed a wrong location to start with. Let's verify the latter.\n\nThis doesn't seem to be close to Apple Park either. Since we are way too far east, I think this might just be a matter of mixing west with east. Let's try to fix this by adding the minus sign in front of the longitude and re-executing the playground.\n\nNow this is definitely Apple Park. Let's execute the remaining part of the playground with the updated location and reopen the live view in the Editor Options.\n\nThat's more like it. Now I know that Coyote Hills might be the best place to photograph new species. Let's quickly bring the fetching code to my ChecklistView.\n\nI'll copy these three lines to the sightingsToShow function.\n\nInstead of always using the hardcoded Apple Park location here, I'll replace it with the lastCurrentLocation that I get from CLLocationManager.\n\nI will also add the return statement with the new mostRecentSighting.\n\nIt's time to finally run the project with our changes.\n\nThe checklist looks much more realistic now that we focused on a small group of birds. Let's see what happens when I click on a row now.\n\nThat's great. My app can now show me the most recent sighting for the selected bird. Of course there is still a lot of room for improvements. For example, I should be showing a progress indicator while the sightings are fetched in the background, but this is a great starting point. This app will already help me a lot, and Xcode Playgrounds made these improvements so much easier to work on. In this session, we used Xcode Playgrounds to quickly prototype new features of a project. We used CustomStringConvertible and CustomPlaygroundDisplayConvertible protocols to customize the representations of our custom types. We saw how adjusting the playground execution mode can speed up your workflow. Using Value History mode allowed us to quickly see how our classes react to multiple inputs. Finally, we used the playground's live view to take a closer look at complex user interface elements. Thank you for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:04",
+      "title": "birdsToShow computed property before the required changes",
+      "language": "swift",
+      "code": "var birdsToShow: [Bird] {\n    // TODO: Narrow down the list of birds to find.\n    let birdProvider = BirdProvider(region: .northAmerica)\n    return birdProvider.birds\n}"
+    },
+    {
+      "timestamp": "4:15",
+      "title": "birdProvider instance",
+      "language": "swift",
+      "code": "let birdProvider = BirdProvider(region: .northAmerica)"
+    },
+    {
+      "timestamp": "6:31",
+      "title": "CustomStringConvertible",
+      "language": "swift",
+      "code": "extension Bird: CustomStringConvertible {\n    \n    public var description: String {\n        return \"\\(commonName) (\\(scientificName))\"\n    }\n    \n}"
+    },
+    {
+      "timestamp": "8:17",
+      "title": "CustomPlaygroundDisplayConvertible",
+      "language": "swift",
+      "code": "extension Bird: CustomPlaygroundDisplayConvertible {\n    \n    public var playgroundDescription: Any {\n        return photo as Any\n    }\n    \n}"
+    },
+    {
+      "timestamp": "9:45",
+      "title": "Birds without a photo",
+      "language": "swift",
+      "code": "let birdsToFind = birdProvider.birds.filter { $0.photo == nil }"
+    },
+    {
+      "timestamp": "10:52",
+      "title": "Owls without a photo",
+      "language": "swift",
+      "code": "let owlsToFind = birdsToFind.filter { $0.family == .owls }"
+    },
+    {
+      "timestamp": "11:15",
+      "title": "Verifying the ChecklistView",
+      "language": "swift",
+      "code": "let checklist = ChecklistView()\nfor bird in owlsToFind {\n    checklist.add(bird)\n}"
+    },
+    {
+      "timestamp": "13:41",
+      "title": "birdsToShow computed property with the required changes",
+      "language": "swift",
+      "code": "var birdsToShow: [Bird] {\n    let birdProvider = BirdProvider(region: .northAmerica)\n    let birdsToFind = birdProvider.birds.filter { $0.photo == nil }\n    let owlsToFind = birdsToFind.filter { $0.family == .owls }\n    return owlsToFind\n}"
+    },
+    {
+      "timestamp": "14:21",
+      "title": "sightingToShow function before the required changes",
+      "language": "swift",
+      "code": "func sightingToShow(for bird: Bird) -> Sighting? {\n    // TODO: Use BirdSightings package to fetch the most recent sighting.\n    return nil\n}"
+    },
+    {
+      "timestamp": "15:04",
+      "title": "BirdSightings package example",
+      "language": "swift",
+      "code": "let barnOwlCode = \"BNOW\"\nlet centralParkLocation = CLLocationCoordinate2D(latitude:  40.785091, longitude: -73.968285)\n\nlet sightingsProvider = SightingsProvider()\nsightingsProvider.fetchSightings(of: barnOwlCode, around: centralParkLocation)"
+    },
+    {
+      "timestamp": "16:08",
+      "title": "Parameters for sightings fetching",
+      "language": "swift",
+      "code": "let bird = owlsToFind.first!\nlet appleParkLocation = CLLocationCoordinate2D(latitude: 37.3348655, longitude: 122.0089409)"
+    },
+    {
+      "timestamp": "17:31",
+      "title": "Sightings fetching",
+      "language": "swift",
+      "code": "let sightingsProvider = SightingsProvider()\nlet sightings = sightingsProvider.fetchSightings(of: bird.speciesCode, around: appleParkLocation)"
+    },
+    {
+      "timestamp": "18:23",
+      "title": "Initializing the SightingMapView",
+      "language": "swift",
+      "code": "let mostRecentSighting = sightings.first\nlet sightingMapView = SightingMapView(sighting: mostRecentSighting)"
+    },
+    {
+      "timestamp": "18:55",
+      "title": "Setting up the playground's live view",
+      "language": "swift",
+      "code": "import PlaygroundSupport\nPlaygroundPage.current.liveView = sightingMapView"
+    },
+    {
+      "timestamp": "22:20",
+      "title": "sightingToShow function with the required changes",
+      "language": "swift",
+      "code": "func sightingToShow(for bird: Bird) -> Sighting? {\n    let sightingsProvider = SightingsProvider()\n    let sightings = sightingsProvider.fetchSightings(of: bird.speciesCode, around: lastCurrentLocation)\n    let mostRecentSighting = sightings.first\n    return mostRecentSighting\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10250/3/A3F1820C-593C-4DF2-A36B-F95FA81B1BBC/downloads/wwdc2023-10250_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10250/3/A3F1820C-593C-4DF2-A36B-F95FA81B1BBC/downloads/wwdc2023-10250_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10096",
+      "year": "2020",
+      "title": "Explore Packages and Projects with Xcode Playgrounds",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10096"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:41:04.175Z"
+}

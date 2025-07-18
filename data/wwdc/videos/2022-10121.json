@@ -1,0 +1,106 @@
+{
+  "id": "10121",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10121/",
+  "title": "Meet Focus filters",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Mellow instrumental hip-hop music ♪ ♪ Hello, I am Teja, an engineer on the iOS System Experience team, and in this session, you'll get to meet Focus filters. Focus was introduced in iOS 15, macOS Monterey and watchOS 8. It is a way for people to concentrate on what's important by configuring system behavior for a period of time. Focus is enabled by simply going into Control Center and selecting from either a system Focus or a custom Focus. During the time that a Focus is enabled, notification behavior can be customized. For example, during Work Focus, someone may want to only allow notifications from their coworkers or only allow notifications for a select few apps that are relevant to work. For each Focus, system behavior can be configured and scheduled in Settings. iOS 16 and macOS Ventura enhance the Focus feature with Focus filters. I'll start by introducing you to Focus filters and how they behave. Then, I'll go over how to define a Focus filter in your app. After that, I'll cover what it means to act on a Focus filter. And finally, I'll cover how your app can provide additional context back to the system. Focus filters are a way for someone to customize app behavior based on the currently enabled Focus. There are some great examples of system apps that have adopted Focus filters. The Calendar app allows people to filter which calendars should be visible by default when a Focus is enabled. This is what my calendar normally looks like. And as you can see, I have a mix of work and personal calendar events. I can configure a Focus filter for Calendar, during the Personal Focus, to only show my personal calendar. After setting up the Focus filter, this is what my calendar looks like. Calendar has indicated that this is filtered by Focus and provided a way to toggle the filtering. Now I won't be overwhelmed with my work calendar when trying to enjoy some personal time. The Mail app's inbox can be filtered to show only relevant mailboxes during a Focus. Mail notifications are also filtered to show only the relevant notifications prominently. This means that I can set up Mail to only deliver work-related Mail notifications during the Work Focus and prevent personal mail notifications from interrupting me. There are many reasons why your app may want to implement Focus filters. Perhaps your app manages multiple accounts, and it's appropriate to associate a Focus with a particular account. Apps with large amount of data may need to filter content for the Focus. If you would like to help your users avoid getting distracted while focused, you can do this by reducing badge counts, in-app alerts, and notifications to what is salient for the enabled Focus. Regarding appearance, your app may want to surface a theme or a layout based on the enabled Focus. Fundamentally, if your app can surface different content based on context, you may be able to employ Focus filters to enhance user experience. Let me explain how Focus filters work. Your app defines what can be customized by a user per Focus, and this is done using an AppIntent. The system will expose what can be configured per Focus. UI to configure properties defined by your AppIntent will be exposed in Focus settings as a Focus filter. Users can configure your app to behave a certain way by navigating to Focus settings and configuring Focus filters for your app. Now, I'm going to go over how you can incorporate Focus filters into your codebase. There are a few parts to defining your Focus filter. The first is implementing SetFocusFilterIntent. This indicates to the system that your app is interested in having custom settings per Focus. The second step is defining your app's parameters. These will represent what can be configured within your app by the user. The final step is to set the display representation, so your Focus filter appears in system settings with the correct content. This way, users are aware of what is configured. I'll dive into some code. The first thing you need to do is import AppIntents and define a struct that implements SetFocusFilterIntent. This is your Focus filter. Setting the title and description will help users discover what your Focus is all about. Focus filters appear in a grid view in Settings. Before your Focus filter has been configured, it will be surfaced to the user with this look. The icon here is your app's icon, the primary text is your app's name, and the secondary text will match the title variable that you set in your Focus filter. When the user taps in to configure your filter, the same content is displayed. This time, the system also includes the description string that you've provided, for additional context. Both the title and description strings are static, and they are read by the system at the time that your app is installed. When defining your Focus filter, you'll have to specify what a person can customize by providing a series of properties that are decorated as parameters. When specifying a parameter, you must give it a name and a data type. Parameters can be of a standard data type such as Bool, string, float, etcetera. If you have a custom data type that you would like to have configured, you can make it an entity, which will allow you to decorate it as a parameter. To learn more about entities and App Intents, watch the \"Dive into App Intents\" session. When defining your Focus filter, you will only specify the data type and name for each parameter. It is up to users to configure the value of the parameter that would apply during each Focus. Parameters can be marked as optional, which means that they do not have to be configured. Parameters that are not optional should provide default values. In code, you specify a parameter -- or an optional parameter -- by defining a variable of the type you want in your Focus filter and decorating it as a parameter. Here, I've created a required Bool parameter that represents whether my Focus filter should always use Dark Mode. I've set its default to false. I've also created an optional string parameter that represents a user's status message during this Focus. Lastly, I've included an optional account parameter that is an entity defined by my app; it contains information about a particular account. The title, which is set on all three of these parameters, is displayed in Settings to describe the parameter to the user. In Focus settings, once a user configures your app's Focus filter, it'll be presented in a similar grid to what I showed earlier. But this time, because the filter has already been configured, the content is dynamic in order to reflect what has been configured. The icon here is still your app's icon. The primary text and the secondary text can be customized using the display representation property on your FocusFilterIntent. The primary text should represent what parameters have been configured, such as Select Account, Set Status, etcetera. The secondary text should represent what the parameters have been configured to, such as Work Account or Working. In my code, I set the display representation to be generated dynamically. Since account and status are optional parameters, they only get included in the dynamic primary and secondary texts if they are actually set. Since alwaysUseDarkMode is a required parameter, it is always included in the primary and secondary texts. OK, you have now defined your Focus filter, so users can go into Focus settings and customize certain values for a particular Focus. But how can your app know what someone has customized? And how can your app update itself accordingly? It has to act on a change from the system. When a Focus change occurs and the system has determined that it's important for your app to know about this change, it will deliver this information to you in one of two ways. If the app is running, you will receive a call to the perform method in your FocusFilterIntent, if you've implemented it. If the app is not running, you can implement an extension that will get spun up. Again, if you've implemented perform in your FocusFilterIntent, that will get called in your extension. Since perform can get called on either your app or your extension, not every app needs an extension. Typically, if your app is only updating its own view in response to a Focus transition, then implementing perform just in the app would suffice. If your app's widget, notifications or badges would need to change based on the Focus transition, then you may want to consider implementing an extension. Basically, if your app would want to update anything outside its own views, you would need to implement the extension. For the rest of this session, I may refer to \"your app\" but that can mean either your app or your extension depending on this context. To respond to a Focus filter, implement the perform function, access the populated values for parameters provided via Settings, and then use these values to update your app's views and behavior. Your implementation of perform is called when the system determines that your app needs to respond to a Focus transition. Perform is also called when the system determines that the previously delivered values are no longer relevant. In this case, your Focus filter parameters are configured with the default values. When perform is called on your app's Focus filter, the values of all the parameters will be filled out to match what was configured in Settings. The values of the named parameters can be read by calling self.\"name of the parameter.\" In this example, at the end of perform, I update my app with the data I received. Sometimes, you may need to query the current Focus filter parameters. In my case, since my filter is called ExampleChatAppFocusFilter, I access ExampleChatAppFocus Filter.current.\n\nNow that your app is able to act on a Focus filter, the next step is to take the user experience further by providing additional context about how your app behavior has changed back to the system.\n\nBy providing additional context, you can influence your app behavior outside your app's views. Examples of this include notifications filtering and setting your app's notification badge count. One way you can give the system information is via the App Context object. This is an object that can be returned as part of the result of the perform function. Or you can return the App Context at any time in your Focus filter and force the system to get the updated value by calling invalidate. When a Focus filter is active, your app may have additional context to determine if a particular notification should not interrupt the user. To pass along this information, your app must set the filterPredicate property in the AppContext. This filter predicate works in conjunction with a new string property called filterCriteria on the UNNotification. If the filter criteria on the notification does not match the filter predicate, the notification is silenced. To set the filter predicate from your FocusFilterIntent, include it in your App Context. Say the device has the Personal Focus enabled and the user has set it up so that only the personal account is selected; in this case, I set up the filter predicate to be the personal account's identifier. If the incoming notification is not from the personal account, it should not interrupt the user. Here, when I'm configuring this notification, I set the filterCriteria to be the work account's identifier. This is because I know this notification is being sent to the work account, and I expect that this notification would be silenced because the account identifier does not match the predicate that I had just set, which only matched with the personal account's identifier. This example is for a local notification but filter criteria can also be set on the JSON payload of a remote notification. Another way to provide the system additional context is by updating your app's badge count to reflect what is important during the currently-enabled Focus. This prevents distractions for your users. There is a new API in UserNotifications for this purpose. On UNUserNotificationCenter, you simply call setBadgeCount with an unsigned integer that represents the new badge value. Now, you know how to provide additional context to filter notifications or set the badge count. Remember, the goal of this feature is to surface what is most relevant to a user when they are focused. Sometimes this requires minimizing unrelated content to prevent distraction when a Focus is enabled. For next steps, I encourage you to start considering what parts of your app would benefit from a Focus filter, determine which properties can be configured, set up your app and your extension to process this, and then take it a step further by assessing whether to provide additional context. That's it for Focus filters! Thank you for joining in on this session and have a great rest of WWDC. ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:57",
+      "title": "Implementing SetFocusFilterIntent",
+      "language": "swift",
+      "code": "// Implementing SetFocusFilterIntent\n\nimport AppIntents\n\nstruct ExampleChatAppFocusFilter: SetFocusFilterIntent {\n\n    static var title: LocalizedStringResource = \"Set account, status & look\"\n    static var description: LocalizedStringResource? = \"\"\"\n        Select an account, set your status, and configure\n        the look of Example Chat App.\n    \"\"\"\n}"
+    },
+    {
+      "timestamp": "7:02",
+      "title": "Defining your Parameters & Entities",
+      "language": "swift",
+      "code": "// Defining your Parameters & Entities\n\nimport AppIntents\n\nstruct ExampleChatAppFocusFilter: SetFocusFilterIntent {\n\n    @Parameter(title: \"Use Dark Mode\", default: false)\n    var alwaysUseDarkMode: Bool\n\n    @Parameter(title: \"Status Message\")\n    var status: String?\n\n    @Parameter(title: \"Selected Account\")\n    var account: AccountEntity?\n\n    // ...\n}"
+    },
+    {
+      "timestamp": "8:43",
+      "title": "Display Representation",
+      "language": "swift",
+      "code": "// Display Representation\n\nstruct ExampleChatAppFocusFilter: SetFocusFilterIntent {\n    // ...\n  \n    var localizedDarkModeString: String {\n        return self.alwaysUseDarkMode ? \"Dark\" : \"Dynamic\"\n    }\n\n    var displayRepresentation: DisplayRepresentation {\n        var titleList: [LocalizedStringResource] = [], subtitleList: [String] = []\n        if let account = self.account {\n            titleList.append(\"Account\")\n            subtitleList.append(account.displayName)\n        }\n        if let status = self.status {\n            titleList.append(\"Status\")\n            subtitleList.append(status)\n        }\n        titleList.append(\"Look\")\n        subtitleList.append(self.localizedDarkModeString)\n    \n        let title = LocalizedStringResource(\"Set \\(titleList, format: .list(type: .and))\")\n        let subtitle = LocalizedStringResource(\"\\(subtitleList.formatted())\")\n\n        return DisplayRepresentation(title: title, subtitle: subtitle)\n    }\n  \n    // ...\n}"
+    },
+    {
+      "timestamp": "11:24",
+      "title": "Implementing Perform on your Focus filter",
+      "language": "swift",
+      "code": "// Implementing Perform on your Focus filter\n\nimport AppIntents\n\nstruct ExampleChatAppFocusFilter: SetFocusFilterIntent {\n    // ...\n\n    func perform() async throws -> some IntentResult {\n        let myData = AppData(\n            alwaysUseDarkMode: self.alwaysUseDarkMode,\n            status: self.status,\n            account: self.account\n        )\n        myModel.shared.updateAppWithData(myData)\n        return .result()\n    }\n  \n    // ...\n}"
+    },
+    {
+      "timestamp": "11:47",
+      "title": "Calling Current",
+      "language": "swift",
+      "code": "// Calling Current\n\nimport AppIntents\n\nfunc updateCurrentFilter() async throws {\n    do {\n        let currentFilter = try await ExampleChatAppFocusFilter.current\n        let myData = AppData(\n            myRequiredBoolValue: currentFilter.myRequiredBoolValue,\n            myOptionalStringValue: currentFilter.myOptionalStringValue,\n            myOptionalAppEnum: currentFilter.myOptionalAppEnum,\n            myAppEntity: currentFilter.myAppEntity\n        )\n        myModel.shared.updateAppWithData(myData)\n    } catch let error {\n        print(\"Error loading current filter: \\(error.localizedDescription)\")\n        throw error\n    }\n}"
+    },
+    {
+      "timestamp": "13:27",
+      "title": "Set a filterPredicate",
+      "language": "swift",
+      "code": "// Set filterPredicate on an App context\n\nimport AppIntents\n\nstruct ExampleChatAppFocusFilter: SetFocusFilterIntent {\n\n    var appContext: FocusFilterAppContext {\n        let allowedAccountList = [account.identifier]\n        let predicate = NSPredicate(format: \"SELF IN %@\", allowedAccountList)\n        return FocusFilterAppContext(notificationFilterPredicate: predicate)\n    }\n}"
+    },
+    {
+      "timestamp": "13:53",
+      "title": "Pass filterCriteria on UNNotificationContent",
+      "language": "swift",
+      "code": "// Pass filterCriteria on UNNotificationContent\n\nlet content = UNMutableNotificationContent()\ncontent.title = \"Curt Rothert\"\ncontent.subtitle = \"Slide Feedback\"\ncontent.body = \"The run through today was great. I had few comments about slide 22 and 28.\"\ncontent.filterCriteria = \"work-account-identifier\""
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Focus",
+        "url": "https://developer.apple.com/documentation/AppIntents/focus"
+      },
+      {
+        "title": "User Notifications",
+        "url": "https://developer.apple.com/documentation/UserNotifications"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10121/5/E497A884-24B9-4D6C-A35D-6F9BEEB985B6/downloads/wwdc2022-10121_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10121/5/E497A884-24B9-4D6C-A35D-6F9BEEB985B6/downloads/wwdc2022-10121_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10032",
+      "year": "2022",
+      "title": "Dive into App Intents",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10032"
+    },
+    {
+      "id": "110929",
+      "year": "2022",
+      "title": "WWDC22 Day 1 recap",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110929"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:15:06.428Z"
+}

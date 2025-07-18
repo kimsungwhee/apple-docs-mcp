@@ -1,0 +1,161 @@
+{
+  "id": "10065",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10065/",
+  "title": "Plug-in and play: Add Apple frameworks to your Unity game projects",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Accessibility & Inclusion",
+    "Graphics & Games"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Mellow instrumental hip-hop music ♪ ♪ Hi, I'm Jared Marsau and I work on Game Technologies at Apple. Today, I'll be talking to you about how you can use select Apple frameworks to add new features to your Unity-based games. We know that many of you are using tools, such as Unity, to build your games. Our goal is to bring you the latest features, no matter what tool you're using. Starting today, enhance your games with a new set of Unity plug-ins. Use the Game Center plug-in to add GameKit features like player authentication, leaderboards, and matchmaking. Use the Game Controller plug-in for input customizations and glyphs, along with support for MFi and third-party controllers. Use the Accessibility plug-in to improve accessibility through system features, like VoiceOver and Dynamic Type. Integrate Apple's data-driven rich haptic feedback system with the Core Haptics plug-in. Add advanced geometry-aware spatial audio with the PHASE plug-in. Finally, use the Apple.Core plug-in to manage build settings and simplify the build process. This initial set of plug-ins will let you add new gameplay mechanics, make your games more accessible, and help you more rapidly tap into the latest features and services. I am extremely excited to see the amazing games you create with this new set of Unity plug-ins. Now, I'll get into the details of the project. First, I'll discuss the design principles of the project. Then, I'll cover project concepts and organization. Next, I'll offer some key pointers on interacting with the project repository. And finally, I'll go into detail for each plug-in. As you may know, Apple frameworks encapsulate functionality in a modular way. This lets you pick and choose the right technologies for your apps while maintaining compact, efficient code. With the Unity plug-ins, a similar pattern is followed; each plug-in maps to a single underlying framework. This lets you pick and choose the set of plug-ins you want to use based upon your game's needs. Each plug-in exposes C#-based Unity script, which maps as directly as possible to the underlying framework. Doing this means that any familiarity that you might have with the underlying framework carries over to the plug-in. Concepts, and in many cases the framework API, carry directly over. Conversely, this also means that by learning the plug-in, you'll be implicitly learning the underlying framework. Another important detail is that these plug-ins are built as Apple platform native libraries. These libraries act as the glue between the C# script and the underlying framework API. Apple Unity plug-ins are organized as Unity packages, so managing their integration to your project can be done with the Unity Editor's built-in Package Manager. In some cases, plug-ins also include additional Editor functionality that makes working with the plug-in even easier and aligns with the Unity inspector-driven workflows that you're already familiar with. Of course, each plug-in is paired with detailed readmes, samples, and links to additional resources, such as associated Apple Developer documentation. Next, I'll briefly examine some key workflow concepts to help you get started. The first step is to clone the source from GitHub. You can find all of the project source and documentation there. This is the starting point for everyone who will be using the Apple Unity plug-ins. Once you've cloned the repository, building the plug-ins will be one of your first tasks. To simplify this process, the repository includes a Python script at the repository root: build.py. This script handles building native libraries, copying them to the correct locations, updating Unity meta files, packing the plug-ins, and building plug-in tests. The script is organized such that the simplest invocation builds all of the plug-ins, packages them into tarballs, and saves them to a build folder ready for integration into your Unity projects. It's important to note that fully building and packing the plug-ins will require Xcode, Python3, npm, and Unity. Finally, we have detailed documentation for using build.py in the project repository. Now it's time to dive into details with each of the plug-ins. For each plug-in, I'll cover how to add them to your Unity projects, a brief overview of included features, key scripting concepts, and some code snippets or examples in the Unity Editor highlighting how to integrate them into your projects. Let's start with the foundational plug-in, Apple.Core. Apple.Core unifies build settings for each plug-in into a single preference pane within Unity's Project Settings window. Because you compile each plug-in's native libraries, Apple.Core also includes an asset processor, which ensures that each plug-in library is configured for the appropriate platform on import. When building your projects, Apple.Core also contains scripts that run as a post-process to your build to ensure that native libraries are referenced correctly in your intermediate Xcode projects. Because each plug-in interacts with an underlying framework, Apple.Core also defines a handful of runtime inter-op types, which ease data passing between the C# script and native code layers. Finally, Apple.Core is a dependency for all other Apple Unity plug-ins. This means that Apple.Core should be imported into your projects before any of the other plug-ins. In this demo, I'll show you how to import the Apple.Core plug-in into a new project and briefly explore the Apple Build Settings preferences. Once the plug-ins are built and packed, Apple.Core can be imported with the Unity Package Manager. Just choose the option to add package from tarball and browse to the packaged plug-in.\n\nThe Editor will then load the package and compile the scripts. Once complete, Apple.Core is ready to use.\n\nApple.Core's primary user-facing feature is the addition of the Apple Build Settings tab in the Editor's Project Settings window.\n\nWhen you import an Apple Unity plug-in, all of it's available build options will be visible here. Out of the box, Apple.Core comes with some default configuration options, such as minimum supported OS version. It's also useful to note that you can disable the post-process build steps for any plug-in.\n\nFinally, you can configure common security settings, which will propagate to your intermediate Xcode projects. Use the Game Center plug-in to bring even more fun and connection to your games with Game Center, Apple's social gaming network. Game Center lets players build an identity across Apple platforms and enables features like safe, secure player authentication, in-game achievements, shared leaderboards, challenges sent between players, and multiplayer matchmaking. You can pick and choose which Game Center features to integrate into your games, but everything starts with player authentication. Add Game Center player authentication to your game and the Game Center widget can feature your game on the player's Home Screen or within the App Store. It also requires very little code to add player authentication. The first step is to add the Apple.Core and GameKit plug-ins to your project. The GameKit plug-in connects the Game Center service. When authenticating, connect with the Game Center service and initialize a GKLocalPlayer object. Once initialized, query for player restrictions based upon the local player's profile. These restrictions include limiting access to adult or explicit content for underage players, limiting access to multiplayer features, or disabling in-game communication. A simple way to manage a GKLocalPlayer and it's interactions with the Game Center service is to define a component within Unity. Here, for example, is a simple Game Manager component definition. This component holds a reference to a GKLocalPlayer. It also handles both authentication and query for player restrictions in its start method; player authentication only needs to happen once during the lifetime of the game. This is the GameManager component's script. Here's the field for caching a GKLocalPlayer. Within the component's start method is the one-time call to GKLocalPlayer.Authenticate, a static method that returns the GKLocalPlayer instance. Once the local player is successfully authenticated, it's time to check their player restrictions. Checking player restrictions in code resolves to a series of Boolean checks and can be added to the try block in the GameManager component's script. True here means your local player should have limited access to explicit content. True here means that your local player should have a restricted multiplayer experience. And finally, true here means that in-game communication should be disabled. And that's all the code changes necessary to add player authentication to your game. From here, there are two additional steps necessary to fully prepare your game to take advantage of Game Center. First, you'll need to add the Game Center capability to your intermediate Xcode projects. This is done from within the Xcode project UI. More information can be found in the Apple Developer documentation article \"Enabling and Configuring Game Center.\" Next, you'll need to add Game Center features to your app using App Store Connect. Check out the App Store Connect portal for more information. With these steps complete, you're ready to authenticate players and ensure a safe gaming environment. Player authentication only scratches the surface of the features made available by the Game Center Unity plug-in. To learn more about improving discoverability of your game, check out the session \"Reach new players with Game Center dashboard.\" To learn more about multiplayer and matchmaking, watch the \"What's new in Game Center\" session from last year. Controllers are the primary way for players to interact with the worlds that you'll create. Easily bring reliable and flexible game controller support to your games with the Game Controller plug-in. The Game Controller plug-in brings a handful of features, like support for game controller customizations, which allow players to remap buttons in one place for all games. Button glyphs, to ensure consistent user experience. And support for all MFi controllers, as well as third-party controllers like select Sony and Microsoft controllers. Just as with the other plug-ins, use the Package Manager to add the Apple.Core and Game Controller plug-ins to your project. With the Game Controller plug-in loaded, the first step is to initialize the GCControllerService. As we'll see shortly, this service is how controllers and their connection events are accessed. Once initialized, query GCControllerService for all controllers currently connected to the system. Connected controllers are represented by GCController objects in the Game Controller plug-in. For each GCController that's connected, poll for updated controller state. Polling can happen as little or as often as is needed by your game, but a good place to start is in Unity's regular update loop. Once controller state is updated, test for input on each of the controller's individual elements, such as buttons, thumb sticks, and so on. Not to be forgotten, controllers may come and go during your game's lifecycle -- register callbacks to handle controller connect and disconnect events. A quick way to get the Game Controller plug-in integrated is to create a simple input manager component. This component has three key elements: a container which holds all of the currently connected controllers, a start method for initialization, and an update method for handling polling and testing for input. First, let's take a closer look at the start method. This is a great place to do all of the necessary one-time setup tasks. Initialization of the game controller service should happen here, along with the initial check for connected controllers and registration of callbacks for connection and disconnection events. Here's the input manager component's script. All of the one-time setup code goes in the component's start method, including a call to GCControllerService. Initialize(). Calling GetConnectedControllers gets an enumerable container of all the currently connected controllers. The final initialization step is to register callbacks for controller connect and disconnect events. Now that initialization is complete, the input manager also needs an update method in order to poll each connected controller to update input state, and to handle input state for each of the controller's inputs. To poll for input, start by iterating through the set of connected controllers. Call the GCController's Poll method to gather the latest state. Then check each button state and respond accordingly. And that's a quick look at how to use the Game Controller plug-in to access connected controllers and get controller input. To get into more detail about the Game Controller framework and learn about topics like third-party controllers and nonstandard inputs, check out prior years' sessions: \"Supporting New Game Controllers\" and \"Advancements in Game Controllers.\" Accessibility is about making technologies available for everyone. Use the Accessibility plug-in to integrate a wide range of Apple's assistive technologies into your Unity-based games. The Accessibility plug-in gives you the ability to add key features, such as VoiceOver, which can read programmatically tagged content to your users; Switch Control, allowing for a wide range of assistive input devices; Dynamic Type, to easily scale in-game text and UI based upon user preferences; and UI accommodation settings in order to adhere to system-wide accessibility preferences. There's a lot to cover with the Accessibility plug-in, so I encourage you to check out the session \"Add accessibility to Unity games\" for a deep dive into the Accessibility Unity plug-in. In that session you'll not only get examples and use cases, but you'll also build an understanding of what's possible with accessibility on Apple platforms. Be sure to check it out as soon as you have the opportunity. Adding haptic feedback to your games is a great way to increase immersion and enhance the gameplay experience. Integrate Apple's advanced haptic capabilities with the Core Haptics plug-in. Use the Core Haptics plug-in to build custom haptic patterns from a set of haptic and audio events. Play back synchronized custom audio and haptics. Programmatically define or update haptic feedback by adjusting parameters in real time. Use the Apple Haptic and Audio Pattern file format, or AHAP, for a file-based approach to designing and storing your patterns as assets. Tune your Core Haptics patterns in the Unity Editor with inspector support. To get the most out of the Core Haptics plug-in, you'll need to understand four fundamental elements of Core Haptics and their relationship to one another. The highest-level element is the CHHapticEngine. The haptic engine represents the link to the haptic server on the device and is required to play any haptic patterns. The CHHapticEngine creates CHHapticPatternPlayers. Pattern players are used for playback of CHHapticPatterns with controls like start, stop, pause, and resume. A CHHapticPattern is a logical grouping of one or more haptic and audio events. The CHHapticEngine uses patterns to create players. CHHapticEvents are the building blocks used to define a haptic experience. Core Haptics is a data-driven API, which allows for haptic patterns to be defined programmatically, directly in your scripts, or by leveraging AHAP files. One easy way to add Core Haptics support to your projects is to create a Haptics component that manages each of the necessary Core Haptics objects. Here is an example Haptics component that contains a CHHapticEngine, a CHHapticPatternPlayer, and an AHAP Asset. The AHAP asset is a custom Unity asset defined by the Core Haptics plug-in. This allows for easy import and export to AHAP files, as well as a custom editor extension to manage pattern creation and customization. Let's take a closer look. I'll begin by ensuring that both Apple.Core and the Core Haptics plug-ins are installed in my project. With those added, I can start enhancing my game with haptics. Here's the haptics component that I've created based upon the previous diagram. We'll check out the implementation in just a moment, but for now, I'll attach it to my airplane.\n\nOnce attached, I now see that the component requires an AHAP asset, but my AHAP Assets folder is empty. I'll create a new one by going to Assets > Create > Apple > CoreHaptics > AHAP. Once created, I'll give it a fantastic and original name: MyHapticPattern. The Core Haptics plug-in comes with editor extensions that let me tune my new pattern right in the inspector window. This is where I define the CHHapticEvents that are part of the CHHapticPattern that can be played. By default, there's a transient event, but I can easily add a continuous event as well. There are also Import, Export, and Reset buttons in the UI. Reset clears any events that I've added and returns the pattern to its default state. Import and Export are great features. These allow your project to load and save AHAP files. Here I've imported a predefined AHAP called Rumble, which triggers a nice vibration effect, but I think it needs to be tweaked just a little. Now that I've updated the pattern, I can export it to a new AHAP file in order to share this improved haptic pattern with the rest of my team.\n\nNow that my asset is created and tuned, I'll go back to my airplane and point it to MyHapticPattern. Great! Everything is wired up. With the haptic pattern defined and properly referenced, all that remains is to add some logic to the Haptics component so it can play a haptic pattern. This can be divided into two methods: PrepareHaptics and Play. PrepareHaptics is where the haptic engine is initialized, and the haptic pattern player is created. Play will simply call the CHHapticPatternPlayer's start method to begin playback. And here's the Haptics component script. Fields are defined for a haptic engine and a haptic player. Importantly, add a serializeField attribute to allow the AHAP asset to be set in the editor UI. Next, add the code to create a CHHapticEngine, start it, and create a haptic pattern player by accessing the AHAP directly from the referenced asset. Of course, calling Start on the player will play the haptic pattern. The Core Haptics Unity plug-in gives you the tools you need to add an entirely new level of immersion into your games. Use the Core Haptics plug-in to create magical game moments that look, sound, and feel real. For a deep dive into Core Haptics, check out the session \"Introducing Core Haptics.\" For details on designing engaging haptics experiences be sure to watch \"Designing Audio-Haptic Experiences\" and \"Practice audio haptic design.\" Immersive audio is an incredibly important aspect of great game experiences. Use the PHASE Unity plug-in to unlock your creative potential and build lush soundscapes into your game worlds. With PHASE, you can provide complex and dynamic audio experiences to your games. Geometry-aware audio means that sounds emanate from and interact with meshes in the scene. Environments in your game will sound more realistic through reverberation and reflection. You can build hierarchical audio graphs that allow for dynamic audio control during gameplay The PHASE plug-in includes a set of predefined components that are game-ready. Simply attach them to your game objects and you can start using PHASE without writing a single line of code. The first component is the PHASEListener component. It acts as the \"ears\" of your game scene and processes audio based upon its position, orientation, and reverb preset. Next is the PHASEOccluder component. PHASEOccluders attach to game objects with geometry data and dampen audio when they come between sources and the listener in the scene. Next is the PHASESource component. These are attached to game objects and use the object's transform to position sounds in your game world. In addition to the built-in components, the PHASE plug-in also defines a custom asset, the SoundEvent asset. Sound events are objects which describe audio playback events and define the audio played by sources in the scene. To start using the PHASE plug-in, the first step is to make sure that both the Apple.Core and PHASE plug-ins are added to the project. Once installed, I can start adding the included components to the scene. In this example project, I have three game objects of interest: an airplane, a building, and then the camera. First, I'll attach the PHASEListener component to the camera. By doing that, I've added the \"ears\" to the scene. Next, I'll make the building an occluder by attaching the PHASEOccluder component.\n\nFinally, I'll add a source to the scene by adding the PHASESource component to the airplane. Now that I've added a source it needs some audio to play, so I need to attach a sound event, but the Sound Events folder is empty. I can create one by going to Assets > Create > Apple > PHASE > SoundEvent. After creating a sound event, the PHASE plug-in will immediately open the PHASE sound event composer window. This is the canvas used to build sound events. I start by right-clicking anywhere in the window. This shows a pop-up that allows me to add a node to the event. Because I want to play back a clip I’ll create a sampler node. I've already added an audio clip of an idling airplane to the project, so I can reference that here. I'll keep looping enabled so that the airplane keeps humming along. To hear the airplane, I need to route it to a mixer. I can create a mixer by dragging the output line onto the event composer's canvas, where it will show me the option to create a mixer.\n\nMy sound event is now complete and ready to use. By clicking on the sound event, I can see its settings directly in the inspector. This allows me to adjust values without having to go back into the sound event composer. With the sound event created, I can now reference it in the PHASESource component I attached to the airplane earlier. And with that, audio in the scene is routed and configured for playback. The PHASE Unity plug-in opens totally new possibilities for in-game audio design. To learn more about PHASE and to dive deeper into the concepts I've introduced today, be sure to check out the Apple Developer documentation site and last year's introductory WWDC session video. And that concludes our overview of the new Apple Unity plug-ins. I've covered a lot today, but if you would like to know more about any of the Apple Unity plug-ins, the repository on GitHub is the best place to start. That's where you'll find the source, detailed documentation, and samples for each of the plug-ins. Find out more about integrating accessibility into your Unity games with the \"Add accessibility to Unity games\" session and be sure to check out \"Reach new players with Game Center dashboard\" to learn how to boost your game's visibility. Thank you for watching. ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "9:02",
+      "title": "Game Center - Example game manager component - C#",
+      "language": "swift",
+      "code": "using Apple.GameKit;\n\npublic class GameManager : MonoBehaviour\n{\n    private GKLocalPlayer _localPlayer;\n\n    private async Task Start()\n    {\n        try\n        {\n            _localPlayer = await GKLocalPlayer.Authenticate();\n        }\n        catch (Exception exception)\n        {\n            // Handle exception...\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "9:23",
+      "title": "Game Center - Example game manager component continued - C#",
+      "language": "swift",
+      "code": "try\n{\n    _localPlayer = await GKLocalPlayer.Authenticate();\n\n    if (_localPlayer.IsUnderage)\n    {\n        // Hide explicit game content.\n    }\n\n    if (_localPlayer.IsMultiplayerGamingRestricted)\n    {\n        // Disable multiplayer game features.\n    }\n\n    if (_localPlayer.IsPersonalizedCommunicationRestricted)\n    {\n        // Disable in-game communication UI.\n    }\n}"
+    },
+    {
+      "timestamp": "13:11",
+      "title": "Game Controller - Example input manager component - C#",
+      "language": "swift",
+      "code": "using Apple.GameController;\n\npublic class InputManager : MonoBehaviour\n{\n    void Start()\n    {\n        // Initialize the Game Controller service\n        GCControllerService.Initialize();\n\n        // Check for connected controllers\n        var controllers = GCControllerService.GetConnectedControllers();\n        foreach (GCController controller in controllers)\n        {\n            // Handle controllers\n        }\n\n        // Set up callbacks to handle connected/disconnected controllers\n        GCControllerService.ControllerConnected    += _onControllerConnected;\n        GCControllerService.ControllerDisconnected += _onControllerDisconnected;\n    }\n}"
+    },
+    {
+      "timestamp": "13:50",
+      "title": "Game Controller - polling and input handling - C#",
+      "language": "swift",
+      "code": "foreach (GCController controller in _myConnectedControllers)\n{\n    controller.Poll();\n\n    // Check the 'South' button ('A' button on most controllers)\n    if (controller.GetButton(GCControllerInputName.ButtonSouth))\n    {\n        //Handle button pressed\n    }\n\n    // Check other controller inputs…\n}"
+    },
+    {
+      "timestamp": "20:30",
+      "title": "Core Haptics - Example haptics component - C#",
+      "language": "swift",
+      "code": "using Apple.CoreHaptics;\n\npublic class Haptics : MonoBehaviour\n{\n    private CHHapticEngine _hapticEngine;\n    private CHHapticPatternPlayer _hapticPlayer;\n    [SerializeField] private AHAPAsset _hapticAsset;\n\n    private void PrepareHaptics()\n    {\n        _hapticEngine = new CHHapticEngine();\n        _hapticEngine.Start();\n        _hapticPlayer = _hapticEngine.MakePlayer(_hapticAsset.GetPattern());\n    }\n\n    private void Play()\n    {\n        _hapticPlayer.Start();\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Accessibility",
+        "url": "https://developer.apple.com/documentation/swiftui/view-accessibility"
+      },
+      {
+        "title": "Delivering Rich App Experiences with Haptics",
+        "url": "https://developer.apple.com/documentation/CoreHaptics/delivering-rich-app-experiences-with-haptics"
+      },
+      {
+        "title": "Game Controller",
+        "url": "https://developer.apple.com/documentation/GameController"
+      },
+      {
+        "title": "Human Interface Guidelines: Game Center",
+        "url": "https://developer.apple.com/design/human-interface-guidelines/game-center"
+      },
+      {
+        "title": "PHASE",
+        "url": "https://developer.apple.com/documentation/PHASE"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10065/5/C221E77C-502C-47CD-B0C4-9091B529DD77/downloads/wwdc2022-10065_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10065/5/C221E77C-502C-47CD-B0C4-9091B529DD77/downloads/wwdc2022-10065_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10123",
+      "year": "2023",
+      "title": "Bring your game to Mac, Part 1: Make a game plan",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10123"
+    },
+    {
+      "id": "10151",
+      "year": "2022",
+      "title": "Add accessibility to your Unity games",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10151"
+    },
+    {
+      "id": "10064",
+      "year": "2022",
+      "title": "Reach new players with Game Center dashboard",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10064"
+    },
+    {
+      "id": "110930",
+      "year": "2022",
+      "title": "WWDC22 Day 2 recap",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110930"
+    },
+    {
+      "id": "10079",
+      "year": "2021",
+      "title": "Discover geometry-aware audio with the Physical Audio Spatialization Engine (PHASE)",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10079"
+    },
+    {
+      "id": "10278",
+      "year": "2021",
+      "title": "Practice audio haptic design",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10278"
+    },
+    {
+      "id": "10081",
+      "year": "2021",
+      "title": "Tap into virtual and physical game controllers",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10081"
+    },
+    {
+      "id": "10614",
+      "year": "2020",
+      "title": "Advancements in Game Controllers",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10614"
+    },
+    {
+      "id": "10145",
+      "year": "2020",
+      "title": "Design for Game Center",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10145"
+    },
+    {
+      "id": "10618",
+      "year": "2020",
+      "title": "Tap into Game Center: Dashboard, Access Point, and Profile",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10618"
+    },
+    {
+      "id": "10619",
+      "year": "2020",
+      "title": "Tap into Game Center: Leaderboards, Achievements, and Multiplayer",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10619"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:08:06.838Z"
+}

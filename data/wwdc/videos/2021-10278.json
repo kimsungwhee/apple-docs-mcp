@@ -1,0 +1,82 @@
+{
+  "id": "10278",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10278/",
+  "title": "Practice audio haptic design",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video",
+    "Design",
+    "Graphics & Games"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi. I'm Camille Moussette, designer on the Apple Design team. In this session, I will walk you through the practical steps and design considerations for adding audio and haptic feedback to an app. Historically, it's been quite challenging both from a design and engineering perspective to deliver rich app experiences that include animation, sound, and haptics. With Core Haptics on iPhone, it's now easier to create magical moments that look, sound, and feel real. To explain and practice those skills, I'll use an iOS app derived from a previous code sample project called HapticBounce. A few additions were made to make it like a mini game and to offer a canvas to design visual, sound, and haptics working well together. The new demo is called HapticRicochet.\n\nHapticRicochet is the story of a ball that comes to life in the iPhone and moves around based on the iPhone's orientations. The ball rolls around and bounces off the walls of the phone with audio and haptic feedback, just like you expect in the physical world. If you tap the ball... it grows into a larger ball. If you tap once more, a shield gets added to the ball. That shield gets damaged and depleted with each collision with the walls, and ultimately the ball implodes and dies.\n\nWe also added a texture to the background that you enable or disable by tapping anywhere on the background.   For this session, I will focus on only two mechanics: adding the shield and enabling the rolling texture. Before I proceed further, let's review the agenda. I'll first review the key audio and haptic design principles we often use within Apple. I will follow up with a brief introduction to Core Haptics, the framework that enables rich multimodal feedback.\n\nThe core of the session will examine the HapticRicochet project in Xcode and see how one adds, designs, and refines feedback for the shield and rolling texture moments. Designing multimodal experiences can be challenging, but when done well, it truly elevates the user experience. It feels magical, delightful, and just right. One example is the Flashlight button in iOS. It combines visual animation, sound, and haptic feedback in a unified experience that is clear, precise, and succinct. It's an iterative and creative process that involves design and engineering effort. Normally you would feel the haptics rather than hear them, but for demonstration purposes, we've converted these haptics to sound so you can hear it in this video. To help achieve magic and delight in your app experience, here are three principles to guide the work. They have been useful to us internally, and I hope they can help you as well. They are causality, harmony, and utility.\n\nFor feedback to be useful, it must be obvious what caused it. It's about making the source or the cause of the feedback clear and obvious. The simplest form is getting feedback as the ball hits the wall and the boundary of the phone. It's a collision with associated sound and haptics. Similarly, the haptics rolling texture is only presented when the background visual is shown. You understand that the grid is what created that sensation. Our second principle, harmony, highlights that our senses work best when they are coherent, consistent, and working together to create a given experience. It should feel the way it looks, and the way it sounds. A small ball should feel small and sound small. A large ball ought to sound and feel heavier, like it has real extra mass. Our third principle, utility, is about providing clear value to your app experience. Don't add feedback just because you can. It can quickly become overwhelming and unpleasant. Reserve haptics and audio for significant moments in your app, like the growth of the ball. Next, let's review Core Haptics. Core Haptics is the technology on iPhone and iOS that lets you design custom haptics and audio feedback for your app. It's a powerful API centered around four fundamental elements: engine, player, pattern, and event. Let's review them briefly. The highest level element is the engine. That's our link to the physical actuator on the phone. Next we have a player. It is used for playback control, like start, stop, and pause. Then we have patterns and events. Patterns are a collection of events over time. Events are the building blocks used to specify the experience. There are many types of events. The most common ones are transient and continuous. Practically, here's a concrete example of a pattern made of events. I'm using the QuickLook Visualizer available in MacOS 12 to see the haptic pattern specified in an .ahap file. AHAP stands for Apple Haptic Audio Pattern. Let's look at it again. Select an .ahap file in Finder, then press Space bar on your keyboard.\n\nNow let's look in detail at the items in the pattern. The first event in blue is a transient event. The second event in orange is a continuous event.\n\nThe pattern is using JSON syntax. The transient event is created from this code.\n\nThis sums up our overview of Core Haptics. For more in-depth information, check out the documentation online. For the practice in this session, we'll focus on loading, changing, and playing patterns. It's time for Xcode and the HapticRicochet. Open the project from HapticRicochet-Start folder. Make sure you can compile and run the project on your iPhone. The simulator doesn't work for haptics. You need a physical iPhone 8 or newer to feel the haptics. Verify that the phone is not silenced and that the volume level is high. The plan is to work with ViewController files and the .ahap, .wav and .png asset files. Make sure you familiarize yourself with the game and all its interactions. Remember, you can tap the ball, tap the background, and tilt the phone around.   Once you're ready, let's dive into the shield transformation. I'll use the harmony principle to dissect the shield moment and look at the design details. For visual, we have an animation that is 500 milliseconds in duration and that looks like this in the upper right.\n\nFor haptic, we'll want to highlight the transformation to a new state. For audio, we want to convey a gain in energy and an end state that is robust and protected.\n\nFor this practice, we've created two different assets that convey different qualities. We'll look at them and see what works best for the shield experience. But first, let's look at how we load and play feedback for shield.\n\nFunctionally, the code is divided in two parts. We first initialize our building blocks and, second, a function to play and render that shield transformation.\n\nIn the initializeShieldHaptics function, I first create a pattern from a ShieldTransient file. Then create a shieldPlayer with that pattern.\n\nThe feedback is ready to play at this point.\n\nThe function shield is called when the transformation is ready to be rendered. The haptic and audio feedback are played via calling startPlayer on our shieldPlayer. It's a convenience function we reuse frequently in the project. The visual animation is then played.\n\nNow let's look at our ShieldTransient asset. It defines the experience we have for haptic and audio feedback. The haptic should feel like this:  And the audio should sound like this:  I like the sound. It feels like a gain of robustness and protection for the ball. Let's hear it again. The problem is the haptic and the sound don't really match. The haptic is made of three transients...  While the audio is continuous and progressive.  There's no harmony between the two senses.  Let's look at the alternate asset which is called ShieldContinuous. It has a continuous haptic progression... And a wobbly audio that decays.  Again, I can feel and hear that the haptic and audio don't really match. But I like the haptic. It feels like a good transformation for gaining a shield. Let's hear the haptic again.  My plan is to use that continuous haptic pattern but use the sound from the first asset.\n\nI'll use the two assets and take the audio I like from the first pattern and use it in the second continuous haptic pattern.\n\nLet's see how I do that in practice.\n\nFirst I open the ShieldContinuous.ahap file in a text editor and scroll to the end of the file. You'll see this event where we specify the audio file to play with the haptics.\n\nIt's using the EventType AudioCustom with a filename for the audio file. You can specify and adjust the volume using a ParameterValue.\n\nTo use the preferred audio, I change the file reference from ShieldB.wav to ShieldA.wav.\n\nThe revised and final asset looks like this. The haptic... and audio are coherent. They support and reinforce each other. Let's listen to the combined audio and haptics together.  The last change needed is to use that final asset I just created. I go back to InitializeShieldHaptics function and instead of using ShieldTransient, I specify and load the ShieldContinuous file.\n\nVoilà! Here we have it. I now compile and run on device.  I end up with a harmonious shield transformation that feels just right. The haptic, audio, and visual are working well together to convey the addition of shield protection to the ball. Next, I'll review how to add the rolling texture to the app.\n\nHapticRicochet starts with no rolling texture, just collision with the walls. If I tap on the background, the polka dot texture shows up, and I get additional haptic feedback as the ball rolls around. We'll encounter and resolve two issues moving forward, one of a technical nature. The other one relates to the design of the experience.\n\nIn the initializeTextureHaptics function, I first create a pattern from the texture ahap file. I then create a ShieldPlayer with that pattern. The function updateTexturePlayer is called on every frame the texture is active. We use it to update the intensity of the haptic based on the speed of the ball. Let's look at the results. The issue I'm noticing is the texture goes away after a few seconds.  I know why it's happening like this. There's an easy way to fix that behavior. The issue we have is that the texture of the .ahap files has only 2 seconds of haptic content. There's a way to change that behavior and make it play endlessly. The advanced variant of the pattern player offers additional functionalities like pause, resume, and other callbacks. In HapticRicochet, I will use the advanced pattern player only for its looping capabilities. Let's walk through this change. I first modify the declaration of texturePlayer to be of CHHapticAdvancedPatternPlayer type. Then I'll use the same texture file, but this time, creating an AdvancedPlayer. I can now enable the looping behavior on that AdvancedPlayer. The nice thing is that the rest of the code stays all the same. Let's look at the results.  The rolling texture plays in a loop this time with no apparent pause or seam.  The second issue I want to address is related to the look and feel of the texture. We see that our haptic pattern asset is quite dense, with nearly 100 entries over 2 seconds. Our visual background texture is very coarse, with just a few dots across. I think the experience would be improved and more realistic if the dot pattern would be more dense.\n\nI'll change the resource file we used for the backgroundImage to use the Fine version of this file. If I run the app, the new denser texture will be used. Let's take a look.  If you run into issues or problems, we've included the final version of the project in the HapticRicochet-Final folder. It has all the changes we've made during this session, ready to compile and feel on your iPhone. There is still room for you to explore and design your own haptic experiences. I invite you to look at the other transformation in the game and try to design your own new haptic and sound feedback for them. To recap, I introduced audio and haptic design principles that can guide you to design great multimodal experiences in your app.\n\nI reviewed the fundamentals of Core Haptics, the API to add custom feedback in iOS. I've put them in practice using the HapticRicochet project, focusing on the shield and rolling texture mechanics. For additional information and resources, please refer to the Human Interface Guideline, and the Developer documentation. Lastly, you can revisit the WWDC 2019 session covering the launch of Core Haptics. Thank you for watching. [percussive music]",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "8:05",
+      "title": "Shield",
+      "language": "swift",
+      "code": "// Initialize shield.\nfunc initializeShieldHaptics() {\n    // Create a pattern from the shield asset.\n    let pattern = createPatternFromAHAP(\"ShieldTransient\")!\n        \n    // Create a player from the shield pattern.\n    shieldPlayer = try? engine.makePlayer(with: pattern)\n}\n\n/ Play shield transformation.\nfunc shield() {\n    // …\n    // start player for haptics and audio.\n    startPlayer(shieldPlayer)\n        \n    // Play shield animation\n    isAnimating = true\n    sphereView.layer.add(shieldAnimation, forKey: \"Width\")\n    // …\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Core Haptics",
+        "url": "https://developer.apple.com/documentation/CoreHaptics"
+      },
+      {
+        "title": "Delivering Rich App Experiences with Haptics",
+        "url": "https://developer.apple.com/documentation/CoreHaptics/delivering-rich-app-experiences-with-haptics"
+      },
+      {
+        "title": "Human Interface Guidelines: Playing haptics",
+        "url": "https://developer.apple.com/design/human-interface-guidelines/playing-haptics"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10278/6/22D440E4-3CF8-4968-8FCB-6F21B4587DAD/downloads/wwdc2021-10278_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10278/6/22D440E4-3CF8-4968-8FCB-6F21B4587DAD/downloads/wwdc2021-10278_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10065",
+      "year": "2022",
+      "title": "Plug-in and play: Add Apple frameworks to your Unity game projects",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10065"
+    },
+    {
+      "id": "10324",
+      "year": "2021",
+      "title": "Thursday@WWDC21",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10324"
+    },
+    {
+      "id": "520",
+      "year": "2019",
+      "title": "Introducing Core Haptics",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/520"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:23:27.049Z"
+}

@@ -1,0 +1,98 @@
+{
+  "id": "10641",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10641/",
+  "title": "Handle the Limited Photos Library in your app",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Photos & Camera",
+    "Privacy & Security",
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nHello and welcome to the session on handling the new Limited Photos Library. My name's Matt Dickoff and together with my colleague Adam Swift we'll be walking you through this new PhotoKit feature that allows users to better control the access that apps have to their photos library. We'll start with a feature overview so you can familiarize yourself with what this looks like in iOS 14. Then we'll cover what new APIs are available to determine if your app has been put into this mode. And finally we'll discuss some UI changes that you might need to make in your app. So first let's go over what limited photo library means. As a reference here's what full photos library access looks like to your app. In this scenario your app has access to nearly all of the assets in the user's photo library through PhotoKit APIs. Your app can make photo requests to either write or read from the database. In limited mode we introduced this concept of the users limited library selection. You can think of this as a filter for the PhotoKit APIs that you call. You will only be able to fetch assets and resources related to what the user has chosen for you to have access to. When a user modifies their selection your app will automatically be notified so that it can update its UI to reflect the user's actions. It's important to note that limited photo library access will affect all apps that use photo kit. Even the apps you've already shipped will be able to be put into this mode in iOS 14. To demonstrate this let's look at an example app. This demo will show what a user will see when using a third party app that hasn't adopted any new APIs or functionality. Upon first launch of a photos application the user will often be faced with a prompt asking them to grant the app access to their photo library. The user now has an additional option which says \"Select Photos.\" After selecting this this, the user is presented with the limited library management UI. This is allowing the user to individually select what photos or videos the app will have access to via PhotoKit. Now let's select some photos. After tapping done the app is back in the foreground. As you can see the app is only able to fetch the assets selected by the user. The app is still able to see photo metadata such as whether it was favorited, however this is limited to the user's selection. So if we turn the favorites on for this we can see it's only the selected assets. Now you may be wondering how a user would be able to modify this selection of photos for this app. The first way is by going to settings, where alongside the option to change the overall access level this app has, the user can manage their selection.\n\nSo if I add a new photo and go back to our app, you'll see that it refreshed its view of the library.\n\nThe second way is specific to apps that haven't made any changes to accommodate this new mode. For these apps, like this one here, once per app lifecycle when they first fetch assets via PhotoKit the user will be prompted to either keep their current selection or modify it. Let me show you what that looks like. This allows a user to modify the selection within all apps without app adoption. Later on in the presentation I will show you new APIs that you can adopt which will allow you to take control over when and where this management UI is presented from as well as suppressing that prompt that comes up the first time your app calls PhotoKit APIs after launch. Before we dive into the technical details, I want to first talk about why we built this feature. The primary motivation was to give users more control over their data. Over the years we've seen personal photo libraries grow from tends to hundreds of thousands of photos and videos. In nearly all cases, users do not want to give third parties access to their entire library. Given this big push for user control this is a great year to take a step back and ask yourself if your app even needs to ask the user for access to their photo library at all. For most apps the answer is no. Today users see this prompt way more often than they really need to. Many of you don't need to request this level of access and could provide a simpler and better experience for your users without it. To accentuate this point. Let's look at some features that can easily be built without needing to request access from the user. Uploading a profile picture is a prime example. Often this is the only photo related feature in an app.\n\nOr maybe you support sending photos in a message or social media post. Or, maybe your app supports embedding photos into a document that it creates. All of these features can be built very easily with the new PHPicker without requiring any photo library access. PHPicker is a great replacement for the UIImagePickerController you may be familiar with. It has multi- select and built in search and users will expect that your app will be able to use features like I just showed without ever granting your app photo library access. For more information on implementing these workflows with the new PHPicker, please see this session that my colleagues put together.\n\nNow I know I haven't talked about all the features you possibly could build with photo kit. So what is left? The simple addition of being able to save an image that accounts for a large percentage of apps. If your app falls into this category you are now able to explicitly ask the user for add-only access to their photos library. And in the API slides coming up we will show exactly how you can do that. Of course there are apps that provide a very photo-centric experience that require full access. For example, browsing apps, editing apps, camera apps, or data backup apps. These type of apps will need to do the most work to handle limited library access. Now I'm going to hand the presentation over to Adam, who walk you through the new APIs we've introduced this year. Adam? Thanks Matt. As you just heard, limited photos library access can be enabled by the user in every app that requests access to the photo library. So as a developer we want to help you provide the best app experience for users that choose to enable limited access. First I'm going to walk you through the APIs you can use to know if the user has granted your application limited photos access. Then we'll look at what has changed when requesting access.\n\nAfter that, I'll be handing it back to Matt to talk about UI considerations like how to present the Limited Library Management UI natively and prevent the automatic prompt. Let's start with a look at how you query for authorization status.\n\nWe've added a new value to the existing page PH Authorization Status Enumeration to indicate that your app is authorized for limited access. And we've introduced a new enumeration called PHAccessLevel. This can be add only or Read/Write.\n\nThese levels correspond to the two different photos usage privacy prompts that you should be familiar with. The authorization status query and request APIs have have been updated to take an access level. This means that now you can check if your app is authorized for Read/Write, or just add only access.\n\nLimited library doesn't affect add only access, so to check if the user has granted limited access you need to pass the read write access level and check for the limited authorization status return value.\n\nLet's look at how you can do that in detail. Since we want to know if the user has authorized our app for limited access, we'll need to specify the Read/Write access level. Then, we'll call the new authorizationStatus API for that access level. And the last step is to check the return value for the new limited authorizationStatus. Usually to setup your UI in a way that works best in limited access mode. Now let's see how requesting access is impacted by limited library. When your application wants to access photo library data, we still recommend that you allow a user action to drive that request. Ideally when some UI activity initiated by the user requires you to fetch photo data or add to the camera roll, calling the PhotoKit APIs to perform that work will trigger the request for access and make it clear to the user why your app is requesting access. But there are some cases where you want to control the timing of that request and we've updated the request authorization API to support access level and limited authorization status. Let's take a look at a request example keeping in mind that requesting authorization only prompts the user if the status isn't already determined.\n\nJust like when querying the status, you'll want to declare the access level your application needs. In this case again, we're requesting Read/Write access, then call to request authorization for that access level from the user. This will put up the system prompt for photo library access. After the user makes their choice and the callback to this function you will be provided with the authorization status value that aligns with their response. This is where you want to check for the new authorization status limited. That indicates that the user has granted your application limited photos library access.\n\nThe old authorization status and request APIs are not limited library or access level aware and are marked for future deprecation. It's important to note that for compatibility reasons these APIs will not return the new limited authorization status. Instead they will return authorized, even if the user has granted limited photos library access to your application.\n\nGenerally, you should expect PhotoKit APIs to act the same whether your app has full authorization or limited access to the user's photo library. However, there are a few exceptions that are intentional and worth noting.\n\nWhen your app creates new assets they will automatically be included as part of the user's selection for the application. User albums however cannot be fetched, nor created. If your application relies on being able to create an app specific album you will need to change your app's behavior. Also there is no access to cloud shared assets or albums. All right. With that in mind I'll hand it back to Matt to talk about UI considerations and how you can natively present the selection UI in your app. So now that you can determine if your app is in limited library mode let's talk about what UI changes you'll need to make. First I'll cover how you can present the selection UI natively and second I'll mention how you can stop the automatic system prompt from happening for your app the first time that it does PhotoKit APIs calls after launch. Presenting the management UI is as simple as calling this new PHPhotoLibrary API, presentLimitedLibraryPicker, passing in the view controller you want it to present from. You should monitor any changes that happen to the user selection through the existing PHPhotoLibraryChangeObserver API. By doing this you will be robust to changes that happen in this picker in system preferences or existing scenarios such as asset deletions that may have sync through iCloud Photo Library. You may want to tie the presentation to a button or action within your app. For example in the demo app I showed you in the beginning, some sort of affordance in the browsing experience would be a good way to allow the user to easily modify their photo library selection for your app. As you can see here we added a button to the browsing experience that pulls up the limited library selection UI. You can suppress the automatic prompting from the system by setting this key to yes in your apps info plist. This is found in the same place where you set your photos usage descriptions strings in Xcode. This is represented by the prevent limited photos access alert key. This exact string will be in an upcoming version of Xcode.\n\nIn summary, these are the steps that you should go through when updating your app to handle the new limited library mode. First, reconsider if you're app needs to use photo library access at all. The new PHpicker improvements this year are a great way to implement many of your features. Second, adopt the new authorization APIs so you will know if your app is in limited library mode. Third, update your app designs to give an affordance for users to modify their limited library selection in a way that makes sense in the context of your app. And finally, be sure to set the info Plist key in Xcode, so the system prompt stops coming up for your app the first time it makes PhotoKit API calls after launch.\n\nAnd that's everything you need to know\nabout the new Limited Photos Library feature. Thank you!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "8:36",
+      "title": "Query for authorization status",
+      "language": "swift",
+      "code": "import Photos\n\nlet accessLevel: PHAccessLevel = .readWrite\nlet authorizationStatus = PHPhotoLibrary.authorizationStatus(for: accessLevel)\n\nswitch authorizationStatus {\ncase .limited:\n    print(\"limited authorization granted\")\ndefault:\n    //FIXME: Implement handling for all authorizationStatus values\n    print(\"Not implemented\")\n}"
+    },
+    {
+      "timestamp": "9:43",
+      "title": "Request read/write authorization",
+      "language": "swift",
+      "code": "import Photos\n\nlet requiredAccessLevel: PHAccessLevel = .readWrite\nPHPhotoLibrary.requestAuthorization(for: requiredAccessLevel) { authorizationStatus in\n    switch authorizationStatus {\n    case .limited:\n        print(\"limited authorization granted\")\n    default:\n        //FIXME: Implement handling for all authorizationStatus\n        print(\"Unimplemented\")\n        \n    }\n}"
+    },
+    {
+      "timestamp": "12:04",
+      "title": "Present the limited library management UI",
+      "language": "swift",
+      "code": "import PhotosUI\n\nlet library = PHPhotoLibrary.shared()\nlet viewController = self\n\nlibrary.presentLimitedLibraryPicker(from: viewController)"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "PhotoKit",
+        "url": "https://developer.apple.com/documentation/photokit"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10641/5/51B91C53-BFDD-41DD-9EA3-418DE396897F/wwdc2020_10641_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10641/5/51B91C53-BFDD-41DD-9EA3-418DE396897F/wwdc2020_10641_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10105",
+      "year": "2023",
+      "title": "Create a more responsive camera experience",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10105"
+    },
+    {
+      "id": "10160",
+      "year": "2021",
+      "title": "Capture and process ProRAW images",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10160"
+    },
+    {
+      "id": "10046",
+      "year": "2021",
+      "title": "Improve access to Photos in your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10046"
+    },
+    {
+      "id": "10676",
+      "year": "2020",
+      "title": "Build trust through better privacy",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10676"
+    },
+    {
+      "id": "10652",
+      "year": "2020",
+      "title": "Meet the new Photos picker",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10652"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:41:56.481Z"
+}

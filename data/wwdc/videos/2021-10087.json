@@ -1,0 +1,115 @@
+{
+  "id": "10087",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10087/",
+  "title": "Diagnose Power and Performance regressions in your app",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Store, Distribution & Marketing",
+    "Developer Tools"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, I am Sonia, a performance tools engineer. Today, my colleague Shreyas and I will show you how to diagnose power and performance regressions in your app. Every year, you work hard to release the best apps possible. You want to invite users to an amazing experience in your apps, which is why optimizing for power and performance is so important. This talk will cover key metrics that affect your app's performance, tools to help you discover regressions, insights to help you reduce disk writes, and APIs to automate your performance workflows. To help you optimize performance, there's a comprehensive set of metrics and diagnostics available to you through the Xcode Organizer and App Store Connect API, without any changes to your app. As you know, performance is not easy to optimize. With so many metrics and diagnostics available, it can be easy to get lost in a sea of information. You want to make each release better than the last, but need a quick way to summarize your performance priorities. The Xcode Organizer is a great tool to understand performance. It currently collects data across seven metric categories, including battery, launches, hangs, memory, disk writes, scroll hitches, and terminations. That's a lot of information to process. Let's dive into the Xcode Organizer next and diagnose a performance regression. I'll start by viewing different metrics for my app. I can choose from seven metric categories on the left navigation bar. Some categories, like battery and terminations, can have multiple sections, as well as subcategories detailing different event types. I can optionally choose between dozens of different device types, as well as percentiles for top and typical users of my app. The center of the organizer shows a chart with data for the last 16 releases. In this case, I want to investigate terminations in my app.\n\nThe onscreen chart shows terminations increased significantly in the latest version, indicating there may be an issue with the release, specifically due to more illegal instruction exits highlighted in blue. There's such a rich and interesting set of metrics available for me to understand performance in the field, but with so many device options, metric categories, and subcategories, it's not clear where I should start to optimize performance. That's why there's now an insights section in the organizer to highlight all of your performance priorities and streamline your workflow. The Xcode Organizer now processes metrics data and identifies interesting trends such as performance regressions. Before I dive in, let's talk about what a performance regression is and how they're detected. Regressions occur when an app performs poorly in a power or performance area relative to recent releases. For example, when it takes longer to launch after a release. In this example, the metric is analyzed over recent releases to determine if the value is trending up. The metric is then averaged over the last few releases and compared to the latest value. If the metric is trending up and the latest value is higher than the average over the last few releases, it's flagged as a regression and summarized in the insights section. In this example, the app took on average 1.1 seconds to launch, then suddenly jumped to 2.5 seconds in the last release, causing it to be flagged as a regression. Now that you know how regressions are flagged, let's go back to the organizer and dive in to a few examples. Here's a look at the regressions tab. It's a one-stop shop where you can discover your top performance priorities. Is your app suddenly crashing after a recent release? Is that cool new camera feature draining the device battery? You'll find the answer to these questions and more in the insights section. All the data you need will be highlighted in this go-to section to understand performance in the field. Here you can discover regressions for different metric categories and subcategories across devices for typical and top percentiles grouped together. The left-hand side will summarize which metric regressed, by how much, and for which percentiles, highlighting exactly what you need to focus on to create even better apps. My app has several regressions across terminations, memory, and disk writes. Next, I'll go through an example of each and how to interpret them. I'll start with termination regressions. Before I go through terminations, check out the video on \"Why is my app getting killed?\" for more context. Each regression will summarize all the top issues from my latest app release. The top of the section shows illegal instructions are causing the crashes, which can occur when my app accesses an invalid function pointer. Further down, there's a chart of illegal instruction exits over the last four releases of my app. The top of the chart shows which percentiles and devices were affected. In this case, top percentile users on all iPhones are experiencing more crashes in the latest release. The average and latest number of illegal instruction exits are to the right of the chart. In this case, my app has started crashing every ten days in the latest version. Onscreen terminations are very disruptive because users will have to go back to the Home screen and relaunch the app frequently. I'll want to remove references to the invalid function pointer causing these crashes and can dig in further by taking a look at my crash diagnostics. Check out the \"Triage TestFlight crashes with Xcode\" video to learn more about crash diagnostics.\n\nUsing regressions and crash diagnostics, I now know I need to reduce onscreen terminations in the next app release. I don't want to stop at onscreen terminations and know there's more I can do. I'll check my app's regressions to discover other areas for improvement.\n\nLooks like there's a regression in task timeouts as well. Some metrics can regress for multiple devices and percentiles. In this case, task timeouts have increased across all iPhones on both typical and top percentiles. I can scroll through each regression on the right, viewing data for recent releases as well as the latest and average value for the metric. When apps are switched to the background, they have 30 seconds to execute tasks before the system terminates them. This means that failing to end background tasks appropriately can cause your app to terminate more frequently, leading to a slow launch the next time a user switches back. My app is now getting terminated every three days in the background. While not as disruptive as an onscreen termination, background terminations can be much more common. It's essential to have a seamless launch experience, even when my app is terminated in the background. I can integrate UIKit's state restoration features to ensure a smooth recovery from any background exits. Lastly, coming back to my app's regressions, there's one more performance area I need to focus on. Disk writes have increased by 28% in the last release, but it's not clear what's caused the issue. It's great I know there's a performance problem, but I'll need more insight on where to start before I optimize my app. Next up, Shreyas will tell you how to discover top causes for disk write regressions.\n\nThanks, Sonia. Hi, I'm Shreyas. I'm a storage software engineer at Apple, and I'll cover how to debug disk write regressions and stay on top of the app's performance. But before diving into this, why are disk writes so important? Storage, very much like CPU and memory, is a limited resource. Unchecked disk writes can wear out and damage the underlying device. They're also a common cause for annoying onscreen hangs and UI hitches. If we are not careful, they can eat up the battery life quickly. These make optimizing disk writes a key component in ensuring a great user experience. With that in mind, let's learn about the resources available to diagnose high disk writes. The disk writes report pane in Xcode Organizer is a great starting point. These reports are collected from devices which have consented to share app analytics, and they contain information about the stack trace that led to the writes. The stack trace from each report is broken down into multiple signatures, and the writes are tracked for a signature across all reports. In this report list, the signatures are shown sorted based on the total writes. For each of the signatures, we can find detailed stack trace showing us the cause of the writes, and we can also find statistics about how many logs were received, what OS version and hardware model breakdown looks like, and so on. To identify the problem areas, pay close attention to your top signatures. In this case, the top signature is responsible for 67% of the writes. We can infer from the callstacks that this is due to an SQLite function. A lot of times, knowing this, the source of the problem, can go a long way towards solving the issue. But often, like in this case, the fix may not be obvious. The code here is critical to my new feature, I don't spot any obvious bugs, and it's not apparent what my next steps should be. Turns out, the answer is present in the stack trace if you know where to look.\n\nThere are functions often deep in the stack sometimes in the libraries that you are using that can tell you what's wrong and, with enough research, how to fix it. But that can be very tricky. It often requires specific domain knowledge and can be extremely time consuming.\n\nTo save you all this effort, in Xcode 13, organizer has a new field called insights. Behind the scenes, a repository is maintained with known antipatterns that cause high disk writes. As reports are received, they're scanned for functions that indicate these antipatterns. When there's a match, the problem is highlighted here along with the optimization suggestion to fix the issue. This will make it easy to reduce the app's writes and improve performance while saving a ton of debugging effort. For example, for our top signature, I see an optimization suggestion to add an index. There's also a link to the documentation page that will explain the problem in detail and give steps to debug and fix the issue. Great. Now, let's follow the advice and see if it helps. And to do that, let me fire up file activities instruments. File activities instruments is a fantastic resource to debug all storage-related issues. It gives me detailed breakdown of all the reads and writes that the app performs. It's the perfect tool to validate my fix.\n\nBefore, the instruments showed around 180 megabytes of writes to temporary files.\n\nThis also introduces a 780 milliseconds of latency.\n\nAnd now, after the index, the writes due to the function drops to zero. This is because SQLite is more efficient now. This means we no longer have 780 millisecond latency slowing us down. SQLite index is one example. There are a range of other optimization suggestions to improve your app's performance, and there is constant work to expand this list, so check out the insights for your app today.\n\nLet's come back to the insights pane. We had three regressions for our app. We scrutinized each one of them, and we have discovered the resources available to resolve all of them. That's great. There are a ton of power and performance analytics in Xcode Organizer, and the insights should be a go-to pane to discover your app's performance priorities. Make the most of it. Plan to check for regressions and insights periodically, and definitely after every release.\n\nIn addition to the Xcode Organizer, there's another way for you access all the analytics covered today, and that is App Store Connect APIs.\n\nThese are great if you want to access data programmatically and build custom solutions. Perhaps you already have an analytics pipeline that you have set up. Then these APIs are the perfect tool for you to integrate all these cool analytics. Check out the video \"Identify trends with Power and Performance API\" from WWDC 2020. It covers the API end points and responses in great detail. Let me give a quick overview of some of the API responses. For metrics, you can make a GET request to the perfPowerMetrics end point. This returns a JSON response that has app's metrics and insights for your recent versions. Let's jump into the insights section. Within insights, you'll find all the regressions identified for your app. For each regression, you'll find metric category and a summary of the identified regression.\n\nThis is the onscreen termination due to an illegal instruction that we discovered earlier in Xcode Organizer.\n\nNext, you'll find the populations section. This provides a detailed, structured list of impacted percentiles and devices. You can use these to take focused action to improve your app's performance.\n\nSimilarly, for diagnostic reports, you can make a GET request to the diagnosticSignatures end point. The responses will have a list of top signatures, and each signature will have a link to the details associated with it.\n\nA GET request to this link will provide you with detailed diagnostic logs and the insights associated with the signature. Use these APIs in your analytics pipelines, and when you see an insight, take action immediately. Now you know what performance regressions are, and how you can diagnose them, and where you can find actionable data to fix them. Here's what you need to do next. Go open Xcode Organizer now. Check out the regressions pane. See what your app's top performance regressions are. Find out how much your app writes. Are the top disk write callstacks what you expect? Or are there hidden bugs slowing down your app? Finally, make a plan to stay on top of your app's performance. Check Xcode Organizer periodically, and use the App Store Connect APIs in any custom analytics pipeline. Thank you for your time. Happy regression hunting. [upbeat music]",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "13:00",
+      "title": "App Store Connect API Metrics",
+      "language": "swift",
+      "code": "GET /v1/apps/{application-id}/perfPowerMetrics\nGET /v1/builds/{id}/perfPowerMetrics"
+    },
+    {
+      "timestamp": "13:01",
+      "title": "App Store Connect API Diagnostics",
+      "language": "swift",
+      "code": "GET /v1/builds/{id}/diagnosticSignatures\nGET /v1/diagnosticSignatures/{id}/logs"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Analyzing the performance of your shipping app",
+        "url": "https://developer.apple.com/documentation/Xcode/analyzing-the-performance-of-your-shipping-app"
+      },
+      {
+        "title": "App Store Connect API",
+        "url": "https://developer.apple.com/documentation/AppStoreConnectAPI"
+      },
+      {
+        "title": "MetricKit",
+        "url": "https://developer.apple.com/documentation/MetricKit"
+      },
+      {
+        "title": "Reducing terminations in your app",
+        "url": "https://developer.apple.com/documentation/Xcode/reduce-terminations-in-your-app"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10087/6/35272A76-3FD8-4149-B4C9-B7C0AA197E61/downloads/wwdc2021-10087_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10087/6/35272A76-3FD8-4149-B4C9-B7C0AA197E61/downloads/wwdc2021-10087_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10082",
+      "year": "2022",
+      "title": "Track down hangs with Xcode and on-device detection",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10082"
+    },
+    {
+      "id": "10203",
+      "year": "2021",
+      "title": "Triage TestFlight crashes in Xcode Organizer",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10203"
+    },
+    {
+      "id": "10181",
+      "year": "2021",
+      "title": "Ultimate application performance survival guide",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10181"
+    },
+    {
+      "id": "10258",
+      "year": "2021",
+      "title": "Understand and eliminate hangs from your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10258"
+    },
+    {
+      "id": "10076",
+      "year": "2020",
+      "title": "Diagnose performance issues with the Xcode Organizer",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10076"
+    },
+    {
+      "id": "10057",
+      "year": "2020",
+      "title": "Identify trends with the Power and Performance API",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10057"
+    },
+    {
+      "id": "10081",
+      "year": "2020",
+      "title": "What's new in MetricKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10081"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:20:07.899Z"
+}

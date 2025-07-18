@@ -1,0 +1,132 @@
+{
+  "id": "10074",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10074/",
+  "title": "Get started with Dynamic Type",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Accessibility & Inclusion"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, my name is Gaeth, and I’m an engineer on the Accessibility team. At Apple, we care about all kinds of accessibility needs, and as most content is conveyed using text, I’m excited to talk about an important quality of visual accessibility: how people read and navigate text in your app, and how Dynamic Type can help make this a great experience for everyone. Dynamic Type lets people choose the size of text as it appears across the system and in apps. Many people using your apps will customize this setting, and it’s essential to support this feature so that they take advantage of everything your app has to offer. If you’ve never considered how your app might work with larger text sizes, you’re in the right place! Creating a dynamic UI also lets you build interfaces that work across any screen size, orientation, and platform. This is very important because different people prefer or need different text sizes. Dynamic type improves readability at all text sizes. People can change the text size to the option that suits their needs. If you haven’t tried your app with these larger sizes, head over to Accessibility Settings and test it out! People customize text size by navigating to Accessibility Settings, Display & Text size and Larger Text. By default, there are 7 available text sizes to chose from. If larger accessibility sizes is enabled, 5 more text sizes become available. It’s also possible to add the text size control to Control Center to change the preferred size on the fly.\n\nBy default, text appears at a large size.\n\nWhen the text size changes, it takes effect right away. In this example, in the Settings app, moving to a larger text size automatically increases the size for each of the text views that appear, including the title, body, and labels in each cell. The layout in this table view also grows the size of each subview to fit the size of the larger content. In this example, an accessibility text size is selected, the content grows beyond the bounds of the display, allowing someone to read all of the text with just a scroll.\n\nIn this video, I’ll cover some of the techniques you can use to ensure your app scales content with Dynamic Type and adapts in ways that provide the best experience. I’ll start by exploring how to use Dynamic Type. Then, I’ll discuss how to adjust the flow of layout for larger sizes. I’ll examine options for inline images and symbols, and finally, I’ll talk about how to make use of the large content viewer, for controls that might not be able to scale with the rest of the content.\n\nFirst, let’s explore how to scale text. A great experience with Dynamic Type in your app starts with making use of built-in text styles. Instead of providing a fixed font, your app selects one of the system-provided text styles. For example, the body text style creates a comfortable reading experience over multiple lines of text. The headline style helps distinguish a heading from surrounding content. By using these styles, your app’s text can automatically adjust to different sizes that someone may select on their device, but retain the visual hierarchy of your content.\n\nTo use a built-in text style with SwiftUI, you can use the font modifier. For example, by passing the title parameter to select the title style.\n\nTo use a text style with UIKit, set the adjustsFontForContentSizeCategory property on a UILabel to true, so that the label automatically updates its font when the system text size changes. Then, set the font by using preferredFont for textStyle with your desired style.\n\nConsider setting number of lines on the label to zero in order to allow the text to take as many lines as it needs and avoid truncations. When examining your app with Dynamic Type, there are a few types of issues to identify. For example, large text may become truncated, if it is unable to display on enough lines of text.\n\nText may also appear clipped, because its container has a fixed frame. Fortunately, it’s easy to detect these issues when you get started. To do this, one of the best tools is Xcode previews. If you’re using SwiftUI, in Xcode, navigate to the Preview canvas, and click the Variants button. Then, select Dynamic Type Variants.\n\nXcode will generate a preview for every variant of the text sizes available, so you can quickly locate issues for a particular view. Or click on the settings button in the Xcode canvas to select a specific text size. Another way to test text sizes is by using the Xcode debugger. You can click the settings icon to override Dynamic Type and other accessibility settings. You can also perform an audit of your app for accessibility issues. An audit examines the app’s view hierarchy and identifies a variety of accessibility issues, like clipped text, missing labels, or low contrast ratios.\n\nUsing text styles with the system font is a great way to get started with Dynamic Type. As you refine your app’s experience with larger text, you may also consider adapting the layout of content for the best experience.\n\nFor example, when creating a new contact poster in the contacts app, the poster options appear in a horizontal stack.\n\nWhen the text size increases, the layout dynamically switches to a vertical stack allowing each cell to take the entire width of the display.\n\nIn cases like this, you may instead want to change the layout in response to larger text, but preserve the layout with default or smaller sizes.\n\nConsider this app, which displays four figures aligned in a horizontal stack. Each of these figures has a label below it, like standing figure and rolling figure. While this might be readable with the default large text size, it is not ideal when using the larger accessibility sizes.\n\nThe width of each figure does not provide enough space for any of the labels. Let's start with the individual cells. FigureCell is a VStack that contains an image and title under it.\n\nTo achieve a dynamic layout in SwiftUI, I’ll use the dynamicTypeSize environment key path. Then, I’ll define a property of type AnyLayout, called dynamicLayout. This will resolve to an HStackLayout if an accessibility size is selected, and VStackLayout for any other text size. Then, I’ll update the layout in the body from VStack to dynamicLayout. Now, I just have to layout the cells vertically! In the containing view, I’ll follow the same steps to make the main content view switch to a VStackLayout for accessibility text sizes, and HStackLayout otherwise.\n\nGreat. Now, when the text size changes to an accessibility size, the layout dynamically changes to provide more width to the text which makes it easy to read while avoiding truncations.\n\nTo do this with UIKit, consider using UIStackView. A stack view provides all of the logic you need to lay out subviews vertically or horizontally, just by updating the axis property.\n\nTo determine the axis, use the property isAccessibilityCategory on the preferred content size category in the traitCollection of the view controller.\n\nTo respond to changes in text size while the app is running, subscribe to the UI content size category didChangeNotification and update the stack view to the best axis.\n\nAlong with layout, images and symbols that appear with text content may need specific adjustments when using larger text.\n\nWhen working with images and icons in large text, you'll want to achieve a balance between scaling an icon for larger text while keeping it from taking too much space from the text.\n\nFor example, consider the Settings app on iPhone. Each item in the table view contains a text label and a decorative image. With larger text sizes, the decorative image does not grow in size, even though the text label gets larger.\n\nThis is because apps should prioritize scaling essential content over decorative views.\n\nWhen images don’t scale, ensure that text wraps under the unscaled image, to use the most available space. In rare cases, you may consider removing purely decorative views with the largest text size. However, you should ensure that functionality and essential content are not lost by doing this. Let’s explore how you can achieve something similar in SwiftUI and UIKit.\n\nIn SwiftUI, it’s easy to wrap text under icons. Including views in a list will wrap the text under the icons without any additional work! Outside of a list view, you can also interpolate the image directly in the text. In UIKit, you can achieve this behavior by using NSAttributedString. Create an attributed string with an image as an NSTextAttachment and append that to an attributed string.\n\nThere are some cases where you might want the image to adjust its size as well, in particular if the image has text or key iconography that is relevant to the rest of the content.\n\nIf the image is an SF Symbol, the SF Symbol will resize automatically! However, If you have an image or a PDF in your assets, you can use the ScaledMetric API to let the image resize based on the selected text size. Simply, add ScaledMetric and specify the width or the height of the image, this value will be automatically scaled at runtime when text size changes.\n\nAwesome! When I increased the text size, the image and the text scales automatically! In UIKit, you can achieve this behavior by using UIImage SymbolConfiguration. For instance, you can create a configuration with a specific text style using SymbolConfiguration with textStyle. Then create your UIImage with that symbol configuration.\n\nFinally, let’s explore the Large Content Viewer. The Large Content Viewer allows you to explore controls that may not be able to grow with larger text sizes. Let me show you how that works! The Clock app on iPhone has four tabs along the bottom of the display.\n\nWhen you tap and hold on these tabs, the Large Content Viewer appears in the center, with a large view of the label and icon for the tab you are inspecting.\n\nYou can swipe over to other tabs, and lift your finger to navigate to that tab.\n\nIn this case the tab bar is taking less than 10% of the height of the screen.\n\nIf the tab bar height were to increase when large text is enabled, it would occupy almost a quarter of the screen.\n\nThe bar is shown at all times, and it's important to make sure that the content of your app remains the main focus. If you’re using default control bars provided by the system, there is nothing you need to do! This is already supported. However, if you choose to implement custom bars or views, consider adopting the large content viewer when necessary.\n\nFor example, a custom tab bar in SwiftUI might be constructed like this.\n\nIn this code, an HStack contains a button for each tab displayed. A binding allows the tab bar to keep track of the selected item.\n\nTo add support for the Large Content Viewer, use the accessibilityShowsLargeContentViewer modifier and provide a label which should display in the viewer, such as the button’s name and symbol.\n\nTo support the large content viewer in UIKit, conform the view to the protocol UILargeContentViewerItem, and implement the required properties to provide a title, image, and property that indicates when to show it. Then, create an instance of UILargeContentViewerInteraction and add it to the view. If your control uses its own gesture recognizer, you’ll need to perform additional work to allow the Large Content Viewer to process the gesture first.\n\nCheck out the gestureRecognizerForExclusionRelationship on the large content viewer interaction to set up recognition or failure relationships with other gesture recognizers.\n\nNow that you know how to get started with Dynamic Type, test out your app with larger sizes! Discover where you can make refinements by using the system defined text styles, and tailoring layout to prioritize text readability.\n\nRemember, people prefer or need different text sizes, and making your app dynamic helps everyone get a great readability experience in your app! Go even further by building accessibility audits into your UI tests to catch issues with Dynamic Type with every iteration of your app. Also check out the video, “Catch up on accessibility in SwiftUI” to learn more about assistive technologies with SwiftUI.\n\nThanks for watching!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:53",
+      "title": "Built-in text styles with SwiftUI",
+      "language": "swift",
+      "code": "// Use built-in text styles with SwiftUI\n\nimport SwiftUI\n\nstruct ContentView: View {\n\n    var body: some View {\n        Text(\"Hello, World!\")\n            .font(.title)\n    }\n\n}"
+    },
+    {
+      "timestamp": "4:06",
+      "title": "Built-in text styles in UIKit",
+      "language": "swift",
+      "code": "// Built-in text styles in UIKit\n\nimport UIKit\n\nclass ViewController: UIViewController {\n    \n    override func viewDidLoad() {\n        super.viewDidLoad()\n        \n        let label = UILabel(frame: .zero)\n        setupConstraints()\n        label.text = \"Hello, World!\"\n        label.adjustsFontForContentSizeCategory = true\n        label.font = .preferredFont(forTextStyle: .title1)\n        label.numberOfLines = 0\n        \n        self.view.addSubview(label)\n    }\n}"
+    },
+    {
+      "timestamp": "7:20",
+      "title": "Dynamic layout in SwiftUI",
+      "language": "swift",
+      "code": "// Dynamic layout in SwiftUI\n\nimport SwiftUI\n\nstruct FigureCell: View {\n    @Environment(\\.dynamicTypeSize) \n    private var dynamicTypeSize: DynamicTypeSize\n    \n    var dynamicLayout: AnyLayout { \n        dynamicTypeSize.isAccessibilitySize ?\n        AnyLayout(HStackLayout()) : AnyLayout(VStackLayout())\n    }\n    \n    let systemImageName: String\n    let imageTitle: String\n    \n    var body: some View {\n        dynamicLayout {\n            FigureImage(systemImageName: systemImageName)\n            FigureTitle(imageTitle: imageTitle)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "7:52",
+      "title": "Dynamic layout in SwiftUI",
+      "language": "swift",
+      "code": "// Dynamic layout in SwiftUI\n\nimport SwiftUI\n\nstruct FigureContentView: View {\n    @Environment(\\.dynamicTypeSize) \n    private var dynamicTypeSize: DynamicTypeSize\n    \n    var dynamicLayout: AnyLayout {\n        dynamicTypeSize.isAccessibilitySize ?\n        AnyLayout(VStackLayout(alignment: .leading)) : AnyLayout(HStackLayout(alignment: .top))\n    }\n    \n    var body: some View {\n        dynamicLayout {\n            FigureCell(systemImageName: \"figure.stand\", imageTitle: \"Standing Figure\")\n            FigureCell(systemImageName: \"figure.wave\", imageTitle: \"Waving Figure\")\n            FigureCell(systemImageName: \"figure.walk\", imageTitle: \"Walking Figure\")\n            FigureCell(systemImageName: \"figure.roll\", imageTitle: \"Rolling Figure\")\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "8:20",
+      "title": "Dynamic layout in UIKit",
+      "language": "swift",
+      "code": "// Dynamic layout in UIKit\n\nimport UIKit\n\nclass ViewController: UIViewController {\n    private var mainStackView: UIStackView = UIStackView()\n    \n    required init?(coder: NSCoder) {\n        super.init(coder: coder)\n        NotificationCenter.default.addObserver(self, selector: #selector(textSizeDidChange(_:)), name: UIContentSizeCategory.didChangeNotification, object: nil)\n    }\n    \n    override func viewDidLoad() {\n        super.viewDidLoad()\n        setupStackView()\n    }\n\n    @objc private func textSizeDidChange(_ notification: Notification?) {\n        let isAccessibilityCategory = self.traitCollection.preferredContentSizeCategory.isAccessibilityCategory\n        mainStackView.axis = isAccessibilityCategory ? .vertical : .horizontal\n        setupConstraints()\n    }\n}"
+    },
+    {
+      "timestamp": "10:12",
+      "title": "Scale inline images with SwiftUI",
+      "language": "swift",
+      "code": "// Inline images in SwiftUI\n\nimport SwiftUI\n\nstruct ContentView: View {\n\n    var body: some View {\n        List {\n            FigureListCell(figureName: \"Standing Figure\",\n                systemImage: \"figure.stand\")\n            FigureListCell(figureName: \"Rolling Figure\",\n                  systemImage: \"figure.roll\")\n            FigureListCell(figureName: \"Waving Figure\",\n                systemImage: \"figure.wave\")\n            FigureListCell(figureName: \"Walking Figure\",\n                systemImage: \"figure.walk\")\n        }\n    }\n\n}"
+    },
+    {
+      "timestamp": "10:30",
+      "title": "Scale inline images with UIKit",
+      "language": "swift",
+      "code": "// Inline images in UIKit\n\nfunc attributedStringWithImage(systemImageName: String, imageTitle: String) ->       NSAttributedString {\n    let attachment = NSTextAttachment()\n    attachment.image = UIImage(systemName: systemImageName)\n    \n    let attachmentAttributedString = NSMutableAttributedString(attachment: attachment)\n    attachmentAttributedString.append(NSAttributedString(string: imageTitle))\n    \n    return attachmentAttributedString\n}"
+    },
+    {
+      "timestamp": "11:05",
+      "title": "Scale images in SwiftUI",
+      "language": "swift",
+      "code": "// Scaling images in SwiftUI\n\nimport SwiftUI\n\nstruct ContentView: View {\n    @ScaledMetric var imageWidth = 125.0\n    var body: some View {\n        VStack {\n            Image(\"Spatula\")\n                .resizable()\n                .aspectRatio(contentMode: .fit)\n                .frame(width: imageWidth)\n            Text(\"Grill Party!\")\n                .frame(alignment: .center)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "11:38",
+      "title": "Scale symbols with UIKit",
+      "language": "swift",
+      "code": "// Symbol configuration in UIKit\n\nimport UIKit\n\nfunc imageWithBodyConfiguration(systemImageName: String) -> UIImage? {\n  let imageConfiguration = UIImage.SymbolConfiguration(textStyle: .body)\n  let configuredImage = UIImage(systemName: systemImageName, withConfiguration: imageConfiguration)\n  return configuredImage\n}"
+    },
+    {
+      "timestamp": "13:15",
+      "title": "Add large content viewer support with SwiftUI",
+      "language": "swift",
+      "code": "// Large content viewer support in SwiftUI\n\nimport SwiftUI\n\nstruct FigureBar: View {\n    @Binding var selectedFigure: Figure\n    \n    var body: some View {\n       HStack {\n            ForEach(Figure.allCases) { figure in\n                FigureButton(figure: figure, isSelected: selectedFigure == figure)\n                    .onTapGesture {\n                        selectedFigure = figure\n                    }\n                    .accessibilityShowsLargeContentViewer {\n                        Label(figure.imageTitle, systemImage: figure.systemImage)\n                    }\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "13:45",
+      "title": "Add large content viewer support with UIKit",
+      "language": "swift",
+      "code": "// Large content viewer support in UIKit\n\nimport UIKit\n\nclass FigureCell: UIStackView {\n    var systemImageName: String!\n    var imageTitle: String!\n    var imageLabel: UILabel!\n    var titleImageView: UIImageView!\n    \n    required init(coder: NSCoder) {\n        super.init(coder: coder)\n        setupFigureCell()\n    }\n    \n    init(systemImageName: String, imageTitle: String) {\n        super.init(frame: .zero)\n        \n        self.systemImageName = systemImageName\n        self.imageTitle = imageTitle\n        \n        setupFigureCell()\n\n        self.addInteraction(UILargeContentViewerInteraction())\n        self.showsLargeContentViewer = true\n        self.largeContentImage = UIImage(systemName: systemImageName)\n        self.scalesLargeContentImage = true\n        self.largeContentTitle = imageTitle\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "accessibilityShowsLargeContentViewer()",
+        "url": "https://developer.apple.com/documentation/SwiftUI/View/accessibilityShowsLargeContentViewer()"
+      },
+      {
+        "title": "Enhancing the accessibility of your SwiftUI app",
+        "url": "https://developer.apple.com/documentation/Accessibility/enhancing-the-accessibility-of-your-swiftui-app"
+      },
+      {
+        "title": "Forum: Accessibility & Inclusion",
+        "url": "https://developer.apple.com/forums/topics/accessibility-and-inclusion?cid=vf-a-0010"
+      },
+      {
+        "title": "Human Interface Guidelines: Accessibility",
+        "url": "https://developer.apple.com/design/human-interface-guidelines/accessibility"
+      },
+      {
+        "title": "Human Interface Guidelines: Typography",
+        "url": "https://developer.apple.com/design/human-interface-guidelines/typography"
+      },
+      {
+        "title": "UILargeContentViewerInteraction",
+        "url": "https://developer.apple.com/documentation/UIKit/UILargeContentViewerInteraction"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10074/4/3CB84B8B-3CC6-4EAB-AA46-E9FD7D160048/downloads/wwdc2024-10074_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10074/4/3CB84B8B-3CC6-4EAB-AA46-E9FD7D160048/downloads/wwdc2024-10074_sd.mp4?dl=1"
+  },
+  "extractedAt": "2025-07-18T09:07:39.260Z"
+}

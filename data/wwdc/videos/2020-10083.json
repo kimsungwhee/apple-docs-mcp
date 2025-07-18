@@ -1,0 +1,112 @@
+{
+  "id": "10083",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10083/",
+  "title": "Integrate your app with Wind Down",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": false,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC. Hi. My name is Michael Rojas, and I work on the Shortcuts team. Today, we're going to talk about how you can feature your app's shortcuts with Wind Down, which is part of our new Sleep experience. First, we'll go over how the new Wind Down experience works with shortcuts. Then we'll explain how you can use some new APIs to integrate the actions from your app with Wind Down.\n\nAnd finally, we'll go over how to use some existing APIs to make sure it's super easy for people to add your action when they set up and personalize their Wind Down experience. So let's dive in.\n\nSo, what is Wind Down? At its core, we built Wind Down to help you meet your sleep goals.\n\nSometimes that means focusing on the things that will relax you or give you some space and mindfulness after a long day. For some of you, it might mean getting a heads-up on what is most important for tomorrow before going to bed.\n\nWe built a way to quickly get to your favorite things in Wind Down mode, and it's called \"Wind Down Shortcuts.\" Here are some Wind Down Shortcuts that I can run with just a couple of taps. For example, I have a shortcut from Ten Percent Happier that starts a sleep meditation.\n\nI also have a custom Sleepy Time shortcut that plays relaxing music and adds an entry to my night journal.\n\nAnd I have a shortcut to set my \"Relax\" home scene that dims all of my lights.\n\nYou can create your own Wind Down Shortcuts in the Health app's new sleep setup flow.\n\nDuring this setup flow, you'll be given the option to add shortcuts you want to see on the lock screen during Wind Down.\n\nLet's take a look at how you can add a shortcut. After tapping on \"Set Up Shortcuts,\" you can choose from the list of suggested shortcuts shown here.\n\nI'm getting a suggestion to open Day One for journaling and some meditation apps for mindfulness. I'm going to select Ten Percent Happier. As you can see, this shortcut was added to my list of Wind Down Shortcuts.\n\nYou can edit these or add more straight from the Health app. In addition, all of these shortcuts can be accessed from the Shortcuts app in a new Sleep Mode collection that will appear once you've added a Wind Down shortcut.\n\nYou can get any existing or new shortcut to show up in the Sleep Mode collection by simply flipping on the \"Show in Sleep Mode\" switch in the shortcut's detail view. We've also built some new APIs that allow you to feature shortcuts from your app in the Wind Down setup flow so they can be run with just a few taps from the lock screen. The main way your app can expose its actions is through intents. Your app can adopt one of the built-in intents such as INCreateNoteIntent or define its own custom intents. We have a great video about how to choose the right Siri technology. Make sure to check it out. Once you've built out your intent, you can take advantage of a new property called shortcutAvailability. Let's take a deeper look at this new property.\n\nWe added a new property called shortcutAvailability to INIntent, which you can use to tell us which of your app's actions should appear in the Wind Down setup.\n\nWe also added the same property on NSUserActivity, if that's what you're using to represent your action.\n\nNow let's take a look at the different options that you can set.\n\nHere are the different shortcut availability options. These options match the categories in the Wind Down setup flow.\n\nFor example, if you're a meditation app, you might want to mark your start meditation intent or user activity with the mindfulness option. This will allow your app's meditation to quickly be accessed from the lock screen when in Wind Down.\n\nIf you're an app that helps people get ready for tomorrow, such as a Notes app or Weather app, you should use the Prepare for Tomorrow option.\n\nHere's what those categories look like in code. Now, let's take a look at an example.\n\nThis sample app, which, naturally, we've named Bedtime, helps people fall asleep by playing soundscape stations such as \"Sleepy Dinosaur Sounds\" and soothing \"Cooking White Noise.\" Maybe not for everyone, but for me, this sounds like a great candidate for the \"sleep music\" option. So let's go for it.\n\nTo get started, I'm going to create my intent.\n\nIn this case, I'm using the system INPlayMediaIntent because that allows me to start audio sessions.\n\nThen I'm going to set the shortcut availability options to sleepMusic. Next, I'm going to wrap my intent in an INShortcut.\n\nGrab the shared property on INVoiceShortcutCenter. And finally, I'm going to provide it to the system by calling setShortcutSuggestions.\n\nIt's as easy as that. Now my bedtime action will show up in the Music section when someone sets up their Wind Down experience.\n\nIt's important to keep in mind that not every action from your app will actually help people reach their sleep goals.\n\nFor example, starting yoga for relaxation would be perfect for the yoga and stretching category. But starting a warm-up run probably wouldn't be the best way to get ready for bed. So not a good candidate. Likewise, it's easier to wind down to a relaxing soundscape than it is to a wake-up mix.\n\nAnd clearly, starting a meditation is better for getting a good night's sleep than starting a meeting. So you'll need to choose only the right actions from your app, and ultimately, you'll be the best judge of that. Just always keep the user experience in mind. What helps people fall asleep? Now let's take a look at what you need to do once you've chosen the right actions from your app.\n\nThere are two things you can do to enable the system to suggest your app's actions during Wind Down setup.\n\nFirst, as I mentioned earlier, you can suggest shortcuts to the system that you want to feature by calling setShortcutSuggestions on INVoiceShortcutCenter. If your app's actions change at some point, make sure to set it again so only the most relevant actions appear in Wind Down setup. Another thing you should do is donate the intent or user activity to the system when someone performs the action in their normal, everyday use of the app.\n\nThis helps the system understand what the most important actions are, so we can do our best to surface them prominently in Wind Down setup and even in other places like search and lock screen suggestions. Now let's talk about how to decide between suggesting and donating.\n\nYou should both suggest shortcuts to the system and donate, as they each have benefits.\n\nOne benefit of suggesting shortcuts through INVoiceShortcutCenter is that it will ensure that these actions from your app will be featured in Wind Down.\n\nFor example, I have an action to play the soundscape of the day that I always want to be easy to find, so I'm going to set that as suggested. Here's how to do that in code. First, initialize the INPlayMediaIntent.\n\nNext, make sure to set the shortcut availability if it applies. In this case, I'll set it to sleepMusic.\n\nDon't forget to set the suggested invocation phrase. This will be the phrase someone can say to Siri to execute this action with their voice, and it's also the phrase displayed on the Wind Down screen to describe the shortcut.\n\nThen create a shortcut from the intent.\n\nAnd finally, suggest the shortcut on INVoiceShortcutCenter. Now let's take a look at donating.\n\nWhen an action is performed in your app, such as playing a track, you should donate that action to the system so it can learn from the person's behavior. Let's take a look at this in code. To donate an intent when actions are performed in your app, you first initialize the intent. Next, make sure to set the shortcut availability.\n\nAgain, I'm going to make sure to set the suggested invocation phrase, this time to the name of the track.\n\nWrap it in an INInteraction. And finally, call donate on the interaction to tell the system that a track was played.\n\nAnd to donate a user activity, first initialize the user activity. Make sure it's eligible for search and also for prediction.\n\nSet a title. Set the suggested invocation phrase and the shortcut availability. And finally, set the view controller's user activity property to donate it.\n\nAs you saw in the code samples just now, you should be sure to set the suggested invocation phrase on your intent or user activity, as this is what's used for naming the shortcut from your app and also what's displayed on the lock screen during Wind Down.\n\nA suggested invocation phrase should be short and concise, since it has to fit in the small screen real estate on the lock screen and should allow users to be able to uniquely identify the shortcut based on the name.\n\nLet's take a look at how to choose a good phrase.\n\nFor example, if you're a white-noise app such as Bedtime, a good phrase to use would include the name of the track, such as \"Play Counting Sleepy Dinosaurs.\" This name is descriptive enough to stand out from your app's other actions, while being short enough to fit on the lock screen.\n\nA phrase such as \"Play sound\" is too generic and doesn't have any information about the actual sound, making it hard to identify.\n\nMake sure to also limit the length of the phrase by omitting unnecessary information to avoid truncation in places with limited space.\n\nNow that you know how to choose a great suggested invocation phrase, let's see how to do this in code.\n\nYou can do this by simply setting the suggested invocation phrase on the intent before donating or suggesting the shortcut.\n\nAs you can see, this phrase is displayed on the lock screen during Wind Down and is used to name the shortcut, so it's important to choose this carefully.\n\nTo wrap up, we talked about the new Wind Down experience and its integration with the Shortcuts app and how you can use new APIs to make it super easy for actions from your app to be a part of this experience. Thank you for watching, everyone.",
+    "segments": []
+  },
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Adding Shortcuts for Wind Down",
+        "url": "https://developer.apple.com/documentation/SiriKit/adding-shortcuts-for-wind-down"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10083/3/0A7396FB-7C58-496C-BB03-C3FC6F95A070/wwdc2020_10083_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10083/3/0A7396FB-7C58-496C-BB03-C3FC6F95A070/wwdc2020_10083_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10190",
+      "year": "2020",
+      "title": "Create quick interactions with Shortcuts on watchOS",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10190"
+    },
+    {
+      "id": "10074",
+      "year": "2020",
+      "title": "Decipher and deal with common Siri errors",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10074"
+    },
+    {
+      "id": "10086",
+      "year": "2020",
+      "title": "Design for intelligence: Apps, evolved",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10086"
+    },
+    {
+      "id": "10088",
+      "year": "2020",
+      "title": "Design for intelligence: Discover new opportunities",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10088"
+    },
+    {
+      "id": "10200",
+      "year": "2020",
+      "title": "Design for intelligence: Meet people where they are",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10200"
+    },
+    {
+      "id": "10060",
+      "year": "2020",
+      "title": "Design high quality Siri media interactions",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10060"
+    },
+    {
+      "id": "10073",
+      "year": "2020",
+      "title": "Empower your intents",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10073"
+    },
+    {
+      "id": "10071",
+      "year": "2020",
+      "title": "Evaluate and optimize voice interaction for your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10071"
+    },
+    {
+      "id": "10061",
+      "year": "2020",
+      "title": "Expand your SiriKit Media Intents to more platforms",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10061"
+    },
+    {
+      "id": "10084",
+      "year": "2020",
+      "title": "Feature your actions in the Shortcuts app",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10084"
+    },
+    {
+      "id": "10068",
+      "year": "2020",
+      "title": "What's new in SiriKit and Shortcuts",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10068"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:16:47.113Z"
+}

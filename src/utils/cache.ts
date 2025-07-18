@@ -172,6 +172,7 @@ export const technologyOverviewsCache = new MemoryCache(
   CACHE_SIZE.TECHNOLOGY_OVERVIEWS,
   CACHE_TTL.TECHNOLOGY_OVERVIEWS,
 );
+export const wwdcDataCache = new MemoryCache(100, 30 * 60 * 1000); // 30 minutes TTL
 
 /**
  * Generate cache key for URL-based requests

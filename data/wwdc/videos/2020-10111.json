@@ -1,0 +1,66 @@
+{
+  "id": "10111",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10111/",
+  "title": "Boost performance and security with modern networking",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "System Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": false,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nHello, everyone. I'm Jiten Mehta, and today we're gonna take a look at some of the important things you should be doing on both your app and your server to provide the best user experience. We're gonna touch on ways to maximize the performance of your networking operations.\n\nTake advantage of rock-solid security capabilities built into all Apple platforms. Deliver a robust mobility experience as devices move between different networks. And protect your users' privacy. A brief note as we begin. Many of the things we're gonna talk about involve technologies that must be supported both on the client device as well as on the server that it's talking to. On the client, you're all set if you're already using the modern networking APIs on Apple platforms, URLSession and Network.framework, as you'll get support for all these technologies automatically.\n\nLet's dive right in starting with performance.\n\nFirst step, IPv6, the newest version of the Internet protocol, the fundamental protocol that supports the Internet.\n\nApple platforms have had native IPv6 support for a number of years, including support for IPv6-only networks.\n\nConnections using IPv6 on the network observe lower latency and are generally more performant than IPv4, in part because of fewer NATs and more modern networking equipment.\n\nTest that your app works on IPv6-only networks with the NAT64 support in Internet sharing on your Mac, as it's an App Store submission requirement. The good news is that if you use the modern networking APIs, it should just work.\n\nThere has been a growing trend of IPv6 usage on the Internet. If you look at the last month of connections made worldwide by Apple devices, we see that IPv6 now accounts for 26% of all connections made. Twenty percent of the time, the connection could have used IPv6, but the server didn't have it enabled. And when IPv6 is in use, the median connection setup is 1.4 times faster than IPv4. This is primarily due to reduced NAT usage and improved routing. Make sure your app is taking advantage of the improvements IPv6 offers by using URLSession or Network.framework on the client where you'll get the support built right in.\n\nWe've done our part. Now it's up to you to check the box on the server side. So make sure you have enabled IPv6 on your server to ensure the best experience for your users. Next, URLSession provides built-in HTTP/2 support, which improves load performance.\n\nIt multiplexes several requests to the same server onto a single connection. This saves you time by not having to wait for the end of each response before sending your next request. HTTP/2 also provides performance improvements via connection coalescing. The system detects that different requests can be served by the same server and reuse an existing connection, saving you connection setup costs. Header compression support allows for better bandwidth utilization as extraneous bytes can be eliminated on both request and response headers. To learn more about how HTTP/2 can benefit your app, check out \"Optimizing Your App for Today's Internet\" from WWDC 18. If we look at the HTTP usage in Safari, we see that 79% of requests in the past month are using HTTP/2, and the median duration of the URLSession tasks for the requests that use HTTP/2 is 1.8 times faster as compared to the requests that use HTTP/1.1. Using URLSession on the client will negotiate HTTP/2 by default if it is enabled on the server.\n\nSo double-check your server settings to make sure HTTP/2 is enabled.\n\nNext, let's talk about some advances in securing your network transactions. TLS 1.3 is the latest and greatest version of TLS, providing reduced connection setup times by removing one round trip from the handshake. It provides improved security through formal verification and by reducing the potential for misconfigurations.\n\nIn iOS 12 and macOS Mojave, we provided a preview where you could enable preliminary versions of the TLS 1.3 standard and test them against your server deployments.\n\nNow the standard has been finalized, and TLS 1.3 has been enabled by default since iOS 13.4 for URLSession and Network.framework.\n\nOver the past month, we've seen roughly 49% of all connections use TLS 1.3 on devices running the latest iOS.\n\nAnd connections that use TLS 1.3 are established 1.3 times faster than those using TLS 1.2.\n\nOur modern networking APIs will negotiate TLS 1.3 by default if it's enabled on the server.\n\nSo turn on TLS 1.3 on your server today to take advantage of this faster and more secure experience.\n\nLet's take a look at how you can provide a seamless experience as a device transitions between different networks. Multipath TCP allows a single TCP connection from your app to continue as the device changes networks.\n\nThis prevents your app from needing to start all over when the connectivity is flaky or if the user is moving in and out of networks.\n\nOn the client, you can opt into Multipath support by setting the multipathServiceType property on your URLSessionConfiguration or on your NWParameters object if using Network.framework. We have had great success with Multipath TCP for our own services.\n\nLast year, we announced that in addition to Siri, we'd also enable Multipath TCP for Apple Music.\n\nSince then, we've seen a 13% reduction in Music stalls.\n\nAnd in the event that a stall occurs, there has been a 22% reduction in the stall duration.\n\nYou can opt into Multipath protocols easily on Apple platforms by setting the multipathServiceType property on your configuration or parameters. You need to do a little bit more work to enable it on the server, so visit multipath-tcp.org to find instructions for enabling Multipath TCP on your server deployment. Next, my colleague Eric is going to walk us through some important new privacy features in iOS 14. Thank you all. Thanks, Jiten. iOS 14 improves user privacy by introducing new privacy protections for the local network.\n\nThis helps to prevent apps and third-party libraries, or SDKs, from using the presence of other devices on the network to locate or fingerprint your users. Built-in system services that interact with the local network, such as AirPrint, AirPlay and HomeKit, don't give the app any private information about the network. However, directly accessing any local network resources, including the use of multicast and broadcast, now requires explicit user permission. To help your users understand how your app uses their local network, you need to provide a reason string in the Info.plist for your app.\n\nFor more information about what to expect when testing your app and how to make sure that you're ready to provide a more privacy-protecting experience, make sure you check out \"Support Local Network Privacy in Your App.\" Also new in iOS 14 and macOS Big Sur is support for secure domain name resolution, including both DNS-over-TLS and DNS-over-HTTPS. Instead of providing individual resolution services for each app or browser, this support comes to the system resolver so that once you've configured secure DNS, all apps on the device will benefit. In addition to writing an app using NetworkExtension to deliver these system-wide settings for encrypted DNS transports, you can also require encrypted resolution in your app.\n\nSee the \"Enable Encrypted DNS\" session for details on how to take advantage of these new APIs. You can deliver system-wide settings for encrypted resolution by writing an app using NetworkExtension on the client, and ask your DNS provider to offer a DNS-over-HTTPS option if they don't already. We'd also like to share a sneak peek of some upcoming technologies that you can start preparing for today.\n\nEven if you've enabled encrypted DNS to make name resolution more private, every TLS handshake you do with a server includes a cleartext server name indication, or SNI, that can be observed by a third party on the network. We're currently working with the IETF to standardize methods for encrypting even more of the TLS handshake so that third parties cannot snoop on your traffic. This, especially in combination with encrypted DNS, will be a major step towards ensuring that your network communications stay between you and the server you're talking to.\n\nFor another sneak peek, HTTP/3 is the next generation of HTTP, which is built on top of the new QUIC transport protocol.\n\nThis transport protocol has TLS 1.3 security built right in and provides all the same multiplexed stream support as HTTP/2, but with further reductions to head-of-line blocking so that losses of any individual request or response won't hold up other potentially unrelated messages.\n\nHTTP/3, using QUIC, also has higher fidelity information to provide improved congestion control and recovery of lost packets.\n\nIt also brings built-in mobility support such that network transitions don't cause in-progress operations to fail. They can instead seamlessly continue on the new network without interruption.\n\nHTTP/3 is still an in-progress specification at the IETF, where we continue to actively collaborate to help make HTTP/3 ready for worldwide deployment. As an important first step in that direction, iOS 14 and macOS Big Sur include an experimental preview of HTTP/3 support for your apps that use URLSession, which you can enable in developer settings.\n\nYou can also try out the same HTTP/3 support in Safari via experimental settings.\n\nSimilarly, for macOS Big Sur, you can enable experimental HTTP/3 support for apps using URLSession by setting the CFNetworkHTTP3Override user default, and you can use the develop menu to enable it under experimental features for Safari. Please try out HTTP/3 and file bugs for any issues you might encounter. We're really looking forward to your feedback.\n\nToday we talked about how taking advantage of IPv6, HTTP/2, TLS 1.3, Multipath TCP and encrypted DNS can provide performance, security, mobility and privacy benefits for everyone. All of these technologies are currently supported by the modern networking APIs on Apple platforms, so make sure you're using URLSession or Network.framework in your application. Next, take a look at your server deployment to make sure everything is up to date and these features are enabled so you can fill in the right-hand side of this list.\n\nFinally, enable experimental HTTP/3 support and test with your server deployment to provide feedback on the next generation of networking protocols. Thanks for watching.",
+    "segments": []
+  },
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10111/5/4F35F04B-7EDA-43C3-84B5-C05765126AD4/wwdc2020_10111_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10111/5/4F35F04B-7EDA-43C3-84B5-C05765126AD4/wwdc2020_10111_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10047",
+      "year": "2020",
+      "title": "Enable encrypted DNS",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10047"
+    },
+    {
+      "id": "10110",
+      "year": "2020",
+      "title": "Support local network privacy in your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10110"
+    },
+    {
+      "id": "712",
+      "year": "2019",
+      "title": "Advances in Networking, Part 1",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/712"
+    },
+    {
+      "id": "715",
+      "year": "2018",
+      "title": "Introducing Network.framework: A modern alternative to Sockets",
+      "url": "https://developer.apple.com/videos/play/wwdc2018/715"
+    }
+  ],
+  "extractedAt": "2025-07-18T11:03:32.631Z"
+}

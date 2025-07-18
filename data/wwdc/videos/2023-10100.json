@@ -1,0 +1,134 @@
+{
+  "id": "10100",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10100/",
+  "title": "Optimize app power and performance for spatial computing",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools"
+  ],
+  "hasTranscript": true,
+  "hasCode": false,
+  "transcript": {
+    "fullText": "♪ Mellow instrumental hip-hop ♪ ♪ Hi, my name's Roy, and I'm an engineer on the Performance team. Today, we'll learn how you can optimize your app for spatial computing. We'll first look at the unique aspects of this new platform for performance and power. We'll then go over building a performance plan, starting with profiling your app. And finally, we'll take a tour of the best ways to optimize performance issues for this platform. So what makes spatial computing different for power and performance? For one, the content on the display is always being updated, regardless of app updates. Whenever people move their body, hands, or eyes, content needs to be updated. This means the system is always rendering every frame at all times. The platform is also always running spatial algorithms to create visuals and interactions across every app, and can run multiple apps at the same time. People will use your app with other apps. To handle multitasking and the additional system work, optimize your own app's resource usage as much as you can. To deliver a great user experience, performance in your app is essential. People want apps to be immediately responsive to input and to provide smooth visual updates for a sense of immersion and comfort. Let's talk about how to profile and analyze your app for performance issues. You may already be familiar with performance metrics from other Apple platforms. On any platform, people want apps that launch quickly, avoid disk wear, and don't use too much battery. They also want apps that avoid terminations from inefficient memory use. With spatial computing, some of these metrics take on new meaning. Take power. Users want apps optimized for power, not for battery life, but because of thermal pressure. To sustain great performance, apps need to be optimized for system power use, to reduce the likelihood of encountering thermal pressure. Hangs are another example. They occur when an app's main thread is stalled on doing work for a period of time. But on this platform, even small, momentary stalls are disruptive to responsiveness. Now consider rendering. On other platforms, you may be optimizing for render performance primarily to provide smooth UI and 3D animations. But here, render performance is essential for static content as well, since the system is always rendering. All Apple platforms provide tools to profile these metrics. Today, we'll cover finding performance issues specifically for spatial computing apps. But to learn more about optimizing for these metrics on any Apple platform, check out the \"Ultimate Application Performance Survival Guide\" session. To optimize your app, profile during development using tools like Instruments and Xcode Gauges. Once your app is released, gather more data from the field to help you further optimize your app. Let's talk more about profiling during development. RealityKit Trace is a brand-new template in Instruments to help profile any spatial computing app for performance and power. It is an incredible tool that can help identify when your app has poor rendering performance or when it is causing high system power use. There are many more instrument templates you can use as well. To learn more and explore this new template in action, watch the session \"Meet RealityKit Trace.\" Your app's performance and power depends on how someone interacts with it. The simulator doesn't perform the same work as a real device, so its performance data might not be accurate. Profile in the device. Profile using various interactions in your app when playing audio or video, or when using technologies like FaceTime and Personas. Make sure to check for good performance and low system power over minutes of use. Lastly, try profiling while other apps are also running and using resources. If you are bringing over compatible iPad and iPhone apps, make sure to profile them on device to identify further optimizations needed.\n\nAfter development, people may run your app in a wide variety of conditions. Data from the field is a great way to find issues that people are actually running into. When your app is in beta or publicly released, use MetricKit to get diagnostic reports from users. Xcode Organizer provides aggregated performance data from consenting users' devices, including energy diagnostics to help find any power issues. All of this data you collect helps you find bottlenecks and prioritize performance work for your app. Now, let's talk about optimizing your spatial computing app. Performance issues can arise from many areas. Today, we'll cover strategies for optimizing several core areas: rendering, user input, ARKit, audio and video playback, SharePlay, and app terminations from system pressure. Great rendering performance is one of the top priorities for a great user experience. Let's dive in. In this platform, the rendering pipeline starts with your app, which is responsible for updating your app's content. Like all Apple platforms, your app's interface is updated on the main thread and must provide updates promptly. Since your app is rendered in a 3D space alongside other apps, its updates get sent to the system render server. The render server is continuously running to process updates from apps, users' inputs, and from their space and surroundings. It renders a new frame with all these updates and sends it to the compositor. The compositor is always rendering. It supplies new frames to the display at a rate matching the display's refresh rate. This helps provide a comfortable experience. This rate is usually 90 frames a second, but can be higher. While the compositor updates the display consistently, a great user experience still needs fast visual updates from your app. If your app has content or updates that take too long to render, the render server can miss its rendering deadline for optimal rendering latency. This means the app visuals could have made it to the compositor on frame Y, but made it on frame Y+1 instead. This delays the visual updates the people see on display and makes your app feel less responsive. Especially severe rendering stalls can even cause your app to be terminated. Whether your app is built on SwiftUI, UIKit, RealityKit, or Metal, you want to optimize its content and updates to reduce frame drops and work done in the render server. Let's start with optimizing SwiftUI and UIKit usage. On this platform, the system does render work for static UI content, even with no app updates. This rendering work can increase from overdraw. Overdraw occurs when you have translucent content in front of other virtual content. The GPU has to do work to render both content, but if that translucent content was fully opaque, the GPU wouldn't need to render any UI behind it. If you have any overlapping UI views with Z offsets, avoid adding translucency to them. Also, the more pixels on the display that your app's UI takes up, the more work is done to render the window. Consider reducing their default sizes. UI redraws in the render server are usually triggered by app updates, but on this platform, they are also triggered by dynamic content scaling of core animation layers. With this behavior, the resolution of text, or vector-based UI content changes based on where the user is looking to allow for sharper visuals. This can also lead to more frequent redrawing of UI content at potentially higher scales, even with no app updates. SwiftUI and UIKit enable this behavior by default, but apps doing custom Core Animation or Core Graphics rendering can opt in to this behavior. To learn more about its visual benefits and trade-offs, watch the session \"Explore rendering for spatial computing.\" The cost of these redraws is heavily impacted by offscreen render passes. This can be caused by visual effects like shadows, blur, and masking. Reduce these effects to make your app easier for the system to render. To minimize re-draws in your app, avoid unnecessary view updates whenever possible. For example, with SwiftUI, use @Observable. @Observable provides more granular change tracking and reduces unneeded layout updates. Next, let's talk about optimizing 3D rendering with RealityKit. SwiftUI has added RealityView this year for spatial computing. It can natively display RealityKit 3D scenes within a SwiftUI hierarchy. Your app should be a good citizen on the platform by optimizing your 3D scenes for all of these RealityKit features. In these 3D scenes, the complexity of the assets they contain can greatly increase the amount of render server work done each frame. So let's start by optimizing these assets. Reality Composer Pro helps you create RealityKit scenes from assets. From mesh rendering, particles, animations, physics, and audio work, this tool provides statistics about the entire scene that can help you understand its performance impact. When examining these statistics, lower numbers usually mean less work, which can improve render performance. Watch the session \"Create 3D models for Quick Look spatial experiences\" to learn more around best practices for visuals and power use of 3D assets. Mesh rendering in particular is a core part of 3D rendering. Complex meshes and materials can quickly become performance bottlenecks. Optimize the geometry of your mesh assets. Reduce the amount of separate mesh parts by combining parts that share a material. Mesh geometries with high triangle and vertex counts can also be costly. Use assets with smaller counts as needed. Minimize the impact of overdraw with your 3D meshes. To do this, use transparency sparingly just like with UI content. The “Physically Based” material in Reality Composer Pro has environment lighting, is well optimized, and works best for meshes with minimal transparency. But for translucent or very large content, consider using a Custom material with an unlit surface, Use baked lighting textures or other cheaper visuals. This helps avoid potential bottlenecks with more expensive lighting calculations. For further guidance on building and using materials in RealityKit, watch these two sessions. Having optimized content for runtime rendering is a great start. But there's even more you can do to optimize your app with RealityKit. When your app updates its RealityKit content, updates get sent to the render server, which applies and renders them. But too many updates in a short period of time can become a bottleneck for the render server. For example, your app may be rapidly creating and destroying RealityKit entities. It may have too many complex animations, be updating too many SwiftUI views, or it may be loading many assets in a single frame. Create entities in advance, and hide or show them as needed. You could remove and add them to the scene hierarchy, or use the isEnabled flag. Minimize the amount of entities that are updated by flattening your mesh entity hierarchies. For code-based animations, consider lower update rates or reducing the number of entities the animations update. And when updating RealityKit entities, avoid triggering excessive SwiftUI redrawing accidentally. When using attachments, make sure to optimize their rendering in the same way you optimize for all SwiftUI content. Loading complex assets can also trigger expensive render updates. Complex assets can also contribute to high app launch and content loading times. Use asynchronous loading APIs at runtime to avoid blocking the main thread and load assets well before they are needed. Entities that use the same assets can also share that asset and only load it once. Use exported files from Reality Composer Pro as these files are optimized for loading times and memory costs. You also get texture compression for free. Reducing asset sizes usually speeds up loading, but remember that texture compression already happens with Reality Composer Pro files, so you may not need to do it yourself. Finally, let's talk about immersive experiences with RealityKit. When your app requests to move to a dedicated full space, it becomes the only foreground experience running. When using a portal or moving to a fully immersive experience, the system also hides part or all of the person's surroundings. Your app can create an environment with RealityKit content to fill their space. Your fully immersive content needs to be rendered to a lot more pixels on the display than scenes in a shared space or a full space. This means that more work can be done on the GPU to render that content. Optimize this type of content for GPU power use. Start with a “Custom” material with an unlit surface in Reality Composer Pro for optimal power use. Consider adding baked lighting textures or using time-based animations to get a feel of dynamic lighting instead. Profile your material for system power and render performance. You can also create fully immersive experiences with Metal. For those of you building 3D engines or experiences using Metal, let's talk about some things to optimize. You can use Metal with the CompositorServices framework to bypass the render server and send a rendered surface directly to the compositor. Watch the session \"Discover Metal for immersive apps\" to learn how to do this properly. When using CompositorServices, pace your Metal frame submissions so the compositor receives a new frame on each of its updates. Make sure to query a new foviation map and post prediction each frame. And query this input data at the last moment before you start using it to encode GPU work. Doing all three of these things helps ensure responsive virtual content relative to user motion and input. If the app takes too long to submit a new frame, the system terminates it. Avoid any long frame stalls. Make sure to profile GPU performance using the Metal System Trace Instruments template while running your app. Long-running fragment and vertex shader executions from your Metal app or from custom materials with Reality Composer Pro can impact system rendering times heavily. To reduce fragment and vertex times, start by reducing ALU instructions and texture accesses by shaders. For Metal, use compute shaders instead wherever possible. Review these talks to learn more about optimizing your GPU performance. Remember, optimizing your app for UI and 3D rendering performance benefits the overall user experience. Let's now move on to input performance. People can use their eyes, hands, voice, and hardware inputs on this platform. App updates to inputs are processed on the main thread. If these take too long, it makes your app feel slow and unresponsive. Input updates on the main thread need to complete within certain deadlines based on the display refresh rate. Hardware for this platform usually has a refresh rate of 90 hertz or higher. For 90 hertz refresh rates, keep input updates below eight milliseconds for optimal latency. When interacting with spatial content, the system does hit testing work to check which UI or 3D objects the user is trying to interact with. For RealityKit content, you will add physics colliders to interact with them. When adding these colliders, use static colliders over dynamic colliders whenever possible, as static ones are cheaper. To reduce redundant hit testing work in your app, minimize overlapping any interactive content. Now, let's move on to ARKit. On this platform, ARKit algorithms are always running to create visuals and interactions across every app. Your app can impact system power and visual smoothness based on how it uses ARKit data and anchors virtual content. For example, your app can use ARKit or RealityKit to place an anchor content in the user's surroundings, head, or hands. Every anchor adds additional work for the system. When anchoring content, consider whether the anchors need to be tracked continuously in a user's space. When using AnchorComponent in RealityKit, use the “once” tracking mode to avoid continuous tracking costs. Minimize the total amount of persistent and transient anchors from your app. For persistent anchors especially, every app can add them, so try not to add too many from your own app. There's even more optimizations you can do while using ARKit data. If you apply ARKit data that is too old to app content, app visuals can look out of sync with input. Query ARKit data right before it needs to be used and apply it to updates promptly. Post predictions are expensive to compute. Generally, only custom Metal rendering engines need this data. If you just want to place app content in the scene, RealityKit is a great choice instead. Generating collision data for scene understanding meshes is also expensive. If you do use this data, turn it off when your app doesn't need it anymore. Now, let's talk about optimizing audio and video playback for spatial computing. Spatial audio is used by default on this platform. The system processes information in real time about the user's position, their surroundings, and audio sources to output audio. If your app causes too much spatial audio work, it can cause problems with system power use or lead to delays in audio output. If you see these issues, there are three main things to look at for reducing spatial audio work: concurrently playing audio sources, the number of moving audio sources, and the size of the soundstage. All of these are variables that can increase the computational work. Now, let's consider video. In a shared space, people can play multiple videos at once. For each video, the system needs to decode it and render it in the render server. Each new rendered video frame needs to make it to the display at consistent intervals for a great video watching experience. To give the render server as much power and time to meet its rendering deadlines, your app should minimize updates to UI or 3D content during video playback. The video frame rate also impacts the work done. Consider using 24 or 30 hertz videos for optimal performance and power. Finally, reduce the number of concurrent videos that need to be played and rendered on the device from your app at any given time. When choosing between video presentation methods, consider how you would like to optimize for different features and performance. Watch the session \"Create a great spatial playback experience\" to learn more. Now, let's talk about SharePlay. This platform opens up a whole new set of experiences to collaborate and connect with people. To create a truly great SharePlay group experience, you'll want to ensure your app can sustain great performance over long periods of time. And great spatial computing performance with SharePlay starts with the basics. Profile and optimize your app for local performance first. Then examine your app's performance during SharePlay to avoid expensive render updates being synced across devices. Profile your app for power to ensure system power needs doesn't create thermal pressure, which can prevent your app from sustaining its great performance. To help with this, carefully consider what work and features in your app are essential for your app's SharePlay experience, and turn off anything it doesn't need. Lastly, let's look at app terminations from thermal or memory pressure. People may use this device in a warm place. Like all Apple platforms, the system manages computational resources available under thermal pressure in order to keep the device cool and comfortable when in use. Having lower computational resources can impact your app's performance. The system may even terminate your app due to critical thermal pressure, or because render deadlines were no longer being met. When under thermal pressure, do less work in your app to maintain good performance and to keep thermal pressure from increasing further. Do this by subscribing to the thermalStateDidChange Notification. When the pressure gets higher, adapt your app's content and updates in response to it. To see how your app performs under a thermal pressure, use thermal inducers in Xcode to simulate higher thermal states for your device. To learn even more about thermal pressure, check out the session \"Designing for Adverse Network and Temperature Conditions.\" Next, let's talk about memory pressure. Devices have a limited amount of memory that is shared between the system and all apps running. When the device gets close to this limit, the system begins to terminate apps, starting with apps that are not being actively used. A single app using too much memory can also get terminated, even if it is being used. You don't want this to happen for your app. You can avoid this by reducing your app's memory usage as much as possible. On this platform, apps are more likely to have large amounts of memory allocated for UI and 3D rendering, and audio and video playback. If your app has UI content, reduce rendering memory allocations by minimizing offscreen render passes, the total amount of windows, and media content. For 3D memory with RealityKit, the resolution of your textures and geometry sizers for meshes and particles can contribute significantly to memory use. Reduce them wherever you can. When playing audio and video, evaluate the total memory load from all audio and video files in your app. When changing resolutions, bitrates, file formats, and durations, consider the trade-offs for the user experience and performance against any memory savings. Review these talks to learn more tips for reducing your memory footprint across all Apple platforms. Remember, performance is essential for a great user experience on this platform. To get started, profile your apps actively during development to find performance and power issues. Build a performance plan around important metrics for spatial computing. And optimize your app for rendering, power, and all of the other areas we covered today. And finally, collect performance field data with tools like MetricKit and Xcode Organizer. I can't wait to see all the great apps and experiences you come up with on this platform. Thanks for watching. ♪",
+    "segments": []
+  },
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Analyzing the performance of your visionOS app",
+        "url": "https://developer.apple.com/documentation/visionOS/analyzing-the-performance-of-your-visionOS-app"
+      },
+      {
+        "title": "Creating a performance plan for your visionOS app",
+        "url": "https://developer.apple.com/documentation/visionOS/creating-a-performance-plan-for-visionos-app"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10100/4/174B83C9-684A-4C6F-832F-54135856AE47/downloads/wwdc2023-10100_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10100/4/174B83C9-684A-4C6F-832F-54135856AE47/downloads/wwdc2023-10100_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10274",
+      "year": "2023",
+      "title": "Create 3D models for Quick Look spatial experiences",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10274"
+    },
+    {
+      "id": "10070",
+      "year": "2023",
+      "title": "Create a great spatial playback experience",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10070"
+    },
+    {
+      "id": "10202",
+      "year": "2023",
+      "title": "Explore materials in Reality Composer Pro",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10202"
+    },
+    {
+      "id": "10095",
+      "year": "2023",
+      "title": "Explore rendering for spatial computing",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10095"
+    },
+    {
+      "id": "10082",
+      "year": "2023",
+      "title": "Meet ARKit for spatial computing",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10082"
+    },
+    {
+      "id": "10099",
+      "year": "2023",
+      "title": "Meet RealityKit Trace",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10099"
+    },
+    {
+      "id": "10106",
+      "year": "2022",
+      "title": "Profile and optimize your game's memory",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10106"
+    },
+    {
+      "id": "10180",
+      "year": "2021",
+      "title": "Detect and diagnose memory issues",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10180"
+    },
+    {
+      "id": "10181",
+      "year": "2021",
+      "title": "Ultimate application performance survival guide",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10181"
+    },
+    {
+      "id": "10603",
+      "year": "2020",
+      "title": "Optimize Metal apps and games with GPU counters",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10603"
+    },
+    {
+      "id": "606",
+      "year": "2019",
+      "title": "Delivering Optimized Metal Apps and Games",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/606"
+    },
+    {
+      "id": "422",
+      "year": "2019",
+      "title": "Designing for Adverse Network and Temperature Conditions",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/422"
+    },
+    {
+      "id": "416",
+      "year": "2018",
+      "title": "iOS Memory Deep Dive",
+      "url": "https://developer.apple.com/videos/play/wwdc2018/416"
+    },
+    {
+      "id": "612",
+      "year": "2018",
+      "title": "Metal Game Performance Optimization",
+      "url": "https://developer.apple.com/videos/play/wwdc2018/612"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:41:42.557Z"
+}

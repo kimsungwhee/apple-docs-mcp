@@ -1,0 +1,85 @@
+{
+  "id": "10151",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10151/",
+  "title": "Add accessibility to your Unity games",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Accessibility & Inclusion",
+    "Graphics & Games"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Hello everyone, my name is Eric, and I'm excited to tell you how to add accessibility to your Unity games.\n\nAccessibility is about allowing everyone to use our products. And today marks a huge leap forward for accessible gaming with the Apple Accessibility plug-in for Unity developers. We will focus on three Apple technologies for making your games accessible.\n\nVoiceOver is a screen reader which helps users who are blind or low vision. It reads items on the screen and provides custom gestures for users to interact with controls.\n\nSwitch control, which allows someone with low motor control to use an external switch for device interaction. And dynamic type, which allows people to set the text size according to their reading ability.\n\nTo get started, clone the repository and build all Apple's plug-ins using the build script in the root of the repository. This will produce a Build folder that is ready for integration into your Unity projects. Finally, add the Accessibility plug-in to your own project using the Unity Package Manager. For more details, look at the documentation in the repository and watch the video about all of Apple's Unity plug-ins, called \"Plug-in and play: Add Apple frameworks to your Unity game projects\" Now that you have the plug-in, I will guide you through three areas. First is accessibility elements. This allows you to add support to assistive technologies like VoiceOver or Switch Control for your games. Next is Dynamic Type. We create this easy-to-use utility that helps you scale text according to user preferences. And UI Accommodations. These are utilities that helps you read other user preferences. Let's start with accessibility elements.\n\nI built a simple card game to help illustrate this concept. You might see that you should tap the \"flip\" button to draw two random cards. However, VoiceOver would not read the text on screen and an external switch would not tap the button since these are just pixels on a screen right now. We need to help the system understand what can be interacted with. Accessibility elements define the things that assistive technologies can interact with.\n\nThe text, cards, and the button on screen should be accessibility elements. And we can describe each element with a label. VoiceOver will read each label so the user can understand what's on the screen.\n\nAnd if the game supports multiple languages, we should localize these labels as well.\n\nNow VoiceOver can describe what is on the screen, but it doesn't recognize that there's a button that can be tapped. We can use another property called \"traits\" to inform the system of the element's type. We should add the \"Button\" trait here. Now, VoiceOver will read \"Flip button,\" and an external switch can control this button.\n\nWe can also add \"Static Text\" trait on our text elements. The \"Static Text\" trait is usually given to labels and text areas so that VoiceOver can provide a better text interaction experience.\n\nAnd there are many more traits beyond \"Button\" and \"Static Text\" that you can explore.\n\nSo what trait should we use for the cards? Well, we don't need to use traits on every accessibility element. Our cards don't need any traits. However, there's still a part of each card that VoiceOver is not aware of: the face value. There's another property that we can use for this called \"Value.\" Once we add a \"Value\" for each card, VoiceOver will now read \"Card 1 with value 3 of clubs, card 2 with value Ace of clubs.\" And that's it. Now that you understand the basics, let's open Unity to see how to add them to our project.\n\nHere I am in a Unity Editor for this game. I have already added the Apple Accessibility plugin to this project.\n\nFirst we have the usual scene objects like camera, direct light, and a UI Canvas. Under the canvas, we have two text elements and a button. After that, we have two game objects for cards.\n\nEach is composed of two mesh components, each rendering the front and back texture for the card on each side. Let's start by defining our accessibility elements. To do this, we need the Accessibility Node component from this plugin.\n\nSelect all the objects in the hierarchy that should be accessible.\n\nAnd add the Accessibility Node component to make them accessibility elements.\n\nNext, we add labels. Select the card object, go to \"Accessibility Node\" component on the right, and find the \"Label\" field.\n\nAnd make sure the label field checkbox is checked to provide a custom label.\n\nThen type \"Card 1.\" And the same for Card 2.\n\nText and buttons need labels too, but we don't have to provide an explicit accessibility labels for them if we are using the standard controls from Unity UI. The plug-in already has default implementations for those.\n\nNext, we need to add a trait to our button.\n\nSelect the flip button and change the \"Traits\" from \"None\" to \"Button.\" Select the two text elements...\n\nAnd change \"Traits\" to \"static text.\" Great. Lastly, we need to set an accessibility Value for the card faces. Since the cards are randomly drawn, I need to add a script to set the Value dynamically.\n\nSelect the two cards and add a new script called AccessibleCard.\n\nFirst, in one of my other C Sharp files, I already have an enum for all the card faces called Playing Card. In my new AccessibleCard mono behavior script, we have a variable for the card type and a boolean for whether the card is facing up or down.\n\nSo now let's add accessibilityValue to these cards. First, we get the accessibilityNode component attached to this gameObject.\n\nNext, set the accessibilityValue delegate to a function that returns the card face value dynamically.\n\nInside this function, if the card is covered, we return the \"covered\" for the accessibilityValue. Or if not covered, we will enumerate all card faces and return a description for each, like \"Ace of Spades.\" And that's it. Now let's build our project and see it in action. Here's our game. Let's turn on VoiceOver.\n\nAutomated voice: VoiceOver on. Eric's Game. Card 2, covered. Eric: I could swipe right to move to the next element. Automated voice: Card 1, covered.\n\nEric's card game.\n\nFlip the cards.\n\nFlip. Button. Eric: You see that all five objects are now accessible through VoiceOver, which is awesome. To tap the button when VoiceOver is on, do a double-tap. Automated voice: Flip. Eric: Let's check the cards again.\n\nAutomated voice: Card 1, Two of Clubs.\n\nCard 2, Ace of Clubs. Eric: VoiceOver now reads the updated card faces correctly. Cool. So we just made our game accessible to millions of VoiceOver users who can now fall in love with it. And people who use external switch control can also play our game. So that was accessibility elements. Next, let's talk about Dynamic Type.\n\nGames can be difficult to play for many people because text is too small to read. On iOS and tvOS, everyone can choose the right text size for their reading ability in Settings.\n\nWith the Accessibility Plugin, you can read this setting to make sure the text in your game is displayed at the expected size.\n\nLet's take a look at our game example to see how we can use Dynamic Type.\n\nCreate a mono behavior script called DynamicTextSize.cs. In the start function, first store the default text size into a variable.\n\nThen inside the OnEnable function, subscribe to setting changed event using AccessibilitySettings. onPreferredTextSizesChanged. This allows us to update the UI as soon as the user changes the text setting.\n\nNext, inside the settingsChanged function, first read the PreferredContentSizeMultiplier. Then multiply by your original text size and assign it back to the text element.\n\nInside Unity Editor, select all game objects that have a Text element. And add the DynamicTextSize component that we just created.\n\nNow our game is all set for Dynamic type support. Before we see the result in action, first I am going to show you a trick to quickly test Dynamic Type in your games. Open Settings, and find Control Center.\n\nScroll down until you see Text Size, and add it to Control Center.\n\nNow we can adjust text sizes quickly by opening Control Center and change the text size options.\n\nGreat–as I change the text size, our game adjusts font sizes in real time.\n\nThe text percentage value shown in Control Center is exactly what we are reading from that multiplier. You can also adopt this setting on non-text objects. For example, I can swap the card face assets to Large Print when the size is increased.\n\nFirst I create a script called DynamicCardFaces. Then same thing as before, subscribe to the TextSizeChanged event.\n\nInstead of reading a multiplier, I read an enum of text size category that is mapped to the ticks on the Control Center slider. I could swap the asset whenever someone selects a larger text size.\n\nAnd I simply choose between a regular material and a large print material. Now if we select a really large size...\n\nUsers would see a large print version of the cards, which are great card faces that are much easier to read for people with low vision.\n\nLastly, I want to talk to you about UI accommodation settings that you can access with this plug-in.\n\nThe first setting is Reduce Transparency. When this setting is on, the background is turned opaque, instead of a blur or transparent effect. It can help improve legibility when those effects makes text hard to read. To check this preference, call AccessibilitySettings. IsReduceTransparencyEnabled.\n\nNext, the Increase Contrast setting. Notice how the switches have a darker grey that helps them stand out, making controls easier to recognize across the entire device.\n\nYou can increase contrast for your own UI when this is enabled by checking this setting using AccessibilitySettings. IsIncreaseContrastEnabled.\n\nNext, the Reduce Motion setting. Some people are sensitive to motion like we have in this card flip animation.\n\nWe should remove that animation when Reduce Motion is enabled.\n\nLet's look at the code to do this.\n\nIn our CardController script, we have this Flip function. First we check if user's reduce motion setting is on. If not on, we should flip the card by invoking an animation through Coroutine. Otherwise we just set the rotation, and no animations. And that's it. Now people who are sensitive to motion would enjoy our game. To recap, get started with the Apple Accessibility plugin by cloning the GitHub repository linked in this session's resources.\n\nAdd accessibility elements so that people can use VoiceOver and Switch Control with your games.\n\nAdapt your text size with Dynamic Type.\n\nAnd check for UI accommodations so everyone can have a great experience with your game.\n\nThank you so much for joining me. We look forward to seeing how you make games available for everyone with a great accessibility experience.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "7:43",
+      "title": "PlayingCard enum",
+      "language": "swift",
+      "code": "public enum PlayingCard\n{\n    AceOfSpade,\n    AceOfClubs,\n    AceOfDiamonds\n}"
+    },
+    {
+      "timestamp": "7:53",
+      "title": "AccessibleCard class",
+      "language": "swift",
+      "code": "using Apple.Accessibility;\npublic class AccessibleCard : MonoBehaviour \n{\n    public PlayingCard cardType;\n    public bool isCovered;\n    void Start()\n    {\n        var accessibilityNode = GetComponent<AccessibilityNode>();\n        accessibilityNode.accessibilityValueDelegate = () => {\n            if (isCovered) {\n              return \"covered\";\n            }\n            if (cardType == PlayingCard.AceOfSpades) {\n              return \"Ace of Spades\";\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "10:35",
+      "title": "DynamicCardFaces",
+      "language": "swift",
+      "code": "public class DynamicCardFaces : MonoBehaviour\n{\n    public Material RegularMaterial;\n    public Material LargeMaterial;\n    void OnEnable()\n    {\n        AccessibilitySettings.onPreferredTextSizesChanged += _settingsChanged;\n    }\n\n    void _settingsChanged() \n    {\n        var shouldUseLarge = AccessibilitySettings.PreferredContentSizeCategory >= \n            ContentSizeCategory.AccessibilityMedium;\n        GetComponent<Renderer>().material = shouldUseLarge ? RegularMaterial :\n            LargeMaterial;\n    }\n}"
+    },
+    {
+      "timestamp": "10:36",
+      "title": "Dynamic Type",
+      "language": "swift",
+      "code": "using UnityEngine.UI;\npublic class DynamicTextSize : MonoBehaviour\n{\n    int originalSize;\n    void Start()\n    {\n        originalSize = GetComponent<Text>().textSize;\n    }\n\n    void OnEnable()\n    {\n        AccessibilitySettings.onPreferredTextSizesChanged += _settingsChanged;     }\n\n    void _settingsChanged() \n    {\n        GetComponent<Text>().textSize = (int)(originalSize *\n            AccessibilitySettings.PreferredContentSizeMultiplier);\n    }\n}"
+    },
+    {
+      "timestamp": "14:54",
+      "title": "Reduce motion",
+      "language": "swift",
+      "code": "using Apple.Accessibility;\npublic class CardController : MonoBehaviour\n{\n    public void Flip() \n    {\n        var reduceMotionOn = !AccessibilitySettings.IsReduceMotionEnabled;\n        if (!reduceMotionOn)\n        {\n            StartCoroutine(Animate());\n        }\n        else \n        {\n            transform.rotation = Quaternion.identify;\n        }\n    }\n    IEnumerator Animate()\n    {\n    } \n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Accessibility",
+        "url": "https://developer.apple.com/documentation/accessibility"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10151/5/3F44347B-F0CF-4DFC-89A8-C801EE456545/downloads/wwdc2022-10151_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10151/5/3F44347B-F0CF-4DFC-89A8-C801EE456545/downloads/wwdc2022-10151_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10065",
+      "year": "2022",
+      "title": "Plug-in and play: Add Apple frameworks to your Unity game projects",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10065"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:08:01.477Z"
+}

@@ -1,0 +1,177 @@
+{
+  "id": "10258",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10258/",
+  "title": "Animate symbols in your app",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services",
+    "Design"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Anant: Hello. Welcome to \"Animate symbols in your app.\" My name is Anant, and I'm an engineer on UIKit. SF Symbols are an iconic part of Apple interfaces.\n\nThey look gorgeous in menus, toolbars, sidebars, and more. And because people are familiar with symbols, they make your app more intuitive to use. In iOS 17 and macOS Sonoma, we're enhancing symbols with animation, bringing  more life into your apps than ever before.\n\nI'll start with a tour of the new symbol animations, also called \"symbol effects.\" Then, I'll guide you through the new APIs in SwiftUI, UIKit, and AppKit to add symbol effects to your apps. And finally, I'll give you some tips to make symbol effects really shine.\n\nSo let's jump in.\n\niOS 17 and macOS Sonoma introduce a collection of universal animations that can be applied to any symbol image, even custom symbols. These animations are called Bounce, Pulse, Variable Color, Scale, Appear, Disappear, and Replace.\n\nI recommend checking out the \"What's new in SF Symbols 5\" session to dive deeper into the animations themselves, including best practices for designing interfaces with them.\n\nIn the API, these animations are called \"symbol effects,\" and the new Symbols framework is home to all of them. It's included for free when you use SwiftUI, AppKit, or UIKit to build your app. A really cool feature of the Symbols framework is that each effect has a simple dot-separated name. So to create a bounce effect, you can simply write \".bounce\" in your code.\n\nThese dot-separated names also extend to the way you configure effects. For example, you can specify that the symbol should bounce upwards or downwards, but most of the time, you won't need to specify anything. The frameworks will automatically use the most appropriate direction. Some effects feature many configuration options. For example, Variable Color has three different settings. By chaining options together, you can configure very specific effects with ease.\n\nThe effect names are real Swift code. There's no strings attached. Xcode will autocomplete each part of the name, and if an effect is configured incorrectly, you'll get an error at compile time. The best way to explore all the new animations is the SF Symbols app. In the new animation tab, you can learn about all the available configuration options for each effect. You can even copy a dot-separated effect name to be used directly in your code. With all of the effect types and configuration options, there's a massive variety of animations available. But all of these effects actually encompass a small set of behaviors.\n\nBounce, for example, plays a one-off animation on the symbol. This is considered discrete behavior. Adding a Scale effect, on the other hand, changes the symbol's scale level and keeps it there indefinitely. Scale is said to support indefinite behavior. Unlike discrete effects, indefinite effects only end when explicitly removed.\n\nAppear and Disappear support transition behavior. They can transition the symbol in and out of view.\n\nAnd finally, Replace is a content transition. It animates from one symbol to another.\n\nSo that's the four different behaviors: discrete, indefinite, transition, and content transition. In the Symbols framework, each behavior corresponds to a protocol. Effects declare their supported behaviors by conforming to these protocols.\n\nHere is a breakdown of all available effects, as well as their supported behaviors. I'll cover this in more detail in this session. Just know that an effect's behavior determines which UI framework APIs can work with them. And speaking of UI framework APIs, let's talk about how to add all of these cool effects in your SwiftUI, UIKit, and AppKit apps.\n\nIn SwiftUI, there is a new view modifier, symbolEffect.\n\nSimply add the modifier and pass in the desired effect. Here, I pass in variableColor, and now the symbol is playing the default variable color animation.\n\nIt's easy to do this in AppKit and UIKit too. Just use the new addSymbolEffect method on an image view to add a variable color effect. I can configure the variable color effect using the dot syntax. Here, I change the effect to variableColor.iterative.reversing, resulting in a different variable color animation. It's a great way to show that my app is connecting to the network. It's even possible to combine different effects. Here, I add a scale.up effect. Now the symbol is animating variable color while also scaled up.\n\nThese APIs provide a simple way to add indefinite effects to symbol images. Recall that indefinite effects change some aspect of a symbol indefinitely, until the effect is removed.\n\nSo using the symbolEffect modifier, I can apply a variable color effect, which continuously plays an animation.\n\nBut I also need a way to control when the effect is active. I wouldn't want this animation to keep playing after my app successfully connects to the network.\n\nThis can be done by adding the boolean isActive parameter. Here, I apply the effect only when connecting to the internet. Once the app finishes connecting, the symbol animation seamlessly ends.\n\nIn AppKit and UIKit, use the removeSymbolEffect method to end indefinite effects. What about discrete effects, which perform one-off animations? I mentioned Bounce as an example of this earlier. Your app may trigger Bounce effects in response to certain events.\n\nIn SwiftUI, I can use the same symbolEffect modifier to add discrete effects. However, I must also provide SwiftUI a value. Whenever the value changes, SwiftUI triggers the discrete effect.\n\nLet's add a button that, when pressed, bounces the symbol. The button's handler simply needs to increment bounceValue. SwiftUI will see the change in bounceValue and trigger the bounce. I can do this in AppKit and UIKit by adding a Bounce effect to the image view. Because Bounce only supports discrete behavior, then adding the effect performs a single bounce. There's no need to remove the effect afterwards.\n\nNow, let's say I don't want the symbol to bounce just once. How about bouncing twice? SwiftUI, AppKit, and UIKit support an options parameter, where I can specify a preferred repeat count. Now, the symbol bounces twice when the effect is triggered. Bounce isn't the only effect which can have discrete behavior. Two of the effects I covered earlier, Pulse and Variable Color, support not only indefinite behavior, but also discrete behavior. In other words, they can play one-off animations, just like Bounce. That means I can take the earlier Bounce example and change it to variableColor. Variable Color switches to use its discrete behavior, since it's applied in a non-repeating fashion.\n\nNow, pressing the button performs two Variable Color cycles.\n\nNext, let's talk about content transition effects. The Replace effect, which animates between two different symbol images, is the main example of this. Here, I have an image that switches between a pause symbol and a play symbol.\n\nSwiftUI has a new contentTransition type called symbolEffect, which can be used with Replace. So if I put the Image in a Button that toggles which symbol is displayed, the change is now animated. In AppKit and UIKit, you can use the new setSymbolImage method to change the image using a symbol content transition.\n\nFinally, we have Appear and Disappear, which can show and hide symbols with unique animations. These effects are uniquely classified as transition effects. But before we get into that, we need to talk about parallel universes. Don't worry, though. It's not as complicated as it seems. In one universe, the image disappears, but the image view is still in the hierarchy. In other words, there's no change to the layout. The square and circle remain the same distance to each other. In the parallel universe, the image view is truly added and removed from the hierarchy. As a result, the layout of surrounding views may change.\n\nThe great news is that Appear and Disappear support both behaviors.\n\nThe first behavior is possible because Appear and Disappear are indefinite effects.\n\nYou know how to use indefinite effects already. In SwiftUI, use the .symbolEffect modifier and pass in .disappear. As the value of isMoonHidden updates, the Disappear effect is applied.\n\nIn AppKit and UIKit, use addSymbolEffect and pass in .disappear or .appear.\n\nThe takeaway here is that indefinite effects don't change the layout at all. They only alter the rendering of the symbol within the image view.\n\nSo that covers the first behavior. How do I jump to the parallel universe, where the surrounding layout changes? This is where the transition behavior comes in. Transition effects can be used with SwiftUI's built-in transition modifier, which animates a view's insertion or removal from the view hierarchy.\n\nLet's convert the previous code to use the transition behavior. Instead of conditionally applying a Disappear effect, I'll instead conditionally add the symbol to the view hierarchy.\n\nThen, I'll add a transition modifier. SwiftUI has a new transition type called– you guessed it–symbolEffect. By passing in .disappear, the symbol is now added and removed with animation.\n\nYou can also use a unique transition effect called Automatic. This effect will automatically perform the most appropriate transition animation for this symbol.\n\nIf you're not using SwiftUI, then you'll need to manually add and remove the image view from the hierarchy. UIKit features a completion handler for effects which can help. Simply add a Disappear effect, and when the effect finishes, remove the image view from the hierarchy. So there you have it. That's symbol effects in SwiftUI, AppKit, and UIKit. Now that you know the basics, here are some tips to take symbol effects to the next level in your apps.\n\nFirst of all, the new UIKit methods on UIImageView are also available on UIBarButtonItem. This makes it easy to bring your toolbars to life using symbol animations. Some UIKit controls also have built-in symbol animations on iOS 17.\n\nUISlider, for example, now bounces its images as the thumb reaches the ends of the track. You can control whether these animations play with the new isSymbolAnimationEnabled property on UIControl and UIBarButtonItem.\n\nIn SwiftUI, there are also some special considerations for disabling symbol effects.\n\nLike other modifiers in SwiftUI, the symbolEffect modifier propagates through the view hierarchy. This means effects can be applied to multiple images by adding the modifier on a parent view. Use the symbolEffectsRemoved modifier to prevent a view from inheriting symbol effects. Now, some symbol effects, like Appear, Disappear, and Scale, change the symbol's appearance with animation. You may be interested in having a symbol be initially scaled up, or initially disappeared, without animation. In SwiftUI, you can do this using a transaction with animations disabled. Here, I use it to apply a scale.up effect without animation.\n\nIn AppKit and UIKit, use the animated parameter on addSymbolEffect to apply the effect without animation.\n\nFinally, let's talk about variable value.\n\niOS 16 and macOS Ventura introduced variable value as another dimension for symbols, representing concepts like volume levels and signal strengths.\n\nIn iOS 17 and macOS Sonoma, we are making it super easy to crossfade between arbitrary variable values.\n\nIn SwiftUI, you don't need to do anything at all. Here, I have a Wi-Fi symbol whose variable value is based on some state– in this case, the current signal strength. As the signal strength changes, the Wi-Fi symbol automatically updates, while also animating across variable values. In AppKit and UIKit, use the automatic symbol content transition. It detects if the new symbol image just has a different variable value, and, if so, crossfades to the new value.\n\nThanks so much for joining me today. There's a lot of ways to animate symbols, so use the SF Symbols app to discover what's possible. Explore the Symbols framework, and try the new symbol effect APIs in SwiftUI, AppKit, and UIKit. And finally, adopt the animations to make your app's interface more delightful than ever.\n\nCheck out the other symbols sessions, too, for Human Interface guidelines on symbol animation, as well as updating custom symbols to support all the effects. Thanks, and happy coding.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "6:02",
+      "title": "Symbol effects in SwiftUI",
+      "language": "swift",
+      "code": "// Symbol effects in SwiftUI\n\nImage(systemName: \"wifi.router\")\n    .symbolEffect(.variableColor.iterative.reversing)\n    .symbolEffect(.scale.up)"
+    },
+    {
+      "timestamp": "6:02",
+      "title": "Symbol effects in AppKit and UIKit",
+      "language": "swift",
+      "code": "let imageView: NSImageView = ...\n\nimageView.addSymbolEffect(.variableColor.iterative.reversing)\nimageView.addSymbolEffect(.scale.up)"
+    },
+    {
+      "timestamp": "6:49",
+      "title": "Indefinite symbol effects in SwiftUI",
+      "language": "swift",
+      "code": "struct ContentView: View {\n    @State var isConnectingToInternet: Bool = true\n    \n    var body: some View {\n        Image(systemName: \"wifi.router\")\n            .symbolEffect(\n                .variableColor.iterative.reversing,\n                isActive: isConnectingToInternet\n            )\n    }\n}"
+    },
+    {
+      "timestamp": "7:09",
+      "title": "Indefinite symbol effects in AppKit and UIKit",
+      "language": "swift",
+      "code": "let imageView: NSImageView = ...\n\nimageView.addSymbolEffect(.variableColor.iterative.reversing)\n\n// Later, remove the effect\nimageView.removeSymbolEffect(ofType: .variableColor)"
+    },
+    {
+      "timestamp": "8:26",
+      "title": "Discrete symbol effects in SwiftUI",
+      "language": "swift",
+      "code": "struct ContentView: View {\n    @State var bounceValue: Int = 0\n    \n    var body: some View {\n        VStack {\n            Image(systemName: \"antenna.radiowaves.left.and.right\")\n                .symbolEffect(\n                    .bounce,\n                    options: .repeat(2),\n                    value: bounceValue\n                )\n            \n            Button(\"Animate\") {\n                bounceValue += 1\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "8:26",
+      "title": "Discrete symbol effects in AppKit and UIKit",
+      "language": "swift",
+      "code": "let imageView: NSImageView = ...\n\n// Bounce\nimageView.addSymbolEffect(.bounce, options: .repeat(2))"
+    },
+    {
+      "timestamp": "9:40",
+      "title": "Content transition symbol effects in SwiftUI",
+      "language": "swift",
+      "code": "struct ContentView: View {\n    @State var isPaused: Bool = false\n    \n    var body: some View {\n        Button {\n            isPaused.toggle()\n        } label: {\n            Image(systemName: isPaused ? \"pause.fill\" : \"play.fill\")\n                .contentTransition(.symbolEffect(.replace.offUp))\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "9:57",
+      "title": "Content transition symbol effects in AppKit and UIKit",
+      "language": "swift",
+      "code": "let imageView: UIImageView = ...\nimageView.image = UIImage(systemName: \"play.fill\")\n\n// Change the image with a Replace effect\nlet pauseImage = UIImage(systemName: \"pause.fill\")!\nimageView.setSymbolImage(pauseImage, contentTransition: .replace.offUp)"
+    },
+    {
+      "timestamp": "11:14",
+      "title": "Indefinite Appear and Disappear symbol effects in SwiftUI",
+      "language": "swift",
+      "code": "struct ContentView: View {\n    @State var isMoonHidden: Bool = false\n    \n    var body: some View {\n        HStack {\n            RoundedRectangle(cornerRadius: 5)\n\n            Image(systemName: \"moon.stars\")\n               .symbolEffect(.disappear, isActive: isMoonHidden)\n\n            Circle()\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "11:30",
+      "title": "Indefinite Appear and Disappear symbol effects in AppKit and UIKit",
+      "language": "swift",
+      "code": "let imageView: UIImageView = ...\nimageView.image = UIImage(systemName: \"moon.stars\")\n\nimageView.addSymbolEffect(.disappear)\n// Re-appear the symbol\nimageView.addSymbolEffect(.appear)"
+    },
+    {
+      "timestamp": "12:38",
+      "title": "Transition symbol effects in SwiftUI",
+      "language": "swift",
+      "code": "struct ContentView: View {\n    @State var isMoonHidden: Bool = false\n    \n    var body: some View {\n        HStack {\n            RoundedRectangle(cornerRadius: 5)\n\n            if !isMoonHidden {\n                Image(systemName: \"moon.stars\")\n                    .transition(.symbolEffect(.disappear.down))\n            }\n\n            Circle()\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "12:59",
+      "title": "Appear and Disappear symbol effects in UIKit with completion handler",
+      "language": "swift",
+      "code": "let imageView: UIImageView = ...\nimageView.image = UIImage(systemName: \"moon.stars\")\n\nimageView.addSymbolEffect(.disappear) { context in\n    if let imageView = context.sender as? UIImageView, context.isFinished {\n        imageView.removeFromSuperview()\n    } \n}"
+    },
+    {
+      "timestamp": "14:19",
+      "title": "Symbol effect propagation in SwiftUI",
+      "language": "swift",
+      "code": "VStack {\n    Image(systemName: \"figure.walk\")\n        .symbolEffectsRemoved()\n    Image(systemName: \"car\")\n    Image(systemName: \"tram\")\n}\n.symbolEffect(.pulse)"
+    },
+    {
+      "timestamp": "14:55",
+      "title": "Effects without animation in SwiftUI",
+      "language": "swift",
+      "code": "struct ContentView: View {\n    @State var isScaledUp: Bool = false\n    \n    var body: some View {\n        Image(systemName: \"iphone.radiowaves.left.and.right\")\n            .symbolEffect(.scale.up, isActive: isScaledUp)\n            .onAppear {\n                var transaction = Transaction()\n                transaction.disablesAnimations = true\n                withTransaction(transaction) {\n                    isScaledUp = true\n                }\n            }\n    }\n}"
+    },
+    {
+      "timestamp": "15:06",
+      "title": "Effects without animation in AppKit and UIKit",
+      "language": "swift",
+      "code": "// Effects without animation in AppKit and UIKit\n\nlet imageView: UIImageView = ...\nimageView.image = UIImage(systemName: \"iphone.radiowaves.left.and.right\")\n\nimageView.addSymbolEffect(.disappear, animated: false)"
+    },
+    {
+      "timestamp": "15:44",
+      "title": "Variable value animations in SwiftUI",
+      "language": "swift",
+      "code": "struct ContentView: View {\n    @State var signalLevel: Double = 0.5\n    \n    var body: some View {\n        Image(systemName: \"wifi\", variableValue: signalLevel)\n    }\n}"
+    },
+    {
+      "timestamp": "16:07",
+      "title": "Variable value animations in AppKit and UIKit",
+      "language": "swift",
+      "code": "let imageView: UIImageView = ...\nimageView.image = UIImage(systemName: \"wifi\", variableValue: 1.0)\n\n// Animate to a different Wi-Fi level\nlet currentSignalImage = UIImage(\n    systemName: \"wifi\",\n    variableValue: signalLevel\n)!\nimageView.setSymbolImage(currentSignalImage, contentTransition: .automatic)"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10258/4/F5972AFA-C206-4702-9005-E146CE71FC29/downloads/wwdc2023-10258_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10258/4/F5972AFA-C206-4702-9005-E146CE71FC29/downloads/wwdc2023-10258_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10257",
+      "year": "2023",
+      "title": "Create animated symbols",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10257"
+    },
+    {
+      "id": "10054",
+      "year": "2023",
+      "title": "What’s new in AppKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10054"
+    },
+    {
+      "id": "10197",
+      "year": "2023",
+      "title": "What’s new in SF Symbols 5",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10197"
+    },
+    {
+      "id": "10148",
+      "year": "2023",
+      "title": "What’s new in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10148"
+    },
+    {
+      "id": "10055",
+      "year": "2023",
+      "title": "What’s new in UIKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10055"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:13:24.423Z"
+}

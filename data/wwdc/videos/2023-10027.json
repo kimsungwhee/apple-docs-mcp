@@ -1,0 +1,80 @@
+{
+  "id": "10027",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10027/",
+  "title": "Bring widgets to new places",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Kathryn: Hi! I'm Kathryn, and I'm an engineer working on System Experience. Today I'm going to talk about the new locations for widgets, and how you can easily optimize your widget to look great everywhere. First, let's go over a quick history of widgets. iOS 14 introduced widgets on the Home screen, and iOS 16 brought widgets to the Lock screen, using the same easy WidgetKit API. This year, the widget ecosystem is expanding to four new locations: the desktop on Mac, the Lock screen on iPad, the new StandBy mode on iPhone, and the new Smart Stack on Apple Watch. This means that people will be able to see all of their favorite widgets in even more places. Your widget will be able to appear in all of these locations automatically, so it's important to make sure that it looks great no matter where it's shown. Thanks to iPhone Widgets On Mac, people will be able to use your widget on Mac even if you don't currently have a macOS app. My friends Devon and Graham have asked me to help them update their Emoji Rangers widget to get it ready for these new places. You might remember this project from WWDC20's \"Widgets code-along\", and WWDC22's \"Complications and widgets: Reloaded\". We'll start by going over the new content margins for widgets, and how to transition to them on Apple Watch. Next, we'll add an automatically removable background to our widget. Then, we'll modify our widget so that it can dynamically expand its layout to fit its environment. Finally, we'll make sure the elements in our widget are ready for vibrant rendering. Let’s get started. New for widgets this year are content margins. Content margins are padding which is automatically applied to your widget's body, preventing your content from getting to close to the edge of the widget container. These margins may be larger or smaller, depending on the environment where your widget is being shown. On watchOS 9 and below, widgets use the system-defined safe area to keep content from getting too close to the edge. Widgets could add modifiers like ignoresSafeArea to views to allow them to extend outside of the safe area. On watchOS 10 and above, safe areas in widgets have been replaced by the use of content margins. This means that modifiers like ignoresSafeArea no longer have any effect in widgets. For most widgets, this change won't affect how your widget looks. However, if your widget has content which used to ignore the safe area, you can still achieve this same effect by adding the contentMarginsDisabled modifier to your widget configuration. Then, for any content which should remain within the default content margins, simply add padding back in. You can use the widgetContentMargins environment variable to get the default margins for the current environment. Content margins, along with these new modifiers and variables, are available on every platform where widgets are shown. Now, let's add a removable background to our Emoji Rangers widget. Our existing accessory family of widgets automatically work on iPad Lock screen, just like on iPhone. iPad can also show system small widgets right alongside them. Here's what ours looks like on the Lock screen right now. We need to remove its background in this environment so that it matches the other widgets better. Luckily, doing this is super simple. Here I have the code for our systemSmall widget's view. Right now, it consists of an AvatarView layered on top of our gameBackground color using a ZStack. To make the background color removable, all we need to change is to add a containerBackground modifier to our View, and move our gameBackground color inside. Once we do that, the system can automatically take out our widget's background depending on where it's being shown. The Smart Stack on Apple Watch can also utilize this new containerBackground. By default, your accessoryRectangular widget will receive a dark material background in this environment. By adding that same containerBackground modifier to our view, the widget is placed on the same background as our other widgets, linking it with our app's visual identity. For a deeper dive on this new environment, check out \"Design widgets for the Smart Stack on Apple Watch\". Some widgets, like the Photos and Maps widgets, don't really have distinct foreground content, so there's no background which makes sense to remove. In this case, you can add the containerBackgroundRemovable modifier to your WidgetConfiguration, and set it to false.\n\nNow, let's make some optimizations to our layout for when we're on iPad Lock screen and StandBy mode.\n\nThe Weather widget is a great example of how to change your layout when the widget background is removed.\n\nNotice how the widget still contains the same information, but it's been optimized to take advantage of the space. The content is pushed all the way to the edges, and important elements are enlarged. These tweaks make the widget easier to read from far away, and integrate it more seamlessly into StandBy mode. These layout changes also help the widget to blend in with accessory family widgets on iPad Lock screen, maintaining a more consistent look across every family. Let's move to Xcode to implement these changes in our own widget. Here I have the code for our AvatarView, which is what we use for our systemSmall widget. On the right, I can see a live preview of what our widget looks like in Xcode Previews. When shown in contexts where the container background is removed, the widgetContentMargins automatically shrink to bring our content edge-to-edge. We can detect whether the widget background has been removed using the showsWidgetContainerBackground environment variable. When it is, let's omit the details about our hero's level and XP from our HeroNameView, and instead show those details below.\n\nThis will also make our hero's name larger when in this environment. Now when we toggle between these contexts, our layout changes automatically from our original view to our new enlarged view.\n\nJust like with accessory family widgets, our system family widgets are shown in the vibrant rendering mode on iPad Lock screen. This means that your widget will be desaturated, then colored appropriately for the Lock screen background. When rendered like this, issues with contrast can impact our widget's legibility. For example, our hero's avatar becomes difficult to distinguish from its circular backdrop. Let's hop back to Xcode, and modify our widget to remove that backdrop when in the vibrant rendering mode. Let’s check this out in StandBy Night mode. We can use the widgetRenderingMode environment variable to detect which rendering mode we're in. Let's change our Avatar's includesBackground parameter to check if we're in the vibrant rendering mode.\n\nStandBy Night mode also uses vibrant rendering, so our avatar is clearly visible in this context as well. To learn more about widget rendering modes, watch \"Complications and widgets: Reloaded\" from WWDC22. And for more about what's new with widgets, check out \"Bring widgets to life\". I'm super excited about all the changes that are coming to widgets, and I can't wait to see what ideas you come up with to enhance your widgets with these new features. Thanks, and enjoy! ♪ ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:08",
+      "title": "SafeAreasWidget",
+      "language": "swift",
+      "code": "struct SafeAreasWidgetView: View {\n    @Environment(\\.widgetContentMargins) var margins\n\n    var body: some View {\n        ZStack {\n            Color.blue\n            Group {\n                Color.lightBlue\n                Text(\"Hello, world!\")\n            }\n                .padding(margins) \n        }\n    }\n}\n\nstruct SafeAreasWidget: Widget {\n    var body: some WidgetConfiguration {\n        StaticConfiguration(...) {_ in\n            SafeAreasWidgetView()\n        }\n        .contentMarginsDisabled()\n    }\n}"
+    },
+    {
+      "timestamp": "3:19",
+      "title": "EmojiRangerWidget systemSmall",
+      "language": "swift",
+      "code": "struct EmojiRangerWidgetEntryView: View {\n    var entry: Provider.Entry\n    \n    @Environment(\\.widgetFamily) var family\n\n    var body: some View {\n        switch family {\n        case .systemSmall:\n            ZStack {\n                AvatarView(entry.hero)\n                    .widgetURL(entry.hero.url)\n                    .foregroundColor(.white)\n            }\n            .containerBackground(for: .widget) {\n                Color.gameBackground\n            }\n        }\n        // additional cases\n    }\n}"
+    },
+    {
+      "timestamp": "3:48",
+      "title": "EmojiRangerWidget accessoryRectangular",
+      "language": "swift",
+      "code": "var body: some View {\n    switch family {\n    case .accessoryRectangular:\n        HStack(alignment: .center, spacing: 0) {\n            VStack(alignment: .leading) {\n                Text(entry.hero.name)\n                    .font(.headline)\n                    .widgetAccentable()\n                Text(\"Level \\(entry.hero.level)\")\n                Text(entry.hero.fullHealthDate, style: .timer)\n            }.frame(maxWidth: .infinity, alignment: .leading)\n            Avatar(hero: entry.hero, includeBackground: false)\n        }\n        .containerBackground(for: .widget) {\n            Color.gameBackground\n        }\n    // additional cases\n}"
+    },
+    {
+      "timestamp": "4:22",
+      "title": "PhotoWidget",
+      "language": "swift",
+      "code": "struct PhotoWidget: Widget {\n    public var body: some WidgetConfiguration {\n        StaticConfiguration(...) { entry in\n            PhotoWidgetView(entry: entry)\n        }\n        .containerBackgroundRemovable(false)\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10027/4/7DEB1A11-79AB-4C43-B6F7-B7525FC746B6/downloads/wwdc2023-10027_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10027/4/7DEB1A11-79AB-4C43-B6F7-B7525FC746B6/downloads/wwdc2023-10027_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10028",
+      "year": "2023",
+      "title": "Bring widgets to life",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10028"
+    },
+    {
+      "id": "10050",
+      "year": "2022",
+      "title": "Complications and widgets: Reloaded",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10050"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:12:44.934Z"
+}

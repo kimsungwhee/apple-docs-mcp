@@ -1,0 +1,56 @@
+{
+  "id": "10077",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10077/",
+  "title": "Replace CAPTCHAs with Private Access Tokens",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Privacy & Security",
+    "Safari & Web",
+    "System Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": false,
+  "transcript": {
+    "fullText": "♪ ♪ Tommy Pauly: Hi, I'm Tommy Pauly, and I'm excited to share how your apps and websites can work together with Apple and fraud prevention providers across the industry to reduce the need for CAPTCHAs. Today, I'll talk about: Private Access Tokens, and how they can be powerful tools for fraud prevention; how to enable support for Private Access Tokens on the servers you operate; and, how you can use these tokens in your apps.\n\nTo introduce Private Access Tokens, I'll start by explaining why CAPTCHAs are used in the first place. Chances are, if you've signed up for a new account on a website, or tried to sign in with an existing account, you've encountered CAPTCHAs like these at some point. Sometimes, a CAPTCHA is just a button to press, but others can be a challenge to fill out.\n\nYou likely don't enjoy being interrupted by these. I certainly don't. The reason these experiences exist is to prevent fraudulent activity.\n\nIf you run a server, you don't want it to be overwhelmed by fraud. Some attempts to create accounts or buy products come from legitimate users. But other attempts may be from attackers or bots. Unfortunately, the common tools to prevent fraud, like CAPTCHAs, often make it harder for people to use your app or website.\n\nFinding the right balance between a good experience and preventing fraud is a challenge.\n\nCAPTCHAs often lead to a slower and more complex user experience. By trying to prevent attacks, you may also lose valuable customers.\n\nCAPTCHAs can also pose a privacy risk. In order to determine if a client is trusted and can get an easier CAPTCHA, servers often rely on tracking or fingerprinting clients by using their IP address. This kind of tracking is at odds with the direction of internet privacy being taken by Safari, Mail Privacy Protection, and iCloud Private Relay.\n\nAnd CAPTCHAs can pose a serious problem for accessibility. By trying to prevent access from bots, they also block out real humans who have disabilities or language barriers. There is a better way. Even if someone is interacting with your website for the first time, if they are loading it through an app or browser like Safari, they've already performed many actions that are hard for a bot to imitate. First, they have an iPhone, iPad, or Mac, and they've unlocked the device with their password, Touch ID, or Face ID. They're almost always signed in to the device with their Apple ID. And they've launched a code-signed app.\n\nThis information can help your servers trust legitimate clients and prevent fraud, without relying on CAPTCHAs, and without compromising privacy by tracking clients. Private Access Tokens are what allow your servers to automatically trust clients, new in iOS 16 and macOS Ventura. Before explaining how these tokens work, I'm going to show them in action. You're going to love this. I want to read an article on the Financial Times website. I'm very excited about these cinnamon buns. And I've loaded the site on two different phones: one running iOS 15 and one running iOS 16, which supports Private Access Tokens. Starting with the iOS 15 phone, I click Sign In, and fill out my account and password. But then, I get hit with a CAPTCHA. I need to type in the letters before being able to read that article.\n\nWhen I do the exact same thing on the iOS 16 phone that supports Private Access Tokens, I get right through. This is going to save a lot of people, a lot of time, and your customers will appreciate being trusted. Private Access Tokens let servers avoid CAPTCHAs, like you just saw, by using technology being standardized in the IETF Privacy Pass working group. Apple is working with companies across the industry to make this possible.\n\nUsing this protocol, servers can request tokens using a new HTTP authentication method, PrivateToken. These tokens use RSA Blind Signatures to cryptographically sign the fact that a client was able to pass an attestation check. These signatures are \"unlinkable\", which means that servers that receive tokens can only check that they are valid, but they cannot discover client identities or recognize clients over time. Here's how the protocol works.\n\nFirst, when the iOS or macOS client accesses a server over HTTP, the server sends back a challenge using the PrivateToken authentication scheme. This specifies a token issuer that is trusted by the server.\n\nWhen the client needs to fetch a token, it contacts an iCloud attester and sends a token request. This token request is \"blinded\" so it can't be linked to the server challenge. The attester performs device attestation, using certificates stored in the device's Secure Enclave, and verifies that the account is in good standing.\n\nThis attester can also perform rate-limiting, to recognize if the client device is following normal patterns, or may have been compromised or used as part of a farm of devices.\n\nIf the client can be validated, the attester sends the request for a new token to the issuer.\n\nWhen the token issuer gets the request, it doesn't know anything about the client. But since it trusts the iCloud attester, it signs the token.\n\nThe client then receives the signed token, and transforms it in a process called \"unblinding\" so the original server can verify it.\n\nAnd finally, the client presents the signed token to the server. The server can check that this token is signed by the Issuer, but it cannot use the token to identify or recognize the client. So how can you take advantage of this technology on your servers? There are three steps to adopting Private Access Tokens on your server. First, you'll need to select a token issuer. Second, your server will need to send out HTTP authentication challenges when you want to validate clients. And third, your server will need to validate the tokens sent by clients.\n\nThe token issuer you select is a trusted provider that can sign tokens that your server validates. This may be your existing CAPTCHA provider, your web hosting service, or your content delivery network, also called a CDN. In the iOS 16 and macOS Ventura betas, there are two token issuers that you can already start testing with. Fastly and Cloudflare are two CDNs that have been developing the Privacy Pass standards, and have already made their issuer services available. Other CAPTCHA providers, web hosting services, and CDNs will also be able to run token issuers that will work with Apple devices. Issuers will be able to sign up later this year at register.apple.com.\n\nIt's important that the use of a specific token issuer doesn't become a way to identify what websites a client is accessing– that would be a problem for privacy. So each token issuer needs to be a large service that work with at least hundreds of servers.\n\nWhen a client accesses your server, you can request tokens by sending an HTTP authentication challenge with the PrivateToken scheme. To do this, you have two options: Either you can work with your existing CAPTCHA or fraud prevention provider to build the challenge into their scripts, so it is handled automatically for you, or you can choose to send these challenges directly from your server.\n\nIf you're doing this as part of your website, the challenge must come from a first-party domain– a subdomain of your main URL and not a separate third-party domain embedded on your site.\n\nWhen clients return tokens to you, you'll need to check their validity using your issuer's public key. You may also want to enforce checks to prevent replay attacks, where a client could try to present a token multiple times. Tokens are meant to be one-time use only. You can prevent replay attacks either by remembering what tokens were sent previously, or requiring that tokens sign a unique value sent in your challenge.\n\nYour site still needs to work with legacy clients that won't respond to this authentication challenge. So it's important that the authentication should not block your main page load, but instead be treated as an optional way to trust a client. Web servers that are accessed through Safari and WebKit will work automatically, but you can also use Private Access Tokens within your app directly. Private Access Tokens require iOS 16 or macOS Ventura on a device that has an Apple ID signed in. This Apple ID is only used for attestation, and is not shared with the servers that receive tokens. Within your app, tokens are available if you use WebKit or URLSession to contact your servers using HTTP. Then anytime your app receives a challenge while it's in the foreground, the system will automatically send a token as authentication.\n\nIf you're using URLSession, you don't need to do anything explicitly to make Private Access Tokens work. URLSession will automatically respond to challenges using the PrivateToken HTTP authentication scheme. However, if there's an error in fetching a token, such as if your app isn't in the foreground or the device doesn't have an Apple ID signed in, your app will receive the 401 HTTP response that included the token challenge. This allows your app to know that the token challenge was received, and provides a chance to handle the error correctly for your use case. Make apps and websites better experiences for everyone by avoiding CAPTCHAs whenever Private Access Tokens are available. Go and enable your servers to send token challenges and validate tokens. And, in your apps, use URLSession or WebKit to automatically support Private Access Tokens. I'm looking forward to the CAPTCHA-free experiences you will build.",
+    "segments": []
+  },
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10077/4/C35119F9-FA1E-478C-9638-E90C1153FACD/downloads/wwdc2022-10077_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10077/4/C35119F9-FA1E-478C-9638-E90C1153FACD/downloads/wwdc2022-10077_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10053",
+      "year": "2023",
+      "title": "What’s new in privacy",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10053"
+    },
+    {
+      "id": "10096",
+      "year": "2022",
+      "title": "What’s new in privacy",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10096"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:42:55.302Z"
+}

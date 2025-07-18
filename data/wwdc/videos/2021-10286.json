@@ -1,0 +1,148 @@
+{
+  "id": "10286",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10286/",
+  "title": "Explore bindless rendering in Metal",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Graphics & Games"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Bass music playing ♪  ♪ Alejandro Segovia Azapian: Welcome to WWDC! My name is Ale Segovia Azapian, and I'm a GPU software engineer at Apple.\n\nIn this session, we're going to explore bindless rendering in Metal.\n\nBindless is a modern resource binding model that allows making groups of resources available to the GPU to implement modern rendering techniques.\n\nFirst, we'll take a look at the need for the concept behind bindless.\n\nThen, we will introduce the bindless model and show how it provides the flexibility needed to solve the challenges of the traditional binding model.\n\nWe will recap the mechanisms to encode and make your scene resources available to Metal with argument buffers and how to navigate your GPU structures from shaders.\n\nLet's get started! So bindless rendering allows making all our scene resources available to our shaders, bringing incredible flexibility to our graphics techniques.\n\nLet's take a look at an example.\n\nLet's imagine we have a ray tracing kernel finding intersections against an acceleration structure.\n\nFor some light effects, such as ray-traced shadows, the algorithm is very natural.\n\nWe want to find any objects between the intersection point and the light.\n\nAll we need to trace the shadow ray is a position and the direction toward the light.\n\nNo object attributes or Metal resources are needed beyond the world-space position of the intersection, which we can derive from the ray and the intersection's parameter.\n\nFor other effects however, such as reflections, the situation gets more complicated.\n\nLet's take a look at a ray tracing reflection shader in Metal Shading Language.\n\nIn this new example, we've just found an intersection, and we're trying to paint the pixel with the correct reflected color.\n\nIf we just paint a solid color after we find an intersection, the reflection on the ground will not look accurate.\n\nTo produce correct results, we need to determine the attributes of each reflected point found and calculate the correct shading for its pixel.\n\nThis problem is also present for other ray-traced effects such as diffuse global illumination and even ambient occlusion in some cases.\n\nThe challenge is that when we ray trace, our rays may hit any object in the acceleration structure.\n\nThis means that from our ray tracing shader, we potentially need access to any Metal resources in our scene, including vertex data -- associated with the mesh intersected -- and its material.\n\nIt is just not possible to bind this amount of resources directly to our pipeline.\n\nThis is where the bindless binding model comes in.\n\nThe idea behind bindless is to aggregate our resources and link them together.\n\nThis allows us to bind a single buffer to the pipeline and make all referenced resources available via navigation.\n\nIn Metal, the construct that allows us to do this is argument buffers.\n\nIn particular, for bindless, argument buffers Tier 2 are required.\n\nThese are available on the Apple6 and Mac2 GPU families.\n\nArgument buffers can be used from all shader types in Metal.\n\nThis means that you can use them for both ray tracing and rasterization.\n\nAs we saw, for certain ray tracing effects, using bindless is mandatory in order to obtain good visual results.\n\nFor rasterization, the use is optional but provides advantages over the direct binding model.\n\nIn particular, it virtually removes the slot limits for the number of resources that can be bound for any given draw call, and it also provides some nice optimization opportunities that we'll explore later in this session.\n\nWe introduced argument buffers with Metal 2 as a mechanism to allow you to bind constant data and resources all at once in a single call to the Metal API.\n\nArgument buffers are very flexible and can even reference other buffers.\n\nThe idea behind the bindless model is to leverage this capability to link all of our scene resources together.\n\nThis will allow making them available to the GPU at the same time.\n\nLet's look at an example of a way to link our scene resources with argument buffers.\n\nLet's say we want to render a model such as this fire truck.\n\nThe model is comprised of textures, vertex data, and index data.\n\nThese are the typical resources you would bind one by one for every draw call in the traditional binding model.\n\nIn our case, however -- because we want to make all textures, vertex data, and indices of the scene available at once -- we need to aggregate these.\n\nHere's a potential way to do so.\n\nWe can first create a meshes argument buffer to contain all our meshes or submeshes, depending on how our assets are organized.\n\nThis argument buffer will allow referencing the vertex and index arrays in our scene.\n\nSimilarly, we can do the same and encode our materials to an argument buffer.\n\nEach material can reference its textures as well as contain inline constant data.\n\nOK, but now that we have all our meshes and materials available to the GPU, how can we bring them together? Well, we can, for example, create an instance object and also place it in an argument buffer.\n\nAn instance can reference one mesh and an associated material.\n\nThis is also a great place to store a model transformation matrix as inline constant data.\n\nBut we don't have to stop there.\n\nNow that we can store one instance, we can take this further and encode all of our instances as an array into this argument buffer.\n\nLet's simplify this diagram and add a few more truck instances, each one with its own material.\n\nAs we can see, with this, we can now have our full scene and its resources encoded and linked with argument buffers.\n\nLater, when we want to reference any of these resources from our shaders, we just need a pointer to the instances buffer.\n\nWe can pass it directly and interpret this buffer as an array, or pass a pointer through another scene argument buffer.\n\nNow, it's important to note what happens with the residency of indirectly accessed resources.\n\nSince we're only passing a pointer to the scene into the pipeline, Metal will know about this buffer reference, but not about resources accessed indirectly.\n\nThe application is responsible for declaring residency of all indirectly accessed resources.\n\nMaking a resource resident means signaling to the driver to make its memory available to the GPU.\n\nThis is necessary so we can reference them from our shaders.\n\nWe can do this by calling the useResource:usage: API for compute encoders and useResource:usage:stages: API for render command encoders.\n\nAccessing a nonresident resource is a common cause of GPU restarts and command buffer failures.\n\nThis is because its memory pages may not be present if we forgot to call this API.\n\nSo it's very important to declare every indirectly accessed resource to Metal.\n\nNow, another option, for convenience, is that resources allocated from MTLHeaps can now be made resident with a single call by means of the useHeap API.\n\nThis is a great option if you are already suballocating or planning to suballocate resources from heaps.\n\nNow, heaps are a fantastic part of the Metal API, and we recommend you use them for the best resource-creation performance, and memory-saving opportunities.\n\nThere are, however, a few considerations to use them effectively.\n\nThe first thing to ask is, Are all our suballocated resources only read from? Examples of where we might need to write into a resource include mesh skinning from a compute shader and dynamic textures, amongst others.\n\nIn these cases, if the GPU needs to write into any resources, they need to be declared resident individually with the write usage flag.\n\nAdditionally, any resources that may have been modified that we now intend to read from will still need their own useResource call.\n\nThis is so that the Metal framework can handle resource transitions for you, flushing GPU caches and adjusting the internal memory layout.\n\nThe second consideration is, Does the heap track suballocate resource dependencies? Again, this is especially important if we're reading and writing into resources coming from the same heap.\n\nMetal is great at avoiding synchronization problems through dependency tracking, and since Metal 2.3, heaps can be configured to track hazards in the access to their resources.\n\nHowever, since heaps are a single resource to Metal, synchronization is handled at the heap level not the suballocation level.\n\nThis may subject suballocated resources to the problem of false sharing.\n\nLet's take a look.\n\nLet's imagine we have two render passes -- A and B -- accessing resources from the same heap.\n\nRender pass A is rendering to a render texture allocated from a tracked heap.\n\nRender pass B is reading from an unrelated buffer that is suballocated from the same heap.\n\nDepending on different conditions, render passes A and B may qualify to be executed in parallel by the GPU; however, due to the potential hazard of writing and reading from the same resource -- the heap -- Metal has to serialize access to ensure there are no race conditions.\n\nThis can potentially increase the execution wall-clock time of our workload by the GPU.\n\nIn our case, however, if we know the individual resources are independent, this fence could be avoided.\n\nThere are two ways to do this.\n\nOne option is to suballocate resources that are updatable from heaps separate to the ones used for our static resources.\n\nThe other option, if we desire to bundle everything together, is to make sure heaps are configured not to track their suballocated resources.\n\nThis is the default behavior in Metal, and it means we as programmers take on the responsibility of synchronizing hazards ourselves.\n\nNow, in this diagram I simplified things a bit to illustrate the problem of false sharing.\n\nIn practice, overlapping occurs at the shading stage level, not at the render pass level.\n\nAs a consequence, Metal allows us to specify our fences at the stage granularity.\n\nThis is great because it allows us to still run parts of our pipeline -- such as vertex stage and rasterizer -- concurrently, and only block later in the fragment stage if it happens to depend on a previous pass's fragment stage output.\n\nWe recommend you always do this for maximum performance, if possible.\n\nNow, this is a lot to remember, so if you only get one thing from this list, please remember this: read-only data, such as static textures and meshes, are the easiest to handle.\n\nDetermine the total allocation size and alignment requirements upfront and place these resources in a heap when the app starts or during a loading section in your game.\n\nThis way, you can later make it resident in a single call, with minimal overhead in your critical path.\n\nNow that we know about the bindless binding model, let's take a look at how we can encode our resources and put this in practice and make our complete scene available to the GPU with argument buffers.\n\nLet's say we want to encode our instances buffer.\n\nRemember, this buffer consists of an array of instances.\n\nAs we saw, instances reference a mesh, a material, and contain an inline constant 4x4 matrix describing the transformation from local to world space.\n\nEncoding is performed via an argument buffer encoder, and there are two distinct ways to create one in Metal.\n\nYou may be familiar with encoding via reflection.\n\nIf the argument buffer is passed as a direct parameter to the shader function, we can ask the MTLFunction object to create an encoder for us.\n\nThis mechanism works great, but when we are encoding the entire scene into argument buffers, not all encoders can be reflected.\n\nIn particular, the MTLFunction signature does not know about the indirectly referenced buffers.\n\nThere might also be other situations where creating an encoder from a MTLFunction is not convenient; for example, if your engine architecture handles argument-buffer creation and resource loading separate from pipeline state creation.\n\nAdditionally, we cannot reflect an encoder when the function is expecting to be passed an array.\n\nSo what can we do in these cases? For these cases, Metal provides a convenient second mechanism to create an encoder through a MTLArgumentDescriptor.\n\nMTLArgumentDescriptors allow describing the struct members to Metal and subsequently creating an encoder without a MTLFunction.\n\nWe must first create a descriptor for each member, specifying data type and binding index.\n\nNext, we take our descriptors, and pass them directly to the MTLDevice to create our encoder.\n\nAs a result, we obtain our encoder object back.\n\nSo let's explore what this looks like in code.\n\nFor each member, we needed to create a MTLArgumentDescriptor; we specify the binding index, corresponding to the ID attribute for the member in the struct; we specify the MTLDataType and potentially access; and finally, after we've declared all the members, we can create the encoder directly from the device, passing an array with all our descriptors.\n\nOnce we have an encoder, it's straightforward to record our data into a buffer.\n\nWe set the argument buffer on the encoder, pointing at the beginning of the buffer.\n\nThen, we simply set the data we want to store.\n\nEncoding an array is simple as well.\n\nAll we have to do is offset the encoder's argument buffer recording point by the encodedLength, which we can conveniently retrieve from the encoder.\n\nFor the next instance, we add the encodedLength to our offset a second time.\n\nIn fact, the offset for each position we need to record in is going to be the index times the encodedLength.\n\nThis mechanism makes it very easy to encode arrays of structs.\n\nNow, one important point worth mentioning is that no special treatment is needed from shader side to index into these arrays.\n\nThe shader does not need to know the length of the buffer and can freely index into any location in the array.\n\nIt just works! OK, now that we have encoded our bindless scene, let's take a look at navigation.\n\nFor the case of ray tracing, navigation is very natural.\n\nFirst, we bind the buffer that contains the root of our bindless scene to our ray tracing pipeline.\n\nThis is the argument buffer from where we can access all the others.\n\nNext, from our kernel, we proceed with the ray-traced intersection as usual.\n\nAfter we discovered an intersection, the intersection result object describes the navigation.\n\nWe can query this object for instance_id, geometry_id, and primitive_id.\n\nThese members are designed specifically for navigating our acceleration structures.\n\nIt is, therefore, important to build our bindless scene with a structure that mirrors our acceleration structures, such as the one shown earlier.\n\nLet's take a look at it again.\n\nRemember, this is just an example of how to organize the scene, so I'm going to navigate it according to how I organized it.\n\nThe particular details for your scene may vary, according to how you decide to organize your own argument buffers.\n\nFirst, we need to find an intersection.\n\nOnce we have it, because we strategically organized our bindless scene, given the instance_id we can now follow the pointer to the instances buffer and determine which one we hit.\n\nNext, as we saw, the instance knows its mesh and material.\n\nSo we can simply use the geometry_id to determine which geometry we hit within the referenced buffer.\n\nFinally, if we prepared each mesh to know its index buffer, we can use the primitive_id to determine the exact primitive that we hit.\n\nIn the case of a triangle, for instance, we can pull the three indices from this array and use them to retrieve its vertex data.\n\nHere's what this navigation looks like in Metal Shading Language.\n\nFrom the intersection object, we retrieve the instance_id and use it to dynamically index into our instances array and retrieve the instance we hit.\n\nNext, having the instance, we use the geometry_id to determine which geometry or submesh was hit.\n\nOnce we've determined the geometry, we can directly pull the indices from the index buffer.\n\nIn the case of a triangle, we pull three indices, one after the other.\n\nWe use these indices to access into the vertex data array and retrieve any attribute we need for our technique.\n\nFor example, we can retrieve the normals corresponding to each vertex.\n\nAnd finally, using the point's barycentric coordinates, we manually interpolate vertex normals to arrive at the correct normal at the intersection point.\n\nWith these changes in place, taking it back to our teapot example, now that we have a way to calculate the normal at the intersection point, we can correctly shade our reflection.\n\nWe've updated the code to find the correct attributes at the intersection point, and now the results are visually correct.\n\nWe can now continue building on this framework to calculate any other attribute we want, such as texture coordinates to apply a texture or tangent vectors to implement normal mapping.\n\nSo here we saw how to navigate our bindless scene to retrieve vertex data, manually interpolate it, and finally, apply it to correctly shade all the intersection points discovered.\n\nTo help you bring these concepts into your own engine, we're going to be releasing a companion code sample that shows a concrete implementation of all of this.\n\nThis is a hybrid rendering sample that calculates ray-traced reflections for a scene loaded using the Model I/O framework.\n\nThe sample shows how you can encode a bindless scene that matches the ray tracing acceleration structures, and it also shows how to find intersections and correctly shade their associated pixels directly from your ray tracing shaders.\n\nAs we can see here, the sample also allows directly visualizing the output of the reflection ray tracing shader just at the points where the rays intersect the trucks.\n\nThis is great for iteratively experimenting with the reflection algorithm.\n\nNow, we've covered a lot of ground here, and so far we've been centering most of our discussion in the context of ray tracing.\n\nBut as I mentioned earlier, we can apply the same principles to properly shade our pixels in the context of rasterization.\n\nPhysically based rendering is a great candidate for this.\n\nIn PBR, our fragment shader needs information coming from several textures; for example, albedo, roughness, metallic, and ambient occlusion.\n\nIn the direct binding model, we need to bind each slot individually before issuing each one of our draw calls.\n\nThe bindless model vastly simplifies this.\n\nOnce we have encoded our argument buffers, we can directly bind the scene, navigate to the material corresponding to our draw call, and access all textures indirectly.\n\nIn fact, since we now just need to bind a single buffer once, this architecture provides an excellent opportunity to optimize our engines further by reducing the number of draw calls and use instanced rendering instead.\n\nJust remember to make resident all textures we plan to access.\n\nHere's an example of a typical PBR shader.\n\nIn the traditional model, each referenced texture needs to be individually bound before this draw call.\n\nIf the following draw call requires a different set of textures, all these resources need to be bound one by one as well.\n\nWhen using a bindless model, we can now just pass our root argument buffer and retrieve our material directly from its referenced structures, just like before.\n\nFirst we retrieve the instance -- this may be determined in the vertex shading stage -- then retrieve its material, and use its referenced textures and constant data to calculate the appropriate shading.\n\nFinally, we just return the color.\n\nAll right! And that was a tour on how to effectively implement bindless rendering in Metal! To recap, we explored the Metal bindless model and saw how extremely flexible it is, allowing you to represent your scene any way you desire.\n\nMy recommendation is to design and build structures that ease the navigation for your given renderer.\n\nThis way, navigation becomes very natural, and you can even use the same buffers for both ray tracing and rasterization.\n\nBindless completely changes the game, giving your GPU all the data you need to implement modern rendering techniques.\n\nYou can even take it further and use this architecture to put the GPU in the driver seat and adopt indirect pipelines through indirect command buffers and GPU culling.\n\nWe can't wait to see how you put this in practice to deliver the next generation of graphical applications and games.\n\nThank you and enjoy the rest of WWDC 2021! ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "0:07",
+      "title": "Simple Intersection Kernel 2",
+      "language": "swift",
+      "code": "if(i.type == intersection_type::triangle)\n{\n  constant Instance& inst     = get_instance(i);\n  constant Mesh&     mesh     = get_mesh(inst, i);\n  constant Material& material = get_material(inst, i);\n  \n  color = shade_pixel(mesh, material, i);\n}   \n\noutImage.write(color, tid);"
+    },
+    {
+      "timestamp": "0:08",
+      "title": "PBR fragment shading requires several textures",
+      "language": "swift",
+      "code": "fragment half4 pbrFragment(ColorInOut in [[stage_in]],\n                           texture2d< float > albedo    [[texture(0)]],\n                           texture2d< float > roughness [[texture(1)]],\n                           texture2d< float > metallic  [[texture(2)]],\n                           texture2d< float > occlusion [[texture(3)]])\n{\t\n\thalf4 color = calculateShading(in, albedo, roughness, metallic, occlusion);\n\treturn color;\n}"
+    },
+    {
+      "timestamp": "0:09",
+      "title": "Bindless makes all textures available via AB navigation",
+      "language": "swift",
+      "code": "fragment half4 pbrFragmentBindless(ColorInOut in [[stage_in]], \n                                   device const Scene* pScene [[buffer(0)]])\n{\n\tdevice const Instance& instance = pScene->instances[in.instance_id];\n\tdevice const Material& material = pScene->materials[instance.material_id];\n\t\n\thalf4 color = calculateShading(in, material);\n\t\n\treturn color;\n}"
+    },
+    {
+      "timestamp": "1:48",
+      "title": "Simple Intersection Kernel 1",
+      "language": "swift",
+      "code": "if (intersection.type == intersection_type::triangle) \n{\n  // solid blue triangle\n  color = float4(0.0f, 0.0f, 1.0f, 1.0f);\n}   \n\noutImage.write(color, tid);"
+    },
+    {
+      "timestamp": "11:33",
+      "title": "Encoder creation",
+      "language": "swift",
+      "code": "struct Instance\n{\n    constant Mesh*     pMesh            [[id(0)]];\n    constant Material* pMaterial        [[id(1)]];\n    constant float4x4  modelTransform   [[id(2)]];\n};"
+    },
+    {
+      "timestamp": "11:50",
+      "title": "Encoder via reflection",
+      "language": "swift",
+      "code": "// Shader code references scene\nkernel void RTReflections( constant Scene* pScene [[buffer(0)]] );"
+    },
+    {
+      "timestamp": "13:08",
+      "title": "Argument Buffers referenced indirectly",
+      "language": "swift",
+      "code": "MTLArgumentDescriptor* meshArg \n= [MTLArgumentDescriptor argumentDescriptor];\n\nmeshArg.index    = 0;\nmeshArg.dataType = MTLDataTypePointer;\nmeshArg.access   = MTLArgumentAccessReadOnly;\n\n// Declare all other arguments (material and transform)\n   \nid<MTLArgumentEncoder> instanceEncoder \n= [device newArgumentEncoderWithArguments:@[meshArg, \n                                            materialArg, \n                                            transformArg]];"
+    },
+    {
+      "timestamp": "16:10",
+      "title": "Navigation 1",
+      "language": "swift",
+      "code": "// Instance and Mesh\n\nconstant Instance& instance = pScene->instances[intersection.instance_id];\nconstant Mesh&     mesh     = instance.mesh[intersection.geometry_id];\n\n// Primitive indices\n\nushort3 indices; // assuming 16-bit indices, use uint3 for 32-bit\n\nindices.x = mesh.indices[ intersection.primitive_id * 3 + 0 ];\nindices.y = mesh.indices[ intersection.primitive_id * 3 + 1 ];\nindices.z = mesh.indices[ intersection.primitive_id * 3 + 2 ];"
+    },
+    {
+      "timestamp": "16:43",
+      "title": "Navigation 2",
+      "language": "swift",
+      "code": "// Vertex data\n\npacked_float3 n0 = mesh.normals[ indices.x ];\npacked_float3 n1 = mesh.normals[ indices.y ];\npacked_float3 n2 = mesh.normals[ indices.z ];\n\n// Interpolate attributes\n\nfloat3 barycentrics = calculateBarycentrics(intersection);\nfloat3 normal       = weightedSum(n0, n1, n2, barycentrics);"
+    },
+    {
+      "timestamp": "19:30",
+      "title": "PBR fragment shading requires several textures",
+      "language": "swift",
+      "code": "fragment half4 pbrFragment(ColorInOut in [[stage_in]],\n                           texture2d< float > albedo    [[texture(0)]],\n                           texture2d< float > roughness [[texture(1)]],\n                           texture2d< float > metallic  [[texture(2)]],\n                           texture2d< float > occlusion [[texture(3)]])\n{\t\n\thalf4 color = calculateShading(in, albedo, roughness, metallic, occlusion);\n\t\n  return color;\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Accelerating ray tracing using Metal",
+        "url": "https://developer.apple.com/documentation/metal/metal_sample_code_library/accelerating_ray_tracing_using_metal"
+      },
+      {
+        "title": "Applying realistic material and lighting effects to entities",
+        "url": "https://developer.apple.com/documentation/RealityKit/applying-realistic-material-and-lighting-effects-to-entities"
+      },
+      {
+        "title": "Managing groups of resources with argument buffers",
+        "url": "https://developer.apple.com/documentation/metal/buffers/managing_groups_of_resources_with_argument_buffers"
+      },
+      {
+        "title": "Metal",
+        "url": "https://developer.apple.com/documentation/Metal"
+      },
+      {
+        "title": "Rendering reflections in real time using ray tracing",
+        "url": "https://developer.apple.com/documentation/Metal/rendering-reflections-in-real-time-using-ray-tracing"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10286/7/76356517-0CAC-4E8D-81E3-B42DCE552D15/downloads/wwdc2021-10286_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10286/7/76356517-0CAC-4E8D-81E3-B42DCE552D15/downloads/wwdc2021-10286_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10101",
+      "year": "2022",
+      "title": "Go bindless with Metal 3",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10101"
+    },
+    {
+      "id": "10149",
+      "year": "2021",
+      "title": "Enhance your app with Metal ray tracing",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10149"
+    },
+    {
+      "id": "10150",
+      "year": "2021",
+      "title": "Explore hybrid rendering with Metal ray tracing",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10150"
+    },
+    {
+      "id": "10148",
+      "year": "2021",
+      "title": "Optimize high-end games for Apple GPUs",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10148"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:33:16.691Z"
+}

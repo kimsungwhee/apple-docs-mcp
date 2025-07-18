@@ -1,0 +1,244 @@
+{
+  "id": "10146",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10146/",
+  "title": "Demystify SwiftUI containers",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello, my name is Matt, and I work on SwiftUI. This video is all about building custom container views in SwiftUI. SwiftUI provides many kinds of full-featured containers in its API, like the List container view. Container views use a trailing view builder closure, to wrap their content. View builders allow content to be defined statically, like this hard-coded list of Text views. But can also define content dynamically, such as using a ForEach view to generate Text views from data and view builders support composing any kind of content together, within the same container. Some containers also support more advanced capabilities, such as grouping content into distinct sections with configurable headers and footers. And container-specific modifiers for customizing content. Like in this example, where I’m hiding the separators that a List normally draws between its rows. In this video, I’ll show how to use several new APIs to build custom container views that can support all of these capabilities, and more. I’ll start by explaining how to make custom containers support any composition of content, maximizing their flexibility.\n\nI’ll also demonstrate how to add support for sections. And later, I’ll describe how to define custom modifiers for decorating content within a container.\n\nFor each topic, I’ll also discuss some of the core concepts behind SwiftUI and its API design. So I’ll jump right in and start...\n\nWhat’s this? Oh wow, Sommer and Sam from the \"What’s New in SwiftUI\" talk are throwing a karaoke party to celebrate WWDC! To RSVP, I have to submit the song that I’m planning to sing, but I have no idea what song to choose! In times of crisis like this, I’m going to do what I always do. Solve my problems using the power and flexibility of SwiftUI’s declarative API! So in this video, I’ll also pick the perfect karaoke song, and I’ve been working on something that I think might help. My trusty display board! I’ve already started brainstorming a few possible karaoke songs. I’m using an initializer, that maps my collection of song ideas into Text views, which are written on cards that get pinned to the board. In the DisplayBoard’s implementation I’m using a custom layout, to randomly position the cards across the board. And the cards themselves are constructed using a ForEach view, which handles iterating over the input data. Generating a content view from each data element and wrapping it in a custom CardView that I made.\n\nThis is a great start, but my DisplayBoard container is limiting my creativity, only allowing cards to be constructed from a single collection of data. I can make my container more flexible by adding support, for more kinds of composition in its content. But first, it’s important to understand what composition means. Consider a SwiftUI List like this one, displaying a set of song ideas that Sam recommended to me. The List is initialized with a collection of data, just like my DisplayBoard. But SwiftUI supports creating Lists in other ways too.\n\nFor example, I can make a List by manually writing out a set of views instead, like I did for this list of my own song ideas.\n\nSwiftUI bridges the gap between these two techniques, by offering APIs for composing different kinds of content together.\n\nFor example, I can rewrite the data-driven list using a ForEach view. This supports the same functionality as before, but the ForEach view can be nested within the view builder.\n\nAnd that’s important, because by defining the content for both Lists using only views. That means I can combine them together into a single, unified List, displaying all of the song ideas I’ve collected so far. This unified List is an example of composition. I can define the first three rows statically, using hard-coded Text views, while also generating the rest of the rows dynamically, using data, all within the same List.\n\nI want to support flexible composition in my DisplayBoard container as well. To do that, I’ll need to change my implementation. The first step is to refactor my container, so it can be initialized using only a view builder. I’ll start by replacing my existing, data-driven properties with a single, generic view property instead.\n\nBy adding the ViewBuilder attribute, my default initializer will automatically construct the content using a trailing view builder closure. Next, I need to update my view body to use the new content view. I can do this with the help of a new API, called ForEach(subviewOf:) This new ForEach initializer accepts a single view value as input. And passes back each of its subviews into the trailing view builder, allowing them to be transformed into a different kind of view, like my card views. With this new implementation, I can now take my List of song ideas from earlier.\n\nAnd wrap the same content in my DisplayBoard instead, transforming each Text view into a card on the board.\n\nThis is a big improvement, but it’s important to understand how this works. Back in my implementation, I’ll drill in on the new API. ForEach(subviewOf: What, exactly, is a subview? A subview is simply a view that’s contained within another view. Inspecting the content, how many subviews are there? Well, like the answer to all great questions, it depends! Just considering the top-level views in the code, there are four. The three Text views, and the ForEach view. But the ForEach is more than just one view, it represents a collection of views generated from data.\n\nAnd in this case, that resolves to nine subviews, one for each of Sam’s favorite songs. Meaning this DisplayBoard’s content, actually resolves to a total of twelve distinct subviews. Which is evident in the twelve cards displayed on the board.\n\nAnd is also consistent with the same content in a List, displaying twelve individual rows.\n\nIt’s important to understand the distinction, between these two different kinds of subviews.\n\nThe four subviews from the DisplayBoard’s code, highlighted in orange, are known as declared subviews. Whereas the views that will appear onscreen, highlighted in blue, are known as the resolved subviews. These include the three Text views I defined manually, as well as the nine Text Views generated by the ForEach.\n\nIn SwiftUI’s declarative system, declared subviews define a recipe for producing resolved subviews while a SwiftUI app is running.\n\nFor example, a ForEach view is a declared subview that has no specific visual appearance or behavior by itself. Instead, the entire purpose of a ForEach view is to produce a collection of resolved subviews.\n\nA Group view is another example of a built-in container, and represents a collection of resolved subviews. For example, a Group of three Text views will resolve to exactly three corresponding subviews.\n\nIt’s even possible for some declared subviews, to produce no resolved subviews at all, like an EmptyView. Or to conditionally resolve to a different number of subviews, such as the different branches of an if statement.\n\nThe new ForEach(subviewOf:) API, iterates over only the resolved subviews of the content. This makes it possible for my container to support any possible composition of content with even less code, because SwiftUI will do the work of resolving the subviews for me, no matter how those subviews are declared in code.\n\nSupporting flexible composition, makes adding new songs to my board incredibly easy. In addition to Sam’s songs, Sommer was also kind enough to recommend a few of her favorite songs, which I can add using another ForEach view. And this is possible without requiring any additional changes in my container’s implementation. However, it’s gotten so easy to add new ideas, that now it’s getting overwhelming to see all the cards! To fix this, I’m going to scale down the size of the cards when the board gets too crowded. I want to scale down the size of the cards if more than 15 of them get added to the board. To count the number of cards, I can use another new API. It’s called Group(subviewsOf:), which I can wrap around the ForEach in my implementation. Like the previous ForEach(subviewOf:) API, this view accepts a view as input and resolves its subviews.\n\nBut instead of iterating over them one at a time, the Group(subviewsOf:) API passes back a collection, of all of the resolved subviews.\n\nI can use the count property on the collection to check the total number of cards, configuring my CardViews to use a smaller scale, when there are more than 15 of them.\n\nWhen I rerun my app, the smaller size keeps the cards from overlapping too much. That’s helpful for reading the cards, but my board still feels a bit disorganized. So next, I’ll clean things up by adding support for sections.\n\nA List is an example of a built-in container that supports sections, using SwiftUI’s Section view. A Section view behaves much like a Group view, but with extra section-specific metadata, such as optional headers and footers. For my display board, my goal is to create a separate section for each person's favorite songs. However, custom containers don’t support sections by default, so I’ll have to do some extra work to enable them.\n\nHere’s a rough sketch of the design I have in mind, dividing the board into vertical columns for each section, with their headers appearing at the top.\n\nIn my implementation, I’ll start by factoring out my existing card layout code into its own view.\n\nI’ll reuse this view when laying out the cards within each individual section.\n\nNext, I’ll wrap the section content in a horizontal stack, for dividing the board into columns. To construct the columns, I’ll need to access the information for any Section views that exist within my display board’s content. For that, I can use another new API on ForEach.\n\nIt's called ForEach(sectionOf:). And this works similarly to ForEach(subviewOf:), taking in a view instance as its input.\n\nBut this version iterates over each section it detects within the view, vending a section configuration into its view builder. Each section has a property for its content view, which I can pass to the helper view I created earlier for laying out the cards.\n\nAnd for some extra polish, I’ll add a custom background to each section, to help visually distinguish them from each other.\n\nRunning the app again, I can tell that the cards appear a little more organized than before, with each section laid out in its own column. Now I’ll add support for displaying the section headers.\n\nI’ll start by wrapping each section in a VStack, to hold both the header and the content.\n\nNext, I’ll use an if statement to check if the section has a header, using the isEmpty property, which returns whether or not the header contains any resolved subviews.\n\nIf the header does exist, I’ll display it within a custom header card that I wrote earlier.\n\nChecking out the board, there’s now a distinct, visible header card placed above each section.\n\nBut to make progress on choosing a song, I need to start crossing things off. And I can enable that by adding support, for customizing the content of my container. At the beginning of the video, I showed an example using the .listRowSeparator() modifier. Even though this modifier is applied to views within the List, the List itself is responsible for implementing its behavior when deciding to draw the separators in between the rows.\n\nIn my display board, I’d like to support modifying the cards to cross them off if I decide to not choose that specific song. There’s a new API for building these kinds of container-specific modifiers, called container values. Container values are a new kind of keyed storage, similar to concepts like the Environment and Preferences.\n\nBut unlike environment values, which are passed down the entire view hierarchy. Or Preferences, which pass values up the entire view hierarchy to every containing view. The container values of a resolved subview can only be accessed by their direct container, making them the perfect tool for implementing container-specific customization options.\n\nIn my display board, I’m going to use container values to create a custom view modifier for crossing off cards. Defining a new kind of container value only requires a few lines of code.\n\nFirst, I’ll create an extension on the ContainerValues type, which is a new type in SwiftUI.\n\nWithin my extension, I’m going to declare a property using the new Entry macro, storing a boolean value to track if a card has been rejected.\n\nThe Entry macro is a new API, that provides a convenient syntax for adding new values to SwiftUI keyed storage types, including environment values, focus values, and more.\n\nNext, I’ll declare a custom view modifier as a convenience for setting my property, which calls through to the new containerValue() API modifier, passing the property’s key path and the new value to set.\n\nNow I’ll add support for my new container value, within my container. In my section implementation, I’ll need to customize each card view depending on whether or not its content has been rejected. I can do that using the new containerValues property. Container values can be read from both resolved subviews and sections.\n\nI’ll pass my custom value to the isRejected parameter on the CardView, which will display a custom decoration if the card has been rejected. And with my new modifier, I can now start crossing off some songs! First, I love the song Scrolling in the Deep, but I’m not sure I have the vocal range to pull that off at karaoke.\n\nSo I’ll cross it off on the board, which gets rendered with a big, red slash.\n\nSam also called dibs on a few of his songs, so I’ll reject those too.\n\nI’m not sure what Sommer plans to sing, so I’ll reject every song in her section, just to be safe. Applying my modifier to an entire section will set the value on all of its subviews.\n\nMeaning all of Sommer’s songs on the right have been crossed off. Alright, I’ve made a lot of progress towards finding the perfect karaoke song, but I still have to make a final decision. While I give that some more thought, I encourage you to try out these new APIs. Use the new initializers on ForEach and Group, to iterate over, and transform, the resolved subviews and sections of a view. Add support for sections, if your custom container’s design can support them. But if sections don’t make sense in your container, that’s okay, adding section support is optional. Lastly, use container values for customizing, and decorating, individual pieces of content.\n\nWith the help of these new APIs, I’ve narrowed down my options to just a handful of remaining songs. But I’m now realizing, there’s one more song I haven’t considered yet and I think it might be a winner.\n\n“I Will Always Subview” by Whitney View-ston.\n\nThe only thing left to do now, is send my RSVP back to Sommer and Sam, and finish this video, because I really have to start rehearsing my song! Until next time!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "0:20",
+      "title": "SwiftUI Lists",
+      "language": "swift",
+      "code": "List {\n  Text(\"Scrolling in the Deep\")\n  Text(\"Born to Build & Run\")\n  Text(\"Some Body Like View\")\n}"
+    },
+    {
+      "timestamp": "0:36",
+      "title": "SwiftUI Lists",
+      "language": "swift",
+      "code": "List {\n  Text(\"Scrolling in the Deep\")\n  Text(\"Born to Build & Run\")\n  Text(\"Some Body Like View\")\n\n  ForEach(otherSongs) { song in\n    Text(song.title)\n  }\n}"
+    },
+    {
+      "timestamp": "0:54",
+      "title": "SwiftUI Lists",
+      "language": "swift",
+      "code": "List {\n  Section(\"Favorite Songs\") {\n    Text(\"Scrolling in the Deep\")\n    Text(\"Born to Build & Run\")\n    Text(\"Some Body Like View\")\n  }\n\n  Section(\"Other Songs\") {\n    ForEach(otherSongs) { song in\n      Text(song.title)\n    }\n  }\n}"
+    },
+    {
+      "timestamp": "1:00",
+      "title": "SwiftUI Lists",
+      "language": "swift",
+      "code": "List {\n  Section(\"Favorite Songs\") {\n    Text(\"Scrolling in the Deep\")\n    Text(\"Born to Build & Run\")\n    Text(\"Some Body Like View\")\n  }\n\n  Section(\"Other Songs\") {\n    ForEach(otherSongs) { song in\n      Text(song.title)\n        .listRowSeparator(.hidden)\n    }\n  }\n}"
+    },
+    {
+      "timestamp": "2:35",
+      "title": "Data-driven DisplayBoard",
+      "language": "swift",
+      "code": "@State private var songs: [Song] = [\n  Song(\"Scrolling in the Deep\"),\n  Song(\"Born to Build & Run\"),\n  Song(\"Some Body Like View\"),\n]\n\nvar body: some View {\n  DisplayBoard(songs) { song in\n    Text(song.title)\n  }\n}"
+    },
+    {
+      "timestamp": "2:47",
+      "title": "DisplayBoard implementation",
+      "language": "swift",
+      "code": "// Insert code snvar data: Data\n@ViewBuilder var content: (Data.Element) -> Content\n\nvar body: some View {\n  DisplayBoardCardLayout {\n    ForEach(data) { item in\n      CardView {\n        content(item)\n      }\n    }\n  }\n  .background { BoardBackgroundView() }\n}"
+    },
+    {
+      "timestamp": "3:30",
+      "title": "List composition",
+      "language": "swift",
+      "code": "List(songsFromSam) { song in\n  Text(song.title)\n}"
+    },
+    {
+      "timestamp": "3:56",
+      "title": "List composition",
+      "language": "swift",
+      "code": "List {\n  Text(\"Scrolling in the Deep\")\n  Text(\"Born to Build & Run\")\n  Text(\"Some Body Like View\")\n}\n\nList(songsFromSam) { song in\n  Text(song.title)\n}"
+    },
+    {
+      "timestamp": "4:05",
+      "title": "List composition",
+      "language": "swift",
+      "code": "List {\n  Text(\"Scrolling in the Deep\")\n  Text(\"Born to Build & Run\")\n  Text(\"Some Body Like View\")\n}\n\nList {\n  ForEach(songsFromSam) { song in\n    Text(song.title)\n  }\n}"
+    },
+    {
+      "timestamp": "4:24",
+      "title": "List composition",
+      "language": "swift",
+      "code": "List {\n  Text(\"Scrolling in the Deep\")\n  Text(\"Born to Build & Run\")\n  Text(\"Some Body Like View\")\n\n  ForEach(songsFromSam) { song in\n    Text(song.title)\n  }\n}"
+    },
+    {
+      "timestamp": "4:59",
+      "title": "DisplayBoard implementation",
+      "language": "swift",
+      "code": "var data: Data\n@ViewBuilder var content: (Data.Element) -> Content\n\nvar body: some View {\n  DisplayBoardCardLayout {\n    ForEach(data) { item in\n      CardView {\n        content(item)\n      }\n    }\n  }\n  .background { BoardBackgroundView() }\n}"
+    },
+    {
+      "timestamp": "5:15",
+      "title": "DisplayBoard implementation",
+      "language": "swift",
+      "code": "// DisplayBoard implementation\n\n@ViewBuilder var content: Content\n\nvar body: some View {\n  DisplayBoardCardLayout {\n    ForEach(data) { item in\n      CardView {\n        content(item)\n      }\n    }\n  }\n  .background { BoardBackgroundView() }\n}\n\nDisplayBoard {\n  Text(\"Scrolling in the Deep\")\n  Text(\"Born to Build & Run\")\n  Text(\"Some Body Like View\")\n}\n\nDisplayBoard {\n  ForEach(songsFromSam) { song in\n    Text(song.title)\n  }\n}"
+    },
+    {
+      "timestamp": "5:27",
+      "title": "DisplayBoard implementation",
+      "language": "swift",
+      "code": "@ViewBuilder var content: Content\n\nvar body: some View {\n  DisplayBoardCardLayout {\n    ForEach(subviewOf: content) { subview in\n      CardView {\n        subview\n      }\n    }\n  }\n  .background { BoardBackgroundView() }\n}"
+    },
+    {
+      "timestamp": "5:57",
+      "title": "DisplayBoard composition",
+      "language": "swift",
+      "code": "DisplayBoard {\n  Text(\"Scrolling in the Deep\")\n  Text(\"Born to Build & Run\")\n  Text(\"Some Body Like View\")\n\n  ForEach(songsFromSam) { song in\n    Text(song.title)\n  }\n}"
+    },
+    {
+      "timestamp": "6:36",
+      "title": "Declared vs. resolved views",
+      "language": "swift",
+      "code": "DisplayBoard {\n  Text(\"Scrolling in the Deep\")\n  Text(\"Born to Build & Run\")\n  Text(\"Some Body Like View\")\n\n  ForEach(songsFromSam) { song in\n    Text(song.title)\n  }\n}\n\n// 3 resolved subviews\nText(\"Scrolling in the Deep\")\nText(\"Born to Build & Run\")\nText(\"Some Body Like View\")\n\n// 9 resolved subviews\nText(\"I Container Multitudes\")\n…\nText(\"Love Stack\")"
+    },
+    {
+      "timestamp": "8:00",
+      "title": "Resolved ForEach",
+      "language": "swift",
+      "code": "// 1 declared view\nForEach(songsFromSam) { song in\n  Text(song.title)\n}\n\n// 9 resolved subviews\nText(\"I Container Multitudes\")\n…\nText(\"Love Stack\")"
+    },
+    {
+      "timestamp": "8:16",
+      "title": "Resolved Group",
+      "language": "swift",
+      "code": "// 1 declared view\nGroup {\n  Text(\"Scrolling in the Deep\")\n  Text(\"Born to Build & Run\")\n  Text(\"Some Body Like View\")\n}\n\n// 3 resolved subviews\nText(\"Scrolling in the Deep\")\n\nText(\"Born to Build & Run\")\n\nText(\"Some Body Like View\")"
+    },
+    {
+      "timestamp": "8:32",
+      "title": "Resolved EmptyView",
+      "language": "swift",
+      "code": "// 1 declared view\nEmptyView()\t\n\n// Zero resolved subviews"
+    },
+    {
+      "timestamp": "8:39",
+      "title": "Resolved if expression",
+      "language": "swift",
+      "code": "// 1 declared view\nif showFavoriteSongs {\n  Text(\"Scrolling in the Deep\")\n  Text(\"Born to Build & Run\")\n  Text(\"Some Body Like View\")\n}\n\n// true → 3 resolved subviews\nText(\"Scrolling in the Deep\")\nText(\"Born to Build & Run\")\nText(\"Some Body Like View\")\n\n// false → Zero resolved subviews"
+    },
+    {
+      "timestamp": "9:17",
+      "title": "DisplayBoard composition",
+      "language": "swift",
+      "code": "DisplayBoard {\n  Text(\"Scrolling in the Deep\")\n  Text(\"Born to Build & Run\")\n  Text(\"Some Body Like View\")\n\n  ForEach(songsFromSam) { song in\n    Text(song.title)\n  }\n\n  ForEach(songsFromSommer) { song in\n    Text(song.title)\n  }\n}"
+    },
+    {
+      "timestamp": "9:55",
+      "title": "DisplayBoard implementation",
+      "language": "swift",
+      "code": "@ViewBuilder var content: Content\n\nvar body: some View {\n  DisplayBoardCardLayout {\n    Group(subviewsOf: content) { subviews in\n      ForEach(subviews) { subview in\n        CardView {\n          subview\n        }\n      }\n    }\n  }\n  .background { BoardBackgroundView() }\n}"
+    },
+    {
+      "timestamp": "10:19",
+      "title": "DisplayBoard implementation",
+      "language": "swift",
+      "code": "@ViewBuilder var content: Content\n\nvar body: some View {\n  DisplayBoardCardLayout {\n    Group(subviewsOf: content) { subviews in\n      ForEach(subviews) { subview in\n        CardView(\n          scale: subviews.count > 15 ? .small : .normal\n        ) {\n          subview\n        }\n      }\n    }\n  }\n  .background { BoardBackgroundView() }\n}"
+    },
+    {
+      "timestamp": "11:03",
+      "title": "DisplayBoard sections",
+      "language": "swift",
+      "code": "DisplayBoard {\n  Section(\"Matt's Favorites\") {\n    Text(\"Scrolling in the Deep\")\n    Text(\"Born to Build & Run\")\n    Text(\"Some Body Like View\")\n  }\n  Section(\"Sam's Favorites\") {\n    ForEach(songsFromSam) { song in\n      Text(song.title)\n    }\n  }\n  Section(\"Sommer's Favorites\") {\n    ForEach(songsFromSommer) { song in\n      Text(song.title)\n    }\n  }\n}"
+    },
+    {
+      "timestamp": "11:26",
+      "title": "Implementing DisplayBoard sections",
+      "language": "swift",
+      "code": "DisplayBoard sections\n@ViewBuilder var content: Content\n\nvar body: some View {\n  DisplayBoardCardLayout {\n    Group(subviewsOf: content) { subviews in\n      ForEach(subviews) { subview in\n        CardView(\n          scale: subviews.count > 15 ? .small : .normal\n        ) {\n          subview\n        }\n      }\n    }\n  }\n  .background { BoardBackgroundView() }\n}"
+    },
+    {
+      "timestamp": "11:35",
+      "title": "Implementing DisplayBoard sections",
+      "language": "swift",
+      "code": "@ViewBuilder var content: Content\n\nvar body: some View {\n  DisplayBoardSectionContent {\n    content\n  }\n  .background { BoardBackgroundView() }\n}\n\nstruct DisplayBoardSectionContent<Content: View>: View {\n  @ViewBuilder var content: Content\n  ...\n}"
+    },
+    {
+      "timestamp": "11:42",
+      "title": "Implementing DisplayBoard sections",
+      "language": "swift",
+      "code": "@ViewBuilder var content: Content\n\nvar body: some View {\n  HStack(spacing: 80) {\n    ForEach(sectionOf: content) { section in\n      DisplayBoardSectionContent {\n        section.content\n      }\n    }\n  }\n  .background { BoardBackgroundView() }\n}"
+    },
+    {
+      "timestamp": "12:48",
+      "title": "Implementing DisplayBoard section headers",
+      "language": "swift",
+      "code": "@ViewBuilder var content: Content\n\nvar body: some View {\n  HStack(spacing: 80) {\n    ForEach(sectionOf: content) { section in\n      VStack(spacing: 20) {\n        if !section.header.isEmpty {\n          DisplayBoardSectionHeaderCard { section.header }\n        } \n        DisplayBoardSectionContent {\n          section.content\n        }\n        .background { BoardSectionBackgroundView() }\n      }\n    }\n  }\n  .background { BoardBackgroundView() }\n}"
+    },
+    {
+      "timestamp": "14:46",
+      "title": "Custom container values",
+      "language": "swift",
+      "code": "extension ContainerValues {\n  @Entry var isDisplayBoardCardRejected: Bool = false\n}\n\nextension View {\n  func displayBoardCardRejected(_ isRejected: Bool) -> some View {\n    containerValue(\\.isDisplayBoardCardRejected, isRejected)\n  }\n}"
+    },
+    {
+      "timestamp": "15:42",
+      "title": "Implementing DisplayBoard customization",
+      "language": "swift",
+      "code": "struct DisplayBoardSectionContent<Content: View>: View {\n  @ViewBuilder var content: Content\n\n  var body: some View {\n    DisplayBoardCardLayout {\n      Group(subviewsOf: content) { subviews in\n        ForEach(subviews) { subview in\n          let values = subview.containerValues\n          CardView(\n            scale: (subviews.count > 15) ? .small : .normal,\n            isRejected: values.isDisplayBoardCardRejected\n          ) {\n            subview\n          }\n        }\n      }\n    }\n  }\n}"
+    },
+    {
+      "timestamp": "16:15",
+      "title": "DisplayBoard customization",
+      "language": "swift",
+      "code": "DisplayBoard {\n  Section(\"Matt's Favorites\") {\n    Text(\"Scrolling in the Deep\")\n      .displayBoardCardRejected(true)\n    Text(\"Born to Build & Run\")\n    Text(\"Some Body Like View\")\n  }\n  Section(\"Sam's Favorites\") {\n    ForEach(songsFromSam) { song in\n      Text(song.title)\n        .displayBoardCardRejected(song.samHasDibs)\n    }\n  }\n  Section(\"Sommer's Favorites\") {\n    ForEach(songsFromSommer) { Text($0.title) }}}\n  }\n  .displayBoardCardRejected(true)\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Creating custom container views",
+        "url": "https://developer.apple.com/documentation/SwiftUI/Creating-custom-container-views"
+      },
+      {
+        "title": "Forum: UI Frameworks",
+        "url": "https://developer.apple.com/forums/topics/ui-frameworks?cid=vf-a-0010"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10146/4/F3988ADA-0BF0-447C-BE07-01C07F99F11E/downloads/wwdc2024-10146_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10146/4/F3988ADA-0BF0-447C-BE07-01C07F99F11E/downloads/wwdc2024-10146_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10160",
+      "year": "2023",
+      "title": "Demystify SwiftUI performance",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10160"
+    },
+    {
+      "id": "10022",
+      "year": "2021",
+      "title": "Demystify SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10022"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:51:58.221Z"
+}

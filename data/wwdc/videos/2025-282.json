@@ -1,0 +1,154 @@
+{
+  "id": "282",
+  "year": "2025",
+  "url": "https://developer.apple.com/videos/play/wwdc2025/282/",
+  "title": "Make your UIKit app more flexible",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi there, welcome to “Make your UIKit app more flexible.” My name is Alexander MacLeod, and I'm an engineer on the UIKit team. A flexible app delivers an amazing experience across a variety of sizes and platforms. It maintains a familiar and intuitive navigation experience at any size. In this video, I will talk about some of the best practices to ensure that your app is flexible. First, I will go over the fundamentals of scenes, and share how they are foundational to a flexible application.\n\nNext, I will cover container view controllers, such as UISplitViewController and UITabBarController, and explore how they bring flexibility to your app. Finally, I will talk about APIs to support you in building an adaptive, and truly flexible UI.\n\nI’ll start with scenes.\n\nA scene is an instance of your app’s UI. It contains your app’s view controllers and views. Scenes provide hooks for handling external data, like a URL for deep linking to a section of your app’s UI.\n\nEach scene independently saves and restores UI state. A scene determines the best opportunities to ask for the current state, before persisting it to disk. You can query the previous UI state when a scene reconnects. This enables you to restore your scene exactly how it was before. Scenes also provide context on how your app is displayed, including details about the screen, and the window’s geometry.\n\nYou can have multiple scenes, each with their own lifecycle and state.\n\nDedicated scene types are designed to encapsulate distinct experiences. For example, a messaging app can have a dedicated compose scene for sending new messages. In iOS 26, you can now mix SwiftUI and UIKit scene types in a single app. Check out “What’s new in UIKit” for more. The portability that scenes provide are the perfect foundation for a flexible app.\n\nAs scenes are vital for ensuring flexibility, adopting UIScene life cycle will soon be mandatory. In the next major release following iOS 26, UIScene life cycle will be required when building with the latest SDK.\n\nWhile supporting multiple scenes is encouraged, only the adoption of scene life cycle is required. For details on how to adopt UIScene life cycle, read the tech note: “Migrating to the UIKit scene-based life cycle.” Because scenes are so important, I will show you an example of them in practice. I have developed an app that tracks the time I spend on a particular task. It has a feature where I can AirPlay the current task to an Apple TV.\n\nIt is the responsibility of the app delegate to determine the scene configuration for a connecting session. In the configurationForConnecingSceneSession delegate method, I check the scene session’s role.\n\nIf the role is a non-interactive external display, I return a bespoke scene configuration. Otherwise, the main scene configuration is preferred. Each configuration is defined in the app's Info.plist file.\n\nUISceneDelegate manages the life cycle of an individual scene.\n\nIn sceneWillConnectToSession, I first create a window, and associate it with the connecting scene. Note, if your scene configuration specifies a storyboard, window creation happens automatically.\n\nI specify the window’s root view controller and provide it with scene-specific data, like the timer model.\n\nFor my app, it is important to pause the timer when the scene moves to the background. To achieve this, I implement the sceneDidEnterBackground delegate method and pause the timer.\n\nI handle state restoration to ensure that the UI state of a connecting scene is exactly how it was left before.\n\nMy scene delegate provides a state restoration activity, which can include selections, navigation paths, and other UI state. The system persists this UI state, associating it with the scene instance. If the scene later reconnects, the state restoration activity is made available in the restoreInteractionStateWith userActivity delegate method. By populating the timer model with info from the user activity, I ensure that the UI state of the connecting scene is exactly how it was left before.\n\nBy adopting UIScene life cycle, I have strong foundations for a flexible application. Now, I will cover container view controllers, and explain how they are vital for building a flexible application. A container view controller is responsible for managing the layout of one or more child view controllers. UIKit provides a number of container view controllers that are designed to be flexible. First, I will talk about UISplitViewController.\n\nUISplitViewController manages the display of multiple adjacent columns of content, supporting seamless navigation throughout a hierarchy of information. When horizontal space is limited, the split view controller adapts by collapsing its columns into a navigation stack. UISplitViewController gains a host of new features, starting with interactive column resizing.\n\nYou can now resize columns by dragging the split view controller’s separators. When using the pointer, its shape will adapt to indicate the directions in which a column can be resized. UISplitViewController provides a default minimum, maximum, and preferred width for each column.\n\nThere may be columns in your app that prefer displaying content at greater widths, or only require a fraction of the default width to remain functional. You can customize the minimum, maximum, and preferred widths of each column using their associated split view controller properties. Be careful not to require a width that limits the number of columns that can be displayed, as this reduces the flexibility of your app. Your UI may need to adapt depending on whether the split view controller is expanded or collapsed.\n\nIn Mail, disclosure indicators are shown when the split view controller is collapsed, to convey additional content can be revealed upon cell selection.\n\nA new trait, split view controller layout environment, conveys whether an ancestor split view controller is expanded or collapsed. In this example, the trait is queried to conditionally add a disclosure indicator when the split view controller is collapsed. Also new, is first-class support for inspector columns.\n\nAn inspector is a column within a split view controller that provides additional details of the selected content. Preview uses an inspector to display metadata alongside the photo in the secondary column. When the split view controller is expanded, the inspector column resides on the trailing edge, adjacent to the secondary column.\n\nWhen collapsed, the split view controller adapts automatically, and presents the inspector column as a sheet.\n\nTo incorporate an inspector in your split view controller, specify a view controller for the inspector column. When the split view controller first appears, the inspector column is hidden. Call show to display the inspector column. UISplitViewController is designed to be flexible, and will ensure that your app delivers the best navigation experience at any size.\n\nAnother container at your disposal is UITabBarController.\n\nUITabBarController displays multiple, mutually exclusive panes of content, in the same area. The tab bar enables quick switching between tabs, while preserving the current state within each pane.\n\nWhat’s more, the appearance of the tab bar adapts for each platform.\n\nOn iPhone, the tab bar is located at the bottom of the scene.\n\nOn Mac, the tab bar can reside in the toolbar or can be displayed as a sidebar.\n\nOn Apple Vision Pro, the tab bar is displayed in an ornament on the leading edge of the scene. On iPad, the tab bar resides at the top of the scene alongside navigation controls.\n\nThe tab bar can also adapt into a sidebar, allowing quick access to collections of content.\n\nTab groups surface additional destinations in the sidebar. For example, in the Music app on iPad, the Library tab group includes Artists, Albums, and more.\n\nWhen the sidebar is not available, the Library group is a tab destination.\n\nUITabBarController offers API to seamlessly manage this adaptation. First, provide the tab group with a managing navigation controller. When a leaf tab of the tab group is selected, its view controller, along with the view controllers of its ancestor groups, are pushed onto this navigation stack.\n\nTo customize the view controllers pushed onto this navigation stack, implement the UITabBarController delegate method, displayedViewControllersFor tab.\n\nIn this example, when the library tab cannot be selected, the delegate method returns an empty array to omit the library tab’s view controller from the stack.\n\nFor more on how UITabBarController offers flexibility to display a tab bar or sidebar, watch \"Elevate your tab and sidebar experience in iPadOS” from WWDC24. Adopting container view controllers, such as UISplitViewController and UITabBarController, is the best way to ensure your app is flexible. While these containers are designed to support a wide range of sizes, your app may require a minimum size to maintain core functionality.\n\nYou can use the UISceneSizeRestrictions API to express the preferred minimum size of your scene’s content. The best time to specify the minimum size is when the scene is about to connect. In this example, I specify a preferred minimum width of 500 points.\n\nFor your app to be truly flexible, your own UI should be able to adapt. Next, I will talk about APIs that will support you in building an adaptive UI.\n\nA crucial step in making your UI adaptable is to ensure that content remains within the safe area. The safe area is a region within a view that is appropriate for interactive or important content. Content placed outside of this region is vulnerable to getting covered, such as by a navigation bar or a toolbar.\n\nContent could also be occluded by system UI like the status bar, or even device features, like the Dynamic Island.\n\nThe sidebar adds a non-symmetrical safe area inset to the adjacent column in a split view controller. The background can freely extend outside of the safe area, underneath the sidebar.\n\nContent, such as the message transcript, is positioned within the safe area to ensure that is remains visible. The message bubbles are inset from the edges of the safe area using layout margins. This provides consistent spacing, and clear visual separation from the sidebar.\n\nEach view provides layout guides to apply standard margins around content. Layout margins are inset from the safe area by default.\n\nIn this example, I request a layout guide for positioning content inside the container view.\n\nI then use this layout guide to configure constraints for the content view.\n\nIn iPadOS 26, scenes gain a new control to close, minimize, and arrange the window, similar to macOS. The window control appears alongside the content in your scene.\n\nA scene can specify a preferred windowing control style to compliment its content.\n\nTo specify a preference, implement the UIWindowSceneDelegate method preferredWindowingControlStyle for scene.\n\nSystem components, such as UINavigationBar, adapt automatically by arranging their subviews around the window control. Your UI should also adapt to the window control, regardless of its style.\n\nTo ensure that your UI is not occluded, use a layout guide that accounts for the window control.\n\nIn this example, I request a layout margins guide with a horizontal corner adaptation.\n\nThis layout guide is great for bar-like content at the top of a scene, which should be inset from the trailing edge of the window control. I then use this layout guide to configure constraints for the content view. When your UI is adaptive, the interface orientation should be redundant. Scene resizing, device rotation, and changes to window layout, all ultimately result in a modification to your scene’s size. Certain categories of apps may benefit from temporarily locking the orientation. For example, a driving game may want to lock the orientation when the device is expected to rotate for steering a vehicle.\n\nWhen a view controller is visible, it can prefer a locked interface orientation. To specify a preference, override prefersInterfaceOrientationLocked in your view controller subclass.\n\nWhenever this preference changes, call setNeedsUpdateOfPrefersInterfaceOrientationLocked.\n\nTo observe the interface orientation lock, implement the UIWindowSceneDelegate method, didUpdateEffectiveGeometry. Then, compare whether the value of isInterfaceOrientationLocked has changed.\n\nFor your app to be truly adaptable, it should respond quickly to being resized. There may be elements of your app’s UI that are computationally expensive to draw.\n\nThis is common for games, where a number of assets may need to be resized when the scene changes size.\n\nRe-rendering assets for every size within a resize interaction is unnecessary.\n\nIn this example, isInteractivelyResizing is queried to only update assets for a new scene size after the interaction finishes.\n\nFlexible apps empower people to use their devices how they want. They provide great experiences across a wide range of sizes, allowing them to be used in any orientation or layout. The UIRequiresFullscreen Info.plist key is a compatibility mode from iOS 9 that prevents scene resizing. UIRequiresFullscreen is deprecated and will be ignored in a future release.\n\nApps that are adaptable do not need this key, and should remove it.\n\nThere is another compatibility mode, specifically for new hardware. Previously, when new hardware was released with a different screen size, the system would scale or letterbox your app’s UI. That scaling would stay in place until you built with a newer SDK and resubmitted your app.\n\nOnce you build and submit with the iOS 26 SDK, the system will no longer scale or letterbox your app’s UI for a new screen size.\n\nThese are the best practices to ensure that your app is flexible. So what’s next? Adopt scene life cycle in your app to ensure strong foundations for a flexible application. Use container view controllers to manage components of your UI. Finally, leverage APIs like layout guides to support you in building an adaptive UI. I can't wait to see your apps become more flexible. Thank you!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:02",
+      "title": "Specify the scene configuration",
+      "language": "swift",
+      "code": "// Specify the scene configuration\n\n@main\nclass AppDelegate: UIResponder, UIApplicationDelegate {\n\n    func application(_ application: UIApplication,\n                     configurationForConnecting sceneSession: UISceneSession,\n                     options: UIScene.ConnectionOptions) -> UISceneConfiguration {\n\n        if sceneSession.role == .windowExternalDisplayNonInteractive {\n            return UISceneConfiguration(name: \"Timer Scene\",\n                                        sessionRole: sceneSession.role)\n        } else {\n            return UISceneConfiguration(name: \"Main Scene\",\n                                        sessionRole: sceneSession.role)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "3:30",
+      "title": "Configure the UI",
+      "language": "swift",
+      "code": "// Configure the UI\n\nclass SceneDelegate: UIResponder, UIWindowSceneDelegate {\n    var window: UIWindow?\n    var timerModel = TimerModel()\n\n    func scene(_ scene: UIScene,\n               willConnectTo session: UISceneSession,\n               options connectionOptions: UIScene.ConnectionOptions) {\n\n        let windowScene = scene as! UIWindowScene\n        let window = UIWindow(windowScene: windowScene)\n        window.rootViewController = TimerViewController(model: timerModel)\n        window.makeKeyAndVisible()\n        self.window = window\n    }\n}"
+    },
+    {
+      "timestamp": "3:56",
+      "title": "Handle life cycle events",
+      "language": "swift",
+      "code": "// Handle life cycle events\n\nclass SceneDelegate: UIResponder, UIWindowSceneDelegate {\n    var window: UIWindow?\n    var timerModel = TimerModel()\n\n    // ...\n\n    func sceneDidEnterBackground(_ scene: UIScene) {\n        timerModel.pause()\n    }\n}"
+    },
+    {
+      "timestamp": "4:09",
+      "title": "Restore UI state",
+      "language": "swift",
+      "code": "// Restore UI state\n\nclass SceneDelegate: UIResponder, UIWindowSceneDelegate {\n    var window: UIWindow?\n    var timerModel = TimerModel()\n\n    // ...\n\n    func stateRestorationActivity(for scene: UIScene) -> NSUserActivity? {\n        let userActivity = NSUserActivity(activityType: \"com.example.timer.ui-state\")\n        userActivity.userInfo = [\"selectedTimeFormat\": timerModel.selectedTimeFormat]\n        return userActivity\n    }\n\n    func scene(_ scene: UIScene restoreInteractionStateWith userActivity: NSUserActivity) {\n        if let selectedTimeFormat = userActivity?[\"selectedTimeFormat\"] as? String {\n            timerModel.selectedTimeFormat = selectedTimeFormat\n        }\n    \n}"
+    },
+    {
+      "timestamp": "4:46",
+      "title": "Adapt for the split view controller layout environment",
+      "language": "swift",
+      "code": "// Adapt for the split view controller layout environment\n\noverride func updateConfiguration(using state: UICellConfigurationState) {\n   \n    // ...\n    \n    if state.traitCollection.splitViewControllerLayoutEnvironment == .collapsed {\n        accessories = [.disclosureIndicator()]\n    } else {\n        accessories = []\n    }\n}"
+    },
+    {
+      "timestamp": "6:11",
+      "title": "Customize the minimum, maximum, and preferred column widths",
+      "language": "swift",
+      "code": "// Customize the minimum, maximum, and preferred column widths\n\nlet splitViewController = // ...\n\nsplitViewController.minimumPrimaryColumnWidth = 200.0\nsplitViewController.maximumPrimaryColumnWidth = 400.0\nsplitViewController.preferredSupplementaryColumnWidth = 500.0"
+    },
+    {
+      "timestamp": "7:37",
+      "title": "Show an inspector column",
+      "language": "swift",
+      "code": "// Show an inspector column\n\nlet splitViewController = // ... \nsplitViewController.setViewController(inspectorViewController, for: .inspector)\n\nsplitViewController.show(.inspector)"
+    },
+    {
+      "timestamp": "9:19",
+      "title": "Managing tab groups",
+      "language": "swift",
+      "code": "// Managing tab groups\n\nlet group = UITabGroup(title: \"Library\", ...)\ngroup.managingNavigationController = UINavigationController()\n\n// ...\n\n// MARK: - UITabBarControllerDelegate\n\nfunc tabBarController(\n    _ tabBarController: UITabBarController,\n    displayedViewControllersFor tab: UITab,\n    proposedViewControllers: [UIViewController]) -> [UIViewController] {\n\n    if tab.identifier == \"Library\" && !self.allowsSelectingLibraryTab {\n        return []\n    } else {\n        return proposedViewControllers\n    }\n}"
+    },
+    {
+      "timestamp": "10:25",
+      "title": "Preferred minimum size",
+      "language": "swift",
+      "code": "// Specify a preferred minimum size\n\nclass SceneDelegate: UIResponder, UIWindowSceneDelegate {\n\n    func scene(_ scene: UIScene,\n               willConnectTo session: UISceneSession,\n               options connectionOptions: UIScene.ConnectionOptions) {\n\n        let windowScene = scene as! UIWindowScene\n        windowScene.sizeRestrictions?.minimumSize.width = 500.0\n    }\n}"
+    },
+    {
+      "timestamp": "11:57",
+      "title": "Position content using the layout margins guide",
+      "language": "swift",
+      "code": "// Position content using the layout margins guide\n\nlet containerView = // ...\nlet contentView = // ...\n\nlet contentGuide = containerView.layoutMarginsGuide\n\nNSLayoutConstraint.activate([\n    contentView.topAnchor.constraint(equalTo: contentGuide.topAnchor),\n    contentView.leadingAnchor.constraint(equalTo: contentGuide.leadingAnchor),\n    contentView.bottomAnchor.constraint(equalTo: contentGuide.bottomAnchor)\n    contentView.trailingAnchor.constraint(equalTo: contentGuide.trailingAnchor)\n])"
+    },
+    {
+      "timestamp": "12:34",
+      "title": "Specify the window control style",
+      "language": "swift",
+      "code": "// Specify the window control style\n\nclass SceneDelegate: UIResponder, UIWindowSceneDelegate {\n\n    func preferredWindowingControlStyle(\n        for scene: UIWindowScene) -> UIWindowScene.WindowingControlStyle {\n        return .unified\n    }\n}"
+    },
+    {
+      "timestamp": "13:04",
+      "title": "Respect the window control area",
+      "language": "swift",
+      "code": "// Respect the window control area\n\nlet containerView = // ...\nlet contentView = // ...\n\nlet contentGuide = containerView.layoutGuide(for: .margins(cornerAdaptation: .horizontal)\n\nNSLayoutConstraint.activate([\n    contentView.topAnchor.constraint(equalTo: contentGuide.topAnchor),\n    contentView.leadingAnchor.constraint(equalTo: contentGuide.leadingAnchor),\n    contentView.bottomAnchor.constraint(equalTo: contentGuide.bottomAnchor),\n    contentView.trailingAnchor.constraint(equalTo: contentGuide.trailingAnchor)\n])"
+    },
+    {
+      "timestamp": "13:57",
+      "title": "Request orientation lock",
+      "language": "swift",
+      "code": "// Request orientation lock\n\nclass RaceViewController: UIViewController {\n\n    override var prefersInterfaceOrientationLocked: Bool {\n        return isDriving\n    }\n\n    // ...\n\n    var isDriving: Bool = false {\n        didSet {\n            if isDriving != oldValue {\n                setNeedsUpdateOfPrefersInterfaceOrientationLocked()\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "14:18",
+      "title": "Observe the interface orientation lock",
+      "language": "swift",
+      "code": "// Observe the interface orientation lock\n\nclass SceneDelegate: UIResponder, UIWindowSceneDelegate {\n    var game = Game()\n\n    func windowScene(\n        _ windowScene: UIWindowScene,\n        didUpdateEffectiveGeometry previousGeometry: UIWindowScene.Geometry) {\n        \n        let wasLocked = previousGeometry.isInterfaceOrientationLocked\n        let isLocked = windowScene.effectiveGeometry.isInterfaceOrientationLocked\n\n        if wasLocked != isLocked {\n    game.pauseIfNeeded(isInterfaceOrientationLocked: isLocked)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "14:44",
+      "title": "Query whether the scene is resizing",
+      "language": "swift",
+      "code": "// Query whether the scene is resizing\n\nclass SceneDelegate: UIResponder, UIWindowSceneDelegate {\n    var gameAssetManager = GameAssetManager()\n    var previousSceneSize = CGSize.zero\n\n    func windowScene(\n        _ windowScene: UIWindowScene,\n        didUpdateEffectiveGeometry previousGeometry: UIWindowScene.Geometry) {\n\n        let geometry = windowScene.effectiveGeometry\n        let sceneSize = geometry.coordinateSpace.bounds.size\n\n        if !geometry.isInteractivelyResizing && sceneSize != previousSceneSize {\n            previousSceneSize = sceneSize\n            gameAssetManager.updateAssets(sceneSize: sceneSize)\n        }\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "TN3187: Migrating to the UIKit scene-based life cycle",
+        "url": "https://developer.apple.com/documentation/Technotes/tn3187-Migrating-to-the-UIKit-scene-based-life-cycle"
+      },
+      {
+        "title": "UIKit updates",
+        "url": "https://developer.apple.com/documentation/Updates/UIKit"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/282/4/24e46505-a3b3-4027-ac3f-0bd2b53dcdeb/downloads/wwdc2025-282_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/282/4/24e46505-a3b3-4027-ac3f-0bd2b53dcdeb/downloads/wwdc2025-282_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "243",
+      "year": "2025",
+      "title": "What’s new in UIKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/243"
+    },
+    {
+      "id": "10147",
+      "year": "2024",
+      "title": "Elevate your tab and sidebar experience in iPadOS",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10147"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:51:48.377Z"
+}

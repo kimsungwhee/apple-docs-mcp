@@ -1,0 +1,143 @@
+{
+  "id": "10116",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10116/",
+  "title": "Meet CKTool JS",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Safari & Web",
+    "System Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "- Hi! I'm Kent and I'm an engineer on the CloudKit team. I'm excited to introduce a new library that you can use to access CloudKit. First, I'll cover how to configure this new library. And then you'll learn how to manage your schema, as well as how to access user data with CKTool JS. Let's begin! CloudKit is a persistence technology that lets you store your app's data in iCloud within containers. By using CloudKit in your app, you can also have your data stay up to date across devices and on the web.\n\nFor building your apps, you can access iCloud storage using the CloudKit framework on Apple platforms or CloudKit JS on the web. To implement automation and tooling, Xcode provides cktool for use on macOS. And now you have a new way to automate changes and interact with iCloud, using CKTool JS.\n\nCKTool JS lets you perform the same operations as the cktool command-line utility introduced in Xcode 13 and supports similar use cases. In fact, CKTool JS is used to implement features in CloudKit Console such as adding record types and querying records.\n\nWith CKTool JS, you can manage your app containers and perform schema operations, such as resetting and applying updates to your schema. This is something that you couldn't do from JavaScript before.\n\nCKTool JS lets you fetch existing records using their unique identifier or through complex queries. And it lets you create new records and update them. CKTool JS ships with strict type definitions for TypeScript. These type definitions enable compile-time checking that flags incorrect usage of the client library and it enables code completion in supported IDEs. You'll find editing CKTool JS code easier because of this.\n\nAdditionally, this new library ships with support for both Node.js and browsers out of the box. CKTool JS is distributed as a set of npm packages, which allows you to integrate it as part of your JavaScript build pipeline. Doing so enables features such as tree-shaking and bundling. You can also track updates to these packages because their release history is transparently available from npm.\n\nThe following packages are part of the CKTool JS distribution. Note that these packages are within the @apple scope and follow the convention of using cktool. at the start of the name. The main package that you'll use is cktool.database. To enable communication with iCloud, you'll also need to use one other package for your target platform, cktool.target.nodejs for Node.js or cktool.target.browser for web browsers.\n\ncktool.database automatically pulls in three more packages-- cktool.core, cktool.api.base, and cktool.api.database. Since CKTool JS communicates directly with iCloud, it must first be authorized. Depending on the operation that you want to call, you'll either need a management token or a user token. Both kinds of tokens are obtainable from CloudKit Console.\n\nManagement tokens are used to access management operations and are scoped to a team and user. Such operations include enabling schema import and export, schema validation, and resetting the container to production. User tokens are scoped to teams and containers and enable access to private user data within those containers. To learn how to obtain these authorization tokens as well as continuous integration with CloudKit, check out \"Automate CloudKit tests with cktool and declarative schema\" from WWDC21.\n\nAny time you want to use CKTool JS in your scripts, you'll first need to configure it for use. But before I dive into configuring CKTool JS, I'll do a quick review of what makes up a CloudKit schema. In CloudKit, data is stored in a structured way. Data that has the same kinds of values are stored together as records. Records are instances of record types, and the properties of a record that a record type describes are known as fields. In addition to your user-defined fields, CloudKit adds system fields such as recordName, which is the ID of the record. I'll use examples from a coin collection app I've been working on. I want to store a collection of countries, so I have a record type to describe what kinds of properties I need to store for them. I'm storing names and ISO codes, and I'm naming the record type, \"Countries.\" ISO codes uniquely identify a country, so it's important to include them in my record type.\n\nI create some records of type Countries to store this information along with their names.\n\nI also have a record type for coins of particular countries, and I want to relate them to one another. The Coins record type stores the relationship from a coin to its country.\n\nRecord types and relationships combine to make a schema. I can consider the current state of these elements to be the current version of my schema. As you develop your apps, you'll evolve your schema, and over the lifetime of your app, you'll likely have several versions of it.\n\nWhile my app's schema describes the structure of the data I want to store in iCloud, my app container is where that data is stored. A container has a unique identifier and is associated with a developer team. There are two environments to keep in mind when working with CloudKit. The development environment is a safe place to make changes without disrupting users. This is where you should be testing and developing changes to your schema. When users interact with your app, they'll be interacting with the production environment. The production environment contains the live data for your app. Now that I've reviewed how CloudKit stores data, I'll cover how to configure CKTool JS. Because CKTool JS talks with iCloud, you'll need to gather a few pieces of information so that it knows how to work with the right container and that your script is authorized to do so.\n\nYou'll need your team ID and the container ID for the container you want to work with. You'll need a management token in order to work with schemas, and if your script will access data, you'll need a user token as well. All these values can be obtained from CloudKit Console. You'll also need to specify which environment, development or production, your script will run in. I'll use development as an example going forward. Anytime you configure CKTool JS for use, you'll need these values. For my examples, I'm writing scripts for Node.js. You import objects and functions from CKTool JS in order to use them. In this case, you can import these symbols using CommonJS require statements. Once you've gathered your configuration information, you'll create objects to hold that information. To store your auth tokens, you create an object to hold your management token and, if you have one, your user token. Since teamId, containerId and environment are common values that are passed to CKTool JS, you can create an object to hold these values. You instantiate a Configuration object that tells CKTool JS how to talk with iCloud by using the createConfiguration factory function. createConfiguration is platform-specific. In this case, it'll return an appropriate configuration for Node.js, since that's the function that was imported from the target package. You then pass the configuration object and the security object declared earlier to initialize an API object. API objects contain asynchronous methods that allow you to talk to iCloud. You've now completed the steps to use CKTool JS in your scripts. Let's learn about how you can use CKTool JS to manage your container's schema. In my app, I want to store information such as an American dime issued in 2007. This coin is composed of copper and nickel and the value stamped on it is 1/10th of an American dollar. After thinking about how to store this data, I decided to store information about the coin's composition as records separate from the other details about the coin. So I store the copper percentage for the dime and its nickel percentage in separate records.\n\nI identified two record types that I want in my container's schema. Coins, which stores its country reference, issue year, and nominal value. And a Components record type that stores a reference to a coin it describes and the material and its percentage in the coin. Now that I've determined the schema for my app, I can create a text file in CloudKit Schema Language to describe it. The convention is to use the .ckdb extension for your schema file.\n\nFor more information about CloudKit Schema Language, refer to \"Integrating a Text-Based Schema into Your Workflow\" documentation article.\n\nThe schema file you create for your container can be applied using CKTool JS. Before you apply a new schema, you'll typically reset the container's development schema to match the one in production. You can do this with the resetToProduction method. You call this method by passing the defaultArgs object that you declared earlier. If your schema isn't in production, all record types are deleted. Otherwise, this will revert the development schema to the state of the production environment. Note that this is an asynchronous call, so this method returns a promise object.\n\nCKTool JS has methods that let you export and import your container's schema. The exportSchema and importSchema methods let you do this and are named from the perspective of the container. So you download a schema to be exported from the container using exportSchema, and you upload a schema to be imported into the container using importSchema. Together, these allow you to manage your schema's evolution.\n\nYou can create a help function to apply the schema to the container. First, import the File object from CKTool JS, then import the fs and path modules from Node.js. Now define an asynchronous function that will do the following: It reads the schema file's contents into a Node.js buffer. It creates a CKTool JS File instance for upload. Finally, it uploads the file's contents to the server using importSchema. Note that the defaultArgs object that was declared earlier is passed to importSchema. Now you can put it together. Because resetToProduction and the helper function used to import a schema are asynchronous, you need to ensure that they run in the correct order. To do that you chain the promises. If an error occurs, the promise will reject. In addition to the management capabilities that CKTool JS has, it also allows you to work with reading and writing data. Field values that are used in CKTool JS records are type and ranged checked on the client side before they're sent to the server. If the value passed in is not the right kind of value or is outside of the allowed range of the value, an exception will be thrown. For large numbers that can't be represented natively in JavaScript, there are CKTool JS types that are used instead. For example, to coerce a number to a CKTool JS Int64, you use the toInt64 function. To coerce a number to a Double floating point value, you use the toDouble function. If you're writing TypeScript, the compiler will flag incorrect value type usages if these coercion functions are not used.\n\nField values in CKTool JS records are created using field value factory functions. For a coin issued in 2007, I'd pass that value to the makeRecordFieldValue.int64 factory function in order to create a record field value that contains an Int64. In general, if a factory function can't create a record field value from the value passed in, it'll throw an exception.\n\nHere, I've created an object to hold common values that I send to methods that work with records. Since containerId, environment, databaseType and zoneName are often required, I'm including those in this databaseArgs object. To query for records, I use the queryRecords method. To make this easier, I create a helper function that finds a country matching its unique 3 character ISO code. In this case, I pass the contents of the databaseArgs object, in addition to a body that contains the query. For the query object, I'm specifying the recordType value as well as a single filter object. The filter object describes a query where the country's isoCode3 is equal to the one this function is seeking. If successful, the collection of found records will be in the response.result.records property. I return the first object from this collection.\n\nTo make converting raw values into field values that createRecord can use, I have a helper function called makeCoinFieldValues to do this. For each raw property for my coin that I want to convert to field values, I call the appropriate RecordFieldValue factory function. For the country field, however, I need to create a reference. I use the passed-in country record name to make a reference from this coin record to the corresponding country record.\n\nHere, I create a helper function that takes coin record field values and sends the createRecord request to the server. In this function, I'm passing the content of databaseArgs declared earlier and a body. The body dictionary contains the recordType and field values. If successful, response.result.record is returned.\n\nBefore calling the helper function, I need to fetch the correct country record that will be referenced from this coin. I use the country query function defined earlier. I then call coinCreateRecord by passing it a field values dictionary which is created with the makeCoinFieldValues helper function that I wrote earlier. The raw coin values are passed to that helper function. This will asynchronously create the record and return the new record.\n\nTo update a record, use the updateRecord method. I create a helper function that updates a coin matching the record name with the fields passed to this helper. I then call updateRecord with the contents of the databaseArgs object, recordName, and a body that contains the record type and the new record's field values. If successful, the updated record will be in the response.result.record property, which I return from the helper function.\n\nTo update the coin record I created earlier, I call this helper function passing in its record name and field values to update. The field values are created with makeCoinFieldValues.\n\nTo delete a record, I call the async deleteRecord method on the API object. I pass in the contents of the databaseArgs object as well as the recordName of the record to delete. I hope you've enjoyed getting to know CKTool JS. Try it out for yourself: Configure CKTool JS for your automation and tooling purposes. Reset and import your schemas as well as read and write your data using JavaScript. For usage of CKTool JS in continuous integration scenarios, check out the CloudKit sample repo on GitHub. And for more detailed documentation, check out CKTool JS on developer.apple.com. Thanks for joining me today, and enjoy the rest of WWDC22.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "6:43",
+      "title": "Create security and default arguments objects",
+      "language": "swift",
+      "code": "// Create security object and setup default args\n\nconst { CKEnvironment } = require(\"@apple/cktool.database\");\n\nconst security = {\n    \"ManagementTokenAuth\": \"<YOUR_MANAGEMENT_TOKEN>\",\n    \"UserTokenAuth\": \"<YOUR_USER_TOKEN>\"\n};\n\nconst defaultArgs = {\n    \"teamId\": \"<YOUR_TEAM_ID>\",\n    \"containerId\": \"<YOUR_CONTAINER_ID>\",\n    \"environment\": CKEnvironment.DEVELOPMENT\n};"
+    },
+    {
+      "timestamp": "7:17",
+      "title": "Create configuration and API objects",
+      "language": "swift",
+      "code": "// Create configuration and API objects\n\nconst { createConfiguration } = require(\"@apple/cktool.target.nodejs\");\nconst { PromisesApi } = require(\"@apple/cktool.database\");\n\nconst configuration = createConfiguration();\nconst api = new PromisesApi({\n    \"configuration\": configuration,\n    \"security\": security\n});"
+    },
+    {
+      "timestamp": "10:00",
+      "title": "Reset to production and import schema",
+      "language": "swift",
+      "code": "// Create a function to apply a schema\n\nconst { File } = require(\"@apple/cktool.target.nodejs\");\nconst fs = require(\"fs/promises\");\nconst path = require(\"path\");\n\nconst importMySchema = async () => {\n    const schemaPath = \"<YOUR_SCHEMA_FILE>.ckdb\";\n    const buffer = await fs.readFile(schemaPath);\n    const file = new File([buffer], schemaPath);\n    await api.importSchema({ ...defaultArgs, \"file\": file });\n}\n\n// Chain the calls\napi.resetToProduction(defaultArgs)\n  .then(() => importMySchema());"
+    },
+    {
+      "timestamp": "11:36",
+      "title": "Factory functions",
+      "language": "swift",
+      "code": "// Create fields with factory functions.\n\nconst {\n    makeRecordFieldValue\n} = require(\"@apple/cktool.database\");\n\nconst value = makeRecordFieldValue.int64(2007);"
+    },
+    {
+      "timestamp": "12:02",
+      "title": "Create database arguments object",
+      "language": "swift",
+      "code": "// Create a database arguments object.\n\nconst {\n    CKDatabaseType, CKEnvironment\n} = require(\"@apple/cktool.database\");\n\nconst databaseArgs = {\n    \"containerID\": \"<YOUR_CONTAINER_ID>\",\n    \"environment\": CKEnvironment.DEVELOPMENT,\n    \"databaseType\": CKDatabaseType.PRIVATE,\n    \"zoneName\": \"_defaultZone\"\n};"
+    },
+    {
+      "timestamp": "12:16",
+      "title": "Query for records",
+      "language": "swift",
+      "code": "// Define helper function for querying records\n\nconst { CKDBQueryFilterType } = require(\"@apple/cktool.database\");\nconst countryQueryRecordForCountryCode3 = async (countryCode3) => {\n    const response = await api.queryRecords({\n        ...databaseArgs,\n        \"body\": {\n            \"query\": {\n                \"recordType\": \"Countries\",\n                \"filters\": [{\n                    \"fieldName\": \"isoCode3\",\n                    \"fieldValue\": makeRecordFieldValue.string(countryCode3),\n                    \"type\": CKDBQueryFilterType.EQUALS\n                }]\n            }\n        }\n    });\n    return response.result.records[0];\n}"
+    },
+    {
+      "timestamp": "12:58",
+      "title": "Create field values",
+      "language": "swift",
+      "code": "// Define a helper function for creating field values\n\nconst {\n    makeRecordFieldValue, CKDBRecordReferenceAction\n} = require(\"@apple/cktool.database\");\n\nconst makeCoinFieldValues = ({ countryRecordName, issueYear, nominalValue }) => ({\n    \"country\": makeRecordFieldValue.reference({\n        recordName: countryRecordName,\n        action: CKDBRecordReferenceAction.DELETE_SELF\n    }),\n    \"issueYear\": makeRecordFieldValue.int64(issueYear),\n    \"nominalValue\": makeRecordFieldValue.double(nominalValue)\n});"
+    },
+    {
+      "timestamp": "13:26",
+      "title": "Create a record",
+      "language": "swift",
+      "code": "// Define helper method for creating coins\n\nconst coinCreateRecord = async (fields) => {\n    const response = await api.createRecord({\n        ...databaseArgs,\n        \"body\": {\n            \"recordType\": \"Coins\",\n            \"fields\": fields\n        },\n    });\n    return response.result.record;\n}"
+    },
+    {
+      "timestamp": "13:48",
+      "title": "Call record creation helper method",
+      "language": "swift",
+      "code": "// Call coin creation method with field values\n\nconst countryRecord = await countryQueryRecordForCountryCode3(\"USA\");\n\nconst coinRecord1 = await coinCreateRecord(\n    makeCoinFieldValues({\n        \"countryRecordName\": countryRecord.recordName,\n        \"issueYear\": 2007,\n        \"nominalValue\": 0.10\n    })\n);"
+    },
+    {
+      "timestamp": "14:16",
+      "title": "Define update record helper function",
+      "language": "swift",
+      "code": "// Define helper method for updating coins.\n// Note that recordChangeTag is required\n\nconst coinUpdate =\n    async (recordName, recordChangeTag, fields) => {\n        const response = await api.updateRecord({\n            ...databaseArgs,\n            \"recordName\": recordName,\n            \"body\": {\n                \"recordType\": \"Coins\",\n                \"recordChangeTag\": recordChangeTag,\n                \"fields\": fields\n            }\n        });\n        return response.result.record;\n    }"
+    },
+    {
+      "timestamp": "14:44",
+      "title": "Update a record with field values",
+      "language": "swift",
+      "code": "// Call coin updating method with field values.\n// Note that the recordChangeTag of the record\n// to update is passed to the coin update function.\n\nconst countryRecord = await countryQueryRecordForCountryCode3(\"USA\");\nconst updatedCoinRecord1 = await coinUpdate(\n    coinRecord1.recordName,\n    coinRecord1.recordChangeTag,\n    makeCoinFieldValues({\n        \"countryRecordName\": countryRecord.recordName,\n        \"issueYear\": 2010,\n        \"nominalValue\": 0.10\n    });\n);"
+    },
+    {
+      "timestamp": "14:57",
+      "title": "Delete a record",
+      "language": "swift",
+      "code": "// Deleting a record\n\nawait api.deleteRecord({\n    ...databaseArgs,\n   \"recordName\": coinRecord1.recordName\n});"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "CKTool JS",
+        "url": "https://developer.apple.com/documentation/CKToolJS"
+      },
+      {
+        "title": "Integrating a Text-Based Schema into Your Workflow",
+        "url": "https://developer.apple.com/documentation/CloudKit/integrating-a-text-based-schema-into-your-workflow"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10116/5/1DD917FC-5154-4B41-93E7-4D8731FB6D2E/downloads/wwdc2022-10116_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10116/5/1DD917FC-5154-4B41-93E7-4D8731FB6D2E/downloads/wwdc2022-10116_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10115",
+      "year": "2022",
+      "title": "What’s new in CloudKit Console",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10115"
+    },
+    {
+      "id": "10118",
+      "year": "2021",
+      "title": "Automate CloudKit tests with cktool and declarative schema",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10118"
+    },
+    {
+      "id": "10117",
+      "year": "2021",
+      "title": "Meet CloudKit Console",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10117"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:44:21.749Z"
+}

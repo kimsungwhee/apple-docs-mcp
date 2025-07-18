@@ -1,0 +1,69 @@
+{
+  "id": "110380",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/110380/",
+  "title": "Display ads and interstitials in SharePlay",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services",
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Prashant: Hey, everyone. I'm Prashant. I'm an AVFoundation Engineer, and welcome to WWDC2022. With the introduction of SharePlay, you can provide people with a connected viewing experience that lets them navigate through and interact with content in real time all while staying completely in sync with the SharePlay group. However, some of you might have targeted ads or other interstitials scheduled in the content timeline, making it a challenge to coordinate playback between participants that receive ads of different durations or say between a mixed set of participants where some receive ads and some don't. So if you're interested in scheduling ads and other interstitials for coordinated playback in SharePlay, you've tuned in to the right session. In this talk we'll start by going over how coordinated playback works. Then we'll go over the challenges associated with ads and other interstitials in coordinated playback. Following that, we'll discuss the different viewing experiences that are possible when watching ads. We'll then see how one might achieve these for stitched-in ads. And we'll also see how HLS interstitials work with coordinated playback. And to conclude, we'll go over some best practices that you can use to provide people with a really compelling SharePlay experience.\n\nLets see how coordinated playback works in SharePlay. So while participants are in a FaceTime call, the playback control commands originating on one participant's device are shared across group so that they all play in sync. While this works well if all the participants are watching the same content, what would happen if some of them have ads? Now let's take a look at the case where Alice and Bob are trying to watch some program content. Now what we see here are the presentation timelines at their respective ends. If it is only the program content that they're watching, then it should be pretty straightforward to achieve coordinated playback. You'd simply associate the groupSession with the playbackCoordinator, and you'd be good to go. Now lets say each of them have a program recap segment stitched in, which is preceded by the studio or network banner. This is fairly typical, and since the recap segments and the banners match for Alice and Bob, coordinated playback is still achievable. But now, let's say Alice's geography requires that the service show some statutory warnings before the start of the program, and there might also be ads scheduled at different points within the program. It could be that these ads are of different durations. We can now see how this might pose a challenge when trying to get them to play in sync. For Bob, the network banner might appear at the very beginning, but for Alice, it would appear only after the warnings are shown. And if we were to look at some arbitrary time in the presentation timeline, they would be watching completely different portions of the content. Now let's take a moment to think about the user experiences that would be possible in scenarios such as these. For this let's consider a simpler timeline where each of them have just the single ad stitched in.\n\nIn the ideal case, the experience shouldn't be too different from where they were watching the program alone. For that to be possible, we'd expect the durations of the ads to match. This would be our preferred experience as well. Now, after watching the ad, both of them would resume playback in sync. But sometimes they might get ads of different durations, or one of them may not have any ads at all. So now, if they were to play in sync, one of two experiences is possible.\n\nOnce Alice finishes her ad, she can then wait for Bob's ad to finish before resuming together in sync.\n\nOr she can continue with the main program and Bob would then jump ahead to catch up with Alice so that they stay in sync. In this scenario, Bob would end up missing some program content when catching up with Alice. Now how would you enable these experiences? You can specify these waiting policies at the AVPlaybackCoordinator by how you populate the suspensionReasonsThatTriggerWaiting array. The default behavior is for the group to not wait while some of the participants are watching ads. When these participants finish their ads, they would miss some content to catch up with the rest of the group. Alternately, if you wish for the group to wait while the participants watch ads, you can simply include the \"playingInterstitial\" suspension reason as part of the suspensionReasonsThatTriggerWaiting array. With this policy, when a participant is waiting for the others to complete their ads, their player's timeControlStatus would be waitingToPlayAtSpecifiedRate and the waitingReason would be waitingForCoordinatedPlayback. So going back to the content described earlier, how do we define these time ranges that are to be left out of the coordinated playback timeline? For instance, the statutory warning is something that only Alice has and Bob doesn't. And it's also possible that the ad breaks are of different durations. You might be aware that HLS offers two ways of scheduling ads. One of which would be to directly stitch in the ad segments into the primary content's playlists. So for video on demand content that has ads stitched in using discontinuity tags, you can set the ad time ranges on the AVPlayerPlaybackCoordinator using an AVFoundation API. So we've added the following delegate method to– using which you can specify an array of sample accurate time ranges that represent ads and interstitials in the content. The AVPlayerPlaybackCoordinator would then use this information to coordinate playback across the group. When a participant enters this time range, playback would be coordinated in accordance with the waiting policy specified. Also, depending on the type of interstitial, you might allow for someone to navigate into these time ranges. So if they were to seek into these time ranges while in SharePlay, the entire group would then snap to the beginning of that time range.\n\nThis shows a playlist example where the ad time ranges are populated by summing up the times reported in the EXTINF tags of the playlists. This assumes that the durations reported as part of the EXTINF tags accurately reflect the media durations of those segments. So, now what should the assets look like for coordinated playback to work? So if you were to look at this example, Alice and Bob have different duration ads stitched in, resulting in different asset durations. For these to be considered SharePlay compatible, we'd expect the actual content duration of the assets to match. Note that this applies only to video on demand content, for live content with stitched-in ads, we'd expect the durations of the ad breaks to match for all participants. If you think that it might be a challenge to obtain the sample accurate time ranges or if you wish to dynamically schedule targeted ads in live content, then you can use HLS interstitials to schedule ads. In 2021, we introduced HLS interstitials which offers a different, more flexible approach to scheduling ads. For more details, check out the Explore dynamic pre-rolls and mid-rolls in HLS talk from WWDC2021. In short, ads and interstitials are treated as separate objects outside of the content timeline. These objects can be directly referenced via their multi variant playlist and one can perform Server Side Ad Insertion simply by including the multi variant playlist URI as part of a date range tag in the primary content's media playlist, or you even schedule ads on the client side using AVFoundation APIs. If you use HLS interstitials to schedule ads, AVFoundation automatically takes care of them during coordinated playback. All you need to do is to specify the waiting policy.\n\nWhen using HLS interstitials to schedule ads, once again, we'd expect the primary content durations to match across all the participants for the assets to be considered SharePlay compatible. Now let's go over some best practices that you can use to provide people with a really good SharePlay experience. SharePlay is meant to provide a seamless connected viewing experience where people interact with content as though they were watching it by themselves. So with this experience in mind, one should strive to minimize waits and content skips as much as possible. So to this end, it is recommended that you try to align the ad break durations such that the wait or skip times are minimized. When you have mixed participant groups where some people have ads and some don't and all are watching live content, you can use HLS interstitials to schedule the ads while using the default waiting policy. Now, if you don't specify the resume offset while scheduling the ad, the content would resume at an offset that equals the ad duration. In such a scenario the participant without ads would continue to watch the primary content and the others would join that participant once they've finished watching their ads.\n\nHere we have Alice, Bob, and Charlie watching some live content. Alice being a premium subscriber to that service does not have any ads, while Bob and Charlie have ads of different durations all scheduled using HLS interstitials. You can see how Alice continues to watch the program while Bob and Charlie sync up with Alice when they come out of their ad break.\n\nNow if this were a live sports game, you can imagine how Alice might be watching the live in-stadium feed while Bob and Charlie are watching ads. And when they come out of their ad break, it would be just in time for the start of play. For Video on demand streams, where participants can't afford to miss any program content, you can use the wait - waiting policy. Now you can share the ad schedule amongst the participants using the GroupSessionMessenger. And when someone is waiting for the others to finish watching their ads, you'd now know exactly how long they would have to wait for since you've already shared the schedules. So now while they're waiting, you could perhaps use a different player to show some interesting content, like the upcoming attractions in your service to keep them engaged. To wrap up, in order to schedule ads and other interstitials during coordinated playback, all you need to do is specify the waiting policy, and if you have stitched-in ads, you can set the their time ranges on the playback coordinator using the AVFoundation API, or you could use HLS interstitials to let AVFoundation manage the playback of ads. The ideal scenario would involve all participants watching the same content. As much we'd like for this to be possible, this may not always be the case. You could have a premium subscriber tier that receive no ads and you might also have participants receiving ads of different durations. In scenarios such as these, your premium subscribers don't have to be staring at a waiting screen. You could show them some interesting content as we saw earlier or you could even build other experiences to keep them entertained. For more ideas on how to build custom experiences in SharePlay, check out the Make a great SharePlay experience talk. Hope you found this session informative. Enjoy the rest of WWDC. Thank you.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "5:13",
+      "title": "Specific sample accurate time ranges that represent ads or interstitials",
+      "language": "swift",
+      "code": "class MyAVPlayerCoordinatorDelegate : NSObject, AVPlayerPlaybackCoordinatorDelegate\n{   \n    func playbackCoordinator(_ coordinator: AVPlayerPlaybackCoordinator,     interstitialTimeRangesFor playerItem: AVPlayerItem) -> [NSValue]\n {\n        return interstitialTimeRanges\n     }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/110380/4/F37ED64E-304D-423D-B8FA-17687B8EC980/downloads/wwdc2022-110380_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/110380/4/F37ED64E-304D-423D-B8FA-17687B8EC980/downloads/wwdc2022-110380_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10139",
+      "year": "2022",
+      "title": "Make a great SharePlay experience",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10139"
+    },
+    {
+      "id": "10140",
+      "year": "2022",
+      "title": "What's new in SharePlay",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10140"
+    },
+    {
+      "id": "10145",
+      "year": "2022",
+      "title": "What’s new in HLS Interstitials",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10145"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:14:20.466Z"
+}

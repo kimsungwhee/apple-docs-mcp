@@ -1,0 +1,86 @@
+{
+  "id": "10649",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10649/",
+  "title": "Add custom views and modifiers to the Xcode Library",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Hello and welcome to WWDC.\n\nAnton Vladimirov: Hello, and welcome to WWDC.\n\nMy name is Anton, and in this session we're going to take some time to talk about your SwiftUI views and modifiers inside Xcode.\n\nSince the very beginning, Xcode Previews was built to put your content front and center.\n\nFor example, your views are previewable without doing any extra work, and most views and modifiers are inspectable right out of the box as well.\n\nIn Xcode 12, we are taking a step further by letting you add your SwiftUI views and modifiers to the Xcode library.\n\nLet's take a step back and talk about some benefits of the Xcode library.\n\nFirst, discoverability.\n\nAs your code base grows, it can become hard for the users of your code to know exactly what the key parts of your API are.\n\nThe library is a place where developers look to discover available visual content, and by placing your most important and most reusable views there, you make them easier to find.\n\nBut discoverability is just the beginning.\n\nSince each asset in the library comes in the compilable form, it can serve as an excellent way of educating the users of your code about how any particular view or modifier was intended to be used with a clear example that can often serve as an excellent starting point.\n\nAnd finally, every asset in the library can be dragged and dropped into the canvas, and inserting views and modifiers from the library allows Xcode previews to continue rendering, enabling rich visual editing for your content.\n\nSo now, let's look at what you need to do to expose your content in the library.\n\nAnd this is where the library takes a page from Xcode preview's playbook.\n\nSince the view or the modifier you're adding to the library is defined in Swift code, the most natural place to define how to expose it in the library is also in Swift code, right next to the view or the modifier itself.\n\nThe big advantage of doing that is that the compiler can help us ensure that the library items remain functional as your API changes.\n\nTo extend the Xcode library, we need to declare a new type that conforms to the LibraryContentProvider protocol.\n\nThis protocol has two requirements: a views property, which you can use to extend the view's Xcode library; and the modifiers function, which you can use to extend the modifiers Xcode library.\n\nThere are some differences between the two which we will discuss in a moment.\n\nBut for now, notice that both of them return an array of LibraryItems.\n\nLet's look at how to create a LibraryItem.\n\nThe minimum amount of data that Xcode needs to create a LibraryItem is a completion that will get inserted when the user picks that item from the library.\n\nBut you can also optionally specify additional information such as that library item's visibility, a more descriptive title for the item, or its category.\n\nThere's a lot to unpack here.\n\nAnd the best way to discover this API is with a demo.\n\nSo let's take a look.\n\nSo I am here in the Fruta app that my team has been working on for a while.\n\nThis is an app that allows the user to explore different kinds of smoothies.\n\nAnd in particular, I'm looking at a SmoothieRowView which is a view designed to showcase a particular smoothie with information such as its title, its ingredients, its image, and so on.\n\nThis view is used in a couple of places in our app, and so I'd like to add it to the library to make the reuse easier, and I'm going to do that now.\n\nI'm going to scroll to the bottom of this file and add a new type that conforms to the LibraryContentProvider protocol.\n\nThis type can be named anything but for the purposes of this demo, I'm going to call it LibraryContent.\n\nSince what I'm adding is a view, I'm going to add a views property.\n\nAnd now I need to add a LibraryItem.\n\nTo finish completing the LibraryItem, I need to provide a completion that represents my view.\n\nSince what I'm adding is a SmoothieRowView, I'm just going to instantiate a SmoothieRowView here.\n\nI'm going to provide some default data here for my smoothie.\n\nI'm going to pick out of the list of preexisting ones.\n\nAnd I like lemonberry, so I'm just going to pick lemonberry here.\n\nAnd that's really all we need to create a LibraryItem for this view.\n\nI'm ready to use it.\n\nI'm going to switch to the SmoothieList.\n\nAs the name implies, this is just a view that takes an array of smoothies and shows them in a navigable list.\n\nIt's empty right now, as you can see from the preview.\n\nI'm going to populate it with my SmoothieRowView.\n\nTo do that, I'm going to click on the library icon in the toolbar, which is a little plus, and I'm going to search for smoothie.\n\nAs you can see, Xcode already discovered my LibraryItem and populated the library with it.\n\nIt even gave it a category, Fruta, which matches the name of my project.\n\nThis makes local items from my project easier to find.\n\nIt also gave it a rich title, Smoothie Row View, which is based on the completion I provided.\n\nSo now I can just drag this library item right into my code and my preview will update automatically to reflect the change that I just made.\n\nNotice that all of the rows in this list right now are saying \"Lemonberry,\" and it's because Xcode inserted exactly what I specified with a lemonberry placeholder.\n\nBut there's a slight difference here.\n\nThe argument for the SmoothieRowView here, lemonberry, that I provided, is tokenized, and that's because LibraryItems are meant to be a starting point that can be customized based on the insertion context for the view that you're inserting.\n\nSo I'm going to select the lemonberry token here, and I'm going to replace it with the data from the list, in this case, just smoothie.\n\nSo the preview updates to show me the content of the list with the different smoothies provided from its preview.\n\nThat's exactly what I want.\n\nSo now let's talk about customization options for these LibraryItems.\n\nAnd for that, I'm going to go back to the LibraryContent struct that I'm working on.\n\nFirst, let's talk about the category.\n\nNow the project category is very useful for projects that are small and add a small number of items, such as this demo.\n\nBut for a larger project that adds a lot of items, this category will become pretty unwieldy pretty quickly.\n\nIf you've ever used SwiftUI's Xcode library, you notice that SwiftUI deals with that by adding categories that correspond to functionality such as controls, layout, effects, and so on.\n\nWe can do the same for our LibraryItems as well.\n\nI'm going to go back to my code, and I'm going to add an argument here to specify the category.\n\nAnd I'm going to pick control because this view is most like control; it provides data and allows me to interact with it.\n\nNow if I bring up the library with a Command-Shift-L shortcut and search for smoothie, you will see that the category of this LibraryItem was updated.\n\nIt's still prepended with Fruta, so it's still easy for me to find the local ones.\n\nBut now it's clearly indicated that my view is a control.\n\nThe icon for the LibraryItem changed as well, to indicate that it's a control with the color blue.\n\nSo views don't have to correspond to LibraryItems one-to-one.\n\nIt is perfectly reasonable to create multiple LibraryItems representing the same view in different configurations.\n\nIn this particular case, SmoothieRowView has another argument that lets me specify whether I want to see local popularity of a particular smoothie.\n\nI'm going to add a LibraryItem for that configuration as well.\n\nI'm going to go back to my views property and add another LibraryItem.\n\nAnd it also creates a SmoothieRowView, but now it also uses showNearbyPopularity flag and sets its default to true.\n\nIf I bring up my library again, I can see that my LibraryItem got added just like I would expect, but there's a problem.\n\nIt's really hard for me to tell which LibraryItem represents which instantiation.\n\nI can fix that by adding another argument to this LibraryItem instantiation that specifies its title.\n\nIn this case, I'm going to say, \"Smoothie Row View With Popularity.\" And while I'm here, I can also fix its category to match the other SmoothieRowView as well.\n\nNow if I bring up the library, I can see that my LibraryItem got updated, and it's much easier for me to tell which one is which.\n\nSo that's a quick intro in how to add a view to the Xcode library.\n\nBut what about modifiers? Turns out the idea is very similar but has a little bit of a detail.\n\nLet me set the stage here for a second.\n\nAs I audited my code, I found out that a lot of times when we use an image, we also use these three modifiers in a row: resizable, aspectRatio, and frame.\n\nAnd the result of these modifiers is to resize an image to a particular size while keeping its aspect ratio.\n\nWe use it enough that I actually separated this functionality into its own modifier.\n\nI created an extension on Image, and I created a function called resizedtoFill, which takes the width and height.\n\nAnd this function just takes the image and applies the three modifiers to it and returns the result.\n\nI'd like to add resizedToFill to the modifiers library.\n\nTo do that, I'm going to implement the second requirement of the LibraryContentProvider protocol, the modifiers function.\n\nAnd this is very similar to the views property, but it requires a base argument.\n\nWhen figuring out what the completion for the LibraryItem should be, Xcode needs a way to be able to tell which part of the completion is the modifier and which part is the thing it modifies.\n\nAnd the base is the way for us to communicate that.\n\nSo since my modifier is declared on Image, I'm going to set this type to Image.\n\nAnd then I'm going to add my LibraryItem.\n\nIts completion is base with resizedToFill called on it.\n\nAnd I just need to populate this with sample data.\n\nAnd just like that, my modifier item is ready to be used.\n\nI'm going to scroll back to my image and delete the three modifiers I'm trying to replace.\n\nI'm going to bring up the library again, but this time I'm going to switch to the modifiers tab and search for resized.\n\nAnd here's my new modifier.\n\nI can use it right now by hitting Return, and what gets inserted is exactly what I would expect.\n\nXcode stripped the base part and just inserted the modifier itself and tokenized the arguments so I can customize them here with size, and size, like it was before.\n\nAnd just like that, I used my modifier from the library.\n\nYou may have noticed that at no point during this demo, we had to build or run our project to populate the library.\n\nThis is because Xcode can harvest the library definitions by simply scanning your source for LibraryContentProviders and parsing their declarations.\n\nThere are several advantages to this.\n\nFirst, it means that if your project is not in a runnable state, you can still contribute content to the library which is really handy when you're in the middle of that UI rework.\n\nYour project doesn't run, but you still want the content of the library.\n\nIt also means that there's no additional build configuration required to enable this feature.\n\nAnd since LibraryContentProvider code is never actually executed, the compiler will strip it when your project is built for distribution.\n\nSo this approach works really well for building a library of content for your workspace or project.\n\nBut since Xcode scans all of the source files in your workspace for library content, including any dependencies you have, it actually works really well with Swift packages as well.\n\nIn our project, we actually have a dependency on the Nutrition Facts Swift package, which provides facilities for visualizing nutritional information.\n\nI'm looking for a view that will allow me to display caloric information of a smoothie in my row view.\n\nI can use the library to explore the content of Nutrition Facts package for a view I want.\n\nI'm going to bring up the library again, but this time I'm going to switch back to the views tab and scroll down until I find the Nutrition Facts category.\n\nThis is a category that Xcode created for the content of the Nutrition Facts Swift package.\n\nI can see that there's a CalorieCountView here which sounds like exactly what I want.\n\nI'm going to hit Return to insert it, and my preview will update to reflect the change that I just made.\n\nThis basically looks exactly like what I want, so all I need to do now is to populate this view with the data from my model.\n\nFortunately, I already have nutrition facts, so I can just type smoothie.nutritionFact here and have my view updated.\n\nAnd just like that, I was able to discover and use content from a Swift package without ever opening its source code.\n\nTo summarize, in this session we've learned how to extend the Xcode library by creating a type that conforms to the LibraryContentProvider protocol, implementing one or both of its requirements, and returning instances of LibraryItem that correspond to the individual items.\n\nThank you,\nand have a great WWDC.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:57",
+      "title": "LibraryContentProvider",
+      "language": "swift",
+      "code": "public protocol LibraryContentProvider {\n  @LibraryContentBuilder\n  var views: [LibraryItem] { get }\n\n  @LibraryContentBuilder\n  public func modifiers(base: ModifierBase) -> [LibraryItem]\n}"
+    },
+    {
+      "timestamp": "2:32",
+      "title": "LibraryItem",
+      "language": "swift",
+      "code": "LibraryItem(\n  SmoothieRowView(smoothie: .lemonberry),\n  visible: true,\n  title: \"Smoothie Row View\",\n  category: .control\n)"
+    },
+    {
+      "timestamp": "3:22",
+      "title": "LibraryContent",
+      "language": "swift",
+      "code": "struct LibraryContent: LibraryContentProvider {\n    @LibraryContentBuilder\n    var views: [LibraryItem] {\n        LibraryItem(\n            SmoothieRowView(smoothie: .lemonberry),\n            category: .control\n        )\n        \n        LibraryItem(\n            SmoothieRowView(smoothie: .lemonberry, showNearbyPopularity: true),\n            title: \"Smoothie Row View With Popularity\",\n            category: .control\n        )\n    }\n}"
+    },
+    {
+      "timestamp": "8:57",
+      "title": "Image extension",
+      "language": "swift",
+      "code": "extension Image {\n    func resizedToFill(width: CGFloat, height: CGFloat) -> some View {\n        return self\n            .resizable()\n            .aspectRatio(contentMode: .fill)\n            .frame(width: width, height: height)\n    }\n}"
+    },
+    {
+      "timestamp": "9:17",
+      "title": "Modifiers",
+      "language": "swift",
+      "code": "@LibraryContentBuilder\n    func modifiers(base: Image) -> [LibraryItem] {\n        LibraryItem(\n            base.resizedToFill(width: 100.0, height: 100.0)\n        )\n    }"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10649/5/904EDE80-6092-4438-85F6-0660C7586D01/wwdc2020_10649_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10649/5/904EDE80-6092-4438-85F6-0660C7586D01/wwdc2020_10649_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10149",
+      "year": "2020",
+      "title": "Structure your app for SwiftUI previews",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10149"
+    },
+    {
+      "id": "10185",
+      "year": "2020",
+      "title": "Visually edit SwiftUI views",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10185"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:43:43.563Z"
+}

@@ -1,0 +1,194 @@
+{
+  "id": "10166",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10166/",
+  "title": "Write Swift macros",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Alex Hoppen: Who likes writing repetitive boilerplate code? Nobody does! And that's why in Swift 5.9 we are introducing Swift macros. Swift macros allow you to generate that repetitive code at compile time, making your app's codebases more expressive and easier to read. My name is Alex Hoppen, and today I am going to show you how you can write your own macros. I will start off by giving you a short overview of how macros work.\n\nAfterwards, we will jump straight into Xcode and see how you can create your first macro. Having seen our first macro in Xcode, we will explore more roles in which you can use macros and I will show you how I used macros to simplify the codebase of an app I am currently working on.\n\nFinally, I will show you how macros can communicate errors or warnings back to the compiler if they are not applicable in a certain context. So let's get started. Here we have a list of calculations that first-year students can use to practice their arithmetic skills. We have the result as an integer on the left and the calculation as a string literal on the right side of the tuple. Notice how this is repetitive, redundant, and even error prone because nobody can guarantee that the result actually matches the calculation. Luckily, with Swift 5.9 we can define a stringify macro to simplify this. This macro also happens to be the one that is included in Xcode's template. The stringify macro only takes the calculation as a single parameter. At compile time it expands to the tuple that we saw before, guaranteeing that the calculation and the result match. So how does this work? Let's take a look at the definition of the macro itself. Notice that it looks a lot like a function. The stringify macro takes an integer as the input parameter and outputs a tuple containing an the result, an integer, and the calculation-- a string. If the arguments of the macro expression don't match the macro's parameters, or don't type check by themselves, the compiler will emit an error without applying the macro expansion. For example, if I pass a string literal to this macro, the compiler complains that 'String' is not convertible to expected argument type 'Int'. This is different to, for example, C macros, which are evaluated at the pre-processor stage before type-checking. But it allows us to use all the powers that you know and love from Swift functions, like being able to make your macro generic.\n\nAlso note that this macro is declared with the freestanding expression macro role. This means that you can use the macro wherever you can use an expression, and that it will be indicated by the hash character, like we see with #stringify. Other kinds of macros are attached macros that can augment declarations. I will cover those later. After checking that all the arguments match the macro's parameters, the compiler performs the macro expansion. To see how that works, let's focus on a single macro expression.\n\nTo perform the expansion, each macro defines its implementation in a compiler plug-in. The compiler will send the source code of the entire macro expression to that plug-in. The first thing that the macro plug-in does, is to parse the source code of the macro into a SwiftSyntax tree. This tree is a source-accurate, structural representation of the macro, and it will be the basis on which the macro operates. For example, our 'stringify' macro is represented in the tree as a macro expansion expression node. That expression has the macro name 'stringify'. And it takes a single argument, which is the infix operator plus applied to 2 and 3. What's really powerful about Swift macros is that that the macro's implementation is itself a program written in Swift and can perform any transformation to the syntax tree it wants. In our case, it generates a tuple like we saw before. It will then serialize the generated syntax tree into source code again and send it to the compiler, which will replace the macro expression by the expanded code.\n\nThat's really cool, but now I want to understand how all of this actually looks like in code. The new macro template in Xcode defines the stringify macro that we have just seen. Let us walk through that template and explore the macro's definition, how the expansion works, and how the macro can be tested. To create the template, I click File, New, Package, and now I select the Swift Macro template.\n\nLet's call our first macro \"WWDC\".\n\nSo what do we get with the template? Here we have an invocation of the #stringify macro, similar to what we have seen before. It takes a parameter \"a + b\" and returns the result, as well as the code that produced it. If I want to know what the macro expands to, I can right-click on it and select Expand Macro.\n\nThat's exactly what we saw before. But how is the macro defined? Let's jump to its definition.\n\nHere we have a slightly generalized version of our previous 'stringify' macro. Instead of taking an integer, this macro is generic and can receive any type T.\n\nThe macro is declared as an external macro.\n\nThis tells the compiler that to perform the expansion, it needs to look at the StringifyMacro type in the WWDCMacros module.\n\nHow is that type defined? Let's take a closer look at it. Because stringify is declared as a freestanding expression macro, the StringifyMacro type needs to conform to the ExpressionMacro protocol.\n\nThis protocol has a single requirement: The expansion function. It takes the syntax tree of the macro expression itself, as well as a context that can be used to communicate with the compiler.\n\nThe expansion function then returns the rewritten expression syntax.\n\nWhat does it do in the implementation? At first, it retrieves the single argument to the macro expression. It knows that this argument exists because stringify is declared as taking a single parameter and all arguments need to type-check before the macro expansion can be applied. It then uses string interpolation to create the syntax tree of a tuple. The first element is the argument itself and the second is a string literal containing the source code of the argument.\n\nNotice that the function is not returning a string here. It is returning an expression syntax. The macro will automatically invoke the Swift parser to transform this literal into a syntax tree. And because it is using the literal interpolation style for the second argument, it will make sure that the literal's contents are properly escaped. Nobody likes bugs. But what I like even less are bugs in code that I don't see unless I explicitly ask for it by expanding the macro. That is why you want to make sure that your macro is well-tested. Because macros don't have side effects and the source code of syntax trees is easy to compare, a great way to test them is to write unit tests. The macro template already comes with one.\n\nThis test case uses the 'assertMacroExpansion' function from the SwiftSyntax package to verify that the 'stringify' macro expands correctly.\n\nIt takes the '#stringify(a + b)' expression, that we saw before, as input. and asserts that after the macro is expanded, it produces a tuple containing 'a + b' and the string literal 'a + b'.\n\nTo tell the test case how to expand the macros, it passes the 'testMacros' parameter, which specifies that the macro ‘#stringify' should be expanded using the 'StringifyMacro' type. Let's run the tests in the same way that you might already run the tests of your app, to see if they indeed pass.\n\nThe tests pass, and with that, we already have our first macro.\n\nIn it, we saw its basic building blocks. The macro declaration defines the macro's signature. It also declares the macros roles. The compiler plug-in performs the expansion. It is a program that is itself written in Swift and operates on SwiftSyntax trees.\n\nWe also saw that macros are very testable because they are deterministic transformations of syntax trees and the source code of syntax trees is easy to compare. So you might wonder, \"In which other situations can we use macros?\" We have already seen a freestanding expression macro. Just to recap, this macro is spelled with a hash and allows you to rewrite the entire macro expression. There's also a freestanding declaration role that expands to a declaration instead of an expression. The other kinds of macros are attached macros. These are spelled with an @, just like attributes, and allow the macro to augment the declaration they are attached to. For example, an attached member macro adds new members of the type it is attached to. To learn more about these other roles, I highly recommend watching \"Expand on Swift macros\" where Becca goes over them in great detail. But I want to focus on the attached member role because it helped me improve the codebase of an app I am currently working on. I am also a ski instructor, and recently I have been working on an app that allows me to plan the tours I want to take my students on. One thing you absolutely want to avoid as a ski instructor is to take beginners on slopes that are too hard for them. I want to use the Swift type system to enforce that. That's why, in addition to the Slope enum that contains all the slopes in my favorite ski resort, I also have an EasySlope type that only contains slopes suitable for beginners. It has an initializer to convert a slope to an easy slope, if the slope is indeed easy, and a computed property to convert an easy slope back to a general slope.\n\nWhile this provides great type safety, it is really repetitive. If I want to add an easy slope, I need to add it to Slope...\n\nEasySlope, the initializer, and the computed property. Let's see if we can improve things using a macro. What we want to do is to automatically generate the initializer and the computed property. How can we do this? Both the initializer and the computed property are members of the EasySlope type, so we need to declare an attached member macro.\n\nNext, we will create the compiler plug-in that contains the macro's implementation. To make sure that our macro behaves as expected, we want to develop it in a test-driven way. Thus, we will leave its implementation empty until we write a test case for it.\n\nAfter we defined the macro's behavior in a test case, we will write the implementation to match that test case.\n\nAnd finally, we will integrate the new macro into my app. If all goes well, we will be able to remove the initializer and have the macro generate it for us.\n\nTo develop the macro, we work with the template that we created earlier. And since I don't really need the ‘#stringify' macro in my app, I have already removed it. I start by declaring a new attached member macro by using the '@attached(member)' attribute.\n\nI call it SlopeSubset because EasySlope is a subset of Slope.\n\nThe macro also defines the names of the members it introduces.\n\nIn this demo, I will just be showing you how to generate the initializer. Generating the computed property is very similar, because it's also just a switch statement that switches over all the cases. With this declaration, we have defined the macro, but we have not implemented the expansion that it actually performs. For this, our macro references the SlopeSubsetMacro type in the WWDCMacros module . Let us go and create that type so we can continue to the really exciting part: The actual macro implementation. Since we declared SlopeSubset as an attached member macro, the corresponding implementation needs to conform to the MemberMacro protocol. This protocol has a single requirement: The 'expansion' function, similar to ExpressionMacro.\n\nThe 'expansion' function takes the attribute with which we apply the macro to a declaration, as well as the declaration that the macro is being applied to. In our case, this will be the EasySlope enum declaration.\n\nThe macro then returns the list of all the new members it wants to add to that declaration.\n\nI know that it's very tempting to start implementing this transformation straight away, but we agreed that we wanted to start by writing a test case for it. So for now, let us just return an empty array, indicating that no new members should be added.\n\nFinally, we need to make SlopeSubset visible to the compiler. For this, I add it to the 'providingMacros' property down here.\n\nBefore diving any deeper, I want to make sure that what we have so far works. While I could try applying the macro in Xcode and looking at the expanded code, I much prefer to write a test case for it that I can rerun whenever I'm making changes to the macro, to make sure I'm not introducing regressions.\n\nJust like in the test case in the template, we use the 'assertMacroExpansion' function to verify our macro's behavior.\n\nWhat we want to test is what the macro generates when applied to the EasySlope type, so we use that as our test case's input.\n\nAnd since the macro's not doing anything yet, we just expect it to remove the attribute and not add any new members, so the expected expanded code is the same as the input, just without '@SlopeSubset'.\n\nFinally, we need to let the test case know that it should expand the macro SlopeSubset using the SlopeSubsetMacro implementation. For that, we need to map the macro name to its implementing type in the 'testMacros' dictionary and pass that dictionary to the assertion function.\n\nLet's run our tests now to check that what we have written so far actually works.\n\nIt does. Great. But we want really wanted is to check that our macro actually generates the initializer, not just remove the attribute. So I'll copy the code that I previously wrote by hand into the test case because really, that's what we want the plug-in to generate.\n\nIf we run the test again… ...it fails because our macro doesn't actually generate the initializer yet. Let's change that now.\n\nThe initializer switches over all the enum elements declared in the EasySlopes enum. So the first thing that we need to do is to retrieve these enum elements from the declaration. Since enum elements can only be declared inside enum declarations, we start by casting 'declaration' to an enum declaration.\n\nIf the macro is attached to a type that is not an enum, we should be emitting an error. I added a TODO so that we don’t forget to do it later, and return an empty array for now. Next, we need to get all the elements that the enum declares. To figure out how to do that, I want to inspect the syntactic structure of our enum in the SwiftSyntax tree.\n\nSince the macro's implementation is just an ordinary Swift program, I can use all the tools that you know from Xcode to debug your programs. For example, I can set a breakpoint inside the expansion function and run the test cases to hit that breakpoint.\n\nWe now have the debugger paused inside the macro’s implementation and 'enumDecl' is the EasySlopes enum. We can print it in the debugger by typing 'po enumDecl'.\n\nLet's inspect the output. The innermost nodes of the syntax tree represent the enum elements, the 'beginnersParadise', and 'practiceRun' slopes. To retrieve them, we need to follow the structure that is outlined to us in the syntax tree. Let us walk through that structure step-by-step and write the access code as we go. The enum declaration has a child called 'memberBlock'. This member block contains both the braces and the actual members. So to access the members, we start with 'enumDecl.memberBlock.members'.\n\nThese members contain the actual declaration, as well as an optional semicolon. We are interested in the declarations, in particular those declarations that actually declare enum cases. I'm using compact map to get a list of all the member declarations that are enum cases. Each case declaration can declare multiple elements. This is because instead of declaring each slope on a new line after a separate case keyword, I could have written them on the same line as 'case beginnersParadise, practiceRun'.\n\nTo retrieve all of them, we can use 'flatMap'.\n\nAnd now that we have retrieved all the elements, we can start constructing the initializer that we actually want to add to EasySlope.\n\nThe initializer declaration has a single item: A switch expression.\n\nThis switch expression contains a case for each element in the enum, as well as a default case that returns nil. We need to create syntax nodes for all of these.\n\nTwo great ways of finding the syntax nodes to create, are either by printing the syntax tree like we did before, or by reading SwiftSyntax's documentation. We start by constructing an InitializerDeclSyntax.\n\nThis type can be constructed by building the body using a result builder and specifying the header-- that is the 'init' keyword and all the parameters. This will allow us to use a for loop inside the result builder to iterate over all the elements, exactly what we need.\n\nI just copy the init header from our test case.\n\nInside the body, we need a switch expression.\n\nThis type also has an initializer that takes a header and a result builder. Let's use it again.\n\nNow we can use the power of result builders by iterating over all elements that we gathered earlier.\n\nFor each element, we want to create a new case item, which we can construct using string interpolation just like we saw for ‘#stringify'.\n\nWe also need to add a default case that returns nil.\n\nAnd finally, we can return the initializer.\n\nLet's run the tests to see if we are indeed generating the correct initializer.\n\nWe are. So we know that our macro works and we can start using it in my app.\n\nTo add our macro package to my Xcode project, I can right-click on it and select \"Add Package Dependencies\". I can now select the local package that we just created.\n\nTo be able to use the macro, I add the WWDC target as a dependency of my app.\n\nWe can now import the WWDC module from the package and apply the SlopeSubset macro to the EasySlope type.\n\n… If we build... ...the compiler complains that the hand-written initializer is an invalid redeclaration. And that's because the macro now generates it for us. So we can just delete it.\n\nIt's always fun to delete code. Right? So if we want to see what the macro actually generated, we can right-click on SlopeSubset and click Expand Macro.\n\nAnd if I forgot what the macro does, I can also Option-click on it to read its documentation.\n\nThe next step would be to also generate the computed property, but I'll do that later today. By using macros, we were able to get the type safety of EasySlopes without the need to write repetitive code. How did we do that? We started with the Swift macro package template. To explore the syntax tree's structure, we stopped the macro's execution and printed the syntax node inside the debugger. This allowed us to see which properties we needed to access to get all the enum elements.\n\nAnd it was really easy to develop the macro on its own using a test case. After we added it to my app, it worked straight away. But what happens if your macro is used in situations that it doesn't support? Just like you never want to take a beginner skier onto a difficult slope, you never want to let you macro perform unexpected expansions, or generate code that does not compile. If your macro is used in ways that it doesn't support, always emit error messages that inform your adopters about what's going wrong, instead of having them read the generated code to debug your macro.\n\nIn that spirit, let's go and fix the TODO we left in our codebase. When SlopeSubset is applied to a type that is not an enum, the macro should emit an error, saying that it is only applicable to enums. Just like before, let's start by adding a test case.\n\nThis time, we are applying the SlopeSubset macro to a struct.\n\nSince there are no enum elements in the struct, we don't expect the macro to generate an initializer. Instead, it should emit a diagnostic, that is an error, informing us that SlopeSubset can only be applied to an enum. If we run this test... ...it fails because we are not outputting the error message yet. Let's go to the compiler plug-in to do so now.\n\nMacro errors can be represented by any type that conforms to the Swift Error protocol. I use an enum with a single case to describe the error message if SlopeSubset is applied to a type that's not an enum.\n\nIf we throw the error from the expansion function, it will be shown at the attribute that calls the macro expansion.\n\nIf you want to show the error message at a different location than the attribute, generate warnings, or even show Fix-Its in Xcode, there's an 'addDiagnostic' method on the context parameter that allows you to generate rich diagnostics. But I think in this case, it's efficient to just show a simple error message at the attribute. Now, let's see if we did everything right and if our tests pass.\n\nGreat, they do. So how does it look like in Xcode if I apply SlopeSubset to a struct? For this, let me copy the test case into a file.\n\nXcode shows the custom error message inline with all other compilation errors. That makes it easy for adopters of my macro to see what they are doing wrong.\n\nAnd you know what? Now that we have good error handling, I think this macro might also be useful for other developers specifying enum subsets, not just for slopes. Let's go and generalize it.\n\nTo specify the superset of the enum, that we have so far hard-coded as Slope, we add a generic parameter to the macro declaration.\n\nAnd since the macro is now no longer specific to slopes, let's rename it to EnumSubset by right clicking on SlopeSubset and selecting Refactor, Rename.\n\nI can also choose to rename all occurences inside string literals and comments by Command-clicking them.\n\nWe now need to adjust our macro implementation to use the generic parameter, instead of the hard-coded Slopes type. If we print the attribute inside the debugger and inspect its layout, just like we did for 'enumDecl', we can see that we can retrieve the generic parameter by accessing the 'argumentType' of the first argument in the 'genericArgumentClause' of the attribute's name. So now that we've retrieved the generic parameter, we can replace the so-far hardcoded Slope type by the variable 'supersetType'.\n\nI still need to make a couple more changes, like renaming the initializer's parameter, changing the macro implementation's type name, and updating the documentation. I'll do that later. Instead, for now, let's make sure that our tests are still passing.\n\nSince we made EnumSubset generic, we need to explicitly specify that EasySlope is a subset of Slope by passing slope as a generic parameter to the EnumSubset macro.\n\nLet's see if the tests are now passing.\n\nThey are. I should really consider publishing this macro to others as a Swift package. So that's a lot of ground we covered today. Let's recap what we went through. To create a macro, you can start with the macro package template, which includes the stringify macro as a great starting point. While developing your macro, we highly encourage you to write test cases to make sure that the code your macro generates is indeed valid. And if you're doing this, you can inspect the layout of the syntax tree by setting a breakpoint in the expansion function, running a test, and printing the syntax tree in the debugger. And finally, if your macro is not applicable in certain circumstances, you should always emit custom error messages so that even if things go wrong, your macro will shine. Thanks for watching, and I'm thrilled to see what kind of macros you will create. ♪ ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "5:55",
+      "title": "Invocation of the stringify macro",
+      "language": "swift",
+      "code": "import WWDC\n\nlet a = 17\nlet b = 25\n\nlet (result, code) = #stringify(a + b)\n\nprint(\"The value \\(result) was produced by the code \\\"\\(code)\\\"\")"
+    },
+    {
+      "timestamp": "6:31",
+      "title": "Declaration of the stringify macro",
+      "language": "swift",
+      "code": "@freestanding(expression)\npublic macro stringify<T>(_ value: T) -> (T, String) = #externalMacro(module: \"WWDCMacros\", type: \"StringifyMacro\")"
+    },
+    {
+      "timestamp": "7:10",
+      "title": "Implementation of the stringify macro",
+      "language": "swift",
+      "code": "public struct StringifyMacro: ExpressionMacro {\n    public static func expansion(\n        of node: some FreestandingMacroExpansionSyntax,\n        in context: some MacroExpansionContext\n    ) -> ExprSyntax {\n        guard let argument = node.argumentList.first?.expression else {\n            fatalError(\"compiler bug: the macro does not have any arguments\")\n        }\n\n        return \"(\\(argument), \\(literal: argument.description))\"\n    }\n}"
+    },
+    {
+      "timestamp": "9:12",
+      "title": "Tests for the stringify Macro",
+      "language": "swift",
+      "code": "final class WWDCTests: XCTestCase {\n    func testMacro() {\n        assertMacroExpansion(\n            \"\"\"\n            #stringify(a + b)\n            \"\"\",\n            expandedSource: \"\"\"\n            (a + b, \"a + b\")\n            \"\"\",\n            macros: testMacros\n        )\n    }\n}\n\nlet testMacros: [String: Macro.Type] = [\n    \"stringify\": StringifyMacro.self\n]"
+    },
+    {
+      "timestamp": "12:05",
+      "title": "Slope and EasySlope",
+      "language": "swift",
+      "code": "/// Slopes in my favorite ski resort.\nenum Slope {\n    case beginnersParadise\n    case practiceRun\n    case livingRoom\n    case olympicRun\n    case blackBeauty\n}\n\n/// Slopes suitable for beginners. Subset of `Slopes`.\nenum EasySlope {\n    case beginnersParadise\n    case practiceRun\n\n    init?(_ slope: Slope) {\n        switch slope {\n        case .beginnersParadise: self = .beginnersParadise\n        case .practiceRun: self = .practiceRun\n        default: return nil\n        }\n    }\n\n    var slope: Slope {\n        switch self {\n        case .beginnersParadise: return .beginnersParadise\n        case .practiceRun: return .practiceRun\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "14:16",
+      "title": "Declare SlopeSubset",
+      "language": "swift",
+      "code": "/// Defines a subset of the `Slope` enum\n///\n/// Generates two members:\n///  - An initializer that converts a `Slope` to this type if the slope is\n///    declared in this subset, otherwise returns `nil`\n///  - A computed property `slope` to convert this type to a `Slope`\n///\n/// - Important: All enum cases declared in this macro must also exist in the\n///              `Slope` enum.\n@attached(member, names: named(init))\npublic macro SlopeSubset() = #externalMacro(module: \"WWDCMacros\", type: \"SlopeSubsetMacro\")"
+    },
+    {
+      "timestamp": "15:24",
+      "title": "Write empty implementation for SlopeSubset",
+      "language": "swift",
+      "code": "/// Implementation of the `SlopeSubset` macro.\npublic struct SlopeSubsetMacro: MemberMacro {\n    public static func expansion(\n        of attribute: AttributeSyntax,\n        providingMembersOf declaration: some DeclGroupSyntax,\n        in context: some MacroExpansionContext\n    ) throws -> [DeclSyntax] {\n        return []\n    }\n}"
+    },
+    {
+      "timestamp": "16:23",
+      "title": "Register SlopeSubsetMacro in the compiler plugin",
+      "language": "swift",
+      "code": "@main\nstruct WWDCPlugin: CompilerPlugin {\n    let providingMacros: [Macro.Type] = [\n        SlopeSubsetMacro.self\n    ]\n}"
+    },
+    {
+      "timestamp": "18:41",
+      "title": "Test SlopeSubset",
+      "language": "swift",
+      "code": "let testMacros: [String: Macro.Type] = [\n    \"SlopeSubset\" : SlopeSubsetMacro.self,\n]\n\nfinal class WWDCTests: XCTestCase {\n    func testSlopeSubset() {\n        assertMacroExpansion(\n            \"\"\"\n            @SlopeSubset\n            enum EasySlope {\n                case beginnersParadise\n                case practiceRun\n            }\n            \"\"\", \n            expandedSource: \"\"\"\n\n            enum EasySlope {\n                case beginnersParadise\n                case practiceRun\n                init?(_ slope: Slope) {\n                    switch slope {\n                    case .beginnersParadise:\n                        self = .beginnersParadise\n                    case .practiceRun:\n                        self = .practiceRun\n                    default:\n                        return nil\n                    }\n                }\n            }\n            \"\"\", \n            macros: testMacros\n        )\n    }\n}"
+    },
+    {
+      "timestamp": "19:25",
+      "title": "Cast declaration to an enum declaration",
+      "language": "swift",
+      "code": "guard let enumDecl = declaration.as(EnumDeclSyntax.self) else {\n    // TODO: Emit an error here\n    return []\n}"
+    },
+    {
+      "timestamp": "21:14",
+      "title": "Extract enum members",
+      "language": "swift",
+      "code": "let members = enumDecl.memberBlock.members"
+    },
+    {
+      "timestamp": "21:32",
+      "title": "Load enum cases",
+      "language": "swift",
+      "code": "let caseDecls = members.compactMap { $0.decl.as(EnumCaseDeclSyntax.self) }"
+    },
+    {
+      "timestamp": "21:58",
+      "title": "Retrieve enum elements",
+      "language": "swift",
+      "code": "let elements = caseDecls.flatMap { $0.elements }"
+    },
+    {
+      "timestamp": "24:11",
+      "title": "Generate initializer",
+      "language": "swift",
+      "code": "let initializer = try InitializerDeclSyntax(\"init?(_ slope: Slope)\") {\n    try SwitchExprSyntax(\"switch slope\") {\n        for element in elements {\n            SwitchCaseSyntax(\n                \"\"\"\n                case .\\(element.identifier):\n                    self = .\\(element.identifier)\n                \"\"\"\n            )\n        }\n        SwitchCaseSyntax(\"default: return nil\")\n    }\n}"
+    },
+    {
+      "timestamp": "24:19",
+      "title": "Return generated initializer",
+      "language": "swift",
+      "code": "return [DeclSyntax(initializer)]"
+    },
+    {
+      "timestamp": "25:51",
+      "title": "Apply SlopeSubset to EasySlope",
+      "language": "swift",
+      "code": "/// Slopes suitable for beginners. Subset of `Slopes`.\n@SlopeSubset\nenum EasySlope {\n    case beginnersParadise\n    case practiceRun\n\n    var slope: Slope {\n        switch self {\n        case .beginnersParadise: return .beginnersParadise\n        case .practiceRun: return .practiceRun\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "28:00",
+      "title": "Test that we generate an error when applying SlopeSubset to a struct",
+      "language": "swift",
+      "code": "func testSlopeSubsetOnStruct() throws {\n    assertMacroExpansion(\n        \"\"\"\n        @SlopeSubset\n        struct Skier {\n        }\n        \"\"\",\n        expandedSource: \"\"\"\n\n        struct Skier {\n        }\n        \"\"\",\n        diagnostics: [\n            DiagnosticSpec(message: \"@SlopeSubset can only be applied to an enum\", line: 1, column: 1)\n        ],\n        macros: testMacros\n    )\n}"
+    },
+    {
+      "timestamp": "28:48",
+      "title": "Define error to emit when SlopeSubset is applied to a non-enum type",
+      "language": "swift",
+      "code": "enum SlopeSubsetError: CustomStringConvertible, Error {\n    case onlyApplicableToEnum\n    \n    var description: String {\n        switch self {\n        case .onlyApplicableToEnum: return \"@SlopeSubset can only be applied to an enum\"\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "29:09",
+      "title": "Throw error if SlopeSubset is applied to a non-enum type",
+      "language": "swift",
+      "code": "throw SlopeSubsetError.onlyApplicableToEnum"
+    },
+    {
+      "timestamp": "31:03",
+      "title": "Generalize SlopeSubset declaration to EnumSubset",
+      "language": "swift",
+      "code": "@attached(member, names: named(init))\npublic macro EnumSubset<Superset>() = #externalMacro(module: \"WWDCMacros\", type: \"SlopeSubsetMacro\")"
+    },
+    {
+      "timestamp": "31:33",
+      "title": "Retrieve the generic parameter of EnumSubset",
+      "language": "swift",
+      "code": "guard let supersetType = attribute\n    .attributeName.as(SimpleTypeIdentifierSyntax.self)?\n    .genericArgumentClause?\n    .arguments.first?\n    .argumentType else {\n    // TODO: Handle error\n    return []\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10166/5/58425163-99DA-4506-A86E-A2D794244136/downloads/wwdc2023-10166_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10166/5/58425163-99DA-4506-A86E-A2D794244136/downloads/wwdc2023-10166_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10149",
+      "year": "2023",
+      "title": "Discover Observation in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10149"
+    },
+    {
+      "id": "10167",
+      "year": "2023",
+      "title": "Expand on Swift macros",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10167"
+    },
+    {
+      "id": "10164",
+      "year": "2023",
+      "title": "What’s new in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10164"
+    },
+    {
+      "id": "10165",
+      "year": "2023",
+      "title": "What’s new in Xcode 15",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10165"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:41:19.536Z"
+}

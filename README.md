@@ -16,6 +16,7 @@ A powerful Model Context Protocol (MCP) server that provides seamless access to 
 - 📰 **Documentation Updates**: Track WWDC announcements, technology updates, and release notes
 - 🎯 **Technology Overviews**: Comprehensive guides for Apple platforms and technologies with hierarchical navigation
 - 💻 **Sample Code Library**: Browse and search complete working example projects demonstrating Apple technologies
+- 🎥 **WWDC Video Library**: Search and explore WWDC sessions with full transcripts, code examples, and resources
 - 🔗 **Related APIs Discovery**: Find related, similar, and alternative APIs with intelligent recommendations
 - 📊 **Platform Compatibility**: Analyze platform support and version compatibility across Apple's ecosystem
 - ⚡ **High Performance**: Memory-based caching system with optimized TTL per content type
@@ -295,6 +296,35 @@ npm install && npm run build
 "Show only beta sample code projects"
 ```
 
+### 🎥 WWDC Video Search
+```
+"Search WWDC videos about SwiftUI"
+"Find WWDC sessions on machine learning"
+"Show me WWDC 2024 videos"
+"Search for async/await WWDC talks"
+"Find WWDC videos about Swift concurrency"
+"Show accessibility-focused WWDC sessions"
+```
+
+### 📺 WWDC Video Details
+```
+"Get details for WWDC session 10176"
+"Show me the transcript for WWDC23 session on SwiftData"
+"Get code examples from WWDC video 10019"
+"Show resources from Vision Pro WWDC session"
+"Get transcript for 'Meet async/await in Swift' session"
+```
+
+### 📋 WWDC Topics & Years
+```
+"List all WWDC topics"
+"Show me Swift topic WWDC videos"
+"Get WWDC videos about developer tools"
+"List WWDC videos from 2023"
+"Show all SwiftUI and UI frameworks sessions"
+"Get machine learning WWDC content"
+```
+
 ### 🛠️ Advanced Usage
 ```
 "Find related APIs for @State with platform analysis"
@@ -318,6 +348,10 @@ npm install && npm run build
 | `get_documentation_updates` | Track Apple documentation updates | WWDC announcements, technology updates, release notes |
 | `get_technology_overviews` | Get technology overviews and guides | Comprehensive guides, hierarchical navigation, platform filtering |
 | `get_sample_code` | Browse Apple sample code projects | Framework filtering (with limitations), keyword search, beta status |
+| `search_wwdc_videos` | Search WWDC video sessions | Keyword search, topic/year filtering, session metadata |
+| `get_wwdc_video_details` | Get WWDC video details with transcript | Full transcripts, code examples, resources, platform info |
+| `list_wwdc_topics` | List all available WWDC topics | 19 topic categories from Swift to Spatial Computing |
+| `list_wwdc_years` | List all available WWDC years | Conference years with video counts |
 
 ## 🏗️ Technical Architecture
 
@@ -336,7 +370,12 @@ apple-docs-mcp/
 │   │   ├── get-related-apis.ts       # Related API discovery
 │   │   ├── resolve-references-batch.ts # Batch reference resolution
 │   │   ├── get-platform-compatibility.ts # Platform analysis
-│   │   └── find-similar-apis.ts      # Similar API recommendations
+│   │   ├── find-similar-apis.ts      # Similar API recommendations
+│   │   └── wwdc/                     # WWDC video tools
+│   │       ├── wwdc-handlers.ts      # WWDC tool handlers
+│   │       ├── content-extractor.ts  # Video content extraction
+│   │       ├── topics-extractor.ts   # Topic listing
+│   │       └── video-list-extractor.ts # Video list parsing
 │   └── utils/                        # Utility functions and helpers
 │       ├── cache.ts                  # Memory cache with TTL support
 │       ├── constants.ts              # Application constants and URLs

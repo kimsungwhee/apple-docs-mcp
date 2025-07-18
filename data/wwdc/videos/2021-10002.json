@@ -1,0 +1,116 @@
+{
+  "id": "10002",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10002/",
+  "title": "What's new in watchOS 8",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Essentials"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to “What’s new in watchOS 8.” My name is Jake Behrens, and I’m Apple’s Watch Evangelist.\n\nwatchOS 7 opened up many new opportunities, with features like Family Setup, allowing family members to stay connected without an iPhone; multiple complications, allowing you to create richer experiences for the watch face; and watch face sharing, which allows you to create a watch face that’s all your own with complications that you love that you can share with someone or post online. In watchOS 8, we’ve focused on some of your top requests to help you create even more incredible Watch app experiences.\n\nThere’s a lot to talk about, so let’s dive in. First is the Always-On Display. Apple Watch Series 5 and watchOS 6 brought the Always-On Display to the watch face, and now in watchOS 8, we’re bringing the Always-On Display to your apps. I’m also going to talk about how you can take advantage of background delivery of HealthKit data and Bluetooth scanning to keep health-related complications up to date.\n\nApple Watch has become more independent over time. With watchOS 8, we’re bringing region-based user notifications to the wrist. I’m going to talk about how these can bring relevant information to someone at the right time in the right places. Finally, I’ll talk about some new system and API enhancements coming to watchOS 8 that make developing and using Watch apps even better. Let’s start with the Always-On Display. The Always-On Display allows you to see content on your watch without having to raise your wrist. When you raise your wrist, the display is active again.\n\nThe Always-On Display is supported on Apple Watch Series 5 and 6. In watchOS 7, the always-on state showed your app’s UI blurred with the time overlaid.\n\nWhen you rebuild your app with the watchOS 8 SDK, your app’s UI will now be shown in a dimmed state instead and is immediately interactive if someone taps the UI.\n\nIn the always-on state, the system automatically reduces the overall brightness of the display while keeping it bright enough for someone to see.\n\nTo help you adapt your app’s UI to this reduced brightness, we’re introducing a SwiftUI environment property called isLuminanceReduced. You can respond to this state by highlighting information that’s especially important and hiding information that should stay private.\n\nTo help you iterate quickly, we’ve included support for this environment property in Xcode previews as well as in the simulator.\n\nIn the simulator, you click a button in the window to simulate a wrist-down event. This will be really helpful when you want to see how your app’s UI responds to the always-on state. Now let’s talk about some guiding principles for your app’s UI in the always-on state. The transition from active state to the always-on state should feel seamless. Don’t drastically alter the UI or reorganize information.\n\nOtherwise the transition from the always-on state to being active will be jarring.\n\nMaintaining the context of the active UI is key. In this example, Fitbod keeps the UI grounded and consistent between states while further dimming some of the brighter elements and secondary text.\n\nNext, you should dim non-essential information and elements.\n\nIf you have secondary text, images, or fills, you can further dim them yourself to give more prominence to the piece of information you want to stay highlighted and visible. AnyList, which helps you create and share grocery shopping lists and organize recipes, removes the background of list items and further dims the secondary information, like which flavor of Greek yogurt or how much milk. This allows the main list item title to be even more glanceable, as you might be pushing a shopping cart or carrying a shopping basket.\n\nIf your UI has large elements that are filled with color or imagery, you may want to reduce those elements to be represented with a stroke or dimmed color, again maintaining the UI’s grounding but allowing your highlighted information to still be visible. In this example, Pandora dims secondary controls along the bottom and removes the album artwork and uses a similar but dimmed color. This works really well to highlight the song name and artist name at a quick glance. When luminance is reduced, you may also want to redact or remove sensitive information.\n\nInformation like account numbers, balances, shown in this example, and some personal health data may be good candidates to obscure from prying eyes while someone’s wrist is down. To learn more about redaction using SwiftUI, see the “Principles of great widgets” video in the Developer app, since widgets share a similar redaction model. Finally, if you have animations happening, you should reset them to the first frame of their loop or resolve them to a rested state.\n\nIt’s best to not leave them mid-animation. Now that you know how to make your UI look its best in the always-on state, let’s talk about the technical side of how you update your app's UI while the wrist is down. For apps with an ongoing, active session like a workout session or audio session that gives you continuous runtime, you can update your UI up to once per second.\n\nThis allows you to keep counters, metrics, and other data up to date, though will require you to remove sub-second incrementing, like tenths of seconds.\n\nFor apps without an active session, you may update up to once per minute.\n\nWhile the default timeout before the system returns to the clock face is two minutes, you should plan for your app being visible longer than this, as your customers may change this setting. So how do you tell us that your inactive app needs to update its UI? For that, we’ve created a TimelineView in SwiftUI. TimelineView takes a schedule and constructs a view dependent on a date. When it comes to scheduling updates, we’ve provided a handful of TimelineSchedules to help you do whatever is right for your app.\n\nThere is Every minute, which updates every minute. This also aligns to the system clock, meaning that each update will occur at the top of the minute on the device. There’s Periodic, which allows you to set an interval, such as every two minutes or whatever is appropriate for your app. If you use a periodic schedule for one-minute intervals, they are not aligned to the system clock. This can be really useful if you need to time an update in relation to a specific event, like when a workout was started.\n\nThere’s Explicit, if you have changes that occur at specific times, such as needing an update at 1.5 minutes followed by an update 2.5 minutes later, and so on.\n\nThere’s also Custom. This can work really well if you have something like a timer that updates every minute but you’d like it to update once per second for the last 60 seconds. If your app is not in an active session and you tell us that you need faster updates for a short period, as in the last 60 seconds of this timer, the system will attempt to do so, but those updates are not guaranteed.\n\nFinally, there’s an Animation schedule. To learn more about TimelineView, schedules, animations, and more, watch the “What’s new in SwiftUI\" and the “Add rich graphics to your SwiftUI app” videos in the Developer app. We love the impact that health and fitness apps have made on Apple Watch.\n\nIn watchOS 8, we’ve brought background delivery of HealthKit data to Watch apps.\n\nThis opens up passive health monitoring for apps and can make a big impact for standalone Watch apps used in Family Setup configurations. Setting up background delivery of HealthKit data works similarly to iOS. On watchOS, when the predicate matches due to new health data being collected and your background observer query gets handled, your app is woken to receive results. This can be up to once per hour for a Watch app. If someone has added your app’s complications to their active watch face, you can receive results up to four times per hour. All of these opportunities will count against your app’s background app refresh budget, so they will only add up to a maximum of four results being received per hour and could impact background app refresh wakes for other reasons. Let’s talk about update frequencies.\n\nWhen we deliver results to your app, we will do it immediately for various critical data types, including fall events, low blood oxygen saturation, heart rate events, and more.\n\nLook at the developer documentation on the Apple Developer website for the full list of affected data types.\n\nAll other data types will be delivered hourly or at longer intervals.\n\nWe’ve also added new information in the HealthKit authorization sheet to let customers know that your app has increased awareness of their health data on Apple Watch. We think background delivery of HealthKit data will bring new possibilities to health and fitness related complications on the watch face. In watchOS 4, we enabled Bluetooth devices to connect directly to Apple Watch and make use of Core Bluetooth. We’ve seen some really incredible uses of this.\n\nIn watchOS 8, we’re taking another step forward and allowing devices to connect during background app refresh opportunities that your app’s complications get when they’re on the active watch face. For instance, this is Qardio, which allows people to monitor their heart conditions with Qardio’s medical grade ECG.\n\nAnd this is Sonra Watch, which allows soccer coaches, or football, for those of you outside of the U.S., to monitor up to 28 real-time metrics of their players’ performance during training using their GPS tracker. With Bluetooth connections during background app refresh, this means that your app’s complications can stay up to date with your Bluetooth device and display updated information throughout the day.\n\nBackground app refresh gives your app’s complications that are on the active watch face up to four opportunities per hour to connect and update. Remember that these opportunities will count against your app’s overall background app refresh budget.\n\nMake sure to set up your initial device connection when the app is in the foreground.\n\nThis can’t be done from the background.\n\nOnce a connection to the device is established, background app refresh gives your app the opportunity to connect and get new data. It’s also important to connect and process your data within a very short period of time.\n\nTo help you with this, we’ve added a new expiration handler on WKRefreshBackgroundTask so you can be told when you’re about to run out of time and need to finish up what you’re doing. This allows your app to clean up and degrade gracefully if needed. For more information, watch “Connect Bluetooth devices to Apple Watch” in the Developer app. Apple Watch is the device that’s always on you. With independent Watch apps becoming more prevalent and customers increasingly running out for coffee or to the store with only their watch, location is a key part of staying on top of what’s important. In watchOS 8, we’re bringing region-based user notifications to Apple Watch. This means you can get notified of important things based on geofences.\n\nFor example, you can be reminded to start your skiing workout when you’re at the lift, using Slopes.\n\nOr you can receive your flight information when you get to the airport using App in the Air. Region-based user notifications on watchOS work similarly to iOS.\n\nTo preserve your customers’ privacy, they will first receive a static notification where they can tap a button to see the full dynamic notification. This allows you to deliver pre-created local notifications based on someone entering or exiting a region you’ve set for a notification trigger based on location. Keep in mind that the “When in use” permission is required for you to take advantage of this. You should also limit the number of regions to only include important points of interest near someone or locations they’ve shown explicit intent for, like setting a favorite store location.\n\nRegions are most power-effective when they're about a couple hundred meters in radius. Alongside region-based user notifications, watchOS 8 supports the new location button in Core Location.\n\nThis button gives a one-time location authorization without going through authorization prompts each time it’s tapped.\n\nBehind the scenes, it acts like an \"Allow once” traditional authorization. The location button is an easy way to gain trust from people by giving them more control of when they want to share their location. For more information on Core Location updates in watchOS 8 and iOS 15, watch “Meet the location button\" available in the Developer app. We’re also introducing a new always-on altimeter API in Core Motion. This gives you access to real-time elevation updates with minimal impact to all-day battery life and without requiring someone to share their location with the app.\n\nAside from new features and APIs coming to watchOS 8, we’ve made a lot of enhancements to make developing and using your Watch apps easier than ever. With watchOS 8, Apple Watch can now measure respiratory rate while you sleep. This allows apps like Sleep Details to display your respiratory rate data and visualize changes when you wake up in the morning. We’re happy to bring AssistiveTouch to Apple Watch for those with limb differences. This is really exciting because we can recognize a person’s hand gestures to help them perform actions and navigate UI. We’re also bringing a large accessibility text size to watchOS 8.\n\nTo learn more on making your Watch app more accessible, watch “Create accessible experiences for watchOS” in the Developer app.\n\nUnit testing and UI testing for Watch apps was introduced in Xcode 12.5.\n\nBut making your apps accessible is what allows them to be testable, so with new accessibility features on watchOS, the time has never been better to make your apps more accessible. watchOS 8 also adds large titles at the top of scrolling views, like you see in iOS, allowing for a more consistent feel across devices.\n\nText input has been revamped in watchOS 8, remembering if someone prefers Scribble or Dictation per app, and giving quick access to changing between input types while entering text.\n\nThis allows much more text to be easily entered, and you get this functionality free with SwiftUI text fields. The new searchable API allows you to easily add search fields to your apps with customized suggestions.\n\nCustomers will see a button in the search field indicating suggestions are available. When they tap on that, they’ll see your customized suggestions. You can also provide customized UI for results. You can learn more by watching the “Craft search experiences in SwiftUI” video in the Developer app.\n\nLists now support swipe actions, so in addition to removing items, you can now perform custom actions like favoriting. Button roles let the system know how to present and handle specific button types, like destructive ones, but they also include a controlProminence modifier, which will give those buttons an additional haptic when tapped. And the SwiftUI Canvas API is also available on watchOS 8, which means you can do rich programmatic drawing that uses the incredible GPU found in Apple Watch. There are many reasons to be excited about new possibilities on Apple Watch with watchOS 8. TimelineView can help you update your UI when a person’s wrist is down and they need to get info at a quick glance. This is something all apps should adopt, so check it out first. Your app’s complications have gained new ways to get updated information to them with background delivery of HealthKit data and Bluetooth connections. This further supports that complications are a main way some people use Watch apps. If you can deliver more at a glance, you absolutely should.\n\nRegion-based user notifications have enhanced what location means to Watch apps.\n\nAdopting these where they make sense can add that surprise and delight moment that keeps customers engaged in your app.\n\nAnd finally, making use of next-level capabilities like AssistiveTouch and the SwiftUI Canvas API can make your Watch apps more useable and more immersive than ever. I’ll be watching to see what you create.\n\nThank you. [music]",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:49",
+      "title": "isLuminanceReduced Environment Property",
+      "language": "swift",
+      "code": "@Environment(\\.isLuminanceReduced) var isLuminanceReduced"
+    },
+    {
+      "timestamp": "3:01",
+      "title": "isLuminanceReduced ContentView Preview",
+      "language": "swift",
+      "code": "ContentView().environment(\\.isLuminanceReduced, true)"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Designing your app for the Always On state",
+        "url": "https://developer.apple.com/documentation/watchOS-Apps/designing-your-app-for-the-always-on-state"
+      },
+      {
+        "title": "UNLocationNotificationTrigger",
+        "url": "https://developer.apple.com/documentation/UserNotifications/UNLocationNotificationTrigger"
+      },
+      {
+        "title": "Updating watchOS apps with timelines",
+        "url": "https://developer.apple.com/documentation/watchOS-Apps/updating-watchos-apps-with-timelines"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10002/4/6AE5C57E-FF72-4A1C-B627-40969B18D70D/downloads/wwdc2021-10002_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10002/4/6AE5C57E-FF72-4A1C-B627-40969B18D70D/downloads/wwdc2021-10002_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10021",
+      "year": "2021",
+      "title": "Add rich graphics to your SwiftUI app",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10021"
+    },
+    {
+      "id": "10009",
+      "year": "2021",
+      "title": "Build a workout app for Apple Watch",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10009"
+    },
+    {
+      "id": "10005",
+      "year": "2021",
+      "title": "Connect Bluetooth devices to Apple Watch",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10005"
+    },
+    {
+      "id": "10176",
+      "year": "2021",
+      "title": "Craft search experiences in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10176"
+    },
+    {
+      "id": "10102",
+      "year": "2021",
+      "title": "Meet the Location Button",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10102"
+    },
+    {
+      "id": "10321",
+      "year": "2021",
+      "title": "Monday@WWDC21",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10321"
+    },
+    {
+      "id": "10048",
+      "year": "2021",
+      "title": "Principles of great widgets",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10048"
+    },
+    {
+      "id": "10018",
+      "year": "2021",
+      "title": "What's new in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10018"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:26:11.542Z"
+}

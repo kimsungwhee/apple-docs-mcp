@@ -1,0 +1,66 @@
+{
+  "id": "10105",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10105/",
+  "title": "What’s new in Quick Look for visionOS",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Graphics & Games"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello, and welcome to What’s new in Quick Look for visionOS. I'm Naveen, a software engineer working on the visionOS Quick Look team. Today, I'll be sharing the latest additions to Quick Look and demonstrating how you can leverage them in your applications. Let's begin by exploring what Quick Look is all about. Quick Look serves as a versatile system tool, enabling seamless file preview and editing capabilities across all Apple platforms. Many system apps, such as Files, Messages, and Freeform use Quick Look. You can view and edit a wide area of common file types while ensuring safe and secure file access. Some key file types can use SharePlay on a FaceTime call. 3D content looks great on Vision OS, and you can easily view it in Quick Look by simply providing a URL. There are two primary methods for previewing 3D content in Quick Look. The first is an in-app style, which seamlessly incorporates Quick Look as a full screen cover within your application. The second approach is windowed Quick Look. In this case, the 3D models are displayed in a volume, offering a detached experience that allows you to view content alongside your app, enhancing multi-tasking capabilities. Previously, you were able to get this experience through drag and drop. Our goal is to allow your apps more control over the Quick Look experience, while also leveraging SwiftUI and Swift Concurrency. This year, we are introducing a brand new PreviewApplication API that is built on all these principles. Now you can integrate Quick Look into your apps, with just a few lines of code. The API allows you to preview individual files, but also provides a way to open multiple files in a collection view. You can customize the default editing options, and it provides an intuitive way to manage the lifecycle of the previewed files.\n\nThis is just a high-level view on the new API. In this next section of my talk, I'm going to share a lot more details on how to customize the Quick Look experience for your app, with the new PreviewApplication API. And later, I will cover the latest 3D preview enhancements in Quick Look. Let's dive into the usage of the PreviewApplication API. I have created an app that allows people to share their travel experiences with friends and family. My friend Michael added an entry about his recent trip to Galapagos. He captured a lot of stunning spatial videos during his trip. In my app, I want to preview them in the full spatial presentation, just like the photos app. QuickLook is a great way to do that and I want to show you how simple that is using the new PreviewApplication API. In my app, I have created a custom view called ThumbnailImage. This represents a single file in an entry. When I tap on it, I want to open this file in windowed Quick Look. For that, I will add an on tab gesture and call PreviewApplication.open.\n\nIn the URL's parameter, I'll give in the URL of the selected file.\n\nLet's run this code and observe how this functionality works in action. When I tap on a file, it now opens in windowed Quick Look. And can be played in full spatial presentation. I can continue interacting with my app, while simultaneously enjoying the video. I can also preview all the files in this entry. Before, I was passing in a single URL, but the API can take an array of URLs.\n\nIn this case, I will provide it with all the URLs in the current entry.\n\nFor the selected URL, I will use a URL of the selected file.\n\nThis should open all the files in a collection view, focusing on the selected file. Let's check it out. When I tap on the same file, you'll notice a collection view with navigation arrows that allow me to navigate between all the files within this entry. Great! Now, I don't need to open individual files to enjoy all these moments. However, I noticed that the title is not what I intended. And also, when I tap on it, I see editing options like trim. Quick Look supports these convenient edit options by default. and any edits made are automatically written back to the original file. To give you more control over this, the API includes an option to use PreviewItem.\n\nFor the URL, I will provide it with the selectedURL.\n\nThe displayName represents a title in the menu at the top. I'll give it the name of the current entry.\n\nBy setting the editingMode to disable, I can remove the edit options from the menu at the top. There are other editing modes available. For more details, refer to the API documentation. Lastly, I'll use the preview item in the API.\n\nLet's run this code to see these changes in action. Now, the title displays the name of my entry. And when I access a menu at the top, you'll notice that the editing options are no longer available. which is exactly what I intended. The API makes sure to only provide one preview per file. Opening the same file again will not create a new preview. But brings the existing preview to the front, if it's not already visible. For that reason, I want to display an indicator to represent an open preview. However, how do I determine when a preview is closed to remove that indicator? Luckily, there is a new option in the API to manage the life cycle of the previews. When I call PreviewApplication.open, I receive a session instance. I will store it in the state variable.\n\nThe session contains events, which is a Swift async data stream.\n\nI can use the events to know when a preview is open or closed. I'll create a method to observe this event.\n\nFor the visual representation of the open preview, I will use the eye icon to signify that a file is already previewed in Quick Look.\n\nI'll change the opacity of this icon based on the preview state.\n\nLet's see this functionality in action. When I open a new preview, you'll see the icon on the thumbnail for the open preview. And when I close the preview, the icon goes away, just as I intended.\n\nThese are some great ways you can utilize PreviewApplication API to customize the Quick Look experience for your app. As I have shown, Quick Look is also a great way to bring spatial media previews to your app. For more info on how to create spatial photo and video for your app, refer to Vedant's talk on \"Building compelling spatial photo and video experiences\". Next, let's explore the latest enhancements for viewing 3D content in Quick Look. Your feedback has been invaluable. And this year, we have incorporated two highly requested additions. The first is surface mapping. I have an iPhone 3D model. It looks great and I want to place it on my desk. You can do that as Quick Look now supports snapping any 3D models to horizontal surfaces, like a floor or a table. You can pinch and drag the window bar and bring it closer to the desk. This will allow the iPhone to snap to the desk. And you can hear a sound to signify this action. Once snapped, you can freely drag the model across the table.\n\nSurface snapping is automatically enabled for all 3D models in Quick Look. There is no extra work needed. It is supported for horizontal surfaces, such as a table or the floor. To avoid the 3D model from intercepting with the surface, Quick Look disables pitch rotation while snapped. To make your 3D model appear as if it's snapped onto a surface, ensure that the bottom of the model sits on the origin.\n\nAnd that's surface mapping in Quick Look. For the next enhancement, let's take a look at the iPhone model again. As you know, there are many iPhone color options. Previously, to preview them, you would need to order individual USDZ files for each of these possible combinations. Wouldn't it be nice if these combinations all exist in the same file? Well, now it can. Quick Look now supports configurations, enabling you to choose between different colors, all within a single file. Let's see a quick demo of configurations in Quick Look. When I tap on the menu at the bottom, I get new options that allow me to change the color of this iPhone. Let's select the color and change it to white titanium. Oh, I really like this color. It's as simple as that to view different configurations in Quick Look. Quick Look supports configurations for both USDZ and Reality files. And configurations is equivalent to variants in USDZ. On visionOS, configurations are also synced between all the participants in a FaceTime call. Configurations are also supported in all platforms, including iOS and macOS. Here is the same iPhone in iOS. I can switch to different configurations right from the Quick Look preview, which is a great way to explore all the colors before my purchase.\n\nHere is another example to leverage configurations. I can easily learn about all the planets in our solar system right from Quick Look. Let's dive into some example code for variants in USDZ and as I mentioned earlier, configurations in Quick Look is equivalent to variants in USDZ files. Here is a snippet of code that represents an iPhone model in USDZ.\n\nMake sure all the variants are defined on the default prim. This will ensure Quick Look queries and displays them correctly.\n\nI have used color as the title and Black Titanium as the default color, which is visible alongside the model to represent the configuration that is currently loaded.\n\nThe other colors will be available to choose when I tap on the configuration button.\n\nI will select White_Titanium now and that will reload the model with my selected color.\n\nSince spaces are not supported in a variant name, I have used underscores, which will be automatically converted to spaces when displayed in Quick Look. When authoring configurations, consider the impact on load time. Avoid including heavy textures, complex geometry or intensive use of shaders. Aim for configurations that load quickly and seamlessly to provide a smooth Quick Look experience. It is also a good idea to test configurations thoroughly across different devices and platforms to ensure they look and feel great. For more information, check out Scott's talk on how to optimize 3D assets for spatial computing. Let's wrap up this talk. With the PreviewApplication API, your app has more control over the window Quick Look experience. This extends to collection views, editing and managing sessions. Surface snapping makes it easier to position 3D models on horizontal surfaces. And finally, configurations allow you to take Quick Look previews even further and open up new use cases in product, education and design. That's what's new in Quick Look. I can't wait to see what you create.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "12:22",
+      "title": "Variants USDZ",
+      "language": "swift",
+      "code": "#usda 1.0\n(\n\tdefaultPrim = \"iPhone\"\n)\n\ndef Xform \"iPhone\" (\n\tvariants = {\n\t\tstring Color = \"Black_Titanium\"\n\t}\n\tprepend variantSets = [\"Color\"]\n)\n{\n\tvariantSet \"Color\" = {\n\t\t\"Black_Titanium\" { }\n\t\t\"Blue_Titanium\" { }\n\t\t\"Natural_Titanium\" { }\n\t\t\"White_Titanium\" { }\n }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Forum: Spatial Computing",
+        "url": "https://developer.apple.com/forums/topics/spatial-computing?cid=vf-a-0010"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10105/5/9DD1E3E1-8BCD-498A-9045-F2251FFDF077/downloads/wwdc2024-10105_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10105/5/9DD1E3E1-8BCD-498A-9045-F2251FFDF077/downloads/wwdc2024-10105_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10166",
+      "year": "2024",
+      "title": "Build compelling spatial photo and video experiences",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10166"
+    },
+    {
+      "id": "10186",
+      "year": "2024",
+      "title": "Optimize your 3D assets for spatial computing",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10186"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:29:40.370Z"
+}

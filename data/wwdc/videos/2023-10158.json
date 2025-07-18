@@ -1,0 +1,134 @@
+{
+  "id": "10158",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10158/",
+  "title": "Animate with springs",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Jacob: Hi, I'm Jacob. The UIs we build continue to grow more dynamic, with change and motion everywhere. People love this. It makes an interface feel more alive, makes it easier to understand what's happening, and it just brings a sense of enjoyment to interacting with a UI.\n\nAnd there's a lot that comes together to make these dynamic interactions. There are transitions, where we move from one scene to another. And there are gestures, where we're directly interacting with the device. And finally, there are animations, where an on screen object moves, grows, or changes visual properties. These all work together and help to make a fluid, interactive UI. Today, we're going to dive deep into building great animations. Differences between animations can be subtle, but when an animation is just right, your users can feel it. So I want to share with you how to make the animations in your app feel elegant and natural. And we're going to do that focusing on just one tool that's powerful, versatile, and even fun: springs! We'll start by discussing why springs are a good fit for animations. Then we'll go into some of the details of how springs work. And finally, we'll talk about how to use springs in our apps. So why are springs useful for animations? To answer that, we need to step back and discuss what makes a great animation.\n\nLet's examine a context where we have a few animations: a simple toggle. Let's focus in on this toggle.\n\nWe use animations for several reasons, but one of the most important is that they give us a better sense of continuity. If an object starts in one place, and then suddenly appears somewhere else, it feels jarring, and can sometimes be confusing. It feels much more natural if we see the object move from one place to the next.\n\nBut it's not just about the position. If an object's velocity suddenly changes, that also feels unnatural. For example here, the knob in the toggle is starting and ending with a jump in velocity, and it doesn't feel right. So one goal we have is to make our animations have continuous position and velocity. Let's look at a few animation types and see how they do with that requirement. And while our toggle is a useful example of a complete animation, I want to focus in on just the motion of the knob, so it's easier to see what's happening in just a single animation.\n\nLet's start by looking at Ease in and out. This is a type of Bezier curve animation, which means that its motion is defined by a combination of a curve and a duration. Looking at the motion of this object, it doesn't feel like there are any sudden jumps. To make sure this is the case, we can also examine a chart of the motion in this animation.\n\nWe're going to look at several of these charts, so let's discuss what it's showing. The horizontal axis represents time, the bottom line shows the initial position of the animation, and the top line shows the target position. And as we play the animation on repeat, we'll repeatedly progress through this curve. Now let's start the animation again. Notice how the curve in the chart doesn't have any jumps, that means that its position is continuous. And if we update our chart to show the velocity as well, we can confirm that the velocity doesn't have any jumps either-- so the velocity is continuous as well.\n\nIf we look at the motion of a linear animation instead, there's a sharp corner and a jump in velocity as the animation starts and ends. Linear animations can be useful as a specialized tool in some places, like a repeating spinning indicator, but otherwise you should be cautious about using them, especially for movement, where it has this non-physical behavior that generally feels out of place.\n\nNext, let's check the continuity of a spring animation. Just like we want, this has continuous position and velocity as well. So far, ease in and out and spring animations are our best options, but we've only been looking at cases where the animations start from a resting position. Let's examine what happens if we use a gesture together with an animation. Let's take our movable knob over to an iPad, where we'll drag it with our finger.\n\nWe can drop it on either of these two positions. But we could also end the gesture somewhere in between and throw our knob towards one side.\n\nWith an ease in and out animation, it does animate to the end, but its motion jerks to a halt as the gesture ends.\n\nThis type of animation is just a prespecified curve, so there's no way to represent an initial velocity. This gets even worse if we also allow our knob to be dragged to any position in 2 dimensions.\n\nLet's try this again, but with a spring animation. A spring can start with any initial velocity, so we get a natural feeling where our animation picks up right where the gesture ends.\n\nAnd this also works great for two dimensional drags.\n\nSwiftUI will now automatically track velocities any time a gesture is changing properties, so you can get this behavior without any extra work. So springs are the only type of animation that maintains continuity both for static cases and cases with an initial velocity. The next benefit of springs we can examine is the shape of their motion.\n\nWhen you hear the motion of a spring, you might be thinking of something like this.\n\nBut a spring animation doesn't only mean a bouncy animation. It's true that springs can have bounce, and that can be a great tool, but that's not the main reason we use springs. Later on, we'll look at when it makes sense to use a spring with bounce, but springs with no bounce are great too! These types of non-bouncy springs are used in animations all over iOS. So if it's not just about bounce, what is so good about the motion of a spring? Let's look again at our simple spring animation, and pay attention to how the animation ends. It very slowly and gradually comes to rest. There's no single point when the object is abruptly done. This feels much more like what we'd expect to see if this was an object that was moving and stopping. And there's a reason this version feels more natural to us. A spring animation is based on the behavior of an object attached to a spring in the physical world, so it feels more natural and believable to our eyes when we see it move. Now you may have heard that different properties animating with springs can finish at different times, which is true. If you're used to timing curve animations, this may feel strange. Don't we want all animations to start and stop at the same time? The answer is no! We want our animations to feel like the motion of objects in the physical world that we're used to. And generally, these start and stop at their own time as they're slowed down by friction, so these times usually don't line up perfectly. In fact, it's sometimes useful to go even further for multi-property animations. Here's an animation of an app launching on iOS. At first glance, it may seem like just a single uniform animation, but if we slow down the animation, you can see how different springs, different start times, and different end times come together to form an incredible and naturally feeling animation.\n\nSo now that we know why springs are such a great tool for animations, let's examine springs more closely to understand how they work and how best to use them. When we use a spring animation, we're modeling it with the motion of an object attached to a spring. If we go back to physics, this motion is defined by 3 properties: the object's mass, the spring's stiffness, and the damping of the system, which is a measure of how much friction is applied to the object by its surroundings. Then we use the initial position of the animation as the initial position of the object, and the target position of the animation to define the resting position of the spring, where the object will get pulled towards. Then we can release the object to start the animation. The properties we use to define the spring system determine the type of motion that occurs, and changing them changes the resulting animation.\n\nSo when creating a spring animation, you could use these same properties of mass, stiffness, and damping to configure what kind of spring to use. But while these are a natural way to model a physical system, they're not very intuitive for defining a spring animation. There isn't a real object with mass or a spring with stiffness here, and making up these values to change the curve is not easy to do. So we've been refining a new way to configure springs that's easier to understand and to work with. It uses just 2 parameters: duration and bounce. These do what you'd expect, increasing the duration makes the animation take longer. And increasing the bounce adds bounce to the animation. And we're adopting these universally across Apple's design and engineering efforts. So all of our frameworks that support springs will use them.\n\nAs you play with these spring parameters, you can see different types of shapes in the curves. When bounce is greater than 0, we get a bouncy spring that overshoots its target. When bounce is 0, we get this smooth curve with a long tail gradually going towards its target. And there's one other type of spring too. This one isn't as common, but with a negative bounce value, you can get a spring that also has a long tail gradually approaching its target, but that's a little flatter than what you get with a bounce of 0. In the physics of springs, these are called underdamped, critically damped, and overdamped springs. But I like to think of them as bouncy, smooth, and flattened. And as you may have noticed, these bounce values are percents, so bouncy springs have bounce values up to 100% and flattened springs have bounce values between 0 and -100% Now I want to dig into these springs a bit more. Springs can sometimes seem a little intimidating, and their motion can seem hard to understand. But if we break down what's happening, it's actually just several simple things combining together. For me, being able to understand the math that's behind these curves helps make springs feel more approachable, so I want to share that with you as well. But if math just makes your head spin, don't worry, it's completely optional. We implement all of this math for you.\n\nSo let's start with a bouncy curve. You may notice that the overshooting of this spring oscillates like a more complicated kind of sine or cosine wave. And if we take the bounce of this spring up to its maximum value of 100%, you can see that it's now exactly the behavior of a cosine wave, just oscillating back and forth.\n\nThe physical interpretation of this is that it's a spring that has no friction acting on it, so it oscillates forever without slowing down, and never actually reaches its target position. As you'd expect, the math for this is pretty simple: it's just a cosine curve, and the time is divided by the duration. So for this bounce value, the duration corresponds exactly to the period of the curve. As we decrease bounce, that's physically equivalent to adding friction or damping to the spring, which slows it down as it goes. And we still have those oscillations. In fact, the cosine curve from before is still there, which is more clear if we draw it overlaid on top. This is the same equation as before, just with different constants and shifted horizontally a bit. So this explains the bounciness in the curve, but clearly we need something else as well.\n\nIn the original curve, the size of the oscillations is getting smaller, or decaying, over time. And that's the piece that's missing. This additional curve is an exponential decay curve. And it's the last piece of our motion, the part that gives us the gradual feeling of coming to rest.\n\nSo what seemed like a complicated curve is just the product of these two components, which is called a damped cosine or sine wave. That's pretty satisfying, but if you look closely at the chart, there's one thing that might seem a little strange: why does our cosine curve now have this dip at the beginning? This is related to something we discussed earlier: preserving velocity. Remember that for this base case, we need to preserve a velocity of 0 at the beginning. So the velocity of the product of our two component curves should be flat around 0. But notice that our decay curve starts with an upward-pointing slope. If we started off the cosine curve flat, then our initial velocity would point upwards too. So our cosine curve has to start off pointing downwards to cancel out with the decay and give us our flat start. And this is how springs are able to match any initial velocity by using different shifts and scales in our cosine curve to give us the right start.\n\nThis initial velocity can come from the velocity of a gesture as it ends and hands off to an animation, as we discussed earlier. And there's another place where this initial velocity can come from. Let's examine it on an iPad. Here, we can tap to move our knob, and show a fainter image of the knob at its target position. We'll also use a slower spring so it's easier to keep track of what's happening. Sometimes, while an animation hasn't yet finished, a new animation begins that changes to a new target value. When that happens, a spring animation uses the velocity it had when it was retargeted as the initial velocity towards its new destination and this same velocity preservation makes these kind of interruptions feel smooth and natural.\n\nSo that's how velocity preservation and bouncy springs work. Now if we decrease our bounce, the oscillations get farther and farther apart, until when bounce gets all the way to 0, the oscillations are completely gone and we just have a straight line going down and away that's getting multiplied by our decay. So these equations are even simpler. We just need the basic equation of a line, and then we multiply that by the same exponential, giving us our resulting curve.\n\nFlattened curves, which are springs with negative bounce, work very similarly, but using two exponential functions added together instead of a line. This type of spring is less common, but the fact that it's represented by just exponential decay makes it useful for modeling decaying velocity, like what happens in a scroll view.\n\nOne thing you might wonder when using springs for animations is: How long does it take until a spring animation actually finishes? As we've seen, that question is a bit subtle. The exponential decay of the spring means that technically it keeps moving forever, just with smaller and smaller movement. Of course, we don't want our spring animation to keep going forever, so we do need to choose a time to remove it, when it no longer contributes any noticeable change to the UI.\n\nThat amount of time until a spring animation is finished enough to remove is called the settling duration. This settling duration is different from the duration parameter for configuring a spring. The settling duration depends on many different factors, so can be a bit unpredictable, but the duration parameter is a perceptual duration that is chosen to be predictable and not move around, even as the other parameters of a spring change. Because of its unpredictable nature, you shouldn't wait for the settling duration for user-facing changes. If you want to make a UI change when a spring is mostly done, you can use the new completion handler support in SwiftUI, which uses a perceptual duration instead of a settling duration. Now that we know all about how springs work, let's discuss using them in our code. Because springs are such a great tool for animations, we now use them as the default animation in SwiftUI, so all you need to do is call withAnimation to start with a spring. We've also made it easier to explicitly use springs for animations. We've built in a few spring presets based on spring values that are used in iOS. If you're not sure what spring parameters to use, these are a great way to get something that feels good.\n\nYou can use these in code by directly using the preset when you need an animation. But an important part of using a spring animation is tuning it for the exact context you need, so these presets can also be used as tunable starting points. You can take a preset and specify that its duration should be different, Or give it a little more or less bounce by specifying a relative amount of extra bounce to add. These presets are a great way to get started introducing springs into your app. But if you want to go further, you can also make a completely custom spring with the .spring animation. This lets you fully specify the duration and the bounce of the spring. And these bounce values have a range from -1.0 to 1.0. You can also use these same parameters to create spring animations in UIKit and Core Animation.\n\nThere's another new spring tool you can use if you want to go even further. We've added a Spring model type to SwiftUI that lets you create a representation of a spring, including its parameters. This lets you programmatically convert parameters between the different ways to specify them. You can also create a spring model with a set of parameters, like mass, stiffness, and damping, and then use it as a spring animation directly. But if you really want to do a conversion yourself, here are the three equations to convert from bounce and duration values to mass, stiffness, and damping. In addition to converting parameters, you can use spring models to build your own advanced spring behaviors. You can call methods on the spring to get the built in spring evaluation math for yourself. For example, you can call value to get the position of the spring. You just pass in a target, which is what the spring is moving towards, and the time you want to evaluate it at. You can also use the same inputs on a velocity method to evaluate the spring's velocity over time. This lets you easily use springs in your own code, which can be useful for simulations, or to get values for charts, like the ones in this session. You can even use this to build your own custom animations. Just call into the spring model, and you can modify the inputs or outputs to apply customization to a spring animation. Check out Explore SwiftUI animation to learn the details of making a custom animation. One last thing I want to discuss is how to choose parameters to use for your springs. To choose a value that works great for your animation, it's generally best to start by finding a duration value that gives a pacing that you like. Once you've decided that, you can start adjusting the amount of bounce to choose what kind of character and feeling you want this animation to have. You'll find that different bounce values feel qualitatively different. A bounce of 0 feels like a smooth, gradual change. A small bounce, like around 15%, doesn't feel very bouncy yet, but the long tail feels a little more brisk. And for larger bounce values like 30%, you do start to feel some noticeable bounciness. If you go even further, you can get a pretty extreme amount of bounciness. But you should be cautious about using values higher than around 0.4, since they may feel too exaggerated for a UI element. So which bounce value should you actually use? When you're not sure, use a spring with bounce 0, which is also what you get if you don't specify the bounce. This gives you a great general purpose spring that's the most versatile. Then if you want your animation to feel a little more playful, you can start to add some bounce. Bounce can also make sense when you want an animation to feel more physical, like if it's going to be used at the end of a gesture. And one thing you should keep in mind is consistency. Think about what kind of character your app has. Is it serious or playful? Should it feel relaxed or fast-paced? That can help you choose spring values that feel consistent with the feeling of the UI around them. So that's a quick tour of using springs for animations. Remember that a spring doesn't need to bounce to make a great animation. There's also a new set of spring presets that are great starting points, but you can use duration and bounce to customize when you need to go further. And most importantly, after seeing all the unique advantages that springs have, I hope you're excited to use spring animations to make your app feel fluid and a joy to use. Thank you. ♪ ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "18:00",
+      "title": "Spring Preset",
+      "language": "swift",
+      "code": "withAnimation(.snappy) {\n  // Changes\n}"
+    },
+    {
+      "timestamp": "18:15",
+      "title": "Spring Preset with Custom Duration",
+      "language": "swift",
+      "code": "withAnimation(.snappy(duration: 0.4)) {\n  // Changes\n}"
+    },
+    {
+      "timestamp": "18:21",
+      "title": "Spring Preset with Custom Bounce",
+      "language": "swift",
+      "code": "withAnimation(.snappy(extraBounce: 0.1)) {\n  // Changes\n}"
+    },
+    {
+      "timestamp": "18:37",
+      "title": "Custom Spring",
+      "language": "swift",
+      "code": "withAnimation(.spring(duration: 0.6, bounce: 0.2)) {\n  // Changes\n}\n\n// UIKit\nUIView.animate(duration: 0.6, bounce: 0.2) {\n  // Changes\n}\n\n// Core Animation\nlet animation = CASpringAnimation(perceptualDuration: 0.6, bounce: 0.2)"
+    },
+    {
+      "timestamp": "18:57",
+      "title": "Spring Model",
+      "language": "swift",
+      "code": "let mySpring = Spring(duration: 0.5, bounce: 0.2)\nlet (mass, stiffness, damping) = (mySpring.mass, mySpring.stiffness, mySpring.damping)"
+    },
+    {
+      "timestamp": "19:16",
+      "title": "Spring Model Animation",
+      "language": "swift",
+      "code": "let otherSpring = Spring(mass: 1, stiffness: 100, damping: 10)\nwithAnimation(.spring(otherSpring)) {\n    // Changes\n}"
+    },
+    {
+      "timestamp": "19:26",
+      "title": "Spring Parameter Conversion",
+      "language": "swift",
+      "code": "mass = 1\n\nstiffness = (2π ÷ duration)^2\n\ndamping = 1 - 4π × bounce ÷ duration, bounce ≥ 0\n          4π ÷ (duration + 4π × bounce), bounce < 0"
+    },
+    {
+      "timestamp": "19:35",
+      "title": "Evaluating Spring Model",
+      "language": "swift",
+      "code": "let mySpring = Spring(duration: 0.4, bounce: 0.2)\nlet value = mySpring.value(target: 1, time: time)\nlet velocity = mySpring.velocity(target: 1, time: time)"
+    },
+    {
+      "timestamp": "20:15",
+      "title": "Custom Spring Animation",
+      "language": "swift",
+      "code": "func animate<V: VectorArithmetic>(\n    value: V, time: Double, context: inout AnimationContext<V>\n) -> V? {\n    spring.value(\n        target: value, initialVelocity: context.initialVelocity,\n        time: effectiveTime(time: time, context: context))\n}"
+    },
+    {
+      "timestamp": "20:34",
+      "title": "Spring with No Bounce",
+      "language": "swift",
+      "code": "withAnimation(.spring(duration: 0.5)) {\n    isActive.toggle()\n}"
+    },
+    {
+      "timestamp": "21:07",
+      "title": "Spring with Small Bounce",
+      "language": "swift",
+      "code": "withAnimation(.spring(duration: 0.5, bounce: 0.15)) {\n    isActive.toggle()\n}"
+    },
+    {
+      "timestamp": "21:14",
+      "title": "Spring with Large Bounce",
+      "language": "swift",
+      "code": "withAnimation(.spring(duration: 0.5, bounce: 0.3)) {\n    isActive.toggle()\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10158/4/0BAD22E7-61F5-4C4C-BA74-61BF66E8A9B1/downloads/wwdc2023-10158_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10158/4/0BAD22E7-61F5-4C4C-BA74-61BF66E8A9B1/downloads/wwdc2023-10158_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10156",
+      "year": "2023",
+      "title": "Explore SwiftUI animation",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10156"
+    },
+    {
+      "id": "10148",
+      "year": "2023",
+      "title": "What’s new in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10148"
+    },
+    {
+      "id": "10055",
+      "year": "2023",
+      "title": "What’s new in UIKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10055"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:52:34.296Z"
+}

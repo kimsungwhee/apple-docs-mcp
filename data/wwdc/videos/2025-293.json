@@ -1,0 +1,100 @@
+{
+  "id": "293",
+  "year": "2025",
+  "url": "https://developer.apple.com/videos/play/wwdc2025/293/",
+  "title": "Enhance child safety with PermissionKit",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, I’m Andrew, an engineer on the family team. Welcome to “Enhance child safety with PermissionKit.” A parent’s most important responsibility is to keep their children safe. In a digital environment, keeping children safe begins with a conversation between a child and their parents and guardians.\n\nThat’s especially true when it comes to who the child communicates with online. Starting that conversation from an app can be difficult and involves a significant amount of technical overhead. The best place for parents to communicate with their child is somewhere they're already communicating: Messages. In iOS, iPadOS, and macOS 26, you can help start a conversation in Messages between a child and their parents using PermissionKit.\n\nWith PermissionKit, children can ask their parents to communicate with someone new. In this video, I’ll start by introducing you to the new PermissionKit framework.\n\nThen, I’ll show you how you can adapt your app’s UI with child safety in mind by using this new API.\n\nNext, I’ll explain how to create a communication permission question that a child can ask their parents and guardians right in Messages.\n\nFinally, I’ll show you how to listen for and respond to answers from parents and guardians. This video assumes that your app has communication functionality, and that you already have a way to determine the age or age range of each of your users. The PermissionKit API I’m about to show should only be used when you know the current user is a child.\n\nIf you don’t already have your own account systems to determine if the current user is a child, use the new declared age range API.\n\nParents can allow their kids to share the age range associated with their child accounts, which can then be requested through the declared age range API.\n\nWatch “Deliver age appropriate experiences in your app” from WWDC25 for more details.\n\nHere are a few other things to consider when deciding if PermissionKit is right for your app.\n\nPermissionKit leverages users’ Family Sharing group to connect children with their parents and guardians.\n\nThis means that users must be part of a Family Sharing group to realize the full potential of PermissionKit. If the child is not part of a Family Sharing group when a request is made, the API will return a default response. Additionally, the parents or guardians must enable Communication Limits for the child. The API will also return a default response if Communication Limits is not enabled.\n\nLet me start by introducing you to PermissionKit.\n\nPermissionKit is a new framework that provides you a quick and easy way to create consistent, first-class permission experiences, between a requester and permission authorities. In iOS, iPadOS, and macOS 26, you can help keep children safe online by adopting PermissionKit. PermissionKit can be used to start a conversation in Messages between a child and the parents and guardians in their Family Sharing group. In your app, children can request to communicate with someone new over Messages. Parents have the opportunity to approve or decline their child’s request to communicate directly within the resulting Messages conversation.\n\nNow I’ll talk about how to adopt PermissionKit, starting with how to make your UI age appropriate. Landmarks is an app for viewing and learning all about Landmarks. I’ll go over an example of adding a new chat feature to the app, so users can talk with each other about their favorites. Landmarks is an app made for all ages, So it’s a perfect fit for PermissionKit.\n\nFor children, your app should hide content from unknown senders. Some examples include a preview for a message, profile pictures, and any other potentially sensitive content not suitable for children.\n\nOne way this can be accomplished is by awaiting the knownHandles(in:) method of the CommunicationLimits singleton. Given a set of handles, this API will perform an optimized lookup and return a subset of those handles that are known by the system. This could be supplemented with information from your own databases. There’s no need to start fresh if this data is already available to you in your own systems. Then, determine if the handle or group of handles that the child is trying to interact with, contains only known handles. Only show the underlying content if the handles are known.\n\nNext, I’ll show you how to create and send a question so that the child can ask permission from their parents. PermissionKit provides a question abstraction, which contains all the details of a child’s permission request. Each question has with it a topic which further describes the question being asked. For example, a communication topic packages all the information about a person, or group of people, a child is trying to communicate with in some way. At a minimum, this information includes a handle for the person, specifically the person’s phone number, email address, or some other identifier, like a username.\n\nNow diving into the code. Create a permission question, passing in the unknown handles.\n\nYou can also add metadata about specific handles. Prefer adding the most amount of metadata possible. Any metadata provided will be shown to parents and guardians by the system and can be used to help inform their decision to approve or deny their child’s request.\n\nTo do this, create a CommunicationTopic.\n\nCommunicationTopic uses PersonInformation.\n\nPersonInformation has affordances for the handle, name, and an image. You can also optionally set actions on the topic.\n\nThe chosen actions should correspond to how the child is attempting to communicate with the specified people.\n\nDepending on which actions you choose, the system will use specific verbiage when showing the request to the parent for review.\n\nIn this example, I’m using message, but you can also provide call, video, and others.\n\nFinally, initialize your PermissionQuestion with your custom CommunicationTopic.\n\nNow, using the PermissionQuestion you created, initialize a CommunicationLimitsButton inside of your SwiftUI view.\n\nWhen the child taps your button, they’ll receive a system prompt, which allows them to choose to send the question to their parents and guardians in Messages.\n\nFor UIKit apps, use the CommunicationLimits singleton to start the Ask Flow on the child’s device. You’ll need to pass in a UIViewController, which the system will use to present UI.\n\nYou can also use the CommunicationLimits singleton to start the Ask Flow on the child’s device for AppKit apps. You'll just need to provide an NSWindow.\n\nAnd that's it for the asking experience. Now all that’s left is to handle the answers chosen by parents and guardians. When a parent responds inside Messages, your app will be launched in the background on the child’s devices. You’ll need to handle these responses as they’re received.\n\nShortly after your app launches, obtain an AsyncSequence from the CommunicationLimits singleton and iterate over it on a background task so that your app is always informed of permission updates. When a response is received, this is an opportunity to update your UI or post new data to your own databases.\n\nAnd that’s it. Really. Now I’ll put it all together and go over how it works in Landmarks. The device on the left is the child’s device, and the device on the right is a parent’s device. Here in Landmarks on the child’s device, we’re on the new chats view that I added.\n\nThe message previews for all of the unknown handles are hidden from the child by default.\n\nTapping into one of the conversations shows that the message content is hidden from the child and that they’re unable to respond without first asking their parents and guardians for permission.\n\nWhen the child taps the communication limits button, an alert is shown. This alert allows them to confirm they’d like to send their parents and guardians a message. Alternatively, they can get approval from their parent or guardian in-person using the Screen Time passcode. If the child taps the Ask option in the alert, a Messages Compose window is presented, with the parents and guardians from the child’s Family Sharing group prefilled in the To field, and the question staged in the text view.\n\nThe child can optionally add a name for this person by tapping the Add or Edit Name button. If you provide metadata for the person via the previously discussed PermissionQuestion API, that metadata will appear here.\n\nThis metadata will be shown to parents and guardians when they review the request on their devices.\n\nOnce the child taps the send button, the question will send to their parents and guardians just like any other iMessage.\n\nNow directing attention to the parent device, the parent received the question from their child in Messages.\n\nParents can either decline directly from the bubble, or they can choose to review this ask.\n\nIf they review, they’ll see additional context about this ask, and they can either choose to approve or decline.\n\nRegardless of what the parent chooses, the child will automatically receive a notification informing them of their parent's choice. At the time the notification is delivered to the child, the parent’s choice will also be delivered directly to your app in the background. Respond to this choice by, for example, updating your UI and local caches, or by posting information to your servers.\n\nNow that the parent has approved, the child can see and respond to messages from this person in Landmarks. Now that you know how to adopt PermissionKit, here are some other things to consider for enhancing child safety in your app. Use PermissionKit as a launchpad to add similar experiences outside of Apple’s platforms, like your app’s website, by persisting information obtained from PermissionKit to your own servers. And don’t stop at PermissionKit. Determine if your app is a good fit for our other family and child safety API offerings. For example, here are more ways to keep kids safe using our APIs. The new Sensitive Content Analysis API expands communication safety to protect kids by detecting and blocking nudity in live streaming video calls. The new Declared Age Range API allows you to build safe, age-appropriate experiences for kids.\n\nThe Screen Time framework gives you the tools you need to help parents and guardians supervise their children’s web usage. And the Family Controls framework helps apps provide their own parental controls.\n\nNow that you know how to improve child safety in your app using PermissionKit, here’s what to do next. Start by determining the age range of each of your users, either by using data from your own servers or the new Declared Age Range API. Then, adapt your app’s UI with children in mind. From there, adopt PermissionKit. Create the questions to ask and respond to parent and guardian answers.\n\nThanks for giving me permission to introduce you to PermissionKit.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:03",
+      "title": "Tailor your UI for children",
+      "language": "swift",
+      "code": "import PermissionKit\n\nlet knownHandles = await CommunicationLimits.current.knownHandles(in: conversation.participants)\n\nif knownHandles.isSuperset(of: conversation.participants) {\n    // Show content\n} else {\n    // Hide content\n}"
+    },
+    {
+      "timestamp": "5:15",
+      "title": "Create a question",
+      "language": "swift",
+      "code": "import PermissionKit\n\nvar question = PermissionQuestion(handles: [\n    CommunicationHandle(value: \"dragonslayer42\", kind: .custom),\n    CommunicationHandle(value: \"progamer67\", kind: .custom)\n])"
+    },
+    {
+      "timestamp": "5:38",
+      "title": "Create a question - additional metadata",
+      "language": "swift",
+      "code": "import PermissionKit\n\nlet people = [\n    PersonInformation(\n        handle: CommunicationHandle(value: \"dragonslayer42\", kind: .custom),\n        nameComponents: nameComponents,\n        avatarImage: profilePic\n    ),\n    PersonInformation(\n        handle: CommunicationHandle(value: \"progamer67\", kind: .custom)\n    )\n]\n\nvar topic = CommunicationTopic(personInformation: people)\ntopic.actions = [.message]\n\nvar question = PermissionQuestion(communicationTopic: topic)"
+    },
+    {
+      "timestamp": "6:25",
+      "title": "Ask a question - SwiftUI",
+      "language": "swift",
+      "code": "import PermissionKit\nimport SwiftUI\n\nstruct ContentView: View {\n    let question: PermissionQuestion<CommunicationTopic>\n\n    var body: some View {\n        // ...\n        CommunicationLimitsButton(question: question) {\n            Label(\"Ask Permission\", systemImage: \"paperplane\")\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "6:43",
+      "title": "Ask a question - UIKit",
+      "language": "swift",
+      "code": "import PermissionKit\nimport UIKit\n\ntry await CommunicationLimits.current.ask(question, in: viewController)"
+    },
+    {
+      "timestamp": "6:54",
+      "title": "Ask a question - AppKit",
+      "language": "swift",
+      "code": "import PermissionKit\nimport AppKit\n\ntry await CommunicationLimits.current.ask(question, in: window)"
+    },
+    {
+      "timestamp": "7:19",
+      "title": "Parent/guardian responses",
+      "language": "swift",
+      "code": "import PermissionKit\nimport SwiftUI\n\nstruct ChatsView: View {\n    @State var isShowingResponseAlert = false\n\n    var body: some View {\n        List {\n           // ...\n        }\n        .task {\n            let updates = CommunicationLimits.current.updates\n            for await update in updates {\n                // Received a response!\n                self.isShowingResponseAlert = true\n            }\n        }\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Declared Age Range",
+        "url": "https://developer.apple.com/documentation/DeclaredAgeRange"
+      },
+      {
+        "title": "PermissionKit",
+        "url": "https://developer.apple.com/documentation/PermissionKit"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/293/4/3d149cec-af19-46df-9916-67a21d041047/downloads/wwdc2025-293_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/293/4/3d149cec-af19-46df-9916-67a21d041047/downloads/wwdc2025-293_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "299",
+      "year": "2025",
+      "title": "Deliver age-appropriate experiences in your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/299"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:11:00.451Z"
+}

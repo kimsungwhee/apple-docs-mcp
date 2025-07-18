@@ -1,0 +1,118 @@
+{
+  "id": "229",
+  "year": "2025",
+  "url": "https://developer.apple.com/videos/play/wwdc2025/229/",
+  "title": "Make your Mac app more accessible to everyone",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Accessibility & Inclusion"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello, I’m Nicholas, an engineer on the Accessibility team. Accessibility empowers everyone to experience and love the apps that you create.\n\nToday I’m going to go beyond the basics to explore how you can make your Mac app more accessible. Mac apps are primarily designed for keyboard and mouse interactions with denser user interfaces and powerful multitasking. These Mac-specific qualities bring important accessibility considerations that I will go over today.\n\nThis includes representing your app’s layout to accessibility, accelerating navigation in your app, and making interactions in your app more accessible.\n\nOn Mac, your app has a lot of space to display controls and content. Just as you visually lay out your interface to be understandable and intuitive, it is important to think about the way that this is conveyed to accessibility technologies. SwiftUI conveys the individual views that make up your app as accessibility elements.\n\nAccessibility elements contain the information that is needed for accessibility technologies to understand and interact with your app. If you are not familiar with accessibility elements, I recommend checking out Catch Up on Accessibility in SwiftUI from WWDC 2024. I have been building a new Mac app in SwiftUI to edit text documents.\n\nThere’s a sidebar where I can switch pages and mark the important ones with bookmarks.\n\nThere’s also an inspector with controls I can use to format selected text, including a list of style presets that I can use to apply multiple formatting options at once.\n\nI really want this to be a great Mac app, and I know that means making it accessible to everyone. So from the beginning, I’ve been doing the accessibility basics and testing new features I add with VoiceOver.\n\nAs a reminder, VoiceOver is a screen reader that enables people with varying levels of vision to use your app.\n\nVoiceOver allows the interface of your app to be heard as speech.\n\nVoiceOver on accessible text editor. Or felt as braille. Using VoiceOver is also a fantastic way to test the accessibility of your app because it makes full use of all the accessibility information your app provides. If your app works well with VoiceOver, you are well on the way to having a great experience with other accessibility technologies like Voice Control and Switch Control.\n\nOn Mac, VoiceOver is primarily controlled by keyboard shortcuts. For example, there are keyboard shortcuts to move to the next and previous element on screen. Using these keyboard shortcuts, I can move the VoiceOver focus by one element at a time to hear a description of it.\n\nMinimize, button, full screen, button, toolbar, my text document, sidebar, table, vertical splitter, edit text, insertion at end of text, vertical splitter, format inspector, scroll area. What may take a quick mouse movement across the screen could take someone who uses VoiceOver many key presses.\n\nBehind the scenes, VoiceOver is moving to the next accessibility element provided by SwiftUI.\n\nTo make navigation faster with VoiceOver, SwiftUI can group accessibility elements into a container accessibility elements.\n\nkeyboard shortcuts to focus in and out of these containers. By default on Mac, VoiceOver navigates by container so that it is quicker to move across your app and only focus into a container when needed.\n\nA key difference with accessibility on Mac from other platforms like iPhone and iPad is that containers on Mac often contain nested containers. This creates a tree-like structure of accessibility elements representing your app’s interface. In your app, group related elements into containers, to make navigation quicker with VoiceOver.\n\nAt the same time, be mindful of creating too many levels of nested containers.\n\nSometimes this can make it harder to find elements in your app and adds time spent repeatedly focusing into containers.\n\nTo refine containers in your app, use the accessibility element children modifier.\n\nWhen you apply the modifier to a view, the supplied behavior determines how the view and its subviews are represented to accessibility.\n\nThere are three different behavior options.\n\nContain will represent the view as an accessibility container where the subviews are the accessibility elements within it.\n\nCombine will represent the view and its subviews as one accessibility element that merges all their attributes and actions together. Ignore will represent the view as one accessibility element that completely ignores the subviews.\n\nWhen I was testing my app with VoiceOver, I notice a couple areas I want to revisit.\n\nFirst, I will move VoiceOver one by one through the formatting inspector on the right. In Format Inspector, scroll area, 22 items, heading styles. Title, Apply - button, Subtitle, Apply - button, Heading, Apply - button, Body, Apply - button, Bold, Toggle - button.\n\nI noticed I have to navigate through every single style preset before I get to the “Bold, Toggle - button”.\n\nThese style presets are displayed using a VStack.\n\nI can use the accessibility element children modifier with the contain behavior on the VStack to create a container. I can also use the accessibility label modifier to give this container a name.\n\nNow I will once again try moving VoiceOver one by one through the formatting inspector on the right.\n\nIn Format Inspector, Scroll Area, 15 Items, Heading Styles, Style Presets, Group, Bold, Toggle Button. This is great. I don’t need to go through every style preset unless that's what I'm looking for. I want to make sure navigating within this style presets container works. I will focus VoiceOver into the style presets container, then move VoiceOver one by one.\n\nIn style presets, Group, eight items title, Apply, Button, Subtitle, Apply, Button, Heading, Apply, Button, Body, Apply, Button.\n\nThis is working, but I notice that the VoiceOver focuses onto the title and the apply button of each style preset separately.\n\nA style preset is represented as a H stack containing a title view and a button view.\n\nI can use the accessibility element children modifier with the combined behavior on the age stack to create one accessibility element that merges the properties of the title view and the button view.\n\nNow I will once again try moving VoiceOver one by one within the style presets container. In style presets, Group. For items, Title, Apply - button. Subtitle, Apply - button. Heading, Apply - button. Body, Apply - button. I can now go through each style preset as one element. This is easier to navigate and understand.\n\nAnother aspect of the accessibility structure you can refine is the ordering of elements. In this example, visually Book Author is before Book Title. But I want the Book Title to be read first by VoiceOver, as it is easier to quickly skim through a lot of books. I can change the order of accessibility elements using the accessibility sort priority modifier.\n\nIf I give the book title view a higher priority, it will be sorted first. By default, views have a sort priority of zero. The views with equal priorities are then sorted based off their visual position.\n\nNow the book title will be spoken by  VoiceOver before the author and description.\n\nWhen testing your app with VoiceOver, if the ordering doesn’t feel right, use the accessibility sort priority modifier.\n\nNow that the accessibility structure of my app has been refined, I want to take navigation even further with rotors.\n\nWith the bookmarks feature in my app, someone may be able to quickly visually scan through the list of pages to see which are bookmarked. However, someone using VoiceOver would instead have to navigate over every page just to know if they have any bookmarks.\n\nPage 2 bookmarked. Page 3. Page 4. Page 5 bookmarked. Page 6. Page 7, Page 8 bookmarked, page 9, page 10. To make this as easy as the visual experience, someone using VoiceOver needs the ability to navigate by only bookmarked pages.\n\nTo do this, I can use rotors. Rotors are an essential way to accelerate navigation for someone using VoiceOver. Rotors allow you to define collections of views or text ranges in your app that can be quickly moved between. To add a rotor of bookmarks to my pages list, I will use the accessibility rotor modifier, giving it the name Bookmarks. I can conditionally declare which of my pages I want included in the Bookmarks rotor.\n\nNow when I focus VoiceOver on the Pages list in the sidebar, I can open the rotor menu with a keyboard shortcut, where I can go through all of my bookmarks quickly and jump right to the bookmark page I want. Bookmarks menu.\n\nPage 2. Page 5. Page 5 bookmarked.\n\nAccessibility routers make what would have been time-consuming or complex navigation for someone using VoiceOver  into a great experience.\n\nWhen I navigate around my app with VoiceOver, I’m moving what’s called the VoiceOver focus. Accessibility technologies like VoiceOver maintain their own focus state separate from keyboard focus.\n\nIn macOS and iOS 26, your app can suggest an initial focus for accessibility technologies like VoiceOver using the accessibility default focus modifier. When a new scene appears, SwiftUI will suggest the view with the modifier become focused, while still allowing the accessibility technology to make the best decision based on someone’s preferences.\n\nNow that navigating to all the elements in my app is a breeze, I want to make sure that I can easily interact with them as well.\n\nIn my app, I added the ability to bookmark a page with a button that appears when I hover the pointer over a page thumbnail. Visually, this is nice as the thumbnails are not obstructed when I don't need the button. However, since someone using VoiceOver isn’t moving the pointer, they would never be able to access the button.\n\nIn your app, any interaction that requires hovering the pointer or performing a trackpad gesture may not be accessible to everyone.\n\nYou should provide other ways of discovering and performing these interactions.\n\nFortunately, SwiftUI provides an easy way to do this. You can add accessibility actions to a view that accessibility technologies like VoiceOver can perform in a way that is accessible. To add an accessibility action to a view, use the accessibility action modifier. I use this modifier to add a bookmark action to the views in my pages list. It's as simple as adding a button.\n\nNow I will use VoiceOver to focus on a page thumbnail and use my new bookmark accessibility action. Page 3. Actions menu. Two items. Show alternate items. Bookmark page 3. Bookmark page 3.\n\nI was able to open the Actions menu with a keyboard shortcut and easily bookmark the page. Other accessibility technologies like Switch Control and Voice Control also rely on these accessibility actions.\n\nAnother quick way to improve interaction with your app is keyboard shortcuts.\n\nAdding keyboard shortcuts for common tasks in your app is not only a great power user feature, it also has a huge impact on accessibility, especially for anyone who may not be able to use a mouse. Lastly, if you create your own custom controls, they may not have the accessibility information that other controls have built in.\n\nTo learn how to easily make controls accessible in SwiftUI, I recommend checking out “SwiftUI Accessibility: Beyond the basics” from WWDC 2021.\n\nNow it’s your turn to try your app with VoiceOver on Mac, refine the containers in your app, and investigate where you can add custom rotors. And finally, you can showcase the great accessibility of your app with accessibility nutrition labels. To learn more, check out “Evaluate your app for Accessibility Nutrition Labels”. Thank you for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:15",
+      "title": "Contain subviews within accessibility container",
+      "language": "swift",
+      "code": "// Contain subviews within accessibility container\n\nimport SwiftUI\n\nstruct ContentView: View {\n  var body: some View {\n    VStack {\n      FirstView()\n      SecondView()\n    }\n    .accessibilityElement(children: .contain)\n  }\n}"
+    },
+    {
+      "timestamp": "4:23",
+      "title": "Combine subviews into one accessibility element",
+      "language": "swift",
+      "code": "// Combine subviews into one accessibility element\n\nimport SwiftUI\n\nstruct ContentView: View {\n  var body: some View {\n    VStack {\n      FirstView()\n      SecondView()\n    }\n    .accessibilityElement(children: .combine)\n  }\n}"
+    },
+    {
+      "timestamp": "4:33",
+      "title": "Hide subviews from accessibility",
+      "language": "swift",
+      "code": "// Hide subviews from accessibility\n\nimport SwiftUI\n\nstruct ContentView: View {\n  var body: some View {\n    VStack {\n      FirstView()\n      SecondView()\n    }\n    .accessibilityElement(children: .ignore)\n  }\n}"
+    },
+    {
+      "timestamp": "5:12",
+      "title": "Contain style presets in accessibility container",
+      "language": "swift",
+      "code": "// Contain style presets in accessibility container\n\nimport SwiftUI\n\nstruct FormattingInspectorView: View {\n  var body: some View {\n    Form {\n      VStack {\n        StylePresetView(type: .title)\n        StylePresetView(type: .heading)\n        StylePresetView(type: .subHeading)\n        StylePresetView(type: .body)\n      }\n      .accessibilityElement(children: .contain)\n      .accessibilityLabel(\"Style Presets\")\n    }\n  }\n}"
+    },
+    {
+      "timestamp": "6:21",
+      "title": "Merge Title View and Button into one accessibility element",
+      "language": "swift",
+      "code": "// Merge Title View and Button into one accessibility element\n\nimport SwiftUI\n\nstruct StylePresetView: View {\n  let preset: StylePreset\n  \n  var body: some View {\n    HStack {\n      PresetTitleView(preset: preset)\n      Button(\"Apply\") { /* ... */ }\n    }\n    .accessibilityElement(children: .combine)\n  }\n}"
+    },
+    {
+      "timestamp": "7:01",
+      "title": "Set the order of accessibility elements",
+      "language": "swift",
+      "code": "// Set the order of accessibility elements\n\nimport SwiftUI\n\nstruct BookDetailsView: View {\n  let book: Book\n\n  var body: some View {\n    VStack {\n      Text(book.author)\n      Text(book.title)\n        .accessibilitySortPriority(1)\n      DescriptionView(book: book)\n    }\n    .accessibilityElement(children: .combine)\n  }\n}"
+    },
+    {
+      "timestamp": "8:43",
+      "title": "Add an accessibility rotor for bookmarked pages",
+      "language": "swift",
+      "code": "// Add an accessibility rotor for bookmarked pages\n\nimport SwiftUI\n\nstruct PagesView: View {\n  @Binding var pages: [Page]\n  \n  var body: some View {\n    List(pages) { page in\n      PageListItemView(page: page)\n    }\n    .accessibilityRotor(\"Bookmarks\") {\n      ForEach(pages) { page in\n        if page.isBookmarked {\n          AccessibilityRotorEntry(page.title, id: page.id)\n        }\n      }\n    }\n  }\n}"
+    },
+    {
+      "timestamp": "9:33",
+      "title": "Set the default VoiceOver focus",
+      "language": "swift",
+      "code": "// Set the default VoiceOver focus\n\nstruct MyView: View {\n  @AccessibilityFocusState(for: .voiceOver) var focusedForVoiceOver\n\n  var body: some View {\n    FirstView()\n    SecondView()\n      .accessibilityDefaultFocus($focusedForVoiceOver, true)\n    ThirdView()\n  }\n}"
+    },
+    {
+      "timestamp": "10:28",
+      "title": "Add an accessibility action to bookmark the page",
+      "language": "swift",
+      "code": "// Add an accessibility action to bookmark the page\n\nimport SwiftUI\n\nstruct PageListItemView: View {\n  var page: Page\n  \n  var body: some View {\n    VStack() {\n      ThumbnailView(page: page)\n      Text(page.title)\n    }\n    .onHover { /* ... */ }\n    .accessibilityAction(named: page.isBookmarked ? \"Remove Bookmark\" : \"Bookmark\") {\n      page.isBookmarked.toggle()\n    }\n  }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Accessibility",
+        "url": "https://developer.apple.com/documentation/swiftui/view-accessibility"
+      },
+      {
+        "title": "Human Interface Guidelines: Accessibility",
+        "url": "https://developer.apple.com/design/human-interface-guidelines/accessibility"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/229/5/85268a8c-59ed-4f8c-942d-8835f8a76dd3/downloads/wwdc2025-229_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/229/5/85268a8c-59ed-4f8c-942d-8835f8a76dd3/downloads/wwdc2025-229_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10073",
+      "year": "2024",
+      "title": "Catch up on accessibility in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10073"
+    },
+    {
+      "id": "10119",
+      "year": "2021",
+      "title": "SwiftUI Accessibility: Beyond the basics",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10119"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:07:33.595Z"
+}

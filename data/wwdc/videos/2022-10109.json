@@ -1,0 +1,100 @@
+{
+  "id": "10109",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10109/",
+  "title": "What’s new in notarization for Mac apps",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Privacy & Security"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Mellow instrumental hip-hop music ♪ ♪ Hello, my name is Johnathan. macOS developers submit software to the notary service in order to help protect their customers from malicious software. Last year we introduced a faster and simpler way to submit apps for notarization with the notarytool CLI or command-line interface. This year we are excited to continue championing performance and flexibility with some major improvements for your interactions with the notary service. In this session, we'll be talking about three main topics. First, we'll go through important deadlines for the migration from using altool for notarization to using notarytool. Next, we'll discuss improvements to the Xcode integration with the upcoming Xcode 14, bringing the submission speed of notarytool to Xcode. And finally, we'll talk about a flexible new way to interact with the notary service, a REST API, letting you expand the places you can upload, check the status of, and review submissions.\n\nLast year we introduced notarytool, a replacement for altool for notarization. Later in this talk, I'll be discussing Xcode moving to our updated backend with Xcode 14. With migration paths in place for notarization via altool and Xcode 13, we're announcing the sunset date for notarization with these older methods to be fall of 2023. For help moving from altool to notarytool, please refer to last year’s presentation \"Faster and simpler notarization for Mac apps.\" To highlight some specifics, the notarytool CLI will continue to work past the fall 2023 deadline, including the one bundled in Xcode 13. As always, however, we do encourage you to update to receive the latest improvements and fixes. Uploads to the notary service using the Xcode 13 UI will stop working after that deadline. Stay tuned to hear about some performance improvements in Xcode 14, but largely you can expect your workflow to remain unchanged. Finally, notarization with all forms of altool will stop working in fall 2023. Again, please refer to last year's WWDC presentation for details on migrating to notarytool. Next, we'll touch on changes to notarization in Xcode 14. We've migrated the notarization support built into Xcode to use the same reliable backend as the notarytool CLI we introduced last year. Because of this, we're happy to bring the same roughly 4x performance increase we announced last year for notarytool to Xcode 14. The best part is that, besides updating, you don't need to change your project settings or workflows to receive this performance boost. For the final topic of this presentation, we're excited to announce a new service, a REST API for notary. This new service allows you to interact more flexibly with the notary service in even more places. To go over some important concepts, this new API is intended to allow for a more flexible interface to the notary service. As a JSON-based web service, integration should be fairly simple in most languages. This API allows you to upload submissions from any place with an internet connection, including continuous integration servers -- places where you might not be running macOS today. Additionally, other interactions with the notary service are also supported in this API, such as retrieving your submission history or past submission details. Our goal with introducing the REST API is to support submitting software for notarization from more platforms and to allow for easier interactions with notary in automated systems. This complements the current methods of submission, Xcode and notarytool, where those can't be run today, such as a Linux-based continuous integration. For example, imagine you want your deployment pipeline to submit your application to notary prior to distribution. With this new API and some basic scripts, you can easily automate the process. Before I dive in, one important topic is authentication. You can authenticate with the API using JSON Web Tokens, or JWTs, just like other App Store Connect APIs. For more details on authentication or the code I'm about to show, please visit the REST API documentation linked below. In these snippets, I'll assume you have a valid JWT passed into the functions as the token variable. Let's walk through an example of submitting files to notary in Python. This same basic flow is applicable in other programming languages. There are two major steps for uploading files to notary. The first step is to inform notary that you wish to upload a file. Included in this is some basic information about the file like name and SHA-256. The response contains information necessary to upload the file and an ID to track your submission through our pipeline. The second step actually uploads the file for notarization via Amazon S3. You'll need to grab your favorite S3 SDK. For this example, I'm going to be using the boto3 library. Here we use the temporary credentials returned in the previous call to authenticate and create a client. We then use the client to upload the file to the bucket and object specified in the first step's response. Once uploaded, the submission will proceed though the notarization pipeline. This process should complete in under 15 minutes for most submissions. After upload, you should confirm the notary service has successfully processed your submission prior to distribution. There are, broadly speaking, two approaches to this. The first, and the simplest, is checking the result through the same API. The other option is via the webhook support introduced with notarytool. First, let's look at the API approach. Checking the status of a submission to notary is pretty straightforward, You can make a request with the submission ID received during the upload process Part of the response is the current status of the submission, which will remain \"In Progress\" until notary is finished processing it. The status will then transition to the final state of your submission, such as Accepted or Invalid. Once the submission is complete, you can then use the API to retrieve the notarization log for this upload. Please refer to the Notary REST API documentation for more details on these endpoints. Next, we'll talk about the second approach to getting your status: a webhook. In the webhook workflow, the process is largely the same, but this time you'll provide a webhook URL in the initial request to upload. Details on the format can be found in the documentation for the notary REST API. As before, this will trigger the notary service to analyze your submission. As the automated analysis concludes, tickets are created, and the final status is saved. Once complete, the notary service will call out to the webhook URL provided. The contents of this call include the submission ID, the team ID, and a signature to verify it came from us. On receiving that notification, you can choose what to do next. For example, you might notify the original submitter or begin an automated distribution pipeline. Compared to waiting with notarytool, this allows you to decouple the system that uploads the file from the system that automates actions after notarization. We're excited to see this new REST API open the doors to more integrations with continuous integration systems and other tools to build software for macOS. To wrap up, as one more reminder, the deadline to migrate to using Xcode 14, notarytool, or the REST API directly is fall of 2023. Finally, if you haven't yet been able to use notarytool in your deployment pipelines, this is your chance to jumpstart your automation by trying the notary REST API today. You can find a link to the documentation below. Thank you, and I hope you enjoy the rest of WWDC22 ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:53",
+      "title": "REST API: upload file for notarization",
+      "language": "swift",
+      "code": "# Upload file for notarization\n\ndef upload_file(token, filepath, sha256):\n    data = { \"sha256\": sha256, \"submissionName\": os.path.basename(filepath) }\n    resp = requests.post(\n       \"https://appstoreconnect.apple.com/notary/v2/submissions\",\n        json=data,\n        headers={\"Authorization\": \"Bearer \" + token})\n\n    output = resp.json()\n    aws_info = output[\"data\"][\"attributes\"]\n    submission_id = output[\"data\"][\"id\"] \n\n    client = boto3.client(\n        \"s3\",  \n        aws_access_key_id=aws_info[\"awsAccessKeyId\"],\n        aws_secret_access_key=aws_info[\"awsSecretAccessKey\"],\n        aws_session_token=aws_info[\"awsSessionToken\"])\n    client.upload_file(filepath, aws_info[\"bucket\"], aws_info[\"object\"])"
+    },
+    {
+      "timestamp": "6:12",
+      "title": "REST API: wait for completion",
+      "language": "swift",
+      "code": "# Wait for completion\n\ndef watch_upload(submission_id, token):\n    while True:\n        resp = requests.get(\n            \"https://appstoreconnect.apple.com/notary/v2/submissions/\" + submission_id, \n            headers={\"Authorization\": \"Bearer \" + token})\n\n        output = resp.json()\n        current_status = output[\"data\"][\"attributes\"][\"status\"]\n        \n        if current_status != \"In Progress\":\n            return current_status # For example: Accepted or Invalid\n\n        time.sleep(30) # Allow time for submission to progress"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Notarizing macOS software before distribution",
+        "url": "https://developer.apple.com/documentation/Security/notarizing-macos-software-before-distribution"
+      },
+      {
+        "title": "Notary API",
+        "url": "https://developer.apple.com/documentation/NotaryAPI"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10109/3/AC093573-81B2-4A1E-BA66-50E413DF5660/downloads/wwdc2022-10109_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10109/3/AC093573-81B2-4A1E-BA66-50E413DF5660/downloads/wwdc2022-10109_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10266",
+      "year": "2023",
+      "title": "Protect your Mac app with environment constraints",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10266"
+    },
+    {
+      "id": "10224",
+      "year": "2023",
+      "title": "Simplify distribution in Xcode and Xcode Cloud",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10224"
+    },
+    {
+      "id": "110344",
+      "year": "2022",
+      "title": "Get to know Developer Mode",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110344"
+    },
+    {
+      "id": "10204",
+      "year": "2021",
+      "title": "Distribute apps in Xcode with cloud signing",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10204"
+    },
+    {
+      "id": "10261",
+      "year": "2021",
+      "title": "Faster and simpler notarization for Mac apps",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10261"
+    },
+    {
+      "id": "703",
+      "year": "2019",
+      "title": "All About Notarization",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/703"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:42:50.227Z"
+}

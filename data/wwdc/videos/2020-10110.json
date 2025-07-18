@@ -1,0 +1,64 @@
+{
+  "id": "10110",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10110/",
+  "title": "Support local network privacy in your app",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "System Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": false,
+  "transcript": {
+    "fullText": "Hello, and welcome to WWDC.\n\nHi, I'm Tommy Pauly, and I'll be sharing some important privacy updates about how your apps interact with local networks.\n\nA network isn't just a way to connect to the internet. Your iPhone is often interacting directly with other devices on its local network. You may be controlling the lights at your house, printing a document at work, watching a video on an airplane, or playing a game with a friend nearby. If your app provides an experience like this, it uses the local network. On Apple devices, the best way to use the local network is with Bonjour. Bonjour lets your app discover nearby services, and advertise its own services. Bonjour is the foundation for streaming video and audio, playing peer-to-peer games, and communicating with printers, cameras and home devices.\n\nSome apps also interact with the local network at a lower level. Your app may configure a Wi-Fi router, or use a custom multicast or broadcast protocol to communicate with legacy hardware. For your app, accessing the local network is a powerful tool. And with this great power comes an equally great responsibility. Respecting user privacy.\n\nUsers should know when your app accesses the local network. And you as a developer should also be aware when the frameworks used by your app do the same. Let's explore how privacy intersects with network access. Location is one of the most privacy-sensitive pieces of information that your app can access. Starting in iOS 13, your app needs Location permission to read a network's name and BSSID.\n\nBut simply accessing the local network can also provide a location hint. For example, when someone is on their home network, the set of devices and services around them is unique.\n\nNo two home networks look exactly the same.\n\nAnd this information about devices on a network can be used by apps to create a location fingerprint.\n\nYour app also needs permission to control devices around you. Communicating over Bluetooth allows your app to access sensitive information. But accessing the local network can reveal a lot of similar information. For example, many devices can be set up and managed by an app over local Wi-Fi. However, any other app can also try to communicate with that device. If your app manages a camera, it should have access to sync photos, but other apps probably shouldn't.\n\nAnd that's why, in iOS 14, users can now control which apps are allowed to access and interact with the local network. This is a great opportunity to provide more transparency to your users, and review the ways in which the code running in your app accesses the network. If your app just accesses resources on the wide internet, you don't need to do anything different. You also don't need to update if you only interact with the local network using a system service, like AirPrint, AirPlay, AirDrop, or HomeKit.\n\nThese system services handle device discovery without exposing the full list of devices to apps. On the other hand, if your app accesses the local network directly within your app, either with unicast or multicast protocols, your app will require permission.\n\nYou'll also need to make a few simple updates to your app for iOS 14. To get into the details, let's look at how your app gets permission to access the local network, how you update your app for iOS 14, and how to ensure a great experience when people use your app's features. Let's start by looking at permissions. Apps now trigger a prompt the first time they try to interact with the local network. Until permission is granted, all local network communication is blocked.\n\nThe prompt includes a usage description that you specify in your app's Info.plist. Apps that haven't updated to iOS 14 will show default reason text.\n\nIf you notice a prompt that you don't expect for your app, you might be using a third-party framework that accesses the local network. Remember, any permission that is granted to your app also applies to the frameworks you use.\n\nThe permission for your app can be checked and modified at any time in the Privacy panel of Settings under Local Network.\n\nEvery app that has requested access to the local network shows up here.\n\nThe toggle will also show up in the settings for your specific app. Once your app updates to iOS 14, there are a few modifications you need to make to ensure it works with the privacy permissions.\n\nThere are two new keys you can provide in your app's Info.plist.\n\nFirst, if your app ever accesses the local network, you should provide a usage description. This explains which features in your app require the local network. And second, if your app uses Bonjour to browse or advertise, you must provide a list of the service types that you use. Each service type is a unique string registered with IANA, that identifies your application protocol. Here, the service type is tictactoe.tcp.\n\nThere are several different APIs that allow your app to use Bonjour. If you use any of these APIs, be sure to update your Info.plist to list out your Bonjour service types.\n\nThere's a small set of apps that perform their local multicast discovery without Bonjour, or that need to enumerate all of the Bonjour service types on a network. These operations require an entitlement in iOS 14. You can request this entitlement through the developer portal. Now let's walk through the process of updating your app.\n\nSo here's an app that I originally built for iOS 13, that lets me play tic-tac-toe with others around me. All I'm going to do is rerun the app against the iOS 14 SDK and see what happens.\n\nAll right. So I don't see anyone nearby.\n\nAnd that's kind of unexpected to me. It's not working as I really wanted. And if I look at the debug output, you can notice that there is an error that we're getting from our browser object of \"NoAuth.\" This error means that the app is being blocked without any local network access prompt. If you see this NoAuth error, it means that you need to add your Bonjour services and usage description to your Info.plist. Let's go do that now. So what we do is, we go to the project settings, and we look at Info. Here, we're gonna need to add two new fields. First is the privacy field for the local network access usage description.\n\nGreat. So here let's put something like, \"TicTacToe uses the local network to discover players around you.\" That makes sense. And the other thing we need to do is add the Bonjour service types.\n\nSo this can be added as Bonjour services. And automatically this knows that it's an array of strings.\n\nThis app only uses one type, and that type is tictactoe.tcp.\n\nGreat. Let's recompile the app now and see what happens.\n\nAll right. So we see that immediately we get a prompt in the app that TicTacToe would like to find and connect to devices on my local network. And we also see that custom usage string that we set in the Info.plist. Now, if I click \"Ok,\" the app is actually browsing on Bonjour. That's great. However, you might have noticed that this happened right when I launched the app, and that can be a bit of a jarring experience for the user.\n\nInstead, I have also created another version of the app that only prompts, and only tries to browse, when the user actually does an action. So let's go over to the phone and look at that now.\n\nSo here is this other version of the app. And you notice that once I started running it, there wasn't a prompt. Instead, only when I start clicking on \"Search for games\" to initiate the discovery of other players, do I get the prompt. This experience is much better, and let's allow that.\n\nAs you just saw, gating local network access with a privacy permission might change the experience of using your app. I want to highlight a couple of best practices to consider when updating your app.\n\nFirst, make sure that people aren't confused when your app triggers a prompt.\n\nRather than trying to browse the network when your app launches, wait for an action that requires browsing. This is your app's opportunity to be granted access to the local network. Choosing the right moment makes it more likely that someone will allow access.\n\nWhen your app does trigger a prompt, make sure you've provided a clear usage description that indicates exactly what feature is being enabled. Your app may also encounter errors and API behaviors that it hadn't handled previously.\n\nBonjour APIs deliver results asynchronously. Whenever your app is waiting for permission, it will simply look like there are no devices nearby.\n\nLocal connections that use NWConnection will stay in the waiting state until your app gets permission. Similarly, if your URLSession tasks use the local network, make sure to set the waitsForConnectivity property, so your task will complete once permission is granted.\n\nAnd if you're still using sockets directly, you will need to handle system call errors when your app doesn't have permission. Lastly, your app should prefer using system-provided experiences for local networking whenever possible.\n\nIf you use AirPrint, AirPlay, AirDrop, or HomeKit, your app doesn’t need to handle anything special, while still providing strong privacy guarantees. Let’s recap what you need to do in your app. First, rebuild your app with the iOS 14 SDK and test out the ways that your app uses the local network. Second, make sure to provide a clear usage description in your Info.plist if your app does use the local network. And last, if your app uses Bonjour, declare your service types in your Info.plist.\n\nThanks for watching.",
+    "segments": []
+  },
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Building a custom peer-to-peer protocol",
+        "url": "https://developer.apple.com/documentation/Network/building-a-custom-peer-to-peer-protocol"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10110/4/DC28151E-DCDB-4D97-9BDF-EEF1FDD14F13/wwdc2020_10110_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10110/4/DC28151E-DCDB-4D97-9BDF-EEF1FDD14F13/wwdc2020_10110_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "110339",
+      "year": "2022",
+      "title": "Build device-to-device interactions with Network Framework",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110339"
+    },
+    {
+      "id": "10111",
+      "year": "2020",
+      "title": "Boost performance and security with modern networking",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10111"
+    },
+    {
+      "id": "10676",
+      "year": "2020",
+      "title": "Build trust through better privacy",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10676"
+    }
+  ],
+  "extractedAt": "2025-07-18T11:03:27.558Z"
+}

@@ -1,0 +1,154 @@
+{
+  "id": "10069",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10069/",
+  "title": "Meet desktop-class iPad",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "David Duncan: Hi, I’m David Duncan, and in this video, I’ll be introducing you to desktop class iPad. iOS 16 brings advances to the tools used to design and build great apps, apps that bring more and better tools to the forefront and take advantage of all the hardware, both built in and attached. UIKit adds many tools to help you meet these goals for your apps. Updates to UINavigationBar allow you to take better advantage of screen real estate and build a great experience on all Apple platforms.\n\nThe new Find and Replace UI is a snap to enable on built-in views and easy to add to custom ones. The Edit menu has been overhauled, with a new interaction-based API that integrates with the menu system. And collection view improvements make it easier than ever to build interfaces that let your users select and act on their content.\n\nFor more information on Find and Replace and Edit Menu, watch \"Adopt desktop class editing interactions.\" And to see how all these features work together, watch \"Build a desktop class iPad app.\" In this video, I'll discuss changes to navigation that impact how you design your app for iOS 16.\n\nFirst are new features that make it easy to build more discoverable interfaces. Then features that are especially powerful for document based apps. And, finally, updates to Search to help accelerate and polish the experience.\n\nUINavigationBar is used for many different purposes on iOS, and iOS 16 acknowledges that by providing new optimized UI for many of these cases. UINavigationItem adds a style property, used to select from these styles: navigator, browser, and editor. I'll dive into each of these styles now.\n\nThe default style, navigator, behaves exactly as a traditional UINavigationBar.\n\nThe title is centered, there are leading and trailing bar button items, and a back button appears when there is more than 1 item on the stack. The browser style rearranges contents to be better optimized for interfaces where history matters as much as location, like in Files or Safari.\n\nThe title is moved to the leading position in this styling.\n\nThe editor style is optimized for when the primary function is document editing. Just like the browser style, the title is leading aligned. Editor UIs are often a destination, such as after selecting a document with a document picker, and so present a back button for easy access to that UI.\n\nThe browser and editor styles both free up a lot of space in the center of the bar.\n\niOS 16 takes advantage of this liberated space by allowing you to place additional controls in this region.\n\nCenter items are part of a suite of changes to take better advantage of screen real estate, and include support for UIBarButtonItemGroup, customization support, and overflow.\n\nOverflow support is available in all modes, and allows the navigator style to indirectly support center items as well.\n\nIndividual controls continue to be specified as UIBarButtonItems, but now are organized as UIBarButtonItemGroups. This allows for denser presentation when space is at a premium. In this example, there are 5 items in the bar, consisting of 4 groups.\n\nThe first group contains a single bar button item, so this example uses a convenience method of UIBarButtonItem, creatingFixedGroup(), to create it.\n\nIf you need a fixed group with more than 1 item, you can use the UIBarButtonItemGroup method instead.\n\nFixed groups always appear first in the bar, and cannot be removed or moved by customization. The draw group contains a single item, so it also uses a convenience API, creatingMovableGroup (customizationIdentifier). Like fixed groups, movable groups cannot be removed, but can be moved.\n\nBecause of this, they require a customizationIdentifier so their position can be tracked and saved. If you need a group with more than one item, you can use the UIBarButtonItemGroup method instead.\n\nThe shapes group contains multiple items, and so uses the UIBarButtonItemGroup API to create the group.\n\nThis group should be movable within the bar, as well as removable, and so is created as an optional group.\n\nThis group also specifies a representativeItem, allowing UIKit to collapse the group to save space when necessary.\n\nThe representativeItem does not specify an action, further allowing UIKit to synthesize a menu allowing selection of the items in the group.\n\nWhen the customization UI is invoked, UIKit automatically applies the rules you've specified based on how you've created your groups. While fixed and movable groups must stay in the bar, optional groups can be added or removed in any number.\n\nUIKit will try collapsing groups to keep as much functionality as possible in the bar, but if space isn't available, extra items will be moved to overflow.\n\nThe overflow menu contains any items that are part of the customization but could not be fit into the bar, as well as the option to customize the bar.\n\nWhile UIKit will synthesize default menu elements for each bar button item, you have the option to customize the menuRepresentation if you wish. Finally, this example enables customization and adds the centerItemGroups.\n\nYou enable customization by setting UINavigationItem.customizationIdentifier.\n\nThe customizationIdentifier defines a unique customization of the bar, so pick a string that won't conflict with other customizations within your app.\n\nUIKit automatically saves and restores customizations based on this identifier.\n\nNext, provide the centerItemGroups themselves. The first four groups I've already covered.\n\nThe format group is an optional group that isn't in the default customization, and so this code overrides the default value of the isInDefaultCustomization parameter to exclude it. You can still use centerItemGroups without setting UINavigationItem.customizationIdentifier, but customization will not be available. In Mac Catalyst, the UINavigationBar automatically translates its content to NSToolbar.\n\nThe leading, center, and trailing item groups are added in order, and the customization properties of the center item groups are respected when using NSToolbar customization.\n\nAll of the expected NSToolbar behaviors are available, as well as other properties such as the title & window proxy.\n\nAll of this occurs by default when you optimize for the Mac. Next, let’s focus in on interactions that are powerful, specifically when dealing with documents. UINavigationBar now supports adding a menu to the title view, giving a central location to add actions that operate on the content as a whole. Additionally, you can add support for the share sheet and drag & drop from this menu. First, I’ll focus on the menu items themselves. Once enabled, the default title menu offers 5 commands: duplicate, move, rename, export, and print. These items are filtered based on specific methods in your responder chain. UINavigationBar has specific support for renaming, and so it will also be included if you’ve implemented a renameDelegate.\n\nTo enable the title menu, set the titleMenuProvider, a closure that returns the final menu to be displayed.\n\nThe closure is passed an array of suggested elements. You can use these as is, filter them, or add your own. In our example, we're adding a single additional action to the menu. Finally, you return the composed UIMenu.\n\nThe title menu also allows sharing via the activity view controller and support for drag & drop.\n\nTo enable these features, you provide a UIDocumentProperties instance that describes your document.\n\nUIDocumentProperties represents metadata about your document, including a preview. This example creates one with a URL, allowing UIKit to fetch the necessary metadata automatically.\n\nTo enable additional features, this example creates an NSItemProvider to represent the document.\n\nSet a dragItemsProvider to enable drag & drop. This closure is past a UIDragSession, and returns an array of UIDragItems. This example returns a single item representing the document.\n\nSetting a activityViewControllerProvider enables sharing. This closure configures and returns a UIActivityViewController.\n\nFinally, assign the filled-out object to UINavigationItem.documentProperties, and when the title is tapped, UIKit presents the header alongside other titleMenu items.\n\nOn Mac Catalyst, the suggested items that would be passed to the titleMenuProvider already exist in the File menu. Any items that you would have added to the title menu will need to be made available by other means.\n\nYou can use the UIMenuBuilder API to add these items, or filter existing items as necessary.\n\nIf you specify document properties, UIKit will automatically use the URL provided to manage the macOS proxy icon.\n\nIf you set the representedURL for your windowScene manually, that will supersede UIKit's management.\n\nUIKit provides two mechanisms to enable Rename. Inline Rename is provided by setting UINavigationItem.renameDelegate, and provides a dedicated UI for editing the title on all platforms.\n\nWhen completed, the resulting name is passed to the delegate.\n\nAlternatively you can take full control over the rename experience by implementing UIResponder.rename(_:) and providing whatever UI you prefer.\n\nOn iOS, the UINavigationBar provides the rename UI directly within the title view. On macOS, the rename UI is provided by the window's title when the navigation bar is hosted in an NSToolbar.\n\nTo implement inline rename, conform to the UINavigationItemRenameDelegate protocol and set the navigation item's renameDelegate. There is only one required method, navigationItem(_:didEndRenamingWith:), that is used to receive the title accepted by the user.\n\nFor file based apps, UIDocumentBrowserViewController now offers a renamed API.\n\nSearch is how many users find their most important data, and advances in iOS 16 make it easier to provide an excellent search experience. The first thing to note is that search now takes up less space by being in line in the navigation bar on iPadOS and the toolbar on macOS. On iPadOS, you can restore the old behavior with UINavigationItem .preferredSearchBarPlacement. Additionally, the search bar can collapse to a button to grant more space for other controls. When search is activated, search suggestions appear, and they can be updated alongside the updating search query, allowing you the opportunity to assist your users in their search. Next, I'll describe the code needed to setup search suggestions.\n\nTo manage search suggestions, conform to UISearchResultsUpdating and set your searchController's searchResultsUpdater. This allows you to update suggestions as the query changes and to act on a selected search suggestion.\n\nWhen the query changes, updateSearchResults(for:) is called, allowing you to update search suggestions.\n\nWhat suggestions to provide is up to you. Setting an empty array will clear the suggestions UI.\n\nUIKit provides UISearchSuggestionItem to specify suggestion content.\n\nTo respond to the selection of a suggestion, implement updateSearchResults(for:selecting:). This method passes the selected search suggestion, so you may react to it appropriately. In this example I update the search by replacing the current query with the one specified by the search suggestion. UISearchTextField also has searchSuggestions, so if you prefer to use that class on its own, you can still implement search suggestions. But if you are using UISearchController, you should use its property instead.\n\nIn iOS 16, UIKit provides new API to help you bring more productivity to your users. Bring more discoverability to your advanced features with center items and the title menu.\n\nImprove your document support by providing drag & drop and sharing directly from the navigation bar.\n\nMake it easier and faster to search by providing search suggestions and get a great Mac experience right out of the box, with nearly zero effort. Thanks for watching this video. I can't wait to see how you enhance your apps to be desktop class!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:27",
+      "title": "Creating a fixed UIBarButtonItemGroup from a single UIBarButtonItem",
+      "language": "swift",
+      "code": "let insertGroup = UIBarButtonItem(title: \"Insert\", image: UIImage(systemName: \"photo\"), primaryAction: UIAction { _ in }).creatingFixedGroup()"
+    },
+    {
+      "timestamp": "4:55",
+      "title": "Convenient form",
+      "language": "swift",
+      "code": "// Creating the 'Draw' group\n\n// Convenient form of\n// UIBarButtonItemGroup.movableGroup(customizationIdentifier:representativeItem:items:)\nlet drawGroup = UIBarButtonItem(title: \"Draw\", …)\n    .creatingMovableGroup(customizationIdentifier: \"Draw\")"
+    },
+    {
+      "timestamp": "5:30",
+      "title": "Creating an optional group with multiple UIBarButtonItems using UIBarButtonItemGroup",
+      "language": "swift",
+      "code": "let shapeGroup = UIBarButtonItemGroup.optionalGroup(\n    customizationIdentifier: \"Shapes\",\n    representativeItem: UIBarButtonItem(title: \"Shapes\", image: UIImage(systemName: \"square.on.circle\")),\n    items: [\n        UIBarButtonItem(title: \"Square\", image: UIImage(systemName: \"square\"), primaryAction: UIAction { _ in }),\n        UIBarButtonItem(title: \"Circle\", image: UIImage(systemName: \"circle\"), primaryAction: UIAction { _ in }),\n        UIBarButtonItem(title: \"Rectangle\", image: UIImage(systemName: \"rectangle\"), primaryAction: UIAction { _ in }),\n        UIBarButtonItem(title: \"Diamond\", image: UIImage(systemName: \"diamond\"), primaryAction: UIAction { _ in }),\n    ])"
+    },
+    {
+      "timestamp": "6:56",
+      "title": "Setting up customizable centerItemGroups on a UINavigationItem",
+      "language": "swift",
+      "code": "navigationItem.customizationIdentifier = \"com.jetpack.blueprints.maineditor\"\nnavigationItem.centerItemGroups = [\n    // groups in the default customization\n    UIBarButtonItem(title: \"Insert\", image: UIImage(systemName: \"photo\"), primaryAction: UIAction { _ in }).creatingFixedGroup(),\n    UIBarButtonItem(title: \"Draw\", image: UIImage(systemName: \"scribble\"), primaryAction: UIAction { _ in }).creatingMovableGroup(customizationIdentifier: \"Draw\"),\n    .optionalGroup(customizationIdentifier: \"Shapes\",\n                   representativeItem: UIBarButtonItem(title: \"Shapes\", image: UIImage(systemName: \"square.on.circle\")),\n                   items: [\n                    UIBarButtonItem(title: \"Square\", image: UIImage(systemName: \"square\"), primaryAction: UIAction { _ in }),\n                    UIBarButtonItem(title: \"Circle\", image: UIImage(systemName: \"circle\"), primaryAction: UIAction { _ in }),\n                    UIBarButtonItem(title: \"Rectangle\", image: UIImage(systemName: \"rectangle\"), primaryAction: UIAction { _ in }),\n                    UIBarButtonItem(title: \"Diamond\", image: UIImage(systemName: \"diamond\"), primaryAction: UIAction { _ in }),\n                   ]),\n    .optionalGroup(customizationIdentifier: \"Text\",\n                   items: [\n                    UIBarButtonItem(title: \"Label\", image: UIImage(systemName: \"character.textbox\"), primaryAction: UIAction { _ in }),\n                    UIBarButtonItem(title: \"Text\", image: UIImage(systemName: \"text.bubble\"), primaryAction: UIAction { _ in }),\n                   ]),\n    \n    // additional group not in the default customization\n    .optionalGroup(customizationIdentifier: \"Format\",\n                   isInDefaultCustomization: false,\n                   representativeItem: UIBarButtonItem(title: \"BIU\", image: UIImage(systemName: \"bold.italic.underline\")),\n                   items:[\n                    UIBarButtonItem(title: \"Bold\", image: UIImage(systemName: \"bold\"), primaryAction: UIAction { _ in }),\n                    UIBarButtonItem(title: \"Italic\", image: UIImage(systemName: \"italic\"), primaryAction: UIAction { _ in }),\n                    UIBarButtonItem(title: \"Underline\", image: UIImage(systemName: \"underline\"), primaryAction: UIAction { _ in }),\n                   ])\n]"
+    },
+    {
+      "timestamp": "9:30",
+      "title": "Adding a \"Comments\" item to the default title menu",
+      "language": "swift",
+      "code": "navigationItem.titleMenuProvider = { suggestedActions in\n    var children = suggestedActions\n    children += [\n        UIAction(title: \"Comments\", image: UIImage(systemName: \"text.bubble\")) { _ in }\n    ]\n    return UIMenu(children: children)\n}"
+    },
+    {
+      "timestamp": "10:15",
+      "title": "Supporting Drag & Drop and Sharing from the title menu",
+      "language": "swift",
+      "code": "let url = <#T##URL#>\nlet documentProperties = UIDocumentProperties(url: url)\n\nif let itemProvider = NSItemProvider(contentsOf: url) {\n    documentProperties.dragItemsProvider = { _ in\n        [UIDragItem(itemProvider: itemProvider)]\n    }\n\n    documentProperties.activityViewControllerProvider = {\n        UIActivityViewController(activityItems: [itemProvider], applicationActivities: nil)\n    }\n}\n\nnavigationItem.documentProperties = documentProperties"
+    },
+    {
+      "timestamp": "12:45",
+      "title": "Implementing inline rename",
+      "language": "swift",
+      "code": "class ViewController: UIViewController {\n    override func viewDidLoad() {\n        super.viewDidLoad()\n        navigationItem.renameDelegate = self\n    }\n}\n\nextension ViewController: UINavigationItemRenameDelegate {\n    func navigationItem(_ navigationItem: UINavigationItem, didEndRenamingWith title: String) {\n        // Try renaming our document, the completion handler will have the updated URL or return an error.\n        documentBrowserViewController.renameDocument(at: <#T##URL#>, proposedName: title, completionHandler: <#T##(URL?, Error?) -> Void#>)\n    }\n}"
+    },
+    {
+      "timestamp": "14:05",
+      "title": "Implementing Search Suggestions",
+      "language": "swift",
+      "code": "class ViewController: UIViewController {\n    override func viewDidLoad() {\n        super.viewDidLoad()\n        searchController.searchResultsUpdater = self\n    }\n}\n\nextension ViewController: UISearchResultsUpdating {\n    func fetchQuerySuggestions(for searchController: UISearchController) -> [(String, UIImage?)] {\n        let queryText = searchController.searchBar.text\n        // Here you would decide how to transform the queryText into search results. This example just returns something fixed.\n        return [(\"Sample Suggestion\", UIImage(systemName: \"rectangle.and.text.magnifyingglass\"))]\n    }\n    \n    func updateSearch(_ searchController: UISearchController, query: String) {\n        // This method is used to update the search UI from our query text change\n        // You should also update internal state related to when the query changes, as you might for when the user changes the query by typing.\n        searchController.searchBar.text = query\n    }\n    \n    func updateSearchResults(for searchController: UISearchController) {\n        let querySuggestions = self.fetchQuerySuggestions(for: searchController)\n        searchController.searchSuggestions = querySuggestions.map { name, icon in\n            UISearchSuggestionItem(localizedSuggestion: name, localizedDescription: nil, iconImage: icon)\n        }\n    }\n\n    func updateSearchResults(for searchController: UISearchController, selecting searchSuggestion: UISearchSuggestion) {\n        if let suggestion = searchSuggestion.localizedSuggestion {\n            updateSearch(searchController, query: suggestion)\n        }\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Building a desktop-class iPad app",
+        "url": "https://developer.apple.com/documentation/UIKit/building-a-desktop-class-ipad-app"
+      },
+      {
+        "title": "centerItemGroups",
+        "url": "https://developer.apple.com/documentation/UIKit/UINavigationItem/centerItemGroups"
+      },
+      {
+        "title": "searchSuggestions",
+        "url": "https://developer.apple.com/documentation/UIKit/UISearchController/searchSuggestions"
+      },
+      {
+        "title": "Supporting desktop-class features in your iPad app",
+        "url": "https://developer.apple.com/documentation/UIKit/supporting-desktop-class-features-in-your-ipad-app"
+      },
+      {
+        "title": "titleMenuProvider",
+        "url": "https://developer.apple.com/documentation/UIKit/UINavigationItem/titleMenuProvider"
+      },
+      {
+        "title": "UIDocumentProperties",
+        "url": "https://developer.apple.com/documentation/UIKit/UIDocumentProperties"
+      },
+      {
+        "title": "UINavigationItem.ItemStyle",
+        "url": "https://developer.apple.com/documentation/UIKit/UINavigationItem/ItemStyle"
+      },
+      {
+        "title": "UINavigationItemRenameDelegate",
+        "url": "https://developer.apple.com/documentation/UIKit/UINavigationItemRenameDelegate-5j4ws"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10069/4/1646A8BA-EEFA-4533-A631-3BCDF704A4EB/downloads/wwdc2022-10069_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10069/4/1646A8BA-EEFA-4533-A631-3BCDF704A4EB/downloads/wwdc2022-10069_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10056",
+      "year": "2023",
+      "title": "Build better document-based apps",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10056"
+    },
+    {
+      "id": "10071",
+      "year": "2022",
+      "title": "Adopt desktop-class editing interactions",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10071"
+    },
+    {
+      "id": "10076",
+      "year": "2022",
+      "title": "Bring your iOS app to the Mac",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10076"
+    },
+    {
+      "id": "10070",
+      "year": "2022",
+      "title": "Build a desktop-class iPad app",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10070"
+    },
+    {
+      "id": "10068",
+      "year": "2022",
+      "title": "What's new in UIKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10068"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:53:59.941Z"
+}

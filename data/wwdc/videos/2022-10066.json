@@ -1,0 +1,114 @@
+{
+  "id": "10066",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10066/",
+  "title": "Discover Metal 3",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Graphics & Games"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Tarun Belagodu: Hello and welcome to Metal 3. My name is Tarun Belagodu and I'll be sharing the latest in Metal's evolution. First, let's start with the basics. Metal is Apple's low-overhead graphics and compute API. It's designed to be the fastest and most efficient way to drive the incredibly powerful GPUs behind Apple products. It offers multi-threaded and direct control over the commands sent to the GPU, a rich shading language that supports explicit shader compilation, and deeply integrated tools to help debug and profile complex applications and games.\n\nSince its introduction, Metal has added many advanced graphics and compute features, with a focus on GPU-driven rendering, machine learning, and ray tracing. Apple silicon paves the way for incredible graphics performance and efficiency on every new Mac. And Metal unlocks these capabilities. This year, Metal is making a leap to the next level with Metal 3.\n\nMetal 3 is a powerful set of new features that enable even higher performance and rendering quality to help your apps and games run faster and look amazing. Let's start with fast resource loading.\n\nModern games and apps have demanding asset loading requirements, and streaming many small asset requests quickly from files to your Metal resources is often the key to high quality visuals. But existing storage APIs are designed for large, bulk requests.\n\nMetal 3's fast resource loading lets you request many small loads using the same explicit, multi-threaded command model as graphics and compute. Each request is a command, and many commands can be queued for asynchronous submission. It loads directly into your Metal buffers and textures without additional steps, saving you both development effort and transfer time. Fast resource loading also makes it easy to coordinate between GPU operations and loading operations, using the Metal synchronization primitives that you already know. Texture streaming systems really benefit from fast resource loading. Let's look at an example.\n\nMetal Sparse Textures allow applications to stream textures at a tile granularity. The texture streaming system built on Metal sparse textures consists of four steps: First, decide what to load based on feedback from the previous frame. Second, load tiles from file storage. Third, copy from your staging area to your sparse textures. And finally, draw your frame.\n\nThe longer it takes to load and copy means the more time your app draws with lower quality.\n\nFast resource loading minimizes loading overhead and ensures the storage hardware has enough requests in its queues to maximize throughput. This provides faster and more consistent performance so that more time is spent drawing at high quality.\n\nFast resource loading will greatly simplify the code you need to write to achieve high quality asset streaming. To learn more about fast resource loading, check out the \"Load resources faster with Metal 3\" session.\n\nNext, let me tell you how the new offline compilation workflow will help you reduce load times and stutters in your apps. Shader binaries are GPU-specific machine code that are traditionally generated while the app is running as part of the Metal pipeline creation process. Generating these binaries is an expensive operation that is usually hidden behind a loading screen during app launch. However, sometimes they need to happen in-frame, which in turn causes frame rate stutters. These binaries are cached by Metal so that you don't pay the cost often, but their cost is still observed on the app's first launch or whenever the binary is first needed. With offline compilation, you can eliminate shader binary generation at run time.\n\nBy moving binary generation to project build time, you can dramatically reduce the time spent creating Metal pipelines at load time, and reduce stutters in your app when those pipelines are created just-in-time. Let's take a closer look at what it means to reduce stutters.\n\nHere's an example of a game that needs to create a Metal pipeline state object during encoding. Since this is a pipeline that Metal hasn't seen before, it generates the needed shader binary. This is a long operation that interrupts encoding the rest of the frame, and causes the app to miss its frame rate target. This only happens once, but it's enough for your users to notice a frame stutter. In contrast, offline compilation means the shader binary can be generated at build-time so that every pipeline state creation is fast, and execution is smooth. Offline compilation can have a dramatic effect on your app loading times too. Let's look at an example.\n\nMost apps create the majority of Metal pipeline state objects in a dedicated loading phase. And shader binaries are generated on first load. This can be a long wait for your users if your app creates many such pipelines. With offline compilation, shader binary generation can again be moved to project build time, resulting in smaller load times and getting users into your app more quickly.\n\nOffline compilation is a game changer for apps with many complex pipelines. To learn more about offline compilation and other improvements, check out the \"Target and optimize GPU binaries with Metal 3\" session.\n\nNow, let's move on to MetalFX, which provides platform-optimized graphics effects for Metal applications. MetalFX Upscaling helps render high-quality graphics in less time through high-performance upscaling and anti-aliasing. You can choose a combination of temporal or spatial algorithms to help boost performance. Here's why it matters. While Retina resolution provides crisp detail that you want your apps and games to take advantage of, generating all those pixels can also affect performance. With MetalFX Upscaling, you can generate pixels at a lower resolution and then let the framework generate a high-quality, high-resolution image at a lower cost for a much higher frame rate. MetalFX is a powerful framework that makes high-performance, high-quality upscaling a reality. To learn more about MetalFX Upscaling, check out the \"Boost performance with MetalFX Upscaling\" session. Next up is Metal's new flexible geometry pipeline: Mesh Shaders. The traditional programmable graphics pipeline lets you transform vertices in a shader, that are then assembled into primitives for rasterization by fixed-function hardware. That's enough for most applications, but some use cases like culling require access to the entire primitive. Each vertex is also read, transformed, and output independently. So you can't add vertices or primitives in the middle of your draw. Advanced geometry processing requires more flexibility. And traditionally that meant pre-processing your geometry in a compute pass. But that requires storing a variable amount of intermediate geometry to device memory, which might be hard for you to budget for. Metal mesh shaders introduce an alternative geometry processing pipeline, It replaces the traditional vertex stage with a flexible 2-stage model and enables hierarchical processing of your geometry. The first stage analyzes whole objects to decide whether to expand, contract, or refine geometry in the second stage. It achieves this by providing compute capabilities in the render pass, without the need for intermediate device memory storage. Mesh shaders are a great fit for apps that perform GPU-driven culling, LOD selection, and procedural geometry generation. Let's take a closer look. In this example, a compute pass evaluates the surface and then generates its geometry. That geometry and its draw commands are then written to device memory for consumption by a later render pass. With high expansion factors and indirect draw calls, it can be hard to predict the amount of memory needed.\n\nMesh shaders improve efficiency by running two compute-like stages inline in the render pipeline.\n\nThe Object stage evaluates the input to decide how many meshes need to be generated.\n\nAnd the Mesh stage then generates the actual geometry. These meshes are sent directly to the rasterizer, bypassing the roundtrip to device memory, and the need for vertex processing.\n\nMesh shaders will let you build efficient procedural geometry, culling, and LODing systems for your apps. To learn more about mesh shaders, check out the \"Transform your geometry with Metal mesh shaders\" session.\n\nMetal 3 also brings significant speedup to the ray tracing pipeline. Everything from acceleration structure builds, intersection and shading have been optimized. Metal also adds support for GPU-driven ray tracing pipelines to further optimize your app. Let's compare Metal 3's ray tracing to what was previously available.\n\nMetal 3 ray tracing saves a significant amount of CPU and GPU time. First, acceleration structures build in less time, giving you more GPU time to draw and trace rays. Second, CPU operations such as culling can move to the GPU thanks to the new Indirect Command Buffer support for Ray Tracing. Finally, Metal 3 ray tracing supports direct access to primitive data to streamline and optimize intersection and shading. Metal 3 ray tracing continues to become better and more powerful than before. To learn more about ray tracing, head over to the \"Maximize your Metal ray tracing performance\" session. Now, I'll show you how Metal 3 accelerates machine learning inference and training. Metal 3 has major improvements to accelerate machine learning, with additional support for accelerating network training on the Mac, and significant optimizations for ML inference optimizations in graphics and media processing applications. TensorFlow is a popular framework for machine learning that is GPU-accelerated on the Mac. The recently released Mac Studio provides up to a 16 times speedup on M1 Ultra versus training on the CPU, across a variety of networks. And Metal 3 also accelerates many new TensorFlow operations. That means less synchronization with the CPU for even more scalable performance. PyTorch is another very popular ML framework for network training that recently gained GPU acceleration using Metal. And on Mac Studio with an M1 Ultra you can achieve significant training speedups compared to the CPU. For example, you can train the BERT model up to 6.5 times faster and train ResNet50 up to 8.5 times faster. Metal optimizes ML inference across Apple silicon to maximize performance. This is especially useful for Metal-based high performance video and image processing applications, like BlackMagic Design's DaVinci Resolve. DaVinci Resolve is a color-grading-focussed video production platform that uses Metal and machine learning extensively in their workflows. And the results are incredible. With Metal's support for accelerated machine learning, BlackMagic Design achieved dramatic performance improvements to their editing and color grading workflows and their ML-based tools. To learn more about updates to machine learning, head over to the \"Accelerate machine learning with Metal\" session. Now let me tell you what hardware supports the Metal 3 features that I just described. Metal 3 is supported on all modern iOS, iPadOS, and macOS devices, including iPhone and iPad with A13 Bionic or M1 chips or newer, and all Apple silicon Mac systems and Mac systems with recent AMD and Intel GPUs.\n\nAnd to find out whether a given device supports Metal 3, use the supportsFamily query on the Metal device.\n\nMetal 3 is much more than features; it also includes a comprehensive set of advanced developer tools. Let me show you a few now. The Metal Dependency Viewer in Xcode 14 makes it even easier to visualize your entire renderer or zoom into a single pass. And to make it easier to adopt GPU-driven pipelines or synchronize with fast resource loading for example, the Dependency Viewer now includes synchronization edges to help you analyze and validate your dependencies. The improved Acceleration Structure Viewer in Xcode 14 helps you get the most out of Metal 3's optimized ray tracing. First, you can now highlight individual primitives in the scene.\n\nAnd selecting a primitive shows its associated primitive data in the outline on the left.\n\nLast, if your scene has motion information, the Acceleration Structure Viewer can now visualize different points in time.\n\nAnd that's just a quick look at a few of the Developer Tools updates in Xcode 14. There are a host of other new features such as Dylib support, a new resource list, file navigation in the Shader editor, custom Buffer Viewer layouts and many more. To learn more about tools and how to get the most out of advancements in Metal 3, be sure to check out these other sessions, which will help you build advanced graphics, games and pro apps.\n\nToday, I introduced you to Metal 3's advanced features for improving performance and quality: fast resource loading for higher-quality texture streaming; Offline compilation for shorter load times and less stuttering; MetalFX Upscaling to render at high resolution in less time; Mesh shaders for advanced geometry processing; faster acceleration structure builds, intersections, and shading for ray tracing; and more accelerated machine learning. Finally, I showed you some of advanced tools that help you use advanced features such as GPU-driven pipelines and ray tracing.\n\nTo learn more with new code samples and documentation, head over to developer.apple.com/Metal.\n\nThank you for joining.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "0:01",
+      "title": "Device Family",
+      "language": "swift",
+      "code": "if device.supportsFamily(.metal3) {\n\n    // My awesome Metal 3 renderer\n\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Metal",
+        "url": "https://developer.apple.com/documentation/Metal"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10066/5/E8711A5F-B118-4630-BC5C-BEDA558FE370/downloads/wwdc2022-10066_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10066/5/E8711A5F-B118-4630-BC5C-BEDA558FE370/downloads/wwdc2022-10066_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10063",
+      "year": "2022",
+      "title": "Accelerate machine learning with Metal",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10063"
+    },
+    {
+      "id": "10103",
+      "year": "2022",
+      "title": "Boost performance with MetalFX Upscaling",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10103"
+    },
+    {
+      "id": "10101",
+      "year": "2022",
+      "title": "Go bindless with Metal 3",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10101"
+    },
+    {
+      "id": "10104",
+      "year": "2022",
+      "title": "Load resources faster with Metal 3",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10104"
+    },
+    {
+      "id": "10105",
+      "year": "2022",
+      "title": "Maximize your Metal ray tracing performance",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10105"
+    },
+    {
+      "id": "10160",
+      "year": "2022",
+      "title": "Program Metal in C++ with metal-cpp",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10160"
+    },
+    {
+      "id": "10159",
+      "year": "2022",
+      "title": "Scale compute workloads across Apple GPUs",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10159"
+    },
+    {
+      "id": "10102",
+      "year": "2022",
+      "title": "Target and optimize GPU binaries with Metal 3",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10102"
+    },
+    {
+      "id": "10162",
+      "year": "2022",
+      "title": "Transform your geometry with Metal mesh shaders",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10162"
+    },
+    {
+      "id": "110929",
+      "year": "2022",
+      "title": "WWDC22 Day 1 recap",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110929"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:31:02.357Z"
+}

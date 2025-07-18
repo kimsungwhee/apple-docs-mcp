@@ -1,0 +1,149 @@
+{
+  "id": "10109",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10109/",
+  "title": "Support hardware keyboards in your app",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks",
+    "System Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nMy name is James Magahern. I'm from the iOS Keyboards team, and I'm here to give you a brief primer on how to make your app a first-class app on devices with hardware keyboards.\n\niOS applications have always embraced user interfaces designed all around touch, which is a truly excellent way to interact with content. Discovering UI in your application is as easy as just showing something on the screen. iPad users with hardware keyboards attached, however, have become quite common. Embracing hardware-keyboard support in your application allows your users to become more productive and navigate your UI more quickly and ergonomically. They can leverage muscle memory to execute functions without even thinking about it. Also, by implementing standard system shortcuts, novice users can approach your application with a familiar, consistent interface armed with expectations brought from the Mac. To be a first-class app on a next-generation computing platform like the iPad, your application should excel at both touch and hardware-keyboard interactions.\n\nHere's a quick setup for what we're gonna be talking about today. Let's jump right in and talk about keyboard shortcuts.\n\nTo go briefly over how keyboard shortcuts work on iOS, let's first talk about UIKeyCommand. UIKeyCommand is an object that represents a custom keyboard shortcut in your application. It has all the properties that you might expect, such as the discoverability title shown to the user, what keyboard input is required to invoke it, and optionally, a set of modifierFlags defining which modifier keys should be held.\n\nThis fits together with your UI by returning an array of key commands via an overridable property called keyCommands on UIResponder, where you return an array of all the commands for that particular responder. Most common UIKit widgets are subclasses of UIResponder already, so in most cases, extending your application to include these key commands should be as simple as just overriding this one property and returning whatever key commands are relevant for that particular part of your UI. The way this all fits together in your application is via the responder chain. The responder chain loosely follows the view hierarchy of your application, with the UIApplication instance at the very end and the responder the user is currently interacting with at the beginning. Your application's first responder is the UIResponder object in which all keyboard events first funnel into. If a responder in the chain isn't able to handle a particular event, the event goes further up the chain. UIViews, for example, have their designated next responder in the chain as the view's superview.\n\nKey commands are then collected by the application from each responder via the keyCommands method that you override, starting with the application's first responder and ending up at the top-level UIApplication instance.\n\nOnce all of your key commands are collected by the system, users will be able to discover them via the discoverability heads-up display, which is accessible by holding the Command key anywhere in the system. This is great, not only for your users to be able to discover keyboard shortcuts, but it's also handy during development to be able to test and inspect all of them in one place.\n\nNow let's take a look at how all this fits together in practice. Let's take the Music app as an example.\n\nWhen the Music app is in the foreground, the user can press the space bar to easily toggle the playback of the currently playing song.\n\nThis works consistently across all apps that do media playback of any kind, such as when playing videos in the Photos app or for QuickTime videos in Safari.\n\nFollowing the model-view-controller pattern, the ideal place to define this behavior is in your custom view controller subclass.\n\nIn this example, we have a player view controller subclass of UIViewController, which manages playback in our application and whose view contains things like the play button. Because all UIViewControllers are UIResponders, all I need to do is override a few methods here to allow this to start accepting keyboard shortcuts.\n\nFirst, override canBecomeFirstResponder and return true.\n\nThen, override viewDidAppear and call becomeFirstResponder to make sure this view controller is first responder when it first appears.\n\nLastly, override the keyCommands property to return our custom space-bar keyboard shortcut. Here you can see we provide a localized string to show in the discoverability HUD which action to perform when it's invoked in the form of a selector and which input is required. In this case, a string just containing space to indicate this is for the space bar.\n\nYou're getting really excited right about now, thinking about adding some commonly used keyboard shortcuts to your app that your users are expecting from other apps. For example, if you're working on a music library application, you'll want to add a few shortcuts that would make it faster to interact with songs and playlists, such as select all, copy, and paste.\n\nOr if you're working on an illustration app, for example, you'll want to have things like Command-Plus for zooming in and Command-Minus for zooming out. Well, fortunately, for many of these commonly used keyboard shortcuts, you don't even need to create a single UIKeyCommand. All you need to do is override a couple of methods. Every UIResponder subclass conforms to a protocol called UIResponderStandardEditActions, which can respond to any method listed here. All you need to do is override the relevant method. You don't have to create a single UIKeyCommand. Here's a quick example. In your UIResponder subclass, our UITableViewController subclass here, we just need to override the same two methods that we did before to make sure it can become first responder. As always, this will be required if you decide to implement this inside of your view controller subclass. Then you can override any of the methods mentioned on the previous slide, such us select all, copy, paste, and a few others, all without creating a single UIKeyCommand. Check out the documentation on UIResponderStandardEditActions for more commands and for more information.\n\nUIKeyCommand was designed with Catalyst in mind. Making all these new key commands work with the macOS Menu bar is extremely easy. For the UIResponderStandardEditActions I mentioned on the previous slide, you get those for free. But for custom UIKeyCommands, luckily, UIKeyCommand is a subclass of UICommand, which means this is easily integrated into the command-builder API that we introduced for macOS Catalina. For more depth and for more information about how the command-builder API works, check out the \"Taking iPad Apps for Mac to the Next Level\" session from WWDC 2019.\n\nThe next thing I want to talk about is how hardware keyboards interact with table views and collection views.\n\nIf you have a list of files, like in the Files app, your users will expect some common shortcuts from the Mac to also work on their iPads.\n\nFor example, holding Shift and tapping on two list items to select a contiguous list of files should work.\n\nAnd secondly, holding Command and tapping multiple items in a list should extend the user's selection without having to enter edit mode first.\n\nFortunately, it's extremely easy to implement this behavior your users expect in your application if you're already using UITableView or UICollectionView. All you need to do is implement shouldBeginMultipleSelection InteractionAt indexPath and return true.\n\nThe system will then automatically put your table view into editing mode or your collection view into multiple selection mode and extend the user's currently selected set of index paths based on which modifier key has been held. Likewise, implement didBeginMultipleSelection InteractionAt indexPath to adapt your surrounding UI to the fact that it was automatically placed into editing mode. To find out what else the multiple selection API can offer you, check out the \"Modernizing Your UI for iOS 13\" session from 2019.\n\nNow, on to some new things for iOS 14, starting with some additions that we made to gesture recognizers. To start with another example, let's take a look at Numbers. One of the ways Numbers leverages the hardware keyboard on iPad to provide advanced functionality, is by allowing users to hold the Shift key while resizing a shape with their finger or the trackpad to constrain the scale of the selected shape to its aspect ratio. In addition, Numbers allows users to hold the Command key to select multiple objects by tapping on them, so you can move them all at once, for example. This is all possible because in iOS 13.4, when we introduced the new Magic Keyboard, we added a property on UIGestureRecognizer called modifierFlags, which allows any application to implement this kind of behavior. This property will be set to whatever modifier keys the user had been holding down when the gesture recognizer's state changes. So, if we're implementing something like what Numbers did in our example, all we need to do is consult this property when out gesture-recognizer callback is fired and do the appropriate action based on which modifier key is held. For more information about what else is new with events and gesture recognizers, check out the \"Handle Trackpad and Mouse Input\" session. The last thing I want to talk about is a new API for responding to raw keyboard events.\n\nEmbracing hardware-keyboard interactions within your application can give your users much more fine-grained control over certain aspects of your app. Back to Numbers as an example. Numbers leverages the accuracy of the hardware keyboard and matches expectations to allow users to be able to make small adjustments to shapes or layers using the arrow keys. This requires you to respond to a key-down event to start moving the object and a key-up event to stop moving the object. Both things are not possible with UIKeyCommands, which are only fired once after invoked by the user.\n\nWell, new in iOS, we've added the ability to respond to all key-down and key-up events from an attached hardware keyboard. Back to our friend, the responder chain, all this is done via UIResponder methods called pressesBegan and pressesEnded.\n\nYou only need to override these two methods on your view or view controller to start getting notified as soon as a key goes down or is released. Again, using the model-view-controller pattern, we override pressesBegan and pressesEnded on something like our canvas view controller, for example. In pressesBegan, which is called when a key goes down on a hardware keyboard, we can check the key code to see which arrow key was pressed and perform the appropriate action in our app to start moving a shape continuously while the key is down.\n\nThen, in pressesEnded, simply perform whatever action in your app stops moving the shape. It's as easy as that. Likewise, similar to what we added for gesture recognizers, you can also check the modifierFlags for every key event and make adjustments as necessary. For example, allowing the user to hold Shift to select while moving something. In addition, we'll also notify you about key-down and key-up events with just the modifier keys as well. So finally, what you need to do next.\n\nMake sure your app works with all the common keyboard shortcuts your users expect.\n\nEnhance the functionality of your app with completely customized keyboard shortcuts to make your users more productive.\n\nCreate menu items so your app feels right at home on macOS. And finally, use the new hardware-keyboard APIs to complete the awesome keyboard experience in your app.\n\nThanks for watching. Be sure to like, comment and subscribe.\n\nI've completely lost it. I'm sorry.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "0:01",
+      "title": "PlayerViewController",
+      "language": "swift",
+      "code": "class PlayerViewController: UIViewController {\n\n    override var canBecomeFirstResponder: Bool {\n        return true \n    }\n\n    override func viewDidAppear(_ animated: Bool) {\n        becomeFirstResponder()\n    }\n\n    override var keyCommands: [UIKeyCommand]? {\n        return [\n            UIKeyCommand(title: NSLocalizedString(\"PLAY_PAUSE\", comment: \"…\"),\n                        action: #selector(playPause),\n                         input: \" \")\n        ]\n    }\n}"
+    },
+    {
+      "timestamp": "0:02",
+      "title": "SongListTableViewController",
+      "language": "swift",
+      "code": "class SongListTableViewController: UITableViewController {\n\n    override var canBecomeFirstResponder: Bool {\n        return true\n    }\n    \n    override func viewDidAppear(_ animated: Bool) {\n        becomeFirstResponder()\n    }\n    \n    /* UIResponderStandardEditActions */\n\n    override func selectAll(_ sender: Any?) { … }\n\n    override func copy(_ sender: Any?) { … }\n\n    override func paste(_ sender: Any?) { … }\n\n}"
+    },
+    {
+      "timestamp": "0:03",
+      "title": "UIKeyCommand",
+      "language": "swift",
+      "code": "class UIKeyCommand : UICommand {\n    ...\n}\n\noverride func buildMenu(with builder: UIMenuBuilder) {\n    builder.replaceChildren(ofMenu: .file) { children in\n        return [ UIKeyCommand() ] + children\n    }\n}"
+    },
+    {
+      "timestamp": "0:04",
+      "title": "Extending selection with keyboard",
+      "language": "swift",
+      "code": "optional func tableView(_ tableView: UITableView,\n       shouldBeginMultipleSelectionInteractionAt indexPath: IndexPath) -> Bool\n\noptional func tableView(_ tableView: UITableView,\n       didBeginMultipleSelectionInteractionAt indexPath: IndexPath)"
+    },
+    {
+      "timestamp": "0:05",
+      "title": "recognizedDragGesture",
+      "language": "swift",
+      "code": "func recognizedDragGesture(_ panGesture: UIPanGestureRecognizer) {\n\n    if panGesture.modifierFlags.contains(.command) {\n        snapToGrid = true\n    } else if panGesture.modifierFlags.contains(.shift) {\n        constrainAspectRatio = true\n    }\n    \n    ...\n}"
+    },
+    {
+      "timestamp": "0:06",
+      "title": "Responding to raw keyboard events",
+      "language": "swift",
+      "code": "class UIResponder: NSObject {\n    func pressesBegan(_ presses: Set<UIPress>,\n                     with event: UIPressesEvent)\n    \n    func pressesEnded(_ presses: Set<UIPress>,\n                     with event: UIPressesEvent)\n}"
+    },
+    {
+      "timestamp": "0:07",
+      "title": "CanvasViewController",
+      "language": "swift",
+      "code": "class CanvasViewController: UIViewController {\n     \n     override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {\n         for press in presses {\n             guard let key = press.key else { continue }\n             switch key.keyCode {\n             case .keyboardUpArrow: startMoveUp()\n             case .keyboardDownArrow: startMoveDown()\n                 …\n             }\n     }\n     }\n\n     override func pressesEnded(_ presses: Set<UIPress>, with event: UIPressesEvent?) {\n         stopMoving()\n     }\n\n}"
+    },
+    {
+      "timestamp": "0:08",
+      "title": "CanvasViewController modifier flags",
+      "language": "swift",
+      "code": "class CanvasViewController: UIViewController {\n\n    override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {\n        var selectWhileMoving = false\n        for press in presses {\n            guard let key = press.key else { continue }\n            if key.modifierFlags.contains(.shift) {\n                selectWhileMoving = true\n            }\n                \n            switch key.keyCode {\n            case .keyboardUpArrow: startMoveUp()\n                    \n            }\n        }\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Adding hardware keyboard support to your app",
+        "url": "https://developer.apple.com/documentation/UIKit/adding-hardware-keyboard-support-to-your-app"
+      },
+      {
+        "title": "UIResponderStandardEditActions",
+        "url": "https://developer.apple.com/documentation/UIKit/UIResponderStandardEditActions"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10109/2/B152D3FD-187C-4D34-80ED-152B996E5F6D/wwdc2020_10109_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10109/2/B152D3FD-187C-4D34-80ED-152B996E5F6D/wwdc2020_10109_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10076",
+      "year": "2022",
+      "title": "Bring your iOS app to the Mac",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10076"
+    },
+    {
+      "id": "10057",
+      "year": "2021",
+      "title": "Take your iPad apps to the next level",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10057"
+    },
+    {
+      "id": "10617",
+      "year": "2020",
+      "title": "Bring keyboard and mouse gaming to iPad",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10617"
+    },
+    {
+      "id": "10094",
+      "year": "2020",
+      "title": "Handle trackpad and mouse input",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10094"
+    },
+    {
+      "id": "10106",
+      "year": "2020",
+      "title": "Meet Scribble for iPad",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10106"
+    },
+    {
+      "id": "10143",
+      "year": "2020",
+      "title": "What's new in Mac Catalyst",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10143"
+    },
+    {
+      "id": "224",
+      "year": "2019",
+      "title": "Modernizing Your UI for iOS 13",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/224"
+    },
+    {
+      "id": "235",
+      "year": "2019",
+      "title": "Taking iPad Apps for Mac to the Next Level",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/235"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:56:16.808Z"
+}

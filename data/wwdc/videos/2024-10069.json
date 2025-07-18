@@ -1,0 +1,76 @@
+{
+  "id": "10069",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10069/",
+  "title": "Broadcast updates to your Live Activities",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, I am Parth from the Apple Push Notifications team. Today I want to show a new way to broadcast updates for a live activity to a large audience with a single push notification. Live activities are a great way to see up-to-date information at a glance about an ongoing activity. People use them in lots of different ways from tracking deliveries, keeping up with the score of an ongoing game, or monitoring information about an upcoming flight.\n\nBy sending remote updates using push notifications, you can always ensure that the Live Activity has the latest information.\n\nIn this video, we’ll cover how live activities use remote push notifications to stay up-to-date.\n\nWe’ll then explore how to get started with using the new ability to broadcast updates for Live Activities. And how your app can subscribe to broadcast updates. Finally, we will cover how to send broadcast push notifications to update Live Activities on multiple devices at once. Let’s start by reviewing how push notifications are used to update a live activity.\n\nWhen a live activity is started, the app requests a push token from ActivityKit. ActivityKit receives this push token from Apple Push Notifications Service or APNs for short, and provides it to the app. This push token is unique for each live activity requested by the app on device. The app then shares this unique push token with its app server.\n\nWhen there is an update, the server sends a push notification to APNs with the token and the payload. And APNs delivers the payload to the respective device. This works great for use cases like tracking deliveries as each update is unique for every person. However, there are scenarios, where a large number of people are actively viewing updates for the same event. For example, tens of thousands of fans keeping up with the score of their favorite game. Presently in this scenario, the app server needs to manage the push tokens for everyone with the live activity.\n\nWhen there is an update, the server sends individual push notifications for each push token with the same payload. Now there is a better way to build these experiences. In iOS and iPadOS 18, you can leverage “broadcast push notifications” from APNs to reach many people with live activities. With “Broadcast Push Notifications”, you don’t need to store push tokens that have an active live activity. When you want to send an update you only need to send a single push notification. APNs will reliably deliver it to every device, ensuring everyone has the up-to-date information.\n\nTo allow you to reach large audience with one push request, there is a new concept called a channel.\n\nThink of a TV or a radio channel. A broadcaster sends content over a channel, and anyone listening to the channel receives the same content at the same time. To use broadcast push notifications for events followed by a large audience, each event needs to be associated with a channel, identified by a unique channel ID. For example, when using broadcast push notifications to send score updates, different sports games will have different channels. When used for flight updates, each flight will have its own unique channel.\n\nEach Live Activity that needs updates about the event will subscribe for push notifications on the channel.\n\nWhen you want to send an update for the event, you only need to send a single push notification on the channel with the payload. And APNs will deliver it to everyone subscribed to the channel, providing an efficient way for you to send an update to everyone. Now, let's discuss how to use broadcast push notifications for sending updates for live activities. There’s a friendly soccer game coming up in the team, and I am building an app to allow everyone to follow the game.\n\nThe app lets my team members start a live activity and keep up with the ongoing game. As a large number of people would be following the score, this is a perfect case for using broadcast push notifications to send updates to everyone’s live activity. To get started with broadcast push notifications, I’ll need to create a channel for this game and obtain its unique channel ID. This will be used by the app to subscribe for updates, and used by the server to send updates. The first step is to enable the new broadcast capability for the app. This can be done by using the developer portal. In the capabilities list under Push Notifications, there is a new toggle to turn on the broadcast capability. With this done, I am ready to create my app’s first channel. To do this, I will use the Push Notifications Console. It lets you easily test integration with APNs.\n\nThe console has been expanded to support broadcast push notifications. To create a new channel, I will navigate to the Channels tab, and select ‘New Channel’. This lets me configure a new channel, with the environment, and the message storage policy.\n\nSince I am still testing this feature, I will create this channel in Development environment. For message storage policy, we have two options: No Storage and Most Recent Message. With Most Recent Message, the most recent deferred message on the channel is stored for a device. With No Storage, the updates are delivered only to the devices that are connected to APNs when the push notification is sent, but it allows a higher publishing budget. Soccer games in our team are quite eventful and I will be sending frequent updates. I will choose No Storage as the storage policy.\n\nOnce I click Create Channel, I have the new channel for our game.\n\nThis channel ID can be used by the app and server for updates, and is base64 encoded, randomly generated for each channel. This page can be revisited to see the configuration selected during the creation request.\n\nYou can create a channel for your app in two different ways: You can easily test and integrate with broadcast push notifications using the Push Notifications Console. When deploying in production, the app server should directly send channel creation requests to APNs. Please refer to the channel management documentation from APNs to learn more.\n\nNow my upcoming soccer game has a channel. This channel ID needs to be stored for our game and shared with the app so it can subscribe to broadcast updates when the live activity is started. In my app, I’ll request the channel ID for the game from my remote server before starting a live activity. In my app, I’ll create a function that starts a Live Activity. I’ll start by passing in the ID of the channel received from my remote server for the game. I’ll create the attributes for the activity, as well as the initial values.\n\nFinally, when requesting the activity, I’ll pass the parameter “channel” as the push type, including the channel ID. This indicates to ActivityKit to subscribe for push updates for this activity on the channel identified by this ID. Great! I’m almost ready to start using broadcast push notifications. I’ve created a channel for my game and when my team members start the live activity, the app retrieves the channel ID that we created and subscribes to updates on the channel. Now, let's explore how to send broadcast push notification to update every device at once. Our game has started and the home team has an early lead and I want to immediately share it.\n\nTo send my first broadcast push on the channel, I’ll get started by using the Push Notifications Console once again. In the Push Notifications Console, I will select the channels tab, and then click on the channel I created earlier for the game. Here I’ll click New Notification.\n\nSome of the information, including the channel ID, required to send this notification is helpfully filled in by the console. I will first name the notification that we are sending.\n\nI want this update to be delivered immediately, so I will choose High priority. I’ll then use the payload builder to add the content for our update.\n\nFirst, I need to add the score for the home team.\n\nThen, I'll provide the score for the away team.\n\nI will add a brief update text for our live activity.\n\nFinally, I will add the current timestamp for the update.\n\nThen, I’ll click Send.\n\nAnd with a single push notification, everyone receives the update regarding the new score! An important part to consider for broadcast push notifications is channel management. The lifecycle of a channel and the Live Activity are independent. Once the channel is created, even if there are no active subscribers, or everyone dismisses the live activity, the channel ID is still valid. It can be used to send broadcast push notifications, and there can be subsequent live activities that subscribe to the channel.\n\nHowever, the total number of active channels is limited. Your server should use the channel management API to remove old or unused channels when they are no longer needed. For my soccer game, once the game is completed, I will go ahead and delete the channel as it is no longer required. The Push Notifications Console is a great tool to test integration with broadcast notifications. When deploying in production, your server should send the requests, both for channel management and broadcast push notifications, directly to APNs. You should use the channel management API to create or delete channels for your app. And your app server should send broadcast push notification requests directly to the new APNs API.\n\nYou will use the same authentication method you use to connect to APNs, certificate or token based, to send requests for broadcast push notifications. Please refer to the documentation to learn more about these APIs.\n\nNow that you know how to use broadcast updates from APNs with Live activities, Turn on the capability for your app. Create your first channel using the Push Notifications Console.\n\nLeverage ActivityKit in your app to subscribe for Live Activity updates using the new channel push type.\n\nSend broadcast push notifications on the channel to update Live Activities. Finally, integrate the new APIs available from APNs into your server, so it can manage channels and send broadcast push notifications directly. We can't wait to see the new ways you will leverage broadcast push notifications for your apps. Thank you for watching!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "7:50",
+      "title": "Subscribe a Live Activity to broadcast push notification updates",
+      "language": "swift",
+      "code": "// Request a Live Activity and subscribe to broadcast push notifications\n\nimport ActivityKit\n\nfunc startLiveActivity(channelId: String) {\n    let gameAttributes = GameAttributes()\n    let initialState = GameAttributes.ContentState(\n            home: 0, away: 0, update: \"First Half\"\n    )\n    try Activity.request(\n            attributes: gameAttributes,\n            content: .init(state: initialState, staleDate: nil),\n            pushType: .channel(channelId)\n    )\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Forum: App & System Services",
+        "url": "https://developer.apple.com/forums/topics/app-and-system-services?cid=vf-a-0010"
+      },
+      {
+        "title": "Sending broadcast push notification requests to APNs",
+        "url": "https://developer.apple.com/documentation/UserNotifications/sending-broadcast-push-notification-requests-to-apns"
+      },
+      {
+        "title": "Sending channel management requests to APNs",
+        "url": "https://developer.apple.com/documentation/UserNotifications/sending-channel-management-requests-to-apns"
+      },
+      {
+        "title": "Setting up broadcast push notifications",
+        "url": "https://developer.apple.com/documentation/UserNotifications/setting-up-broadcast-push-notifications"
+      },
+      {
+        "title": "Starting and updating Live Activities with ActivityKit push notifications",
+        "url": "https://developer.apple.com/documentation/ActivityKit/starting-and-updating-live-activities-with-activitykit-push-notifications"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10069/4/4BD768EC-9A6C-492A-ADB0-C17EF9F7110C/downloads/wwdc2024-10069_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10069/4/4BD768EC-9A6C-492A-ADB0-C17EF9F7110C/downloads/wwdc2024-10069_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10185",
+      "year": "2023",
+      "title": "Update Live Activities with push notifications",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10185"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:12:08.354Z"
+}

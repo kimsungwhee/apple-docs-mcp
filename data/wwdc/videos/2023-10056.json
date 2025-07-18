@@ -1,0 +1,130 @@
+{
+  "id": "10056",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10056/",
+  "title": "Build better document-based apps",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Michael: Hello and welcome. I'm Michael Ochs and in this video I'm going to talk about how to build better document-centric apps. Document-centric apps are a big part of productivity tools, especially on the iPad. There are three types of document-centric apps. Those that allow browsing documents, such as the Files app; those that allow viewing content, for example Quick Look; and those that also allow editing or creating content, like Pages, Keynote, or Numbers. This video focuses on improvements to viewer and editor apps, but some of the content discussed also applies to browser apps. iPadOS 17 introduces a new view controller that automatically enables a large number of features in your app. It works nicely together with the desktop-class iPad APIs introduced in iPadOS 16, and the existing document-centric APIs. This new view controller is built in a modular way. You get great system defaults, but can customize any individual behavior.\n\nTo catch up on desktop-class iPad APIs, check out 'Meet desktop-class iPad' and 'Build a desktop-class iPad app' from WWDC22.\n\nFor SwiftUI development, DocumentGroup now has support for all these features with no additional code. To learn more about the SwiftUI side of this, check out 'Build document-based apps in SwiftUI' from WWDC20 and 'SwiftUI on iPad: Add toolbars, titles, and more' from WWDC22. In UIKit the functionality is opt-in. UIDocumentViewController is a new base class for content view controllers. It works together with UIDocument to automatically configure the navigation bar. This enables features like sharing, dragging the document, undo and redo support, and more. It also supports automatic renaming. In this video, you will learn how to use UIDocument and how to present documents with UIDocumentViewController. I'll then explain which features are built-in, and how to customize them further. At the end I explore some best practices to migrate your existing apps to take advantage of UIDocument. First up, creating a document.\n\nThe core of every document based app is UIDocument. It's an abstract base class that is meant to be subclassed for each file-type that your app supports. All UIDocuments are backed by a URL. Files on disk are the most common, but you can also save and load your documents using a database and a custom URL scheme. UIDocument's load and save operations are asynchronous, which allows for lengthy read and write operations, if necessary. For this reason, UIDocument is thread safe and takes care of coordinating access through locks and queues.\n\nWhen implementing a UIDocument subclass, there are two main responsibilities to take care of: loading and saving of the document, and providing access to the content of the document. Loading and saving is very similar across all documents. Accessing the content is more specific to the type of document and how it is used in your app. For example, a document model for a markdown editor might only have a single text property; or it could expose a more complex interface that allows updating individual parts of the document. Before we talk more about accessing the content, let's talk about loading and saving. For simple, file based documents, there are two convenience methods you can override. When a document gets opened, 'loadFromContents:ofType:' will be called with the contents of the file. When the document is being saved, 'contentsForType:' is called to get the current content of the document. The content of the document is a Data object for regular files, or a FileWrapper for everything else. To learn more about file types and how they work, check out the Tech Talk 'Uniform Type Identifiers -- a reintroduction'. For example here, the document deals with regular markdown files, so we expect a data object. Now, if you want total control, overriding 'saveToURL:forSaveOperation:' and 'readFromURL:' instead gives you full access to the URL and leaves all reading and writing to you. This is great if you want to store your documents in a database or have special requirements for reading and writing your document. Note that while the save operation is asynchronous, reading is expected to complete by the time the method returns. And this is all there is to loading and saving a document. Now let's make sure we have a way to access the content of the document. An easy way to provide access to the document's content is by adding properties for that content. In this example, I add a single text property that contains the full markdown string. This property will be set when loading the document initially, as discussed on the previous slides. The app can then update this text whenever the user edits the document. For UIDocument to know when it requires saving, call 'updateChangeCount:' every time a property updates. Calling 'updateChangeCount:' allows UIDocument to mark the document as needs-saving and automatically save at appropriate times.\n\nNext, presenting a document with the new UIDocumentViewController.\n\nSimilar to UIDocument, UIDocumentViewController also is an abstract base class that is meant to be subclassed. It manages opening, saving, and closing the document and populates its navigation item with information from its associated document. This includes the title, the navigation item's title menu, its UIDocumentProperties object, and the rename delegate. UIDocumentViewController also provides key-commands for common actions like undo and redo. Let's check out how to implement a UIDocumentViewController subclass.\n\nThere are two methods that are designed to be overridden by your subclass. When the document associated with the view controller gets opened, or when an already opened document gets assigned to the view controller, 'documentDidOpen' is called. Populate the view controller's views to display the content of the document in this method. Note that there's no timing guarantee between when 'documentDidOpen' is called and when the view controller's view gets loaded. A good approach to write robust code is to move the view configuration in its own method and call it from both, 'documentDidOpen' as well as 'viewDidLoad'. Check if the view is loaded and the document is opened, before configuring your views.\n\nThe second method to override is 'navigationItemDidUpdate'. Whenever UIDocumentViewController makes changes to the navigation item, it will call this method. Add your navigation item customization in there. 'UIDocumentViewController' will make a best effort to keep changes to a minimum to persist your changes as best as possible. UIDocumentViewController also offers a 'undoRedoItemGroup'. Put this group in the navigation bar if you want undo and redo buttons to appear, and make sure that your document has an undo manager assigned to it. UIDocumentViewController will change the 'hidden' property of this group depending on the availability of an undo manager and enable or disable the buttons inside the group as necessary.\n\nUIDocumentViewController automatically opens and closes the document. However if you need access to the document from outside the view controller, call 'openDocumentWithCompletionHandler'. UIDocumentViewController will make all the necessary callbacks, such as calling 'documentDidOpen' and call your completion handler when ready.\n\nLast but not least, UIDocumentViewController provides a document property. This property always refers to the document associated with the view controller. While you can provide a document during initialization, it is entirely optional. When there is no document associated with the view controller, it will automatically show an empty state. To learn more about configuring empty states, check out \"What's new in UIKit\". Furthermore, UIDocumentViewController can be used as your app’s root view controller. If there is no browser view controller in the hierarchy, UIDocumentViewController puts a document button in the navigation bar that opens a document picker. This requires declaring the key 'UIDocumentClass' for the relevant file type in your app's info.plist and setting it to the UIDocument subclass matching that file type.\n\nIn iPadOS 17, UIDocument conforms to 'UINavigationItemRenameDelegate' and will handle the underlying file changes by itself when the user invokes renaming from the title menu. If you are using UIDocumentViewController, it will automatically configure renaming for you, otherwise you can set the document as the navigation item's rename delegate manually.\n\nThese are all the pieces you need to create a great document-centric app in iPadOS 17. Next, how to migrate your existing apps.\n\nMigrating your app to make use of the new UIDocumentViewController is easy and only requires three steps. First, update the base class of your content view controller. Second, move existing code to the new callbacks. And third, delete code that is no longer necessary. Let's check out how to convert the markdown editor example we use in the desktop-class iPad app videos. If you are not familiar with it, don't worry. I'll walk you through the relevant parts of the existing code first.\n\nSo here we have the definition of the view controller at the top, the document property it defines, and an init method that sets the initial document and then adds a callback to our document.\n\nFirst we change the base class to UIDocumentViewController.\n\nNow that this class inherits from UIDocumentViewController, we will get a compiler error because the property 'document' already exists in the superclass with a different type. We change the name of that property to a more specific one, like 'markdownDocument'. Then we make it a computed property that casts the generic document property to the specific document class used in this view controller. The last bit in this code to take care of is the initializer. The only code in there that we still need is assigning a callback to our document. Since the document can change during the lifetime of this view controller, we move this to execute every time the document changes.\n\nAn easy way to do this is to override the document property and add a didSet callback. Great, now that the base class is up to date, we need to take care of the new callbacks. In 'viewDidLoad' we add buttons to our navigation bar and configure it to allow toolbar customization. For UIDocumentViewController we move this to the new callback 'navigationItemDidUpdate'.\n\nNext, our class already has a method 'didOpenDocument'. This is almost what UIDocumentViewController has as well. We just need to rename the method, and adjust for the fact that the document is now optional.\n\nAll right, next the part that we all enjoy most: deleting code. Editor view controller conforms to 'UINavigationItemRenameDelegate', but we no longer need that. UIDocument does all renaming for us automatically. So we remove the delegate definition, the delegate method with all its code, and also the 'renameDelegate' assignment.\n\nNext we can remove a few more navigationItem customizations. Both 'style' and 'backAction' are configured by the document view controller automatically, so we can get rid of this completely.\n\nThere is also a 'updateDocumentProperties' method that is used to create a UIDocumentProperties object. This method is called from various places. However, we don't need it anymore. UIDocumentViewController is doing all of this for us, so we can remove it and all its call sites. And that's all there is to do. The editor view controller is now only taking care of the features that are unique to the app. It no longer has to manage basic tasks of document management or default configuration of the navigation bar. Instead you can focus on the pieces that are unique, key elements of your app. This is all you need to know to take your document-centric apps to the next level and provide your users with a great experience.\n\nConvert your data models to use UIDocument. Then convert your content view controller to use the new UIDocumentViewController base class. After that, go through your view controller and remove all the code that's no longer needed. Thanks for watching. ♪ ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:54",
+      "title": "Loading a document",
+      "language": "swift",
+      "code": "override func load(fromContents contents: Any, ofType typeName: String?) throws {\n    // Load your document from contents\n    guard let data = contents as? Data,\n          let text = String(data: data, encoding: .utf8) else {\n        throw DocumentError.readError\n    }\n    self.text = text\n}"
+    },
+    {
+      "timestamp": "4:08",
+      "title": "Saving a document",
+      "language": "swift",
+      "code": "override func contents(forType typeName: String) throws -> Any {\n    // Encode your document with an instance of NSData or NSFileWrapper\n    guard let data = self.text?.data(using: .utf8) else {\n        throw DocumentError.writeError\n    }\n    return data\n}"
+    },
+    {
+      "timestamp": "4:34",
+      "title": "Manually saving and loading a document",
+      "language": "swift",
+      "code": "override func save(to url: URL,\n                   for saveOperation: UIDocument.SaveOperation,\n                   completionHandler: ((Bool) -> Void)? = nil) {\n    self.performAsynchronousFileAccess {\n        // Set up file coordination and write file to URL\n   }\n}\n\noverride func read(from url: URL) throws {\n    // Set up file coordination and read file from URL\n}"
+    },
+    {
+      "timestamp": "5:08",
+      "title": "Defining document that require saving",
+      "language": "swift",
+      "code": "class Document: UIDocument {\n    var text: String? {\n        didSet {\n            if oldValue != nil && oldValue != text {\n                self.updateChangeCount(.done)\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "6:30",
+      "title": "Updating the view hierarchy for a document",
+      "language": "swift",
+      "code": "override func documentDidOpen() {\n    configureViewForCurrentDocument()\n}\n\noverride func viewDidLoad() {\n    super.viewDidLoad()\n    configureViewForCurrentDocument()\n}\n\nfunc configureViewForCurrentDocument() {\n    guard let document = markdownDocument,\n          !document.documentState.contains(.closed)\n            && isViewLoaded else { return }\n    // Configure views for document\n}"
+    },
+    {
+      "timestamp": "7:17",
+      "title": "Updating navigation items for a document",
+      "language": "swift",
+      "code": "override func navigationItemDidUpdate() {\n    // Customize navigation item\n}"
+    },
+    {
+      "timestamp": "8:01",
+      "title": "Manually opening a document",
+      "language": "swift",
+      "code": "documentController.openDocument { success in\n    if success {\n        self.present(documentController, animated: true)\n    }\n}"
+    },
+    {
+      "timestamp": "9:20",
+      "title": "Renaming a UIDocument without UIDocumentViewController",
+      "language": "swift",
+      "code": "navigationItem.renameDelegate = document"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "UIDocument",
+        "url": "https://developer.apple.com/documentation/UIKit/UIDocument"
+      },
+      {
+        "title": "UIDocumentViewController",
+        "url": "https://developer.apple.com/documentation/UIKit/UIDocumentViewController"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10056/4/288B8B11-EFDD-4A1E-8F4E-B5C863A03ADC/downloads/wwdc2023-10056_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10056/4/288B8B11-EFDD-4A1E-8F4E-B5C863A03ADC/downloads/wwdc2023-10056_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10055",
+      "year": "2023",
+      "title": "What’s new in UIKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10055"
+    },
+    {
+      "id": "10070",
+      "year": "2022",
+      "title": "Build a desktop-class iPad app",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10070"
+    },
+    {
+      "id": "10069",
+      "year": "2022",
+      "title": "Meet desktop-class iPad",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10069"
+    },
+    {
+      "id": "110343",
+      "year": "2022",
+      "title": "SwiftUI on iPad: Add toolbars, titles, and more",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110343"
+    },
+    {
+      "id": "10039",
+      "year": "2020",
+      "title": "Build document-based apps in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10039"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:12:56.146Z"
+}

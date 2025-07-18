@@ -1,0 +1,171 @@
+{
+  "id": "110361",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/110361/",
+  "title": "Author fast and reliable tests for Xcode Cloud",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools",
+    "Essentials"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Suzy: Hello and welcome to \"Author fast and reliable tests for Xcode Cloud.\" I'm Suzy, and I work on XCTest. In this session, I'm going to share the most effective ways to start testing for Xcode Cloud. Our teams designed Xcode Cloud to be a powerful tool for all developers. In fact, we use it to test Xcode itself, and I love it. One of my favorite features of Xcode Cloud is its ability to substantially broaden a given test suite.\n\nBy configuring most tests to run in the cloud, you now have a practical way to run tests on multiple destinations, including those running differing operating system versions to leverage diverse platforms such as an iPhone, iPad, Apple Watch, Apple TV, and Mac, and to run various test plan configurations, allowing for runtime analysis tools such as address and thread sanitizers. Once we have passed such a thorough test suite, we can be confident the code is ready to ship. Offloading tests to Xcode Cloud allows for running a broader set of tests without impacting the developers’ desktop cycle of code, compile, and test. With this now expanded test suite, there is a potential for an increased number of unreliable tests. This situation can become unmanageable. As such, ensuring reliability is essential. In addition to reliability, such a large number of tests also needs to run efficiently so as to limit their impact on the continuous integration process. Let’s address reliability first. I will demonstrate how to author more reliable tests for Xcode Cloud using Food Truck. Food Truck is an app that converts taps and swipes into delicious donuts. By running the test suite in Xcode Cloud, we are able to validate that all Apple platforms support ordering my favorite donut, chocolate with sprinkles. Each improvement to the Xcode Cloud Workflow will be identified and demonstrated. For more information about getting started with Xcode Cloud Workflows, watch \"Meet Xcode Cloud.” The first step to author more reliable tests is to ensure each test’s setup and tear down is thorough. Tests run in Xcode Cloud make use of a fresh simulator which may not meet developers’ original assumptions. Let’s identify a number of device configuration assumptions sometimes seen in test code.\n\nCertain tests may rely on specific dates and times. For example, a server may be running in a different time zone. Tests should avoid being time zone specific. Locale-based values, such as number formatting and language directionality, can lead to unexpected results. Avoid this problem by explicitly setting your simulator’s locale. Another problematic assumption is reliance on certain device permissions such as internet access. It’s best to mock device permissions in a unit test and use an alert handler in a UI Test. Finally, some tests depend on preloaded data. For example, a test may expect to have an empty documents directory. While explicitly configuring the simulator is sometimes the easiest choice, enhancing the test’s setup method is generally more robust. For example, the Food Truck depends on a menu file. As part of instantiating the truck object in the setup function, we generate a mock data file containing the donut menu items. Note that rather than relying on teardown methods to prepare for subsequent tests, we recommend establishing all state preparation in the setup method. In many cases, read-only files can be checked into the repository and later accessed by tests. However, when these files need to be constructed, Xcode Cloud supports running a custom build script where you can generate the file once for multiple tests to access. For more details on how to configure your script, watch \"Customize your advanced Xcode Cloud workflow.\" That wraps up proper simulator setup. Now, let’s cover how to handle tests that fail to meet preconditions. XCTSkip is an error that instructs the XCTest Runner to cease executing the current test and mark it as skipped. This may be used to bypass a yet-to-be supported OS version or device type. You could also leverage XCTSkip by setting an environment variable to skip tests specific to staging or production environments. Let’s go over how we can control test flow using an environment variable.\n\nEnvironment variables can provide parameters to both the XCTest test runner app on your device and the test host running xcodebuild. In Xcode Cloud, environment variables prefixed with TEST_RUNNER_ get passed into the XCTest test runner. This prefix will be stripped prior to the variable being made available to your code. So, for example, a variable in your test code named BASE_URL would be passed in as the environment variable named TEST_RUNNER_BASE_URL. Test plans require the same format as test code. Namely, we do not add the TEST_RUNNER_ prefix. Environment variables may be referenced anywhere in test code. For example, they could be used with XCTSkip to skip the test for actually ordering donuts when we are in a production environment. Unless you are hungry, of course. It’s important to keep in mind that redefining an environment variable in multiple places, such as both a test plan and the Xcode Cloud User Interface, can lead to unexpected results. In this particular case, Xcode Cloud’s Environment variables will take precedence over what’s specified in your project’s test plans. Now that we are referencing our environment variable within our test code, we can set its value in the Xcode Cloud User Interface.\n\nTo do this, navigate to your Cloud Reports, and control-click on Food Truck.\n\nTo edit our environment variables within our Workflows, we will select \"Manage Workflows\" in the context menu. We are editing the integration workflow specifically, so we will double click on it. Now, in the sidebar, we can select \"Environment,\" and in the middle of the sheet, under “Environment Variables,\" we can add the variable’s name and value.\n\nAs an alternative to setting the environment variable in the Xcode Cloud Workflow, we could instead set it within the test plan.\n\nIn this example, we don’t yet have a test plan. To enable test plans, open the scheme editor, select \"Test\" in the sidebar, and then click on “Convert to Use Test Plans.\" Okay, now we have a test plan I called \"Food Truck.\" To add the environment variable, we need to click on the test plan to open its editor.\n\nNear the top, we can select between \"Tests\" and \"Configurations.\" Let’s select \"Configurations.\" Now, within the \"Arguments\" section, we will add the variable by clicking on \"Environment Variables.\" A popup will appear where we can enter the variable’s name and value.\n\nNow our test will be skipped when in the production environment. To learn more about skipping tests, watch \"XCTSkip your tests.\" Now that we covered utilizing environment variables to control XCTSkip, let’s talk about expectation timeouts. It is possible for a test to fail due to an unexpected timeout. For example, this could be the result of a slow server or an overly anxious user interface test. One approach to resolve either issue would be to increase the XCTestExpectation timeout so the interaction would have enough time to finish. In this example, we increase the OrderDonut timeout from 5 to 10 seconds to allow the server more time to respond. It is usually preferable to instead replace both the app and test code timeout handling with async/await. This approach allows the test to pause until the await call finishes without any timeout.\n\nWe have resolved time dependent tests, so let’s handle any test failures within the test suite. For example, we have a test that relies on a service within the staging environment that is down for maintenance. We can use XCTExpectFailure instead of disabling or skipping this test. With XCTExpectFailure, your test executes normally and the results are transformed as follows: a failure in a test will now be reported as an expected failure, while that failed test within its suite will be reported as a pass. This approach eliminates the noise generated by expected failures.\n\nFor example, testOrderDonut is failing. I know that the service that provides ordering donuts is under maintenance right now, so I added a call here to XCTExpectFailure. To learn more about XCTExpectFailure watch \"Embrace Expected Failures in XCTest.\" Now that we've declared expected failures, let’s leverage test repetitions to substantiate code and diagnose unreliable code. Test repetitions is a tool that runs the same test multiple times waiting for the following: the first failure, the first success, or a statistical result. For example, at our desk, we run our new code and test cases multiple times with repetitions to confirm initial app and test code reliability before checking in the code. We were able to detect that testOrderDonut had only an 80% success rate. Uh-oh! Knowing the failure exists, we now use the repeat-until-failure mode to locally diagnose the bug. This is another way of utilizing test repetitions. For tests that rely on an unreliable external service, you may want to leverage the retry-on-failure repetition policy to confirm a test can succeed. While retrying tests is a powerful approach, it’s preferable to instead mock external services when possible. Advantages of a mocked service include deterministic reliability and speed. To learn how to mock your dependencies, watch “Testing Tips & Tricks.” Let’s explore how test repetitions can be enabled.\n\nTo enable test repetitions in your test plan, go back to the test plan editor and select \"Configurations.\" Then, under the \"Test Execution\" section, there is a popup to select your test repetition mode.\n\nIn this case, we will select \"Retry on Failure,\" which is used primarily to work around unreliable external services. Now we have our test repetition mode enabled. For more information on leveraging test repetitions, watch \"Diagnose unreliable code with test repetition.\" So we have gone over a variety of tools that can be used to improve test reliability. For more information about writing quality tests, watch \"Write tests to fail.\" Now that our tests are reliable, let’s make them run fast! A number of configuration options exist for achieving faster results. Let’s do what we can to reduce the time it takes to run the test suite.\n\nOne technique we use to improve performance is to split our tests into multiple test plans. Sometimes, two is enough. You can identify a reduced set of tests to verify as part of each open or update to a pull request.\n\nFor example, we could run the unit tests along with just a key subset of user interface tests for a single platform.\n\nThe full set of tests on all supported platforms can still be run, but now in the background, and not blocking pull requests.\n\nThis approach allows us to add tests and new platforms while keeping our continuous integration process timely.\n\nLet’s set up a workflow to run a select set of tests. In this example, we have already created a new test plan called “Pull Requests,\" and have it open in the test plan editor. Near the top we can selectw between \"Tests\" and \"Configurations.\" Let’s select \"Tests.\" Here we have chosen a subset of tests to be verified for a pull request. Now to setup a Workflow to run our “Pull Requests” test plan, we will go back to Xcode Cloud Manage Workflows just like we did when we added an environment variable for skipping tests. To create a new workflow, we will click the \"Add\" button at the bottom left of the “Manage Workflow” sheet. For simplicity, let’s also name our workflow “Pull Requests” and choose a start condition. We want this workflow to prevent any check-ins with failing tests. In the sidebar, to the right of \"Start Conditions,\" we will click the \"Add\" button.\n\nA menu will appear showing the start condition options. In our case, we will select “Pull Request Changes.\" Now, we now have a pull request start condition. Running tests require that the Food Truck app first be built. To do this, we need to add a build action. Again in the sidebar, below the “Start Conditions,” let’s add an action. We will click the \"Add\" button next to “Actions,\" and then select “Build” from the context menu.\n\nNow that we have an action that builds our app, we will add another to run our tests. Again we will click add action, but this time we will select \"Test.\" Great, we have a test action. Let’s select the test plan to run. In the middle of the sheet, there is a drop down for test. Here we can select our “Pull Requests” test plan.\n\nAwesome! Now our Workflow is configured to run our test plan on pull request. To create a second workflow that will run your complete test suite on a schedule, you can follow a similar set of steps. However, this time, select the start condition to be “On a Schedule for a Branch” and then set the workflow to run your full suite test plan.\n\nWe have both Workflows configured in Xcode Cloud and running their associated test plans. To learn more about test plans, check out \"Testing in Xcode.\" Now we have created pull request and scheduled workflow test sets. Another improvement we can make for speed is to run tests concurrently. By default, Xcode Cloud tests your platforms in parallel. In addition, you can enable Xcode to run tests in parallel on a target and test object class level.\n\nTo enable parallel test execution in Xcode, we will again go to our test plan editor and select \"Tests.\" Then, to the right of our “Food Truck Tests\" test bundle, we click the “Options” button.\n\nOne of the options allows us to “Execute in parallel” when possible. If the server has enough cores available, multiple targets and test object classes can be executed concurrently. So let’s enable this option to improve our test suite turnaround time.\n\nNow our tests are configured to run in parallel. Note that tests must be designed to run independently to take advantage of parallel execution. Proper setup and teardown are essential to reliable test case behavior.\n\nWith our tests running in parallel, it’s time to turn our attention to runaway tests. Runaway tests are those tests that don’t end in a timely manner. Some examples include an infinite loop or waiting indefinitely for a failed server.\n\nWe can halt these tests by setting an execution time allowance in our test plan. The execution time allowance specifies the number of seconds for a test to run before it fails with a timeout error. This prevents a test suite from getting stuck on an individual test.\n\nIn this case, the fifth test got stuck for some reason. By setting the execution time allowance, this runaway test was eventually halted and marked as a failure. The XCTest Test Runner then continued running the next test in the suite. Let’s configure an execution time allowance for our test plan.\n\nTo set an execution time allowance, we will go to our test plan editor and select “Configurations.\" Under the “Test Execution” category, we can enable “Test Timeouts” and specify the number of seconds to wait. Note that the default is 600 seconds.\n\nHaving configured the maximum execution time allowance, a single runaway test will no longer disrupt our testing workflow. For example, an overnight test suite can now complete on time and provide a full set of useful results. Yay! We finally stopped those runaway tests, so we are able to move on to the next improvement. As you may recall, we were able to leverage test repetitions to increase reliability of tests that rely on external services. We configured our test plan to retry on failure and selected a sufficient repetition value. However, these repetitions can add to the time it takes to run the test suite.\n\nUnnecessary repetitions are wasteful and you may want to optimize test repetition value to a lower number. Furthermore, you may consider removing the problematic test altogether from the pull request workflow. Let’s go over how we might do this.\n\nLet’s return to the test repetitions configuration in the test plan editor.\n\nEarlier we set the test repetition mode to “Retry on Failure.\" Now we can adjust the \"Maximum Test Repetitions” value. For example, we may have chosen to allow up to 10 attempts for a test that relies on an external server that fails 5% of the time. Most of the time, we will succeed on the first attempt. However, if that same test has an unrelated bug, it will fail every time and use all 10 attempts. Maybe 3 attempts would be sufficient and a better choice.\n\nWhile we want to reduce retries to improve performance, note that earlier we recommended increasing retries to improve reliability in some cases. As such, this minimally chosen value must continue be sufficient to run those tests reliably. That wraps up configuring for faster results. To go into more detail on getting faster test results, check out \"Get your test results faster.\" To recap, we covered the most effective ways to begin testing for Xcode Cloud. We focused on configuring tests to be both reliable and fast so that you can avoid irrelevant failures and verify your code changes quickly. Thank you, and I hope you enjoy the rest of your WWDC!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:37",
+      "title": "setUp()",
+      "language": "swift",
+      "code": "override func setUp() async throws {\n\n}"
+    },
+    {
+      "timestamp": "3:46",
+      "title": "setUp() example",
+      "language": "swift",
+      "code": "var truck: Truck!\n\noverride func setUp() async throws {\n    let directoryURL = FileManager.default.temporaryDirectory\n    let fileName = UUID().uuidString\n    let fileURL = directoryURL.appendingPathComponent(fileName, isDirectory: false)\n    let data = await mockDonutMenuData()\n    try data.write(to: fileURL)\n    truck = Truck(menuURL: fileURL)\n}"
+    },
+    {
+      "timestamp": "5:55",
+      "title": "Environment variable example",
+      "language": "swift",
+      "code": "var truck: Truck!\n\nfunc testOrderDonut() throws {\n    let host = ProcessInfo.processInfo.environment[\"BASE_URL\"]\n\n    let expectation = XCTestExpectation(description: \"Order donut\")\n    truck.order(with: .sprinkles, host: host) { error, donut in\n        XCTAssertTrue(donut.hasSprinkles)\n        expectation.fulfill()\n    }       \n    wait(for: [expectation], timeout: 5)\n}"
+    },
+    {
+      "timestamp": "6:00",
+      "title": "XCTSkip example",
+      "language": "swift",
+      "code": "var truck: Truck!\n\nfunc testOrderDonut() throws {\n    let host = ProcessInfo.processInfo.environment[\"BASE_URL\"]\n    try XCTSkipIf(host == \"prod.example.com\")\n\n    let expectation = XCTestExpectation(description: \"Order donut\")\n    truck.order(with: .sprinkles, host: host) { error, donut in\n        XCTAssertTrue(donut.hasSprinkles)\n        expectation.fulfill()\n    }       \n    wait(for: [expectation], timeout: 5)\n}"
+    },
+    {
+      "timestamp": "8:59",
+      "title": "Increase XCTestExpectation example",
+      "language": "swift",
+      "code": "var truck: Truck!\n\nfunc testOrderDonut() throws {\n    let host = ProcessInfo.processInfo.environment[\"BASE_URL\"]\n    try XCTSkipIf(host == \"prod.example.com\")\n\n    let expectation = XCTestExpectation(description: \"Order donut\")\n    truck.order(with: .sprinkles, host: host) { error, donut in\n        XCTAssertTrue(donut.hasSprinkles)\n        expectation.fulfill()\n    }       \n    wait(for: [expectation], timeout: 10)\n}"
+    },
+    {
+      "timestamp": "9:16",
+      "title": "Async/await example",
+      "language": "swift",
+      "code": "var truck: Truck!\n\nfunc testOrderDonut() async throws {\n    let host = ProcessInfo.processInfo.environment[\"BASE_URL\"]\n    try XCTSkipIf(host == \"prod.example.com\")\n\n    let donut = try await truck.orderDonut(with: .sprinkles, host: host)\n    XCTAssertTrue(donut.hasSprinkles)\n}"
+    },
+    {
+      "timestamp": "10:06",
+      "title": "XCTExpectFailure example",
+      "language": "swift",
+      "code": "var truck: Truck!\n\nfunc testOrderDonut() async throws {\n    let host = ProcessInfo.processInfo.environment[\"BASE_URL\"]\n    try XCTSkipIf(host == \"prod.example.com\")\n\n    XCTExpectFailure(\"<https://dev.myco.com/bug/98> Donut ordering service is down\")\n    let donut = try await truck.orderDonut(with: .sprinkles, host: host)\n    XCTAssertTrue(donut.hasSprinkles)\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/110361/3/7FB8FB7D-976B-432E-A47D-05ADDFE1BD45/downloads/wwdc2022-110361_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/110361/3/7FB8FB7D-976B-432E-A47D-05ADDFE1BD45/downloads/wwdc2022-110361_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10278",
+      "year": "2023",
+      "title": "Create practical workflows in Xcode Cloud",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10278"
+    },
+    {
+      "id": "110375",
+      "year": "2022",
+      "title": "Deep dive into Xcode Cloud for teams",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110375"
+    },
+    {
+      "id": "110374",
+      "year": "2022",
+      "title": "Get the most out of Xcode Cloud",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110374"
+    },
+    {
+      "id": "110427",
+      "year": "2022",
+      "title": "What's new in Xcode",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110427"
+    },
+    {
+      "id": "110932",
+      "year": "2022",
+      "title": "WWDC22 Day 4 recap",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110932"
+    },
+    {
+      "id": "10269",
+      "year": "2021",
+      "title": "Customize your advanced Xcode Cloud workflows",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10269"
+    },
+    {
+      "id": "10296",
+      "year": "2021",
+      "title": "Diagnose unreliable code with test repetitions",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10296"
+    },
+    {
+      "id": "10207",
+      "year": "2021",
+      "title": "Embrace Expected Failures in XCTest",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10207"
+    },
+    {
+      "id": "10267",
+      "year": "2021",
+      "title": "Meet Xcode Cloud",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10267"
+    },
+    {
+      "id": "10221",
+      "year": "2020",
+      "title": "Get your test results faster",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10221"
+    },
+    {
+      "id": "10091",
+      "year": "2020",
+      "title": "Write tests to fail",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10091"
+    },
+    {
+      "id": "10164",
+      "year": "2020",
+      "title": "XCTSkip your tests",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10164"
+    },
+    {
+      "id": "413",
+      "year": "2019",
+      "title": "Testing in Xcode",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/413"
+    },
+    {
+      "id": "417",
+      "year": "2018",
+      "title": "Testing Tips & Tricks",
+      "url": "https://developer.apple.com/videos/play/wwdc2018/417"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:42:05.436Z"
+}

@@ -1,0 +1,94 @@
+{
+  "id": "10118",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10118/",
+  "title": "Automate CloudKit tests with cktool and declarative schema",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, I'm Rusty. I'm an engineer on the CloudKit team, and I'm excited to introduce a new CloudKit developer tool, as well as a brand-new CloudKit schema language. In this session, I'll talk about why integration testing can be challenging for an application that integrates with the cloud. Then, I'll demonstrate cktool, our new command line developer tool for CloudKit. You'll find out how cktool can be used inside of Xcode to automate test setup. You'll learn about CloudKit's new declarative schema language. And then, I'll wrap things up with next steps. Let's get started.\n\nWhen you write applications that depend on cloud services, there are explicit contracts between your application and the services you depend on. Integration tests can help you validate how you interact with these services, but properly automating setup of these integration tests can be challenging for a few reasons. First, it's not always easy to keep the server up to date with the data model your app is using. As you iterate on your schema during development of your app, it's important that the schema on the server exactly matches the schema your app is using when your tests run. Also, it can be difficult to ensure that your tests are running against a consistent set of sample data in the cloud each time the tests run, particularly if your tests modify that data as part of the test. The CloudKit team has just made all of this easier for you. With the new CloudKit schema language we've just introduced, you can declare your CloudKit schema in a file right alongside your application code, and then check it into version control so that you can track changes along with all other changes in your project, and always ensure that your app's data model is consistent with your CloudKit schema. And with the new cktool command line developer tool, you can easily automate the process of sending this schema declaration to the CloudKit server, while also creating a consistent set of sample data on the server right before you run your tests. Let me jump right in and start using cktool. First, cktool is installed with Xcode 13. Once you install Xcode 13, you can start using cktool from the Terminal right away. cktool is invoked with xcrun. It offers several commands. For example, it can create records on the CloudKit server, query records that already exist on the server, import and export the new schema language files, manage authorization for the tool itself, and more. Before using cktool, there are a few things to understand about authorization with CloudKit. Since cktool communicates directly with the CloudKit server, it's necessary to first get the tool authorized. You can choose to only authorize cktool to perform container-management functions like schema import, or you can additionally authorize the tool to access data in your container. CloudKit has introduced two new concepts for this purpose. The first is called a \"management token,\" which is used by cktool to manage your CloudKit container. The management token is tied to a single developer account and can be used across developer teams if that developer is a member of multiple teams. A management token is intended for configuration use cases only, like schema import and export. This token doesn't provide any access to data in the container. So, we've also introduced a user token, which can be used to authorize the tool to write data into the user's private database of an app's container or to the public database of an app's container. I can get a management token and also a user token from the CloudKit Console. For more information on the CloudKit Console, you can check out \"Meet CloudKit Console,\" another WWDC21 session. Now that I've obtained both a management token for my developer account and also a user token, I can add them to the tool, which will store them securely in my macOS Keychain, and I'm ready to proceed. I can now start doing some interesting things. For example, I'll ask for a list of my Apple developer team memberships. And I get back a list of teams that I'm a member of. Great. Now let's say that I have a database schema defined in my container, and I want to commit it to my source code repository prior to making changes. With cktool, that's easy to do. Using this export-schema command, I can pull down my development schema to a file called “schema.ckdb.” This file is formatted in the new CloudKit schema language I mentioned earlier, and we'll explore this file in detail in just a minute. With cktool, I can add data to my container, too. Here, if I have sample values expressed as JSON, like for this sample Book record here, I can use that JSON as input to the tool, just like this, to create a record in my public database. Okay, so now that you have a basic sense of how the tool operates, I'll make a simple three-step script to delete all the data from the development environment of my app's CloudKit container, then send my schema declaration to the server, and finally, load some test data. That way, I can run this script as part of a test pre-action in Xcode and ensure that my CloudKit container is always in a consistent state, with the exact schema my application is using before each time that I run my tests. So, here in Xcode, I'll edit the scheme for my project's application and choose Pre-actions in the Test phase. Now, I can add a New Run Script Action. I'll provide build settings for my app target, so that the script has a path to the schema file in my project. Right here, I'll paste a cktool command to reset my container, and then, one to import schema from the file in my application project, and finally, one to create an example record in my container's public database.\n\nNote that since these commands are synchronous, they will execute one after another, and any failure will stop execution, just in case something doesn't go as expected. In that case, I can take care to resolve any pre-test issues before actually running my tests. That's it. Now, when I run my Xcode tests, cktool will prepare my CloudKit container right before they run. Perfect.\n\nSo, what if I need to change the data model for my application? Let's talk more about CloudKit schema language. In fact, let's examine that schema.ckdb file that I downloaded earlier. Inside the file is the new CloudKit schema language, which is a powerful way to describe the record types in my schema. It's easy to read and write, and to include right here in my project with my application code. Here inside the schema section, there are record types. These exactly mirror the record types as shown for my container in the CloudKit Console. Each record type has multiple fields, and each field has a name and data type. The triple-underscore field names are system fields, which are created by CloudKit for every record type. Below these system fields are my custom fields, which represent my custom application data for this record type in CloudKit. I can create an index for a field, like a Queryable, Searchable, or Sortable index, just like I can do in the CloudKit Console.\n\nI do this in CloudKit schema language by declaring the index right after the data type for the field, like for this \"title\" custom field in my Book record type here. Below the field definitions are the security role settings for the record type. This is where permissions can be granted to each named security role, like for each of these three built-in system security roles here. “_creator\" includes only the user that created the record, “_world\" includes all users, and “_icloud\" includes any authenticated user. Note that in CloudKit schema language, you can include both single and multi-line comments to make the schema files even more readable for you and your team. Comments will be ignored by the CloudKit server when the file is processed, so feel free to put comments wherever you'd like. Now that CloudKit schema language provides developers a fast, flexible way to declare and modify schemas, it's important to remember a few core concepts around CloudKit schema evolution. First, you have full control over record types in the development environment of your container. You can add and remove record types in development, and also add and remove custom fields inside those record types, with no limitations. Of course, new record types can always be promoted to production, and new fields can be added to existing record types in production, as well. But once record types have been promoted to the production environment of your container, they can't be deleted or renamed, and custom fields inside record types that have been promoted to production cannot be deleted or renamed, either. The reason for this is to ensure that the CloudKit server always understands record types and fields, which older versions of your app might still be using. This means that while you can make destructive changes to your schema declaration in the development environment of your container, you will not be able to promote these destructive changes to production. Note that it is possible to add and remove indexes in production, and security role settings can be modified, too. All of these schema promotion concepts are not new to CloudKit, but the flexibility you get from this new file-based schema declaration means that it's important to review and understand them.\n\nNow that you've gotten a sense of what cktool can do and how CloudKit schema language works, I encourage you to try out both in your own projects. Authorize cktool with a management token and user token from the CloudKit Console, and explore its commands. Export your existing CloudKit schema into a CloudKit schema language file, and add it to your project, making sure to check it into version control with the rest of your project.\n\nCompose some setup steps for your integration tests using cktool, and add the script as a test pre-action to your Xcode scheme.\n\nThe ability to administer certain elements of your CloudKit container from the command line can be really powerful. Maintaining a declaration of your CloudKit schema in a file, right alongside all of your other application code, can help you keep it consistent with your data model throughout your development life cycle, and tying all of this together to automate cloud setup of your integration tests is even better. We're excited to find out what you do with these new tools. Thanks for taking the time to learn more about CloudKit, and for your interest in WWDC21. [music]",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:27",
+      "title": "cktool: Save tokens, get teams",
+      "language": "swift",
+      "code": "xcrun cktool save-token --type management\n\nxcrun cktool save-token --type user\n\nxcrun cktool get-teams"
+    },
+    {
+      "timestamp": "3:45",
+      "title": "cktool: Export schema",
+      "language": "swift",
+      "code": "xcrun cktool export-schema \\\n  --team-id XYZ1234567 \\\n  --container-id iCloud.com.WWDC21.Example \\\n  --environment development \\\n  --output-file schema.ckdb"
+    },
+    {
+      "timestamp": "4:07",
+      "title": "cktool: Create record",
+      "language": "swift",
+      "code": "xcrun cktool create-record \\\n  --team-id XYZ1234567 \\\n  --container-id iCloud.com.WWDC21.Example \\\n  --environment development \\\n  --database-type public \\\n  --record-type Book \\\n  --fields-json '{\n       \"title\": { \"type\": \"stringType\", \"value\": \"Treasure Island\" },\n       \"pageCount\": { \"type\": \"int64Type\", \"value\": 304 }\n    }'"
+    },
+    {
+      "timestamp": "5:05",
+      "title": "cktool: Test pre-action script",
+      "language": "swift",
+      "code": "xcrun cktool reset-schema \\\n    --team-id XYZ1234567 \\\n    --container-id iCloud.com.WWDC21.Example\n    \nxcrun cktool import-schema \\\n    --team-id XYZ1234567 \\\n    --container-id iCloud.com.WWDC21.Example \\\n    --environment development \\\n    --file $PROJECT_DIR/Example/CloudKitSchema.ckdb\n    \nxcrun cktool create-record \\\n    --team-id XYZ1234567 \\\n    --container-id iCloud.com.WWDC21.Example \\\n    --environment development \\\n    --database-type public \\\n    --record-type Book \\\n    --fields-json '{\n       \"title\": { \"type\": \"stringType\", \"value\": \"Great Expectations\" },\n       \"pageCount\": { \"type\": \"int64Type\", \"value\": 544 },\n       \"description\": { \"type\": \"stringType\", \"value\": \"Depiction of the education of an orphan nicknamed Pip\" },\n       \"publishedOn\": { \"type\": \"timestampType\", \"value\": \"1860-12-01T03:23:07.415Z\" },\n       \"reviewStatus\": { \"type\": \"int64Type\", \"value\": 1 }\n    }'"
+    },
+    {
+      "timestamp": "5:51",
+      "title": "Schema language file: Example",
+      "language": "swift",
+      "code": "DEFINE SCHEMA\n     RECORD TYPE Book (\n        \"___createTime\" TIMESTAMP,\n        \"___createdBy\"  REFERENCE,\n        \"___etag\"       STRING,\n        \"___modTime\"    TIMESTAMP,\n        \"___modifiedBy\" REFERENCE,\n        \"___recordID\"   REFERENCE QUERYABLE,\n        description     STRING,\n        pageCount       INT64,\n        publishedOn     TIMESTAMP,\n        reviewStatus    INT64,\n        // A single-line comment, for humans\n        title           STRING QUERYABLE,\n        GRANT WRITE TO \"_creator\",\n        GRANT CREATE TO \"_icloud\",\n        GRANT READ TO \"_world\"\n     );"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "CloudKit",
+        "url": "https://developer.apple.com/documentation/CloudKit"
+      },
+      {
+        "title": "Integrating a Text-Based Schema into Your Workflow",
+        "url": "https://developer.apple.com/documentation/CloudKit/integrating-a-text-based-schema-into-your-workflow"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10118/4/9B80307B-4AD2-499D-81D9-ABD4D94DFE78/downloads/wwdc2021-10118_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10118/4/9B80307B-4AD2-499D-81D9-ABD4D94DFE78/downloads/wwdc2021-10118_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10116",
+      "year": "2022",
+      "title": "Meet CKTool JS",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10116"
+    },
+    {
+      "id": "10117",
+      "year": "2021",
+      "title": "Meet CloudKit Console",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10117"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:43:05.522Z"
+}

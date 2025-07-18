@@ -1,0 +1,208 @@
+{
+  "id": "274",
+  "year": "2025",
+  "url": "https://developer.apple.com/videos/play/wwdc2025/274/",
+  "title": "Better together: SwiftUI and RealityKit",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Design"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi. I'm Amanda, and I'm a RealityKit engineer. And I'm Maks. I'm a SwiftUI engineer. Today we'll share some great enhancements to both SwiftUI and RealityKit that help them work even better together! Check out this adorable scene! We've got a charming SwiftUI robot, hovering in mid-air, and a grounded RealityKit robot – both yearning for connection. When they get close, sparks fly! But how can they get close enough to truly interact? Maks and I will share how to combine the worlds of traditional UI and interactive 3D content. First, I'll share some enhancements to Model3D.\n\nThen, I'll demonstrate how to transition from using Model3D to using RealityView, and talk about when to choose one versus the other.\n\nI'll tell you about the new Object Manipulation API.\n\nRealityKit gets new Component types, integrating more aspects of SwiftUI.\n\nInformation can now flow both ways between SwiftUI and RealityKit - we'll explain.\n\nCoordinate space conversion is easier than ever.\n\nDrive RealityKit component changes with SwiftUI animations.\n\nLet's wire it up! Display 3D models in your apps with just one line of code using Model3D. In visionOS 26, two enhancements let you do even more with Model3D - playing animations, and loading from a ConfigurationCatalog. Since Model3D is a SwiftUI view, it participates in the SwiftUI layout system. I'll use that layout system to make a little sign that displays the robot's name.\n\nNow the sign says that this robot's name is Sparky.\n\nSparky also has some sweet dance moves! The artist bundled this animation with the robot model asset. New in visionOS 26 is the Model3DAsset type. Load and control animations on your 3D content by constructing a Model3D using a Model3DAsset.\n\nThe model loads the animations from the asset, and lets you choose which one to play.\n\n\"Model\" is an overloaded term, especially in this session as we're converging a UI framework and a 3D game framework. In UI frameworks, a \"model\" refers to the data structure that represents the information your app uses.\n\nThe model holds the data and business logic, allowing the view to display this information. In 3D frameworks like RealityKit, a model refers to a 3D object that can be placed in a scene. You access it via the ModelComponent, which consists of a mesh resource that defines its shape, and materials that determine its appearance. Sometimes that happens. Two worlds collide, bringing their terminologies with them, and sometimes there's overlap. Now, back to Sparky and its animation.\n\nI'm placing the Model3D above a Picker, a Play button, and a time scrubber. In my RobotView, I'm displaying the animated robot itself, and under that, I'm placing a Picker to choose which animation to play, plus the animation playback controls.\n\nFirst, I'm initializing a Model3DAsset with the scene name to load from my bundle.\n\nThen, once the asset is present, I pass it to the Model3D initializer. Underneath that in the VStack, I'm presenting a customized Picker that lists the animations that are available in this model asset. When an item is chosen from the list, the Picker sets the asset's `selectedAnimation` to the new value. Then the Model3DAsset creates an AnimationPlaybackController to control playback of that chosen animation.\n\nThe asset vends an `animationPlaybackController`. Use this object to pause, resume, and seek in the animation.\n\nI'm passing that animationController into my RobotAnimationControls view, which we'll also look at shortly.\n\nIn visionOS 26, the existing RealityKit class `AnimationPlaybackController` is now Observable. In my SwiftUI view, I observe the `time` property to display the animation's progress.\n\nI have a @Bindable property called `controller`, which means I'm using the`AnimationPlaybackController` as my view's data model.\n\nWhen the controller's isPlaying value changes, SwiftUI will re-evaluate my RobotAnimationControls view. I've got a Slider that shows the current time in the animation, relative to the total duration of the animation. You can drag this slider and it will scrub through the animation. Here's Sparky doing its celebration animation! I can fast forward and rewind using the Slider. Go Sparky, it's your birthday! With its dance moves down, Sparky wants to dress up before it heads to the greenhouse to meet the other robot there. I can help it do that with enhancements to RealityKit's ConfigurationCatalog type. This type stores alternatives representations of an entity, such as different mesh geometries, component values, or material properties.\n\nIn visionOS 26, you can initialize a Model3D with a ConfigurationCatalog and switch between its various representations.\n\nTo allow Sparky to try on different outfits, my artist bundled a reality file with several different body types. I load this file as a ConfigurationCatalog from my app's main Bundle. Then, I create my Model3D with the configuration.\n\nThis popover presents the configuration options. Choosing from the popover changes Sparky's look.\n\nDance moves? Check. Outfit? Check. Sparky is ready to meet its new friend in the RealityKit greenhouse. Sparks are going to fly! To make those sparks fly, I'll use a Particle Emitter. But - that’s not something I can do at runtime with the Model3D type. Particle Emitter is a component that I add to a RealityKit entity. More on that in a moment. Importantly, Model3D doesn't support adding components.\n\nSo, to add a particle emitter, I'll switch to RealityView. I'll share how to smoothly replace my Model3D with a RealityView without changing the layout. First, I switch the view from Model3D to RealityView.\n\nI load the botanist model from the app bundle inside the `make` closure of the RealityView, creating an entity.\n\nI add that entity to the contents of the RealityView so Sparky appears on screen.\n\nBut... now the name sign is pushed too far over to the side. That wasn't happening before when we were using a Model3D.\n\nIt's happening now because, by default, RealityView takes up all the available space that the SwiftUI layout system gives it. By contrast, the Model3D sizes itself based on the intrinsic size of the underlying model file. I can fix this! I apply the new `.realityViewLayoutBehavior` modifier with `.fixedSize` to make the RealityView tightly wrap the model's initial bounds.\n\nMuch better.\n\nRealityView will use the visual bounds of the entities in its contents to figure out its size.\n\nThis sizing is only evaluated once - right after your `make` closure is run.\n\nThe other options for `realityViewLayoutBehavior` are .flexible and .centered.\n\nIn all three of these RealityViews, I have the bottom of the Sparky model sitting on the origin of the scene, and I've marked that origin with a gizmo, the little multicolored cross showing the axes and origin.\n\nOn the left, with the `.flexible` option, the RealityView acts as if it doesn't have the modifier applied. The origin remains in the center of the view.\n\nThe `.centered` option moves the origin of the RealityView so that the contents are centered in the view. `.fixedSize` makes the RealityView tightly wrap the contents' bounds, and makes your RealityView behave just like Model3D.\n\nNone of these options re-position or scale your entities with respect to the RealityViewContent; they just re-position the RealityView's own origin point. I've sorted out Sparky's sizing in the RealityView. Next I'll get Sparky animating again.\n\nI'll move from Model3D's new animation API to a RealityKit animation API directly on the Entity.\n\nFor more detail on the many ways of working with animation in RealityKit, check out the session \"Compose interactive 3D content in Reality Composer Pro\". I switched from Model3D to RealityView so I could give Sparky a ParticleEmitterComponent, because sparks need to fly when these two robots get close to each other.\n\nParticle Emitters let you make effects that involve hundreds of tiny particles animating at once, like fireworks, rain, and twinkles.\n\nRealityKit provides preset values for these, and you can adjust those presets to get the effect you're after. You can use Reality Composer Pro to design them, and you can configure them in code.\n\nYou add the ParticleEmitter to an entity as a Component. Components are a central part of RealityKit, which is based on the \"Entity Component System\" paradigm. Each object in your scene is an Entity, and you add components to it to tell it what traits and behaviors it has. A Component is the type that holds data about an Entity. A System processes entities that have specific components, performing logic involving that data. There are built-in systems for things like animating particles, for handling physics, for rendering, and many more. You can write your own custom system in RealityKit to do custom logic for your game or app. Watch Dive into RealityKit 2 for a more in-depth look at the Entity Component System in RealityKit. I'll add a particle emitter to each side of Sparky's head. First I make two invisible entities that serve as containers for the sparks effect. I designed my sparks emitter to point to the right. I'll add it directly to my invisible entity on Sparky's right side.\n\nOn the other side, I rotate the entity 180 degrees about the y axis so it's pointing leftward.\n\nPutting it all together in the RealityView, here's Sparky with its animation, its name sign in the right position, and sparks flying! RealityKit is great for detailed creation like this! If you're making a game or play-oriented experience, or need fine-grained control over the behavior of your 3D content, choose RealityView.\n\nOn the other hand, use Model3D to display a self-contained 3D asset on its own. Think of it like SwiftUI's Image view but for 3D assets.\n\nModel3D's new animation and configuration catalogs let you do more with Model3D. And if your design evolves and you need direct access to the entities, components, and systems, transition smoothly from Model3D to RealityView using realityViewLayoutBehavior. Next I'll share details about the new Object Manipulation API in visionOS 26, which lets people pick up the virtual objects in your app! Object manipulation works from both SwiftUI and RealityKit. With Object manipulation you move the object with a single hand, rotate it with one or both hands, and scale it by pinching and dragging with both hands. You can even pass the object from one hand to the other.\n\nThere are two ways to enable this, depending on whether the object is a RealityKit Entity or SwiftUI View.\n\nIn SwiftUI, add the new `manipulable` modifier.\n\nTo disallow scaling, but keep the ability to move and rotate the robot with either hand, I specify what Operations are supported.\n\nTo make the robot feel super heavy, I specify that it has high inertia.\n\nThe .manipulable modifier works when Sparky is displayed in a Model3D view. It applies to the whole Model3D, or to any View it's attached to.\n\nWhen Sparky's in a RealityView, I want to enable manipulation on just the robot entity itself, not the whole RealityView.\n\nIn visionOS 26, ManipulationComponent is a new type that you can set on an entity to enable Object Manipulation.\n\nThe static function `configureEntity` adds the ManipulationComponent to your entity.\n\nIt also adds a CollisionComponent so that the interaction system knows when you've tapped on this entity. It adds an InputTargetComponent which tells the system that this entity responds to gestures. And finally, it adds a HoverEffectComponent which applies a visual effect when a person looks at or hovers their mouse over it.\n\nThis is the only line you need to enable manipulation of an entity in your scene. To customize the experience further, there are several parameters you can pass. Here, I'm specifying a purple spotlight effect. I'm allowing all types of input: direct touch and indirect gaze and pinch. And I'm supplying collision shapes that define the outer dimensions of the robot. To respond when a person interacts with an object in your app, the object manipulation system raises events at key moments, such as when the interaction starts and stops, gets updated as the entity is moved, rotated, and scaled, when it is released, and when it is handed off from one hand to another.\n\nSubscribe to these events to update your state. By default, standard sounds play when the interaction begins, a handoff occurs, or the object is released.\n\nTo apply custom sounds, I first set the audioConfiguration to `none`. That disables the standard sounds. Then I subscribe to the ManipulationEvent DidHandOff, which is delivered when a person passes the robot from one hand to the other.\n\nIn that closure, I play my own audio resource. Well, Maks. Sparky's journey has been exciting: animating in Model3D, finding its new home in a RealityView, showing its personality with sparks, and letting people reach out and interact with it. It's come a long way on its path towards the RealityKit greenhouse. It sure has! But for Sparky to truly connect with the robot waiting there, the objects in their virtual space need new capabilities. They need to respond to gestures, present information about themselves, and trigger actions in a way that feels native to SwiftUI.\n\nSparky's journey toward the RealityKit greenhouse is all about building connection. Deep connection requires rich interactions. That's exactly what the new SwiftUI RealityKit components are designed to enable. The new components in visionOS 26 bring powerful, familiar SwiftUI capabilities directly to RealityKit entities.\n\nRealityKit introduces three key components: First, the ViewAttachmentComponent allows you to add SwiftUI views directly to your entities. Next, the GestureComponent makes your entities responsive to touch and gestures. And finally, the PresentationComponent, which presents SwiftUI views, like popovers, from within your RealityKit scene.\n\nvisionOS 1 let you declare attachments up front as part of the RealityView initializer. After evaluating your attachment view builder, the system called your update closure with the results as entities. You could add these entities to your scene and position them in 3D space.\n\nIn visionOS 26, this is simplified. Now you create attachments using a RealityKit component from anywhere in your app.\n\nCreate your ViewAttachmentComponent by giving it any SwiftUI View. Then, add it to an entity's components collection.\n\nAnd just like that I moved our NameSign from SwiftUI to RealityKit. Let’s explore gestures next! You can already attach gestures to your RealityView using `targetedToEntity`gesture modifiers.\n\nNew in visionOS 26 is GestureComponent. Just like ViewAttachmentComponent, you add GestureComponent to your entities directly, passing regular SwiftUI gestures to it. The gesture values are by default reported in the entity’s coordinate space. Super handy! I use GestureComponent with a tap gesture to toggle the name sign on and off.\n\nCheck it out. This robot's name is... Bolts! Pro tip: on any entity that's the target of a gesture, also add both InputTargetComponent and CollisionComponent. This advice applies to both GestureComponent and the targeted gestures API.\n\nGestureComponent and ViewAttachmentComponent let me create a name sign for Bolts. But, Bolts is getting ready for a special visitor: Sparky! Bolts wants to look its absolute best for their meeting in the greenhouse. Time for another outfit change! I'll replace Bolts' name sign with UI to pick what Bolts will wear. Truly, a momentous decision.\n\nTo emphasize that, I'll show this UI in a popover, using PresentationComponent, directly from RealityKit.\n\nFirst, I replace `ViewAttachmentComponent` with `PresentationComponent.\n\nThe component takes a boolean binding to control when the popover is presented, and to notify you when someone dismisses the popover.\n\nThe `configuration` parameter is the type of presentation to be shown. I'm specifying `popover`.\n\nInside the popover, I'll present a view with configuration catalog options to dress up Bolts.\n\nNow, I can help Bolts pick its best color for when Sparky comes to visit.\n\nHey Maks, do you think Bolts is more of a summer? Or an autumn? That's a fashion joke.\n\nBolts is dressed to impress. But first, it has to go to work. Bolts waters plants in the greenhouse. I'll make a mini map, like on a heads-up display in a game, to track Bolts' position in the greenhouse. For that, I need to observe the robot's Transform component.\n\nIn visionOS 26, entities are now observable. They can notify other code when their properties change. To be notified, just read an entity’s \"observable\" property.\n\nFrom the “observable” property you can watch for changes to the entity's position, scale, and rotation, its Children collection, and even its Components, including your own custom components! Observe these properties directly using a `withObservationTracking` block.\n\nOr lean on SwiftUI's built-in observation tracking. I’ll use SwiftUI to implement my Minimap.\n\nTo learn more about Observation, watch \"Discover Observation in SwiftUI\".\n\nIn this view, I display my entity's position on a MiniMap. I'm accessing this observable value on my entity. This tells SwiftUI that my view depends on this value.\n\nAs Bolts moves about the greenhouse, watering the plants, its position will change. Each time it does, SwiftUI will call my View's body again, moving its counterpart symbol in the minimap! For a deeper explanation of SwiftUI's data flow, check out the session \"Data Essentials in SwiftUI.\" Our robot friends are really coming together! That's the dream! I liked your description of the difference between \"model\" and \"model\" earlier. And sometimes you need to pass data from your data model to your 3D object model, and vice versa. In visionOS 26, observable entities give us a new tool to do that. Since the beginning, you could pass information from SwiftUI to RealityKit in the `update` closure of RealityView. Now with entity's `observable` property, you can send information the other way. RealityKit entities can act like model objects to drive updates to your SwiftUI views! So information can flow both ways now: from SwiftUI to RealityKit and from RealityKit to SwiftUI. But... does this create the potential for an infinite loop? Yes! Let's look at how to avoid creating infinite loops between SwiftUI and RealityKit.\n\nWhen you read an observable property inside the body of a view, you create a dependency; your view depends on that property. When the property’s value changes, SwiftUI will update the view and re-run its body. RealityView has some special behavior. Think of its… update closure as an extension of the containing view's body.\n\nSwiftUI will call the closure whenever any of that view's state changes, not only when state that is explicitly observed in that closure changes.\n\nHere in my RealityView's update closure, I'm changing that position. This will write to the position value, which will cause SwiftUI to update the view and re-run its body, causing an infinite loop.\n\nTo avoid creating an infinite loop don’t modify your observed state within your update closure.\n\nYou are free to modify entities that you're not observing. That won't create an infinite loop because changes to them won't trigger SwiftUI to re-evaluate the view body.\n\nIf you do need to modify an observed property, check the existing value of that property and avoid writing that same value back.\n\nThis breaks the cycle and avoids an infinite loop.\n\nNote that the RealityView's make closure is special.\n\nWhen you access an observable property in the make closure, that doesn't create a dependency. It's not included in the containing view's observation scope.\n\nAlso, the `make` closure is not re-run on changes. It only runs when the containing view first appears.\n\nYou can also update the properties on an observed entity from within your own custom system. A system's update function is not inside the scope of the SwiftUI view body evaluation, so this is a good place to change my observed entities' values.\n\nThe closures of Gestures are also not inside the scope of the SwiftUI view body evaluation. They are called in response to user input.\n\nYou can modify your observed entities' values here, too.\n\nTo recap, it's cool to modify your observed entities in some places, and not in others.\n\nIf do you find that you have an infinite loop in your app, here's a tip for fixing it: Split up your larger views into smaller, self-contained views, each one having only their own necessary state. That way, a change in some unrelated entity won't cause your small view to be re-evaluated. This is also great for performance! You know, Maks, you might find that you don't need to use your `update` closure at all anymore. Since your Entity can now be your view's state, you can modify it in the normal places that you're used to modifying state, and forgo the update closure altogether. Yeah! I feel like avoiding infinite loops is something I have to learn over and over again. But, if I don't use an update closure, I'm less likely to run into one.\n\nI think it's time to bring Bolts and Sparky together.\n\nBolts is finally done with work - time for its date with Sparky! As I pick up Sparky to bring it over, and the two robots get closer together, I want to make sparks fly as a function of the decreasing distance between them. I'll use our new Unified Coordinate Conversion API to enable this.\n\nSparky is in a Model3D SwiftUI view now, and Bolts is an Entity in the RealityKit greenhouse. I need to get the absolute distance between these two robots, even though they're in different coordinate spaces.\n\nTo solve this, the Spatial framework now defines a `CoordinateSpace3D` protocol that represents an abstract coordinate space. You can easily convert values between any two types that conform to CoordinateSpace3D, even from different frameworks.\n\nRealityKit's `Entity` and `Scene` types conform to CoordinateSpace3D. On the SwiftUI side, GeometryProxy3D has a new .coordinateSpace3D() function that gives you its coordinate space. Additionally, several Gesture types can provide their values relative to any given CoordinateSpace3D. CoordinateSpace3D protocol works by first converting a value in Sparky’s coordinate space to a coordinate space shared by both RealityKit and SwiftUI. After that, it converts from the shared space into Bolt’s coordinate space, while taking low-level details like points-to-meter conversion and axis direction into account. In Sparky's Model3D view, whenever the view geometry changes, the system calls my `onGeometryChange3D` function. It passes in a GeometryProxy3D which I use to get its coordinate space. Then, I can convert my view's position to a point in the entity's space so I know how far apart my two robots are from each other. Now as Amanda brings Bolts and Sparky together, the sparks increase. As she pulls them apart, the sparks decrease.\n\nNext, I'll teach these robots to move together and to coordinate their actions. I'll use SwiftUI driven animation for RealityKit components.\n\nSwiftUI already comes with great animation APIs to implicitly animate changes to your view properties.\n\nHere, I animate the Model3D view that Sparky is in. I send it over to the left when I toggle, and then it bounces back to the original position when I toggle again.\n\nI’m adding an animation to my `isOffset` binding, and I'm specifying that I want an extra bouncy animation for it.\n\nIn visionOS 26, you can now use SwiftUI animation to implicitly animate changes to RealityKit components.\n\nAll you need to do is set a supported component on your entity within a RealityKit animation block and the framework will take care of the rest. There are two ways to associate an animation with a state change. From within a RealityView, you can use `content.animate()` to set new values for your components inside the animate block. RealityKit will use the animation associated with the SwiftUI transaction that triggered the `update` closure, which, in this case, is an extra bouncy animation.\n\nThe other way is to call the new Entity.animate() function, passing a SwiftUI animation, and a closure that sets new values for your components. Here, whenever the isOffset property changes, I send Sparky left or right using the entity’s position.\n\nSetting the position inside the animate block will begin an implicit animation of the Transform component, causing the entity to move smoothly to the new position. The power of implicit animation really shines when I combine it with the Object Manipulation API that Amanda introduced. I can use a SwiftUI animation to implement a custom release behavior for Bolts. I’m first going to disable the default release behavior for object manipulation by setting it to .stay.\n\nThen, I will subscribe to the WillRelease event for the manipulation interaction.\n\nAnd when the object is about to be released, I will snap Sparky back by setting its transform to identity, which resets the scale, translation, and rotation of the entity. Since I’m modifying Sparky’s transform inside the animate block, Sparky will bounce back to its default position. Now Sparky's animation back to its original position is much more fun! All these built-in RealityKit components support implicit animations, including the Transform, the Audio components, and the Model and Light components, which have color properties! Sparky and Bolts had quite a journey. It's so great to see the power of SwiftUI and RealityKit working together.\n\nWith this connection, you're also empowered to develop truly exceptional spatial apps, fostering a real connection between the virtual and the physical! Imagine the possibilities as you seamlessly integrate SwiftUI components into your RealityKit scenes, and as entities dynamically drive changes to your SwiftUI state.\n\nJust like Sparky and Bolts, we hope you're inspired to connect SwiftUI and RealityKit in ways we haven't even imagined yet. Let's build the future together!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:42",
+      "title": "Sparky in Model3D",
+      "language": "swift",
+      "code": "struct ContentView: View {\n  var body: some View {\n    Model3D(named: \"sparky\")\n  }\n}"
+    },
+    {
+      "timestamp": "1:52",
+      "title": "Sparky in Model3D with a name sign",
+      "language": "swift",
+      "code": "struct ContentView: View {\n  var body: some View {\n    HStack {\n      NameSign()\n      Model3D(named: \"sparky\")\n    }\n  }\n}"
+    },
+    {
+      "timestamp": "3:18",
+      "title": "Display a model asset in a Model3D and present playback controls​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​",
+      "language": "swift",
+      "code": "struct RobotView: View {\n  @State private var asset: Model3DAsset?\n  var body: some View {\n    if asset == nil {\n      ProgressView().task { asset = try? await Model3DAsset(named: \"sparky\") }\n    }\n  }\n}"
+    },
+    {
+      "timestamp": "3:34",
+      "title": "Display a model asset in a Model3D and present playback controls​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​",
+      "language": "swift",
+      "code": "struct RobotView: View {\n  @State private var asset: Model3DAsset?\n  var body: some View {\n    if asset == nil {\n      ProgressView().task { asset = try? await Model3DAsset(named: \"sparky\") }\n    } else if let asset {\n      VStack {\n        Model3D(asset: asset)\n        AnimationPicker(asset: asset)\n      }\n    }\n  }\n}"
+    },
+    {
+      "timestamp": "4:03",
+      "title": "Display a model asset in a Model3D and present playback controls​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​",
+      "language": "swift",
+      "code": "struct RobotView: View {\n  @State private var asset: Model3DAsset?\n  var body: some View {\n    if asset == nil {\n      ProgressView().task { asset = try? await Model3DAsset(named: \"sparky\") }\n    } else if let asset {\n      VStack {\n        Model3D(asset: asset)\n        AnimationPicker(asset: asset)\n        if let animationController = asset.animationPlaybackController {\n          RobotAnimationControls(playbackController: animationController)\n        }\n      }\n    }\n  }\n}"
+    },
+    {
+      "timestamp": "4:32",
+      "title": "Pause, resume, stop, and change the move the play head in the animation​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​",
+      "language": "swift",
+      "code": "struct RobotAnimationControls: View {\n  @Bindable var controller: AnimationPlaybackController\n\n  var body: some View {\n    HStack {\n      Button(controller.isPlaying ? \"Pause\" : \"Play\") {\n        if controller.isPlaying { controller.pause() }\n        else { controller.resume() }\n      }\n\n      Slider(\n        value: $controller.time,\n        in: 0...controller.duration\n      ).id(controller)\n    }\n  }\n}"
+    },
+    {
+      "timestamp": "5:41",
+      "title": "Load a Model3D using a ConfigurationCatalog​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​",
+      "language": "swift",
+      "code": "struct ConfigCatalogExample: View {\n  @State private var configCatalog: Entity.ConfigurationCatalog?\n  @State private var configurations = [String: String]()\n  @State private var showConfig = false\n  var body: some View {\n    if let configCatalog {\n      Model3D(from: configCatalog, configurations: configurations)\n        .popover(isPresented: $showConfig, arrowEdge: .leading) {\n          ConfigPicker(\n            name: \"outfits\",\n            configCatalog: configCatalog,\n            chosenConfig: $configurations[\"outfits\"])\n        }\n    } else {\n      ProgressView()\n        .task {\n          await loadConfigurationCatalog()\n        }\n    }\n  }\n}"
+    },
+    {
+      "timestamp": "6:51",
+      "title": "Switching from Model3D to RealityView",
+      "language": "swift",
+      "code": "struct RobotView: View {\n  let url: URL = Bundle.main.url(forResource: \"sparky\", withExtension: \"reality\")!\n\n  var body: some View {\n    HStack {\n      NameSign()\n      RealityView { content in\n        if let sparky = try? await Entity(contentsOf: url) {\n          content.add(sparky)\n        }\n      }\n    }\n  }\n}"
+    },
+    {
+      "timestamp": "7:25",
+      "title": "Switching from Model3D to RealityView with layout behavior",
+      "language": "swift",
+      "code": "struct RobotView: View {\n  let url: URL = Bundle.main.url(forResource: \"sparky\", withExtension: \"reality\")!\n\n  var body: some View {\n    HStack {\n      NameSign()\n      RealityView { content in\n        if let sparky = try? await Entity(contentsOf: url) {\n          content.add(sparky)\n        }\n      }\n      .realityViewLayoutBehavior(.fixedSize)\n    }\n  }\n}"
+    },
+    {
+      "timestamp": "8:48",
+      "title": "Switching from Model3D to RealityView with layout behavior and RealityKit animation",
+      "language": "swift",
+      "code": "struct RobotView: View {\n  let url: URL = Bundle.main.url(forResource: \"sparky\", withExtension: \"reality\")!\n\n  var body: some View {\n    HStack {\n      NameSign()\n      RealityView { content in\n        if let sparky = try? await Entity(contentsOf: url) {\n          content.add(sparky)\n          sparky.playAnimation(getAnimation())\n        }\n      }\n      .realityViewLayoutBehavior(.fixedSize)\n    }\n  }\n}"
+    },
+    {
+      "timestamp": "10:34",
+      "title": "Add 2 particle emitters; one to each side of the robot's head",
+      "language": "swift",
+      "code": "func setupSparks(robotHead: Entity) {\n  let leftSparks = Entity()\n  let rightSparks = Entity()\n\n  robotHead.addChild(leftSparks)\n  robotHead.addChild(rightSparks)\n\n  rightSparks.components.set(sparksComponent())\n  leftSparks.components.set(sparksComponent())\n\n  leftSparks.transform.rotation = simd_quatf(Rotation3D(\n    angle: .degrees(180),\n    axis: .y))\n\n  leftSparks.transform.translation = leftEarOffset()\n  rightSparks.transform.translation = rightEarOffset()\n}\n\n// Create and configure the ParticleEmitterComponent\nfunc sparksComponent() -> ParticleEmitterComponent { ... }"
+    },
+    {
+      "timestamp": "12:30",
+      "title": "Apply the manipulable view modifier",
+      "language": "swift",
+      "code": "struct RobotView: View {\n  let url: URL\n  var body: some View {\n    HStack {\n      NameSign()\n      Model3D(url: url)\n        .manipulable()\n    }\n  }\n}"
+    },
+    {
+      "timestamp": "12:33",
+      "title": "Allow translate, 1- and 2-handed rotation, but not scaling",
+      "language": "swift",
+      "code": "struct RobotView: View {\n  let url: URL\n  var body: some View {\n    HStack {\n      NameSign()\n      Model3D(url: url)\n        .manipulable(\n          operations: [.translation,\n                       .primaryRotation,\n                       .secondaryRotation]\n       )\n    }\n  }\n}"
+    },
+    {
+      "timestamp": "12:41",
+      "title": "The model feels heavy with high inertia",
+      "language": "swift",
+      "code": "struct RobotView: View {\n  let url: URL\n  var body: some View {\n    HStack {\n      NameSign()\n      Model3D(url: url)\n        .manipulable(inertia: .high)\n    }\n  }\n}"
+    },
+    {
+      "timestamp": "13:18",
+      "title": "Add a ManipulationComponent to an entity​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​",
+      "language": "swift",
+      "code": "RealityView { content in\n  let sparky = await loadSparky()\n  content.add(sparky)\n  ManipulationComponent.configureEntity(sparky)\n}"
+    },
+    {
+      "timestamp": "13:52",
+      "title": "Add a ManipulationComponent to an entity​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​ with configuration",
+      "language": "swift",
+      "code": "RealityView { content in\n  let sparky = await loadSparky()\n  content.add(sparky)\n  ManipulationComponent.configureEntity(\n    sparky,\n    hoverEffect: .spotlight(.init(color: .purple)),\n    allowedInputTypes: .all,\n    collisionShapes: myCollisionShapes()\n  )\n}"
+    },
+    {
+      "timestamp": "14:08",
+      "title": "Manipulation interaction events",
+      "language": "swift",
+      "code": "public enum ManipulationEvents {\n\n  /// When an interaction is about to begin on a ManipulationComponent's entity\n  public struct WillBegin: Event { }\n  \n  /// When an entity's transform was updated during a ManipulationComponent\n  public struct DidUpdateTransform: Event { }\n\n  /// When an entity was released\n  public struct WillRelease: Event { }\n\n  /// When the object has reached its destination and will no longer be updated\n  public struct WillEnd: Event { }\n\n  /// When the object is directly handed off from one hand to another\n  public struct DidHandOff: Event { }\n}"
+    },
+    {
+      "timestamp": "14:32",
+      "title": "Replace the standard sounds with custom ones",
+      "language": "swift",
+      "code": "RealityView { content in\n  let sparky = await loadSparky()\n  content.add(sparky)\n\n  var manipulation = ManipulationComponent()\n  manipulation.audioConfiguration = .none\n  sparky.components.set(manipulation)\n\n  didHandOff = content.subscribe(to: ManipulationEvents.DidHandOff.self) { event in\n    sparky.playAudio(handoffSound)\n  }\n}"
+    },
+    {
+      "timestamp": "16:19",
+      "title": "Builder based attachments",
+      "language": "swift",
+      "code": "struct RealityViewAttachments: View {\n  var body: some View {\n    RealityView { content, attachments in\n      let bolts = await loadAndSetupBolts()\n      if let nameSign = attachments.entity(\n        for: \"name-sign\"\n      ) {\n        content.add(nameSign)\n        place(nameSign, above: bolts)\n      }\n      content.add(bolts)\n    } attachments: {\n      Attachment(id: \"name-sign\") {\n        NameSign(\"Bolts\")\n      }\n    }\n    .realityViewLayoutBehavior(.centered)\n  }\n}"
+    },
+    {
+      "timestamp": "16:37",
+      "title": "Attachments created with ViewAttachmentComponent",
+      "language": "swift",
+      "code": "struct AttachmentComponentAttachments: View {\n  var body: some View {\n    RealityView { content in\n      let bolts = await loadAndSetupBolts()\n      let attachment = ViewAttachmentComponent(\n          rootView: NameSign(\"Bolts\"))\n      let nameSign = Entity(components: attachment)\n      place(nameSign, above: bolts)\n      content.add(bolts)\n      content.add(nameSign)\n    }\n    .realityViewLayoutBehavior(.centered)\n  }\n}"
+    },
+    {
+      "timestamp": "17:04",
+      "title": "Targeted to entity gesture API",
+      "language": "swift",
+      "code": "struct AttachmentComponentAttachments: View {\n  @State private var bolts = Entity()\n  @State private var nameSign = Entity()\n\n  var body: some View {\n    RealityView { ... }\n    .realityViewLayoutBehavior(.centered)\n    .gesture(\n      TapGesture()\n        .targetedToEntity(bolts)\n        .onEnded { value in\n          nameSign.isEnabled.toggle()\n        }\n    )\n  }\n}"
+    },
+    {
+      "timestamp": "17:10",
+      "title": "Gestures with GestureComponent",
+      "language": "swift",
+      "code": "struct AttachmentComponentAttachments: View {\n  var body: some View {\n    RealityView { content in\n      let bolts = await loadAndSetupBolts()\n      let attachment = ViewAttachmentComponent(\n          rootView: NameSign(\"Bolts\"))\n      let nameSign = Entity(components: attachment)\n      place(nameSign, above: bolts)\n      bolts.components.set(GestureComponent(\n        TapGesture().onEnded {\n          nameSign.isEnabled.toggle()\n        }\n      ))\n      content.add(bolts)\n      content.add(nameSign)\n    }\n    .realityViewLayoutBehavior(.centered)\n  }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Canyon Crosser: Building a volumetric hike-planning app",
+        "url": "https://developer.apple.com/documentation/visionOS/canyon-crosser-building-a-volumetric-hike-planning-app"
+      },
+      {
+        "title": "Rendering hover effects in Metal immersive apps",
+        "url": "https://developer.apple.com/documentation/CompositorServices/rendering_hover_effects_in_metal_immersive_apps"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/274/4/af6a131e-f3ee-4d68-8371-4f52e9c4a3d6/downloads/wwdc2025-274_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/274/4/af6a131e-f3ee-4d68-8371-4f52e9c4a3d6/downloads/wwdc2025-274_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10102",
+      "year": "2024",
+      "title": "Compose interactive 3D content in Reality Composer Pro",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10102"
+    },
+    {
+      "id": "10149",
+      "year": "2023",
+      "title": "Discover Observation in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10149"
+    },
+    {
+      "id": "10074",
+      "year": "2021",
+      "title": "Dive into RealityKit 2",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10074"
+    },
+    {
+      "id": "10040",
+      "year": "2020",
+      "title": "Data Essentials in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10040"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:35:13.988Z"
+}

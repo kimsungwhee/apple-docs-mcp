@@ -1,0 +1,137 @@
+{
+  "id": "10220",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10220/",
+  "title": "Localize your SwiftUI app",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Accessibility & Inclusion",
+    "Developer Tools"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello, my name is Paul Borokhov, and I'm an engineer on the SwiftUI Mac team. I will be joined later by my colleague Kate Kononenko on the Localization team, and we will be talking to you about how to localize your SwiftUI app.\n\nTo illustrate this process, we will be using the Fruta sample app that you might have seen before. This application allows you to browse a menu of smoothies, order them, and also look at the recipes to make them at home.\n\nIn this talk, we will be adding a Russian localization to the app, since that's both my and Kate's first language, and because it is a good showcase for the different localization best practices that you will likely need to use in your own apps.\n\nWe'll go over some fundamentals about how strings are localized in SwiftUI and how easy it is to avoid common design pitfalls. We will discuss techniques to style and format your strings and data, and cover some improvements to keyboard shortcuts localization. Finally, Kate will give a demo of the improvements we've made to the localization workflow in Xcode to make it easier than ever to localize your apps. One of the most critical parts of localizing your application is making sure that strings in various pieces of your UI are exposed to translators and render correctly at runtime. SwiftUI makes this easy for you, because when you use a Text with a string literal, it automatically performs a localized string lookup in the main bundle. In this example, I have a Done button that's automatically localized at runtime based on the translation in my Russian strings file. This also works for string interpolation, so that you can embed variables into your strings and they are automatically converted to format specifiers in the exported localizable strings files and catalog. New in Xcode 13, we now infer the format specifier type automatically based on the type of the variable that is passed into the string. Text accepts additional optional arguments for table name and bundle, in case you need more control. In this example, we have placed all of our ingredient-related strings into a separate table called \"Ingredients.\" Apart from the actual ingredients of our smoothies, we have also placed two variants of the word \"ingredients\" for two different contexts, in the smoothie view and in the recipe view, in this strings table. We did this because Russian requires these two words to be translated differently based on the context, as you can see. You can learn more about how to organize your strings in the \"Streamline your localized strings\" talk. This all works because the first argument to Text is the LocalizedStringKey type. If you have custom views and methods that accept string literals, you can make them localizable by using this type in place of String.\n\nThis way, literals that are passed as arguments to these views and functions are automatically extracted during the Xcode localization export process and then loaded from the bundle at runtime.\n\nAn alternative approach, which we saw earlier in the button example, is to have your views accept a Text argument instead. Using LocalizedStringKey also allows you to preview multiple locales at once by specifying the locale of the environment in your preview provider. If you want to preview all localized strings, including those loaded with NSLocalizedString, you can change the language in the scheme editor, as Kate will show you later. New in Xcode 13, exporting your project for localization can actually build all targets to find the localizable strings. What this means in practice is that Xcode can do a much better job of finding localizable content and extracting it for localization. So imagine we had some code with a multiline string.\n\nBecause the compiler is now used in extracting the localized content, this multiline string literal is parsed correctly. Now, let's take a look at how SwiftUI makes it easy for you to build apps with localization-friendly layouts. Just like with string lookup, the default layout behaviors provided by SwiftUI have been designed with localization in mind, and in most cases, should not require any additional effort on your part. For example, when appropriate, controls with Text will wrap it so that it does not clip or truncate in languages with longer labels. In this case, the smoothie name is wrapped to a second line in Russian, because it is longer. Layouts are automatically flipped for right-to-left languages, too. You can see in the screenshot that the table cell layout has been flipped, and the symbols in the tab bar have been mirrored when appropriate as well. And even when you have to customize something to deviate from the defaults, the options we provide guide you to localization-friendly solutions, such as providing a leading, rather than left, alignment in VStacks. Next, in building your apps, you might find yourself needing to style the localized Text that's displayed in your UI. To make this easier, we've introduced the ability to style localizable strings using markdown. This significantly simplifies applying styling to localized strings and gives your translators the ability to apply styling that's sensible for their language. For example, Arabic does not have the concept of italics, so even if you use emphasis in your English strings, your translator is able to use a different treatment, such as strong emphasis, in their translation. In this case, our Russian translator was able to apply markup around the most relevant words in the string to match the intent of the original English description. And while this support exists in foundation, SwiftUI makes it particularly easy for you to take advantage of by simply passing the styled strings directly to texts for display. You can find out more about styling Text by checking out the \"What's New in Foundation\" and SwiftUI talks. Another common scenario you'll encounter in your apps is the need to format data in a language and region-appropriate manner. New formatting APIs that are easier to use and integrate tightly with Text and TextField will allow you to accomplish this task. In Fruta, we show the number of calories in a number of places in the UI. In the past, we had to create a measurement formatter in order to display the formatted values, similar to what's on the slide here. Now, we can specify the format in a declarative manner directly inline with where the value is being shown. Not only is this easier to read, it can also be more performant than the code on the previous slide. You can learn more about these new formatting APIs in the \"What's New in Foundation\" talk. Finally, let's consider keyboard shortcuts, which allow novice and power users alike to accomplish tasks more quickly, both on their Macs and their iPads. New in macOS and iPadOS, any keyboard shortcuts you define in your SwiftUI app will now be automatically adjusted so that they can be typed on the user's currently active keyboard layout. For example, if you want to add a smoothie to your list of favorites, you can type \"Command plus\" to do so. This works great on the US layout, where the combination requires exactly two keypresses, the Command and plus keys. However, if you're using a Lithuanian keyboard layout, reaching the plus key is not so easy. You must press the backtick key first, then press \"Shift equals.\" Worse, this combination is actually not typeable while holding down the Command key. But thanks to the remapping feature of macOS Monterey and iPadOS 15, when the Lithuanian keyboard layout is active, the shortcut is changed to \"Command ž\" and our users can add smoothies to their favorites using keyboard shortcuts no matter which keyboard layout they are currently using. And here's the best part, you as the developer don't need to do anything, it just works. And with that, let me turn it over to Kate, who will show the improvements we've made to the localization workflow in Xcode 13, as well as demo some of the best practices and new APIs I've just covered. Thanks, Paul. Hi, I'm Kate, an engineer on the Localization team. Let's jump in to see how easy it is to localize a SwiftUI app. Here we have the Fruta sample app. We want to make sure that people all around the world can order smoothies in their native language. Today, I am going to add a Russian localization. So, first, I go to the project in the project navigator, then choose \"Fruta\" in the project editor, and under the Info tab, I can add a localization. All of the localizations that macOS ships with are listed here in alphabetical order. In Xcode 12.5, we added hundreds of more languages and regional variants in the \"More Languages\" submenu at the bottom of the list. I'll just select \"Russian.\" As Paul mentioned, Xcode 13 greatly simplifies string extraction from Swift code by using new technologies in the Swift compiler.\n\nFruta is written in SwiftUI, so I want to make sure that the build setting \"Use Compiler to Extract Swift Strings\" is set to \"Yes.\" This is enabled by default for new Swift projects, but you can opt-in to this setting if your existing project uses SwiftUI. When I export for localization, Xcode will build all the targets in my project and use the compiler type information to extract LocalizedStringKeys from my SwiftUI code. Before exporting, I can use pseudolanguages in SwiftUI Previews to see which strings are localizable and which I've missed. So, I'll go to the scheme editor, and under the Options tab, click App Language. All of the languages that are supported by my app are listed here at the top, but I'll go all the way to the bottom and choose Accented Pseudolanguage.\n\nThe accented pseudolanguage adds different accent marks to my source strings in the UI. Now, I can see that all of the ingredients are pseudolocalized. The measurements are not pseudolocalized because they are formatted, but the StepperView should have been pseudolocalized.\n\nLet's make this string localizable. StepperView is a custom SwiftUI view that takes in a \"label\" string and passes it down to a Text view. In custom SwiftUI views that require localization, we need to use LocalizedStringKey. Let's make sure it's pseudolocalized now.\n\nGreat! Now that this string is localizable, we need to make sure it handles plurals properly. This code works for pluralizing \"smoothie\" in English, but it's not going to work for all words and it's not going to work for all languages. Let's use a stringsdict instead. A stringsdict file can provide different translations for a plural variant in a language. For more information about how to use stringsdict, check out the \"Streamline Your Localized Strings\" video.\n\nI have a file prepared right here, so I'll just drag it into my project...\n\nand mark it for localization.\n\nNow, let's export for localization. Starting in Xcode 12.5, you can export and import localizations for projects and workspaces in the Product menu. So I'll just click Export Localizations, and let's save it to the desktop.\n\nNow, Xcode is building my project and will create an Xcode Localization Catalog ready to send to Paul, who has volunteered to translate it to Russian. You can learn more about Xcode Localization Catalogs in the \"New Localization Workflows in Xcode 10\" talk from WWDC 2018.\n\nLet's double-check what was exported before sending it out for translation.\n\nStarting with Xcode 13, Xcode Localization Catalogs are even more convenient to work with. I can simply double-click on the catalog in Finder and open it in Xcode. This is super useful if you're localizing your own app, verifying strings or screenshots before sending content out for localization, or if fixing translations for specific languages.\n\nHere in the editor, I can see all of the files that require localization. When I select a file, I can see all of the strings as the translator would. The key, the source string, the translation, and a comment. I'm just going to skim through here and see if everything looks good. Right away, I can see a couple of issues. First, we exported the \"%lf Calories\" string. That string should be formatted because different regions use different units for measuring calories. I'll need to make a change in code to fix that.\n\nHere in the NutritionFactView where the string was extracted from, instead of a string, I can use the \"formatted\" method in my Measurement type on my NutritionFacts struct. I'm going to use wide formatting and set the usage to \"food,\" since we're measuring food calories. This will take care of formatting the units for all regions. That was an easy fix. Let's go back to reviewing my strings.\n\nOoh, translators do not see the variable name, so a string like \"Buy recipe for %@\" could be confusing. Am I buying a recipe for a certain price, or am I gifting it to a friend? Let's see if there are any other ambiguous strings.\n\n\"Favorite\" has a comment saying it's a verb, but I should add a comment to \"Favorites\" so it's clear that it's a noun. I'll add comments in code for both of those.\n\nLet's take care of the \"Buy recipe for\" string first.\n\nThere we go. The \"Favorites\" string is in my tab bar items, so let's add a comment for it, too.\n\nTab bar items are Label views. In SwiftUI, to add comments I need to initialize a Label with a Text view.\n\nAdding comments like this is really important for ensuring high-quality localizations. I don't want my translators to be confused and have to guess what I meant. Okay, I think I fixed everything. Time to export a fresh catalog and send it to Paul.\n\nWow, that was fast. Paul is the Apple Silicon of translators! Let's take a quick peek at what he sent back.\n\nHere, I can see all of the translations. There's the stringsdict for the smoothie stepper that I've added.\n\nLooks good. Let's import this and see how the app looks like in Russian. To import, I just go to the Product menu, click Import Localizations, and then choose the Catalog from Paul.\n\nAll my strings should be localized now. Let's build and run the app in Russian for macOS.\n\nFirst, I'll change the scheme to macOS, and then I can change the language to Russian.\n\nOkay, let's run it.\n\nWow, the app looks awesome in Russian, and all of the smoothies look delicious. I can see the ingredients and all of the nutritional value for all of them. I think I actually will order this one.\n\nWow, what a great service.\n\nLocalization in SwiftUI was designed to be easy, so you can focus on writing code. Here are some key points to keep in mind as you develop your app. LocalizedStringKey is a special type that signals SwiftUI to look up localized strings in your bundle. Use it in custom SwiftUI views to make them ready for localization. Enable the \"Use Compiler to Extract Swift Strings\" build setting to extract LocalizedStringKeys from code when exporting for localization in Xcode. Format your strings to internationalize your code, and style them with Markdown.\n\nUse Text to add comments for additional translation context.\n\nThanks for watching, and enjoy the rest of WWDC!  [music]",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:34",
+      "title": "Text() with a string literal",
+      "language": "swift",
+      "code": "Button(action: done) {\n   Text(\"Done\", comment: \"Button title to dismiss rewards sheet\")\n}"
+    },
+    {
+      "timestamp": "1:58",
+      "title": "Text() with a string literal and interpolation",
+      "language": "swift",
+      "code": "// RewardsCard.swift\n\nText(\"You are \\(10 - totalStamps) points away from a free smoothie!\")"
+    },
+    {
+      "timestamp": "2:06",
+      "title": "Text() with tableName",
+      "language": "swift",
+      "code": "// RecipeView.swift\nText(\"Ingredients.recipe\", tableName: \"Ingredients\", comment: \"Ingredients in a recipe. For languages that have different words for \\\"Ingredient\\\" based on semantic context.\")\nText(\"Ingredients.menu\", tableName: \"Ingredients\", comment: \"Ingredients in a smoothie. For languages that have different words for \\\"Ingredient\\\" based on semantic context.\")"
+    },
+    {
+      "timestamp": "2:52",
+      "title": "Declare localizable attributes in a custom view",
+      "language": "swift",
+      "code": "struct Card: View {\n    var title: LocalizedStringKey\n    var subtitle: LocalizedStringKey\n    \n    var body: some View {\n        Circle()\n            .fill(BackgroundStyle())\n            .overlay(\n                VStack(spacing: 16) {\n                    Text(title)\n                    Text(subtitle)\n                }\n            )\n    }\n}\n\nCard(\n    title: \"Thank you for your order!\",\n    subtitle: \"We will notify you when your order is ready.\"\n )"
+    },
+    {
+      "timestamp": "3:47",
+      "title": "Text() with multiline string literal",
+      "language": "swift",
+      "code": "Text(\"\"\"\n        A delicious blend of tropical fruits and blueberries will\n        have you sambaing around like you never knew you could!\n        \"\"\",\n        comment: \"Tropical Blue smoothie description\")"
+    },
+    {
+      "timestamp": "4:39",
+      "title": "Customize attributes",
+      "language": "swift",
+      "code": "VStack(alignment: .leading) {\n    Text(smoothie.title)\n        .font(.headline)\n    Text(ingredients)\n}"
+    },
+    {
+      "timestamp": "5:13",
+      "title": "Using Markdown",
+      "language": "swift",
+      "code": "// Smoothie.swift\n\nText(\"A refreshing blend that's a *real kick*!\", comment: \"Lemonberry smoothie description\")"
+    },
+    {
+      "timestamp": "6:04",
+      "title": "Create a measurement formatter (prior to iOS 15)",
+      "language": "swift",
+      "code": "let calories = Measurement<UnitEnergy>(\n    value: nutritionFact.kilocalories, unit: .kilocalories)\n\nstatic let measurementFormatter: MeasurementFormatter = {\n    let formatter = MeasurementFormatter()\n    formatter.unitStyle = .long\n    formatter.unitOptions = .providedUnit\n    return formatter\n}()\n\nText(Self.measurementFormatter.string(from: calories))\n\nText(\"Energy: \\(calories, formatter: Self.measurementFormatter)\")"
+    },
+    {
+      "timestamp": "6:22",
+      "title": "Specify the format in a declarative manner (iOS 15)",
+      "language": "swift",
+      "code": "let calories = Measurement<UnitEnergy>(\n    value: nutritionFact.kilocalories, unit: .kilocalories)\n\nText(calories.formatted(.measurement(width: .wide, usage: .food)))\n\nText(\"Energy: \\(calories, format: .measurement(width: .wide, usage: .food))\")"
+    },
+    {
+      "timestamp": "6:53",
+      "title": "Specify a keyboard shortcut",
+      "language": "swift",
+      "code": "struct SmoothieCommands: Commands {\n\n    var body: some Commands {\n        CommandMenu(Text(\"Smoothie\", comment: \"Menu title for smoothie-related actions\")) {\n            SmoothieFavoriteButton(smoothie)\n                .keyboardShortcut(\"+\")\n        }\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Fruta: Building a Feature-Rich App with SwiftUI",
+        "url": "https://developer.apple.com/documentation/appclip/fruta_building_a_feature-rich_app_with_swiftui"
+      },
+      {
+        "title": "Localization",
+        "url": "https://developer.apple.com/documentation/Xcode/localization"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10220/6/3866585A-3920-44B4-AB3F-03A446FCDE3A/downloads/wwdc2021-10220_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10220/6/3866585A-3920-44B4-AB3F-03A446FCDE3A/downloads/wwdc2021-10220_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "110401",
+      "year": "2022",
+      "title": "Create Swift Package plugins",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110401"
+    },
+    {
+      "id": "10221",
+      "year": "2021",
+      "title": "Streamline your localized strings",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10221"
+    },
+    {
+      "id": "10109",
+      "year": "2021",
+      "title": "What's new in Foundation",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10109"
+    },
+    {
+      "id": "10018",
+      "year": "2021",
+      "title": "What's new in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10018"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:08:45.228Z"
+}

@@ -109,6 +109,77 @@ export const APPLE_URLS = {
   SAMPLE_CODE_INDEX_JSON: 'https://developer.apple.com/tutorials/data/index/samplecode',
 } as const;
 
+// WWDC URLs
+export const WWDC_URLS = {
+  BASE: 'https://developer.apple.com/videos',
+  TOPICS: 'https://developer.apple.com/videos/topics/',
+  YEAR_BASE: 'https://developer.apple.com/videos/wwdc',
+  PLAY_BASE: 'https://developer.apple.com/videos/play/wwdc',
+
+  // URL builders
+  getYearUrl: (year: string) => `https://developer.apple.com/videos/wwdc${year}/`,
+  getVideoUrl: (year: string, videoId: string) => `https://developer.apple.com/videos/play/wwdc${year}/${videoId}/`,
+  getCodeUrl: (year: string, videoId: string) => `https://developer.apple.com/videos/play/wwdc${year}/${videoId}/code`,
+  getTranscriptUrl: (year: string, videoId: string) => `https://developer.apple.com/videos/play/wwdc${year}/${videoId}/transcript`,
+  getResourcesUrl: (year: string, videoId: string) => `https://developer.apple.com/videos/play/wwdc${year}/${videoId}/resources`,
+  getTopicUrl: (topicId: string) => `https://developer.apple.com/videos/${topicId}/`,
+} as const;
+
+// WWDC Configuration
+export const WWDC_CONFIG = {
+  // Year ranges
+  EARLIEST_YEAR: 2014,
+  LATEST_YEAR: 2025,
+  CODE_TAB_INTRODUCED_YEAR: 2022, // WWDC22 introduced separate code tabs
+
+  // Available years array
+  AVAILABLE_YEARS: ['2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025'],
+
+  // Default limits
+  DEFAULT_VIDEO_LIMIT: 50,
+  DEFAULT_CODE_EXAMPLES_LIMIT: 30,
+  DEFAULT_SEARCH_LIMIT: 20,
+  DEFAULT_RELATED_VIDEOS_LIMIT: 15,
+  DEFAULT_TOPIC_VIDEOS_LIMIT: 20,
+
+  // Maximum limits
+  MAX_VIDEO_LIMIT: 200,
+  MAX_CODE_EXAMPLES_LIMIT: 100,
+  MAX_SEARCH_LIMIT: 100,
+  MAX_RELATED_VIDEOS_LIMIT: 50,
+  MAX_TOPIC_VIDEOS_LIMIT: 100,
+
+  // Processing limits
+  MIN_CODE_LENGTH: 10, // Minimum code length to consider valid
+  MAX_CONTEXT_MATCHES: 3, // Maximum matches per video in search results
+  MAX_TOPIC_VIDEOS_FOR_SCORING: 10, // Maximum videos to load for similarity scoring
+
+  // Cache TTL for WWDC data (in milliseconds)
+  CACHE_TTL: 30 * 60 * 1000, // 30 minutes
+} as const;
+
+// WWDC Data Source Configuration
+export const WWDC_DATA_SOURCE_CONFIG = {
+  github: {
+    owner: 'kimsungwhee',
+    repo: 'apple-docs-mcp',
+    branch: 'main',
+    baseUrl: 'https://raw.githubusercontent.com/kimsungwhee/apple-docs-mcp/main/data/wwdc',
+  },
+  local: {
+    dataDir: 'data/wwdc', // Relative path from project root
+  },
+
+  // File paths
+  filePaths: {
+    globalMetadata: 'index.json',
+    topicIndex: (topicId: string) => `by-topic/${topicId}/index.json`,
+    yearIndex: (year: string) => `by-year/${year}/index.json`,
+    videoData: (year: string, videoId: string) => `videos/${year}-${videoId}.json`,
+    allVideos: 'all-videos.json',
+  },
+} as const;
+
 // Error Messages
 export const ERROR_MESSAGES = {
   INVALID_URL: 'URL must be from developer.apple.com',

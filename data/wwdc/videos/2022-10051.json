@@ -1,0 +1,138 @@
+{
+  "id": "10051",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10051/",
+  "title": "Go further with Complications in WidgetKit",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ August Joki: Hello, I'm August Joki, a software engineer on watchOS, and I'm here to show you how to go further with WidgetKit complications. I hope you've seen the wonderful Complications and Widgets: Reloaded talk first, covering the basics of complications in WidgetKit. This talk expands on the concepts covered there as they relate to complications on the watch faces. And my WWDC 2020 talk: Build complications in SwiftUI covers more specifics about tinting and SwiftUI drawing in complications.\n\nIn this talk, I'll be discussing the WidgetKit features unique to watchOS, as well as how to migrate your, and your users', existing ClockKit complications to WidgetKit. I've taken inspiration from the Coffee Tracker sample app to use as an example throughout this talk. The app records the number of coffees, teas, and sodas you drink throughout the day and tracks the amount of caffeine in your body over time. Let's start with what's unique to watchOS. In iOS 16 we brought complication style widgets to the phone's lock screen and in watchOS 9 we brought WidgetKit to the watch's complications. On the watch faces we have a unique complication presentation for the corners of the watch screen. And it requires a unique WidgetKit family called accessoryCorner, to describe it. Part of that unique presentation is auxiliary content specified by your SwiftUI view, but not rendered as part of your content. Instead, it is rendered by the watch face.\n\nThe circular part of the corner is standard SwiftUI rendering and the auxiliary content is the curved part in the corners.\n\nOr in the dial on the Infograph face.\n\nThe accessoryInline family has a unique behavior on watch faces. It has multiple ways of being rendered depending on the face. Sometimes flat, sometimes curved to match the dial.\n\nLet's talk about how to support these unique features by looking at how the coffee tracker app might be updated to use WidgetKit.\n\nIn addition to the three new complication-styled widget families on iOS 16: AccessoryRectangular, accessoryCircular, and accessoryInline, we have a fourth family on watchOS 9 called accessoryCorner.\n\naccessoryCorner can either be shown as a large circular content, like the maps and heart rate complications shown in the lower corners, or as smaller circular content with a curved label or gauge like the coffee tracker and moonphase complications shown in the upper corners.\n\nTo control whether the inner auxiliary content is shown, watchOS 9 has added a new view modifier you can use, which I'll show you now.\n\nLet's look at building a corner complication for my coffee tracker app.\n\nStarting with the larger circular content style, I have a ZStack with an SF Symbol and a background. The SwiftUI content is automatically clipped to a circle to keep in line with the design of the other corner complications.\n\nTo add the inner curved content, we use the new to watchOS 9 widgetLabel view modifier. The watch face extracts the contents of the modifier to draw the control appropriate for the family and the style of the watch face. And the circular content automatically scales down to make room. For accessoryCorner you can specify a SwiftUI text, gauge, or progressView in your widget's label.\n\nAccessoryCorner isn't the only family that supports widgetLabel. Let's look at how it is used on the accessoryCircular family.\n\nOn the Infograph watch face, in addition to the corner complications, there are four circular complications inside the dial. My coffee tracker circular complication, in the middle top, looks very similar to the corner complication we just saw, but with text in the dial. I'll show you how to add that text now.\n\nFor my circular complication design, I thought it more appropriate to move the gauge that was in the widgetLabel in my corner complication, to be front and center. To take advantage of the top middle position on Infograph, I add a widgetLabel to the gauge in order to display additional text in the longer bezel area that wouldn't otherwise fit in the circular content. But now I have redundant information between the main view and the text above it. I can clean that up by switching the circular content to that good looking coffee cup SF Symbol from my corner complication But when I switch to a face showing my circular complication that does not have the bezel, then I've lost all of my caffeine info. Luckily, there's a piece of API I can add to make my complication work in both cases.\n\nI update my complication to add the Environment property called showsWidgetLabel to my view. This will be true whenever the complication is in a position on the watch face that shows the content in the widget's label.\n\nAnd then I can change the content to depend on the value of showsWidgetLabel so I am able to have the appropriate level of information in each complication spot. I just demonstrated two different ways that the accessoryCircular family can show up on watch faces, and there is one more way you need to be aware of. The Extra Large watch face has long been a great way for people to see the time in an extra large format. And it supports a single, large circular complication. The Extra Large face uses the accessoryCircular family and automatically scales up the content to match the style of the face. Please note: as this face is designed to have a single, large complication, do not use the increased canvas size as an opportunity to densely pack your complication. The content should be identical to the normal circular family, only larger. As I mentioned earlier, there are two more widget families used on watch faces: accessoryRectangular and accessoryInline. There are no faces with rectangular complications that show the widgetLabel. And the accessoryInline family acts, already, as a widgetLabel. The watch face extracts Images and Texts from your inline content and renders them itself to match the look of the face. Next up is Migration. There are two parts to migration: rewriting your existing ClockKit complication code in WidgetKit; and providing a mapping to let the system know how to upgrade your complications people have set on their watch faces. When you adopt WidgetKit the system will stop asking your ClockKit data source for new content and show only your new complications in the face editing picker.\n\nAs well as bringing WidgetKit to the watch, watchOS 9 has updated every face to support rich complications, which allowed us to dramatically reduce the number of complication families from 12 to only 4. Rectangular and Corner map directly across to accessoryRectangular and accessoryCorner. All three graphic Circular styled ClockKit families are now a single accessoryCircular WidgetKit family. And the accessoryInline family is used where the old utilitarianSmallFlat or utilitarianLarge used to be.\n\nAnd many places that used to be utilitarianSmall have been updated to use the accessoryCorner family.\n\nWith WidgetKit, SwiftUI views and their state driven layout have replaced ClockKit's templates. WidgetKit still has familiar timelines and entries. In fact, they were originally inspired by ClockKit itself, which means that your complication data source will nicely migrate to one of either a static or intent based WidgetKit configuration.\n\nPlease see the original WidgetKit talk for more details about the types of configurations WidgetKit supports as well as general family support. We've added one last API to ClockKit to allow a person's complications to be migrated by the system automatically. This allows for your existing complications that are already on watch faces to automatically be upgraded to your new WidgetKit based complications without any user interaction. When your app gets updated on a watch, the Watch Faces will check for the presence of widgets in your app's bundle. If it finds any, it will then launch your ClockKit complication data source to generate the migrations for the existing complications. From this point forward, your CLKComplicationDataSource will only be run to ask for migrations when a person receives a shared face with your ClockKit complications on it. The system will ask for your migrations every time a new face is shared, so for a consistent experience you should keep your migrations consistent. Once you've finished creating your beautiful WidgetKit complications, you can add the new property, widgetMigrator, to provide the object that conforms to the new Migrator protocol. Be that your complication data source itself or some other type you provide.\n\nThe CLKComplication WidgetMigrator protocol has a single function to provide to the watch faces widget migration configurations from existing CLKComplicationDescriptors. The most straightforward way to adopt the new API is to have your data source conform to the new Migrator protocol.\n\nIf your WidgetKit complication uses the static configuration, you provide a static migration configuration. And there's an equivalent migration configuration if you use intents in your widget complication. Note that if you provide intent based migration configurations, you will need to also include your intent definitions in your watch app as well as your widget extensions, so you can create your intent objects in both places.\n\nWidgetKit enables new and creative ways to make complications for the watch, while dramatically simplifying the experience. Thanks for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:06",
+      "title": "Large Corner",
+      "language": "swift",
+      "code": "struct CornerView: View {\n    let value: Double\n\n    var body: some View {\n\n        ZStack {\n            AccessoryWidgetBackground()\n            Image(systemName: \"cup.and.saucer.fill\")\n                .font(.title.bold())\n                .widgetAccentable()\n        }\n\n    }\n}"
+    },
+    {
+      "timestamp": "3:27",
+      "title": "Corner with Gauge",
+      "language": "swift",
+      "code": "struct CornerView: View {\n    let value: Double\n\n    var body: some View {\n\n        ZStack {\n            AccessoryWidgetBackground()\n            Image(systemName: \"cup.and.saucer.fill\")\n                .font(.title.bold())\n                .widgetAccentable()\n        }\n        .widgetLabel {\n            Gauge(value: value,\n              in: 0...500) {\n                Text(\"MG\")\n            } currentValueLabel: {\n                Text(\"\\(Int(value))\")\n            } minimumValueLabel: {\n                Text(\"0\")\n            } maximumValueLabel: {\n                Text(\"500\")\n            }\n        }\n\n\n    }\n}"
+    },
+    {
+      "timestamp": "4:24",
+      "title": "Circular Gauge",
+      "language": "swift",
+      "code": "struct CircularView: View {\n    let value: Double\n\n    var body: some View {\n\n        Gauge(value: value,\n              in: 0...500) {\n            Text(\"MG\")\n        } currentValueLabel: {\n            Text(\"\\(Int(value))\")\n        }\n        .gaugeStyle(.circular)\n\n    }\n}"
+    },
+    {
+      "timestamp": "4:34",
+      "title": "Circular Gauge with Widget Label",
+      "language": "swift",
+      "code": "struct CircularView: View {\n    let value: Double\n\n    var body: some View {\n        let mg = value.inMG()\n\n        Gauge(value: value,\n              in: 0...500) {\n            Text(\"MG\")\n        } currentValueLabel: {\n            Text(\"\\(Int(value))\")\n        }\n        .gaugeStyle(.circular)\n        .widgetLabel {\n            Text(\"\\(mg, formatter: mgFormatter) Caffeine\")\n        }\n\n    }\n\n    var mgFormatter: Formatter {\n        let formatter = MeasurementFormatter()\n        formatter.unitOptions = [.providedUnit]\n        return formatter\n    }\n}\n\nextension Double {\n    func inMG() -> Measurement<UnitMass> {\n        Measurement<UnitMass>(value: self, unit: .milligrams)\n    }\n}"
+    },
+    {
+      "timestamp": "4:51",
+      "title": "Circular Stack with Widget Label",
+      "language": "swift",
+      "code": "struct CircularView: View {\n    let value: Double\n\n    var body: some View {\n        let mg = value.inMG()\n\n        ZStack {\n            AccessoryWidgetBackground()\n            Image(systemName: \"cup.and.saucer.fill\")\n                .font(.title.bold())\n                .widgetAccentable()\n        }\n        .widgetLabel {\n            Text(\"\\(mg, formatter: mgFormatter) Caffeine\")\n        }\n\n    }\n\n    var mgFormatter: Formatter {\n        let formatter = MeasurementFormatter()\n        formatter.unitOptions = [.providedUnit]\n        return formatter\n    }\n}\n\nextension Double {\n    func inMG() -> Measurement<UnitMass> {\n        Measurement<UnitMass>(value: self, unit: .milligrams)\n    }\n}"
+    },
+    {
+      "timestamp": "5:12",
+      "title": "Circular Stack or Gauge",
+      "language": "swift",
+      "code": "struct CircularView: View {\n    let value: Double\n    @Environment(\\.showsWidgetLabel) var showsWidgetLabel\n\n    var body: some View {\n        let mg = value.inMG()\n        if showsWidgetLabel {\n            ZStack {\n                AccessoryWidgetBackground()\n                Image(systemName: \"cup.and.saucer.fill\")\n                    .font(.title.bold())\n                    .widgetAccentable()\n            }\n            .widgetLabel {\n                Text(\"\\(mg, formatter: mgFormatter) Caffeine\")\n            }\n        }\n        else {\n            Gauge(value: value,\n                  in: 0...500) {\n                Text(\"MG\")\n            } currentValueLabel: {\n                Text(\"\\(Int(value))\")\n            }\n            .gaugeStyle(.circular)\n        }\n\n    }\n\n    var mgFormatter: Formatter {\n        let formatter = MeasurementFormatter()\n        formatter.unitOptions = [.providedUnit]\n        return formatter\n    }\n}\n\nextension Double {\n    func inMG() -> Measurement<UnitMass> {\n        Measurement<UnitMass>(value: self, unit: .milligrams)\n    }\n}"
+    },
+    {
+      "timestamp": "9:47",
+      "title": "Widget Migrator",
+      "language": "swift",
+      "code": "var widgetMigrator: CLKComplicationWidgetMigrator {\n    self\n}"
+    },
+    {
+      "timestamp": "9:56",
+      "title": "Static Migration Configuration",
+      "language": "swift",
+      "code": "func widgetConfiguration(from complicationDescriptor: CLKComplicationDescriptor) async -> CLKComplicationWidgetMigrationConfiguration? {\n    CLKComplicationStaticWidgetMigrationConfiguration(kind: \"CoffeeTracker\", extensionBundleIdentifier: widgetBundle)\n}"
+    },
+    {
+      "timestamp": "10:03",
+      "title": "Intent Migration Configuration",
+      "language": "swift",
+      "code": "func widgetConfiguration(from complicationDescriptor: CLKComplicationDescriptor) async -> CLKComplicationWidgetMigrationConfiguration? {\n    CLKComplicationIntentWidgetMigrationConfiguration(kind: \"CoffeeTracker\", extensionBundleIdentifier: widgetBundle, intent: intent, localizedDisplayName: \"Coffee Tracker\")\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Creating accessory widgets and watch complications",
+        "url": "https://developer.apple.com/documentation/WidgetKit/Creating-accessory-widgets-and-watch-complications"
+      },
+      {
+        "title": "Emoji Rangers: Supporting Live Activities, interactivity, and animations",
+        "url": "https://developer.apple.com/documentation/WidgetKit/emoji-rangers-supporting-live-activities-interactivity-and-animations"
+      },
+      {
+        "title": "Migrating ClockKit complications to WidgetKit",
+        "url": "https://developer.apple.com/documentation/WidgetKit/Converting-A-ClockKit-App"
+      },
+      {
+        "title": "WidgetKit",
+        "url": "https://developer.apple.com/documentation/WidgetKit"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10051/3/912F72F4-A83D-4923-A276-8B231CB7D837/downloads/wwdc2022-10051_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10051/3/912F72F4-A83D-4923-A276-8B231CB7D837/downloads/wwdc2022-10051_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10050",
+      "year": "2022",
+      "title": "Complications and widgets: Reloaded",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10050"
+    },
+    {
+      "id": "110931",
+      "year": "2022",
+      "title": "WWDC22 Day 3 recap",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110931"
+    },
+    {
+      "id": "10048",
+      "year": "2020",
+      "title": "Build complications in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10048"
+    },
+    {
+      "id": "10028",
+      "year": "2020",
+      "title": "Meet WidgetKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10028"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:14:43.258Z"
+}

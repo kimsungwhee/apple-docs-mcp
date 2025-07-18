@@ -1,0 +1,138 @@
+{
+  "id": "10075",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10075/",
+  "title": "Use SwiftUI with AppKit",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Essentials"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ instrumental hip hop music ♪ ♪ Welcome to \"Use SwiftUI with AppKit.\" I'm Ian, an engineer working on Shortcuts.\n\nIn macOS Monterey, Shortcuts came to macOS.\n\nShortcuts uses a lot of SwiftUI on the Mac.\n\nSwiftUI helps customize the experience for the platform, while sharing common views with the apps on iOS and watchOS.\n\nIn this video, I'm going to show how you can start adopting SwiftUI in your Mac app, by looking at some examples from Shortcuts.\n\nFirst, I'll show you an example of how to host SwiftUI views in your app, and then talk about how to pass data between AppKit and SwiftUI.\n\nI'll also cover hosting SwiftUI views in the cells of a collection or table view, how to handle layout and sizing of SwiftUI views when they are embedded in AppKit, how to make your SwiftUI views participate in the responder chain and be focusable, and, finally, how to host an AppKit view in SwiftUI.\n\nAlright, I'll start with how to host SwiftUI in AppKit.\n\nIn Shortcuts, the main window contains an AppKit split view controller and the sidebar on the left is written using SwiftUI.\n\nThe sidebar view is implemented as a SwiftUI List, and the list shows sections with rows for all of the places you can navigate to in the app.\n\nThe view keeps track of which item is selected, through the selected item binding.\n\nThe possible items that can be selected are represented as cases in the SidebarItem type.\n\nIn this case, since there's a split view controller already.\n\nTo host this sidebar view, we use a class from SwiftUI called NSHostingController.\n\nThe SwiftUI sidebar view is passed in as the root view of that hosting controller.\n\nSince a hosting controller can be used like any other view controller, here, we configure it as a splitViewItem and add that to the splitViewController.\n\nNow the sidebar is hosted in the split view, but for it to work when the selection changes, the right side of the split view needs to show a different page.\n\nCurrently, the selected item state only exists within SwiftUI.\n\nWhat we need to do is move that to a place that can be shared between the split view and the sidebar.\n\nA good way to do this is to create a model object that can be stored outside of SwiftUI and contain the state that needs to be shared.\n\nI'll call this object the SelectionModel.\n\nNow, the sidebar can still read and write the state in the SelectionModel.\n\nIn code, the SelectionModel is a class that conforms to ObservableObject.\n\nBeing an observable object lets SwiftUI reload the view when the state stored in the model changes.\n\nIt stores which sidebar item is currently selected.\n\nThis property is published so that the SwiftUI sidebar view can update when the selected item changes.\n\nWhenever someone changes the selection in the sidebar, the model can show a new page in the detail view.\n\nNow that I've covered how to host SwiftUI in AppKit, let's move on to collection and table cells.\n\nWhen bringing Shortcuts from other platforms to macOS, there was already an iconic SwiftUI view built to display a shortcut in a collection view cell or a Home Screen widget.\n\nOn macOS, these same views are displayed in the cells of an NSCollectionView.\n\nIn a collection or table view with lots of items, each cell view is recycled as you scroll, showing different content over time.\n\nTo make sure the cell reuse is performant, you need to avoid adding and removing subviews from the cells as the user scrolls.\n\nWhen displaying a SwiftUI view in each cell, use a single hosting view and update it with a different root view when the cell's content needs to change.\n\nHere's all you need to build a collection view cell to host SwiftUI.\n\nIn the example here, I'm building the cell that displays a shortcut view.\n\nEach cell contains an NSHostingView to host SwiftUI.\n\nSince cells are created before they are configured with any content, this will start off as nil, and will be set the first time a shortcut is ready to be displayed.\n\nThe displayShortcut method is called by the data source when configuring the cell to display a shortcut.\n\nThis method creates a SwiftUI ShortcutView.\n\nThen, if there's already a hostingView, the rootView of that hostingView is set to the new view.\n\nOtherwise, if it's the first time, a newHostingView is created and added as a subview of the cell.\n\nHere's the lifecycle of the cell that's hosting SwiftUI.\n\nFirst, the cell is initialized and it starts with no subviews, since there is not a shortcut to display yet.\n\nThe first time displayShortcut is called, the hostingView is created with the shortcutView to display.\n\nThis creates a SwiftUI view hierarchy, containing a VStack, an image, a spacer, and two text views.\n\nIf this cell is then scrolled off screen, it will be potentially dequeued by the system and need to show a different shortcut.\n\nWhen this happens, a new ShortcutView is created and given to the HostingView.\n\nSince the HostingView was already displaying a different shortcut view, it will reuse the overall structure of the view, including the VStack and the spacer, and only update the image, text, and background that changed.\n\nAlright, next, let's talk about layout and sizing.\n\nHosting controllers and hosting views have intrinsic sizes based on the SwiftUI view's ideal width and height.\n\nSwiftUI automatically creates and updates Auto Layout constraints, which the AppKit layout system uses to size the view appropriately.\n\nViews are also flexible, meaning they support a variety of sizes, between a minimum and a maximum.\n\nSwiftUI creates constraints for these as well.\n\nWhen embedding SwiftUI hosting views in your hierarchy, you should apply your own Auto Layout constraints to the superview or to other adjacent views.\n\nUsing the frame modifier or other SwiftUI layout will result in an update to the constraints that are created, such as overriding the width to be a fixed size.\n\nSince windows can be resized by the user, they have a minimum and a maximum size.\n\nWhen HostingViews are set as the top-level contentView of a window, SwiftUI will automatically update that window's minimum and maximum size based on the content being displayed.\n\nAnd this lets windows be resizable either vertically, horizontally, or both, depending on the content.\n\nSwiftUI views, placed in hosting controllers, also are sized based on the content when presented modally.\n\nFor example, you can easily place SwiftUI views into an AppKit popover, by presenting a hosting controller using the popover presentation API on NSViewController, as shown here.\n\nYou can also present SwiftUI views as sheets, using the presentAsSheet method.\n\nAnd finally, for a modal window, you can use the presentAsModalWindow method to present a window that blocks interaction until closed.\n\nThe window is sized to fit the content.\n\nIn macOS Ventura, there are new APIs on NSHostingView and NSHostingController that allow you to customize the constraints that are automatically added.\n\nBy default, hosting controllers and views create constraints for the minimum size, intrinsic size, and maximum size.\n\nYou may want to disable some of these for performance reasons if you want the view to always be flexibly sized, or the constraints are already added to surrounding views in AppKit.\n\nFor hosting controllers, to let the ideal size of the view determine the preferred content size, you can enable the preferredContentSize option.\n\nWhen you start adding SwiftUI views to your app, it's important that they take part in the responder chain and focus system just like other views in your app.\n\nIn Shortcuts, our editor is implemented as a SwiftUI View.\n\nBut the editor needs to handle menu bar commands defined in the main menu, which is implemented in AppKit.\n\nThese commands include cut, copy, paste, and others.\n\nWe implemented a few of our own custom menu items as well, for moving actions up and down.\n\nIn AppKit, your view hierarchy makes up a chain of views called \"the responder chain.\" The focused responder is called the first responder.\n\nWhen a menu item is selected, the selector for that item is sent to the first responder.\n\nBut if the first responder doesn't respond to that selector, then the selector is sent to each next responder, until something handles the selector, or it reaches the app.\n\nThe equivalent to the first responder in SwiftUI is the focused view.\n\nFocusable SwiftUI views can respond to keyboard input and handle selectors sent to the responder chain.\n\nSome views like text fields are already focusable, but you can use the focusable modifier to make other views focusable too.\n\nSwiftUI has a few modifiers to handle common commands, such as copy, cut, and paste.\n\nThese pass values in and out of the pasteboard, and it's an easy way to let people transfer data in and out of your app.\n\nThe shortcuts editor uses the onMoveCommand and onExit command modifiers to handle the arrow keys and escape keys.\n\nThe onCommand modifier can be used to handle any of the common selectors from AppKit or your own custom selectors defined in your app.\n\nHere, we handle the selectAll command from AppKit and the moveActionUp and moveActionDown commands defined in the Shortcuts app.\n\nWhen testing focus and keyboard navigability in your app, make sure to open Keyboard System Settings and test with Full Keyboard Navigation turned both on and off, since many controls are only focusable when that's enabled.\n\nThere's a lot more you can do to make your app work great with the keyboard.\n\nFor example, there are APIs such as FocusState and the focused modifier that let you programmatically change which view is focused.\n\nTo learn more about focus and the keyboard, you should go watch the \"Direct and reflect focus in SwiftUI\" video.\n\nFinally, let's talk about hosting AppKit views in SwiftUI.\n\nThere are some instances where Shortcuts is hosting AppKit views inside of a SwiftUI layout, and you may need to host AppKit views, too, as you adopt SwiftUI in your app.\n\nOne example is inside of the SwiftUI shortcuts editor, where there's an embedded AppleScript editor view, which is an AppKit control shared with a few other system apps on macOS.\n\nSwiftUI provides two representable protocols that allow AppKit views and view controllers to be embedded within a SwiftUI view hierarchy.\n\nLike SwiftUI views, representables are descriptions for how to create and update AppKit views.\n\nSince many classes in AppKit have delegates, observers, or rely on KVO or notifications to be observed, the protocols also include an optional coordinator object that you can implement to accompany your view or view controller.\n\nHere's the lifecycle of the hosted object and its coordinator.\n\nWe start with the hosted view being initialized.\n\nThis happens when the view is about to be displayed for the first time.\n\nThe first thing SwiftUI does during initialization is make the coordinator.\n\nThis is optional, but you can define your own type and return it from makeCoordinator if you need it for delegation or state management.\n\nA single instance of the coordinator will stay around for the lifetime of the view.\n\nSecond, either the makeNSView or makeNSViewController method is called.\n\nThis is where you describe to SwiftUI how to create a new instance of your view.\n\nThe context contains the coordinator that was just made, if any, so here's a good place to assign the coordinator as the view's delegate or other type of observer.\n\nOnce the view has been created, the update view method will be called whenever the SwiftUI state or environment changes.\n\nHere, it's your responsibility to update any properties or state stored in the AppKit view to keep it in sync with the surrounding SwiftUI state and environment.\n\nThe update method can be called often, so the changes you make to the view should be as minimal as possible.\n\nYou should check for what has changed and only reload the affected part of the view when changes are made.\n\nWhen SwiftUI is done displaying the hosted view, it will be dismantled.\n\nThe hosted view and coordinator will both be deallocated.\n\nBefore these are deallocated, the representable protocols give you an optional method to implement, where you can clean up state if needed.\n\nAlright, now that you know the lifecycle and are familiar with the representable protocols, I'm going to show you how Shortcuts hosts the custom script editor view in the app.\n\nThe script editor is an NSView called ScriptEditorView.\n\nThe code that's written in the editor can be accessed and modified through the sourceCode property, and the view can be disabled to prevent changes from being made.\n\nThe script editor also has a delegate, which is notified any time someone modifies the source code.\n\nWhen hosting an AppKit view, first think about where the view will be placed in SwiftUI, and what data needs to be passed in and out.\n\nIn Shortcuts, this view is placed into a container view next to the compile button.\n\nThe compile button's handler needs to access the source code that's entered into the view.\n\nThe source code is stored in SwiftUI using the State property wrapper.\n\nThe representable will need to both read and write to this state.\n\nTo build the representable, start by creating a type that conforms to NSViewRepresentable, since it will host an NSView.\n\nAdd properties for each thing that needs to be configurable from SwiftUI.\n\nFor the source code a binding is used, which will read and write the state stored in SwiftUI.\n\nThe first method you need to implement is makeNSView.\n\nHere is where you describe how to create a new instance of the view, and where you should do any one-time setup that's required.\n\nHere, the delegate is set to the coordinator.\n\nI'll talk about the coordinator more in a bit.\n\nNext, implement updateNSView.\n\nThis will be called when either the sourceCode changes, or when the SwiftUI environment changes.\n\nSince the script editor does a bunch of work when the sourceCode property is set, we compare the value already in the view, and only set the property if it changes to avoid unnecessary work.\n\nThe context passed to updateNSView contains the SwiftUI environment.\n\nThe isEnabled environment key is passed to the isEditable property on the script editor, so editing is disabled if the rest of the SwiftUI view hierarchy is.\n\nWhenever someone modifies the source code in the view, the source code binding needs to capture the new value.\n\nTo do this, we'll build a coordinator that conforms to the ScriptEditorViewDelegate.\n\nThe coordinator will store the representable value, which contains the source code binding that it needs to update.\n\nAnd in the sourceCodeDidChange method, the binding is set to the new string value from the view.\n\nFinally, we need to tell the SwiftUI representable how to make and update the coordinator.\n\nFirst, you need to implement the makeCoordinator method to create a new coordinator.\n\nCoordinators have the same lifetime as the hosted view, and like hosted views, properties you add to the coordinator need to remain up to date as the representable changes.\n\nSince updateNSView is called when the values stored in the representable change, here, the representable property on the coordinator is updated.\n\nNow that you know how to add AppKit into SwiftUI, and also add SwiftUI into AppKit, you should start integrating SwiftUI into your app.\n\nA great place to start is in your sidebar, or table and collection view cells.\n\nMake sure your views are sizing themselves correctly and handling common commands and focus.\n\nThanks for your time, and I can't wait to see what you build ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:29",
+      "title": "SidebarView and SidebarItem",
+      "language": "swift",
+      "code": "struct SidebarView: View {\n    @State private var selectedItem: SidebarItem\n    \n    var body: some View {\n        List(selection: $selectedItem) {\n            ...\n            Section(\"Shortcuts\") { ... }\n            Section(\"Folders\") { ... }\n        }\n    }\n}\n\nenum SidebarItem: Hashable {\n    case gallery\n    case allShortcuts\n    ...\n    case folder(Folder)\n}"
+    },
+    {
+      "timestamp": "1:53",
+      "title": "Hosting SwiftUI sidebar",
+      "language": "swift",
+      "code": "let splitViewController = NSSplitViewController()\n\nlet sidebar = NSHostingController(rootView: SidebarView(...))\nlet splitViewItem = NSSplitViewItem(viewController: sidebar)\nsplitViewController.addSplitViewItem(splitViewItem)"
+    },
+    {
+      "timestamp": "3:06",
+      "title": "Sidebar selection model",
+      "language": "swift",
+      "code": "class SelectionModel: ObservableObject {\n\n    @Published var selectedItem: SidebarItem = .allShortcuts\n\n}\n\n// AppKit Window Controller\ncancellable = selectionModel.$selectedItem.sink { newItem in\n    // update the NSSplitViewController detail\n}"
+    },
+    {
+      "timestamp": "4:37",
+      "title": "Collection view item hosting SwiftUI",
+      "language": "swift",
+      "code": "class ShortcutItemView: NSCollectionViewItem {\n    private var hostingView: NSHostingView<ShortcutView>?\n\n    func displayShortcut(_ shortcut: Shortcut) {\n        let shortcutView = ShortcutView(shortcut: shortcut)\n\n        if let hostingView = hostingView {\n            hostingView.rootView = shortcutView\n        } else {\n            let newHostingView = NSHostingView(rootView: shortcutView)\n            view.addSubview(newHostingView)\n            setupConstraints(for: newHostingView)\n            self.hostingView = newHostingView\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "7:55",
+      "title": "Popover presentation",
+      "language": "swift",
+      "code": "viewController.present(NSHostingController(rootView: ...), \n    asPopoverRelativeTo: rect, of: view, \n    preferredEdge: .maxY, behavior: .transient)"
+    },
+    {
+      "timestamp": "8:15",
+      "title": "Sheet presentation",
+      "language": "swift",
+      "code": "viewController.presentAsSheet(NSHostingController(rootView: ...))"
+    },
+    {
+      "timestamp": "8:22",
+      "title": "Modal window presentation",
+      "language": "swift",
+      "code": "let hostingController = NSHostingController(rootView: ModalView())\nhostingController.title = \"Window Title\"\nviewController.presentAsModalWindow(hostingController)"
+    },
+    {
+      "timestamp": "8:45",
+      "title": "Sizing options",
+      "language": "swift",
+      "code": "hostingController.sizingOptions = [.minSize, .intrinsicContentSize, .maxSize]"
+    },
+    {
+      "timestamp": "10:47",
+      "title": "Copy, Cut, and Paste commands",
+      "language": "swift",
+      "code": "Image(...)\n    .focusable()\n    .copyable { ... }\n    .cuttable { ... }\n    .pasteDestination(payloadType: Image.self) { ... }"
+    },
+    {
+      "timestamp": "11:02",
+      "title": "Respond to standard commands",
+      "language": "swift",
+      "code": "struct ShortcutsEditorView: View {\n    var body: some View {\n        ScrollView { ... }\n            .onMoveCommand { moveSelection(direction: $0) }\n            .onExitCommand { cancelOperations() }\n            .onCommand(#selector(NSResponder.selectAll(_:)) { selectAllActions() }\n            .onCommand(#selector(moveActionUp(_:)) { moveSelectedAction(.up) }\n            .onCommand(#selector(moveActionDown(_:)) { moveSelectedAction(.down) }\n    }\n}"
+    },
+    {
+      "timestamp": "15:18",
+      "title": "Script editor",
+      "language": "swift",
+      "code": "class ScriptEditorView: NSView {\n    var sourceCode: String\n    var isEditable: Bool\n    weak var delegate: ScriptEditorViewDelegate?\n}\n\nprotocol ScriptEditorViewDelegate: AnyObject {\n    func sourceCodeDidChange(in view: ScriptEditorView) -> Void\n}"
+    },
+    {
+      "timestamp": "15:40",
+      "title": "Script editor container",
+      "language": "swift",
+      "code": "struct ScriptEditorContainerView: View {\n    @State var sourceCode: String = \"\"\n\n    var body: some View {\n        VStack {\n            CompileButton { compile(code: sourceCode) }\n            Divider()\n            ScriptEditorRepresentable(sourceCode: $sourceCode)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "16:13",
+      "title": "Script editor representable",
+      "language": "swift",
+      "code": "struct ScriptEditorRepresentable: NSViewRepresentable {\n    @Binding var sourceCode: String\n\n    func makeNSView(context: Context) -> ScriptEditorView {\n        let scriptEditor = ScriptEditorView(frame: .zero)\n        scriptEditor.delegate = context.coordinator\n        return scriptEditor\n    }\n\n    func updateNSView(_ nsView: ScriptEditorView, context: Context) {\n        if sourceCode != scriptEditor.sourceCode {\n            scriptEditor.sourceCode = sourceCode\n        }\n        scriptEditor.isEditable = context.environment.isEnabled\n        context.coordinator.representable = self\n    }\n\n    func makeCoordinator() -> Coordinator {\n        Coordinator(representable: self)\n    }\n}\n\nclass Coordinator: NSObject, ScriptEditorViewDelegate {\n    var representable: ScriptEditorRepresentable\n\n    init(representable: ScriptEditorRepresentable) { ... }\n\n    func sourceCodeDidChange(in view: ScriptEditorView) {\n        representable.sourceCode = view.sourceCode\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "UIKit integration",
+        "url": "https://developer.apple.com/documentation/SwiftUI/UIKit-integration"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10075/5/041C40B8-2F14-4B08-8406-CFCE8E85A1B0/downloads/wwdc2022-10075_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10075/5/041C40B8-2F14-4B08-8406-CFCE8E85A1B0/downloads/wwdc2022-10075_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10074",
+      "year": "2022",
+      "title": "What's new in AppKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10074"
+    },
+    {
+      "id": "10023",
+      "year": "2021",
+      "title": "Direct and reflect focus in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10023"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:23:24.561Z"
+}

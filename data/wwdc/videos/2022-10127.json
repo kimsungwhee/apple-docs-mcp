@@ -1,0 +1,119 @@
+{
+  "id": "10127",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10127/",
+  "title": "Create parametric 3D room scans with RoomPlan",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Photos & Camera",
+    "Spatial Computing"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ (Mellow instrumental hip-hop music) ♪ ♪ Praveen Sharma: Hi. My name is Praveen, and I'm from the Prototyping team here at Apple.\n\nKai Kang: Hi. My name is Kai and I'm from the Video Engineering team.\n\nPraveen: Over the past few years Apple has enabled powerful new ways for people to bring the world into their apps.\n\nLast year, we introduced Object Capture, which takes in photos of real-world objects, and using the Photogrammetry API in RealityKit, turns them into a 3D model ready for use in your app.\n\nPrevious to Object Capture, we released the Scene Reconstruction API which gives you a coarse understanding of the geometric structure of your space and enables brand-new augmented reality use cases in your apps.\n\nThis year, we are very excited to announce a brand-new framework called RoomPlan.\n\nRoomPlan allows you to scan your room using your LiDAR-enabled iPhone or iPad.\n\nIt generates a parametric 3D model of the room and its room-defining objects which you can use in your app.\n\nLet's take a look at what a RoomPlan scanning experience looks like.\n\nRoomPlan uses sophisticated machine learning algorithms powered by ARKit to detect walls, windows, openings, and doors, as well as room-defining objects like fireplaces, couches, tables, and cabinets.\n\nWith our RoomCaptureView API, which uses RealityKit to render scanning progress in real time, you can easily integrate a scanning experience into your app.\n\nAnd when you are finished scanning, RoomCaptureView presents the final post-processed results for you to use however best fits your use case.\n\nFor the first time, without the complexities of implementing machine learning and computer vision algorithms, people can now interact with their room in brand new ways.\n\nFor example, interior design apps can preview wall color changes and accurately calculate the amount of paint required to repaint a room.\n\nArchitecture apps can now easily allow someone to preview and edit changes to their room's layout in real time.\n\nReal estate apps can now seamlessly enable agents to capture floor plans and 3D models of a listing.\n\nAnd e-commerce apps can engage customers through product visualization in their physical spaces.\n\nThese are just a few examples of applications RoomPlan enables, and you'll be surprised to see how simple it is to integrate RoomPlan into your app.\n\nLet's take a look.\n\nThere are two main ways you can use RoomPlan.\n\nThe first is our out-of-the-box scanning experience which allows you to seamlessly integrate RoomPlan into your app.\n\nThe second is our data API which enables your app to use the live parametric data from a scan however best suits your use case.\n\nWith both of these APIs, we recommend some best practices to help you achieve the best possible scan results, which we'll go over in the last section of this presentation.\n\nFirst, let's talk about the scanning experience that you can bring into your app using our new RoomCaptureView API.\n\nRoomCaptureView is a UIView subclass that you can easily place in your app.\n\nIt handles the presentation of world space scanning feedback, real-time room model generation, as well as coaching and user guidance.\n\nLet's take a closer look at the design elements presented during a RoomCaptureView-based scan.\n\nDuring an active RoomCaptureView session, animated lines outline detected walls, windows, openings, doors, and room-defining objects in real time.\n\nThe interactive 3D model generated in real time at the bottom of the RoomCaptureView, gives you an overview of your scanning progress at a glance.\n\nFinally, text coaching guides you to the best possible scanning results.\n\nLet's take a look at how you can start using RoomCaptureView in just four easy steps.\n\nFirst, we create a RoomCaptureView reference in our ViewController.\n\nSecond, we create a reference to our RoomCaptureSession configuration object.\n\nThird, we start our scan session, passing in our configuration to the capture session's run function.\n\nAnd finally, our application tells the capture session to stop scanning.\n\nOptionally, your app can adhere to our RoomCaptureViewDelegate protocol and opt out of post-processed results and their presentation or handle the post-processed scan results once they have been presented.\n\nFor example, you can export a USDZ of the results by calling the export function available on the provided CapturedRoom data struct.\n\nAnd that's how simple it is to integrate RoomPlan into your app.\n\nWe are so excited to see what you make with this API.\n\nNow my colleague Kai will talk about RoomCaptureSession and RoomPlan's Data API.\n\nKai: Thanks, Praveen.\n\nIn this section, we will walk you through the Data APIs that provide you the access to the underlying data structures during scanning and can help you build a custom visualization of the scanning experience from ground up.\n\nThe basic workflow consists of three parts: scan, process, and export.\n\nFor scanning, we will cover the basics of how to set up and start the capture session, as well as display and monitor the capture process.\n\nThen we'll look at how your scanned data is processed and the final model is received for presentation.\n\nFinally, we'll discuss how you can generate and export the output USD file which can also be used in your USD workflows.\n\nNow, let's look into the Scan step in detail.\n\nWe will use the RoomCaptureSession API to set up the session and display the progress as we continue scanning.\n\nLet me show you in code.\n\nHere's a simple RealityKit app as an example.\n\nTo start, simply import RoomPlan into your Swift project.\n\nIn the ViewController of your app, you can have a custom type to visualize the results and to initiate a RoomCaptureSession instance.\n\nAdditionally, RoomCaptureSession provides a handle to the underlying AR session so that your apps can draw planes and object bounding boxes in the AR view.\n\nRoomCaptureSession adopts the delegate pattern.\n\nIn your ViewController class, you can assign the ViewController itself as the captureSession's delegate.\n\nThis would allow the ViewController to get real-time updates from the RoomCaptureSession.\n\nTheses updates include 3D models and instructions in order to guide people during the capture.\n\nTo get these updates, your ViewController needs to conform to the RoomCaptureSessionDelegate protocol and implement two methods.\n\nThe first one is captureSession(_ session: didUpdate room:) method in order to get the real-time CapturedRoom data structure.\n\nYour visualizer can use it to update AR view of the 3D model, which provides real-time feedback to people on the progress.\n\nWe will dive into the CapturedRoom structure more in a later part of the talk.\n\nThis method will be called when we detect updates to the captured room.\n\nThe second method is captureSession(_ session: didProvide instruction:).\n\nThis method provides you with an instruction structure which contains real-time feedback.\n\nYour visualizer can use the instruction to guide people during the scan.\n\nLet's go through the instructions that this API provides.\n\nThese instructions include distance to the objects, scanning speed, lighting adjustment to the room, as well as focusing on specific areas of the room that have more textures.\n\nThese instructions will be provided during the scan in order to guide people with real-time feedback.\n\nNext, we will move on to the process part.\n\nIn this section, we will use the RoomBuilder class to process the scanned data and generate the final 3D models.\n\nTo process the captured data, the first step is to initiate a RoomBuilder instance in your ViewController class.\n\nNext, in order to receive the sensor data after the capture process, your app needs to implement the captureSession(_ session: didEndWith data: error:) method.\n\nWhen the RoomCaptureSession is stopped, by calling the stop() function in your app, or due to an error, this function will be called to return a CaptureRoomData object and an optional error.\n\nFinally, to process the captured data, we call the roomBuilder's async roomModel(from:) method with the await keyword.\n\nThe method runs asynchronously to process the scanned data and build the final 3D model.\n\nIt utilizes the Swift async/await function that we introduced in last year's WWDC.\n\nWithin just a few seconds, the model will be available for the final presentation in your app.\n\nNow, let's dive into the details of the CapturedRoom data structure and how you can export it to use in your app.\n\nAt the top level, there is CapturedRoom which consists of Surfaces and Objects.\n\nSurface contains unique attributes to represent curves such as radius; starting and ending angles; four different edges of the surface; and architecture categories of wall, opening, window, door.\n\nObject contains furniture categories such as table, bed, sofa, etc.\n\nSurface and Object share some common attributes such as dimensions; confidence, which gives you three levels of confidence for the scanned surface or object; the 3D transform matrix; as well as a unique identifier.\n\nLet's see how they are represented in code.\n\nThe CapturedRoom structure is a fully parametric representation of the elements in the room.\n\nIt contains five properties including walls, openings, doors, windows, and objects in the room.\n\nFor the first four elements, they are represented as the Surface structure which represents 2D planar architectural structures.\n\nOn the right, you can see the various properties of Surface we covered earlier.\n\nThe last property is an array of 3D objects in the room, and they are represented as cuboids.\n\nOn the right, you can see the various properties of Object.\n\nHere is the list of object types we support in RoomPlan.\n\nThese include a variety of common furniture types such as sofa, table, chair, bed, and many more.\n\nFinally, the export function allows you to export this CapturedRoom into a USD or USDZ data for your existing workflows.\n\nHere is an example to show how you can directly open the USD output in Cinema 4D to browse and edit the hierarchical data structure of the room, as well as the dimensions and location of each room element or object.\n\nYou can also leverage your existing USD and USDZ workflows to add renders of the captured room into a variety of applications such as real estate, e-commerce, utilities, and interior design.\n\nSo far, we covered the scanning experience and underlying RoomPlan APIs.\n\nWe'll now go through some best practices to help you get good results with RoomPlan.\n\nWe will cover the recommended conditions that allow for a good scan, room features to look out for while selecting a room, as well as a few scanning and thermal considerations to keep in mind.\n\nRoomPlan API supports most common architectural structures and objects in a typical household.\n\nIt works best for a single residential room with a maximum room size of 30 feet by 30 feet or around 9 by 9 meters.\n\nLighting is also important for the API to get a clear video stream and good AR tracking performance.\n\nA minimum 50 lux or higher is recommended for using the API, which is typical for a family living room at night.\n\nFor the hardware, RoomPlan API is supported on all LiDAR-enabled iPhone and iPad Pro models.\n\nThere are some special conditions that can present a challenge for the API.\n\nFor example, full-height mirrors and glass pose a challenge for the LiDAR sensor to produce the expected output.\n\nEven high ceilings could exceed the limit of the scanning range of the LiDAR sensor.\n\nAlso, very dark surfaces could be hard for the device to scan.\n\nThere are some considerations to get better scanning results.\n\nFirst, for applications that have high accuracy requirements, preparing the room before scanning can enhance the quality of the scan.\n\nFor example, opening the curtains can let more natural light in and reduce window occlusions, which works best for daytime scans.\n\nClosing the doors can reduce the chance of scanning unnecessary area outside of the room.\n\nFollowing a good scanning motion is also very important to achieving good scanning results with the API.\n\nAnd that is why we provide the user instruction delegate method in order to provide feedback on textures, distance, speed, and lighting conditions to people during the scans.\n\nAnother thing to keep in mind is battery and thermals of the device.\n\nWe have done many optimizations on RoomPlan API to ensure a good scanning experience.\n\nNevertheless, it's best to avoid repeated scans or single long scans over 5 minutes.\n\nThese could not only cause fatigue but also drain out the battery and create thermal issues which might in turn impact the user experience of your app.\n\nThere is a lot that we covered today.\n\nWe introduced a brand-new API, RoomPlan.\n\nIt provides an intuitive scanning experience to capture your rooms, powerful machine learning models to understand the environment, as well as a fully parametric USD output format for easy integration in your apps.\n\nFor guidance on how to better design and implement your new RoomPlan experience, please check out the related talks below.\n\nPraveen: It's time for you to try RoomPlan in your app.\n\nWe can't wait to see what you can create with this new API.\n\nKai: Thanks for watching! ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:36",
+      "title": "RoomCaptureView API - Scan & Process",
+      "language": "swift",
+      "code": "// RoomCaptureView API - Scan & Process\n\nimport UIKit\nimport RoomPlan\n\nclass RoomCaptureViewController: UIViewController {\n\n    var roomCaptureView: RoomCaptureView\n    var captureSessionConfig: RoomCaptureSession.Configuration\n\n   private func startSession() {\n        roomCaptureView?.captureSession.run(configuration: captureSessionConfig)\n     }\n    \n    private func stopSession() {\n        roomCaptureView?.captureSession.stop()\n\t}\n}"
+    },
+    {
+      "timestamp": "5:00",
+      "title": "RoomCaptureView API - Export",
+      "language": "swift",
+      "code": "// RoomCaptureView API - Export\n\nimport UIKit\nimport RoomPlan\n\nclass RoomCaptureViewController: UIViewController {\n  …\n  func captureView(shouldPresent roomDataForProcessing: CapturedRoomData, error: Error?) -> Bool {\n    // Optionally opt out of post processed scan results.\n    return false\n  }\n\n  func captureView(didPresent processedResult: CapturedRoom, error: Error?) {\n    // Handle final, post processed results and optional error.\n    // Export processedResults\n    …\n    try processedResult.export(to: destinationURL)\n    …\n  }\n}"
+    },
+    {
+      "timestamp": "6:50",
+      "title": "RoomCaptureSession - setup previewVisualizer",
+      "language": "swift",
+      "code": "import UIKit\nimport RealityKit\nimport RoomPlan\nimport ARKit\n\nclass ViewController: UIViewController {\n    @IBOutlet weak var arView: ARView!\n    var previewVisualizer: Visualizer!\n    lazy var captureSession: RoomCaptureSession = {\n        let captureSession = RoomCaptureSession()\n        arView.session = captureSession.arSession\n        return captureSession\n    }()\n    override func viewDidLoad() {\n        super.viewDidLoad()\n        captureSession.delegate = self\n        // set up previewVisualizer\n    }\n}"
+    },
+    {
+      "timestamp": "7:40",
+      "title": "RoomCaptureSession - live results and user instructions",
+      "language": "swift",
+      "code": "// Getting live results and user instructions\n\nextension ViewController: RoomCaptureSessionDelegate {\n\n    func captureSession(_ session: RoomCaptureSession,\n                        didUpdate room: CapturedRoom) {\n        previewVisualizer.update(model: room)\n    }\n    \n    func captureSession(_ session: RoomCaptureSession,\n                   didProvide instruction: Instruction) {\n        previewVisualizer.provide(instruction)\n    }\n}"
+    },
+    {
+      "timestamp": "9:12",
+      "title": "Setup RoomBuilder",
+      "language": "swift",
+      "code": "// RoomBuilder\nimport UIKit\nimport RealityKit\nimport RoomPlan\nimport ARKit\n\nclass ViewController: UIViewController {\n    \n    @IBOutlet weak var arView: ARView!\n    var previewVisualizer: Visualizer!\n\n    // set up RoomBuilder\n    var roomBuilder = RoomBuilder(options: [.beautifyObjects])\n}"
+    },
+    {
+      "timestamp": "9:30",
+      "title": "RoomBuilder - generate final 3D CapturedRoom",
+      "language": "swift",
+      "code": "// RoomBuilder with the latest CapturedRoomData to generate final 3D CapturedRoom\n\nextension ViewController: RoomCaptureSessionDelegate\n{\n    func captureSession(_ session: RoomCaptureSession, \n                        didEndWith data: CapturedRoomData, error: Error?)\n    {\n        if let error = error {\n            print(\"Error: \\(error)\")\n        }\n        Task {\n            let finalRoom = try! await roomBuilder.capturedRoom(from: data)\n            previewVisualizer.update(model: finalRoom)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "11:20",
+      "title": "CapturedRoom and export",
+      "language": "swift",
+      "code": "// CapturedRoom and export\n\npublic struct CapturedRoom: Codable, Sendable\n{\n    public let walls: [Surface]\n    public let doors: [Surface]\n    public let windows: [Surface]\n    public let openings: [Surface]\n    public let objects: [Object]\n\n    public func export(to url: URL) throws\n\n    // Surface definitions ...\n    \n    // Object definitions ...\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Create a 3D model of an interior room by guiding the user through an AR experience",
+        "url": "https://developer.apple.com/documentation/RoomPlan/create-a-3d-model-of-an-interior-room-by-guiding-the-user-through-an-ar-experience"
+      },
+      {
+        "title": "RoomPlan",
+        "url": "https://developer.apple.com/documentation/RoomPlan"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10127/3/C6A70FDB-501E-42BB-A50E-9794D4050C07/downloads/wwdc2022-10127_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10127/3/C6A70FDB-501E-42BB-A50E-9794D4050C07/downloads/wwdc2022-10127_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10192",
+      "year": "2023",
+      "title": "Explore enhancements to RoomPlan",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10192"
+    },
+    {
+      "id": "10141",
+      "year": "2022",
+      "title": "Explore USD tools and rendering",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10141"
+    },
+    {
+      "id": "10131",
+      "year": "2022",
+      "title": "Qualities of great AR experiences",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10131"
+    },
+    {
+      "id": "110930",
+      "year": "2022",
+      "title": "WWDC22 Day 2 recap",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110930"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:41:38.781Z"
+}

@@ -1,0 +1,160 @@
+{
+  "id": "10170",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10170/",
+  "title": "Consume noncopyable types in Swift",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Swift"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi I'm Kavon from the Swift team! Welcome to \"Consume noncopyable types in Swift\"! You and I are unique but values in Swift are not. That's because values can be copied. Having a guarantee that values are unique, can be a powerful concept when programming. So, I'm happy to tell you that we've recently introduced noncopyable types to Swift! We have a lot of exciting things to cover today. First I'm going to review how copying works. Then we'll cover ownership and noncopyable types and finally I'll go over more advanced topics like using noncopyable types generically and writing extensions of those types. So, let's get copying! I'm working on a new game, so I've defined a Player type, where an emoji represents their icon.\n\nLet's create two players. So far, they're the same.\n\nIntuitively, I know changing one player's icon won't affect the other. Let's examine what's behind that intuition, step-by-step. Starting at the first line, player1 is a frog.\n\nThe contents of that variable is the actual data that makes up a Player. That's because it's a struct; which is a value type. Moving on to player2, I'm making it the same as player1. But, what does that really mean? It means I'm making a copy of player1. When you copy a variable, you're copying its contents.\n\nSo, when I change the icon for player2, I'm changing a Player that is independent of player1.\n\nI didn't even have to think about copying or destroying values. Swift takes care of it.\n\nOK, but what if Player was a reference type. All that means is that I've changed it from a struct to a class.\n\nWith the same code as before, what happens? Let's break down this first statement.\n\nWhen constructing a PlayerClass, an object is allocated separately to store its data.\n\nThe contents of player1 becomes an automatically-managed reference to that object.\n\nThat's what it means to be a reference type.\n\nIn the next statement, player2 is the same as player1, so that means the reference is copied. Not the object itself! This is sometimes called a shallow copy, which is very quick.\n\nSince both players refer to the same object, changing the icon will change it for both.\n\nSo, this assertion does not hold.\n\nNotice how copying worked the same in both cases. The only difference is whether you're copying a value, or a reference. You can make a reference type behave like a value type, by defining an initializer to do a deep copy.\n\nThis initializer is an example. It recreates an object, and everything the object points to, recursively.\n\nIt does that by calling Icon's initializer, to recreate it using the other Player's icon. That helps ensure the new player doesn't share references with the other one.\n\nLet's go back to our program state from earlier, after we've made player2 the same as player1, to see how deep copying changes the behavior.\n\nRight now, both players are references to the same object.\n\nBefore I write to the player's field, I'm now making a deep copy of it, by calling the initializer on itself.\n\nThat allocates a separate, but identical, object which ensures no other variables will be affected by the mutation.\n\nIn fact, that's the essence of copy-on-write.\n\nIt gives you independence under mutation, so you get the same the behavior as a value type.\n\nWhen designing a new type, you already have control over whether someone can deeply copy its values. What you have not had control over, is whether Swift is able to make automatic copies of it. Copyable is a new protocol that describes the ability for a type to be automatically copied. Like Sendable, it does not have member requirements.\n\nEverything is inferred to be Copyable in Swift by default. And I mean everything.\n\nEvery type, tries to automatically conform to Copyable.\n\nEvery generic parameter, automatically requires the type you put in it, to be Copyable.\n\nEvery protocol and associated type, automatically requires the concrete type, to conform to Copyable.\n\nand, every boxed protocol type, is automatically composed, with Copyable.\n\nYou don't have to write Copyable yourself, like I've done. It's already there, even if you can't see it.\n\nSwift assumes you want the ability to copy, because it's much easier to work with Copyable types.\n\nBut, there are situations where copying makes your code error-prone. Suppose I'm working on a type to model a bank transfer for my backend. In real life, the transfer is either pending, cancelled, or complete.\n\nWe'll give the type a run method that completes the transfer. I need to schedule the transfers, so here's a function to do that. Obviously, my users would not be happy if I accidentally ran a transfer twice, so let's double-check it. If the delay is less than a second, I'd rather run it immediately, but I forgot to return. So I would fall through and run it again. A simple mistake like this can be costly, so how can I defend against it? Well, I can add a variable to track the state of the transfer. So that an assertion will catch attempts to run it again. But, an assertion won't uncover a bug unless if I wrote a test that hits it. So, I might still have a bug like this, which could take down my backend service. In fact, there is another bug in this schedule function! Think about what happens if the sleeping task is cancelled. If callers are not careful to check for the thrown error, they may forget to cancel the transfer.\n\nI can introduce a deinit in my BankTransfer that remembers to cancel. But this is pretty useless in practice.\n\nTake a closer look at the startPayment function. It retains a copy of the transfer, in order to track that it's been scheduled. That's a problem, because a transfer's deinit won't run unless if all copies of it are destroyed. That's the root of my problem: I have no control over how many copies of this transfer are floating around in my program.\n\nSo, while the ability to copy values is often the right default for your types, in some situations, it's better if the type were noncopyable.\n\nPutting aside our BankTransfer issue for a moment, let's learn about noncopyable types.\n\nSay I want to model a FloppyDisk. Written like this, the type has a default Copyable conformance.\n\nBut, if, in the spot where you declare conformances, I wrote a tilde before the word Copyable, then I'm suppressing that default conformance to Copyable. Now, FloppyDisk has no Copyable conformance at all! Think of tilde-Copyable as declaring the absence of Copyable for the type you've marked. So, what happens when you try to copy that floppy? Well, copying is not supported, so Swift will consume it instead.\n\nI can make that explicit by writing consume, but it happens regardless.\n\nConsuming a variable takes its value, leaving that variable uninitialized.\n\nSo, before the consume, only the system disk is initialized.\n\nThe consume moves the contents of the system disk out, and into the backup disk.\n\nReading the system disk afterwards is an error; it's got nothing in it.\n\nNow, consider this function that creates new disks.\n\nWhen it calls format, what happens to the variable result? It's hard to tell, since the function's signature doesn't declare what ownership it needs over the disk. With copyable parameters, you didn't have to think about this: format would effectively receive a copy of the disk. But, for noncopyable parameters, you must declare what ownership the function has over the value, since we can't copy.\n\nThe first kind of ownership is called consuming. It means the function will take the argument away from its caller. It will belong to you, so you can even mutate it.\n\nBut, using consuming here would be a problem, since format won't give the disk back; it returns nothing.\n\nIf you think about it, though, formatting a disk only requires temporary access to it.\n\nWhen you have temporary access to something, you're borrowing it. Borrowing gives you read-access to the argument; like a let binding.\n\nUnder the hood, that's how nearly all parameters and methods work for Copyable types.\n\nThe difference is that you cannot consume or mutate an explicitly borrowed argument. You can only copy it. Since our format function will eventually need to mutate the disk, we can't use borrowing for it, either.\n\nThe last kind of ownership, you're already familiar with, it's inout! Or equivalently for methods, it's written mutating.\n\nInout provides temporary write-access to a variable in the caller. Because you have write access, you're allowed to consume the parameter. But, you have to reinitialize the inout parameter at some point before the function ends. Because the caller expects a value there when you return. OK, let's revisit our BankTransfer example, because now we can model it as a consumable resource. First, I've made BankTransfer a noncopyable struct, and marked its run method as consuming, which takes the value for self away from callers. With those two changes alone, I don't need assertions anymore. Swift guarantees that I cannot call the run method twice on the same transfer. In fact, its ownership is so precisely tracked, that I can add a deinit to this struct that triggers an action if it is destroyed, instead of being 'run'. Since the end of my 'run' method will also automatically destroy self, I'll write discard self there. That will destroy it, but without calling the deinit. Let's see what happens to those bugs in my schedule function. First, I have to add ownership for the transfer parameter. Since 'schedule' is meant to be the last use, consuming it makes sense. Now, when I try compiling this, I'll see that Swift has zero'ed in on my bug. Because the if-statement falls-through, it's possible to consume the transfer twice.\n\nAnd adding the return prevents that. Now, what about that other bug? It's been defined away, too. Schedule is the last owner of the transfer, so its deinit will run if Sleep throws, and that'll cancel the transfer.\n\nNoncopyable types are a great tool to improve the correctness of your programs. You might want to use them everywhere, including generic code. Well, in Swift 6, now you can, with noncopyable generics! This is not some sort of new generics system. It's built on Swift's existing generics model. So, let's refresh our understanding of generics.\n\nTo set the stage, consider the universe of types in Swift.\n\nEvery type has happily co-existed here, whether it's a String, or my own type called Command.\n\nMy protocol Runnable defines a subspace in this universe, containing the types that conform to it. Right now, nothing conforms, so it's empty. But, if I extend Command with a Runnable conformance, then its point moves into the Runnable space.\n\nA core idea behind generics is that conformance constraints describe generic types. Let's think about that with this generic function called execute.\n\nNotice the T here in the angle brackets. It declares a new generic type parameter, which represents some type in this universe, but we don't know which one. Remember when I said Copyable is everywhere? Well, there's a default constraint on this T. It requires the input type to conform to Copyable.\n\nCommand has a default conformance to Copyable; and Runnable inherits from Copyable too. In fact, until recently, the whole universe of types in Swift has really just been Copyable, in disguise.\n\nThis means all the types in this space can be passed into my execute function. Because the only constraint is that T conforms to Copyable.\n\nSo, even though Command also conforms to Runnable, It still exists in this broader space Copyable, in which any particular type might be Runnable, but it also might not. My generic parameter T does not exclude types that have an additional conformance. As written, the execute function promises to get by without needing any other conformances besides Copyable.\n\nTo implement my execute function though, I actually do want T to be Runnable, because I need to call a run method. So, I'll add a Runnable constraint on T, using a where clause.\n\nIn doing so, I've further constrained the space of types permitted for T. it's now the narrower space, Runnable & Copyable. That includes Command, but now excludes String, because a Runnable conformance is absent for String.\n\nWell, since Swift 5.9, our universe has expanded. Because, there are types without a conformance to Copyable.\n\nFor example, our shiny new BankTransfer type does not conform, so its point is outside.\n\nSince we can only suppress Copyable conformances by writing tilde Copyable, that's what I'll call this broader space.\n\nMost types in Swift that you're familiar with do conform to Copyable.\n\nSo, how are they contained within tilde Copyable? As before, within this broader space, you cannot assume any particular type conforms to Copyable. It might be Copyable, but it also might not. That's how you should read tilde Copyable.\n\nWhat about the Any type? Well, it's always been Copyable; and that's how it should be. When you think of any type in almost every programming language, it's Copyable.\n\nNow, we're ready to talk about noncopyable generics.\n\nLet's start with our Runnable protocol from earlier.\n\nOur universe of types currently looks like this. All Runnable values are Copyable.\n\nBankTransfer is not Copyable, so it cannot be Runnable, either. But, I want BankTransfer to conform, so I can use it generically. The ability to copy a Runnable type is not fundamental to the protocol, so, I'll remove the Copyable constraint from Runnable, by adding tilda Copyable.\n\nThis changes the hierarchy, so the Copyable space only overlaps Runnable, rather than containing it. Command is Runnable & Copyable, so it sits within that overlap.\n\nNext, if I extend BankTransfer with a Runnable conformance, its point moves within Runnable, without being Copyable.\n\nLet's revisit our generic function, execute.\n\nThere's still a default constraint on generic parameter T. So, only types like Command, that are both Runnable and Copyable, are permitted in execute.\n\nLet's remove the Copyable constraint from T, using tilde Copyable.\n\nRemoving the constraint broadens the types permitted, to all types that are Runnable. The execute function is saying that T might not be Copyable. That's the key point: a regular constraint narrows the types permitted, by being more specific. Whereas a tilde constraint broadens by being less specific.\n\nOK. Now, let's put all of that theory into practice. I've got Runnable types, and I want to wrap them inside a new struct called Job. I've defined Job with a generic parameter Action, that is Runnable, and might not be Copyable. But with what I've written so far, I'll get an error. The struct Job defaults to conforming to Copyable, so it can only contain Copyable data. There are two ways you can store noncopyable values inside another. It either must be inside of a class, since copying a class only copies a reference; or you have to suppress Copyable on the containing type itself. I'll go with the second one and make Job noncopyable.\n\nI can still put the type Command in for the Action, because the Action does not prevent Copyable types from appearing. Job is promising that it does not need to copy an Action, so that noncopyable types work too. But, what if I know the type I put in for Action is Copyable. Then Job could be copied since it's just a container for an action.\n\nAs the API author, I can allow that by declaring Job is conditionally Copyable. This extension says that a Job is Copyable when its Action is Copyable.\n\nHow does that look in our universe? We don't know whether a Job is Copyable, until we put in a concrete type for the Action. So, let's put in Command.\n\nWe know a Command is Copyable, so a Command-Job is Copyable too.\n\nBut, if I make the Action a BankTransfer, the conditional conformance is not satisfied, so a BankTransfer-Job is not Copyable.\n\nSo, the whole idea behind noncopyable generics, is that you're removing default Copyable constraints.\n\nYou've seen how to define a type with a noncopyable generic parameter. Let's take a closer look at extensions of that type.\n\nSay I want to define a getter method for the Action.\n\nI'll add it using an ordinary extension of Job.\n\nCalling it works just fine... but isn't it giving me a copy of the Action? Yeah. Returning the action does copy it. And that's not an error in the extension.\n\nBecause this plain extension defaults to being constrained to Jobs where the Action is Copyable.\n\nSo, this getter is correct, because it simply is not callable, on, say, a BankTransfer job.\n\nThat's how all extensions work: any generic parameters in scope of the extended type are constrained to Copyable. That includes Self in a protocol.\n\nThere's a really nice advantage to having extensions work this way. Let's say that Job is actually part of some JobKit module I didn't write.\n\nI have my protocol here to describe Cancellable types. And let's pretend I have no idea what a noncopyable type is, but I want Job to conform anyway.\n\nThat's OK, because I can write this extension and it'll just work.\n\nThat's because the conformance defaults to being conditional on Action being Copyable, because in general, Action might NOT be. And when Action is Copyable, so is the Job, meaning it conforms to Cancellable.\n\nSo, you can publish this Job type, and programmers who only work with Copyable types can use it. Now, what if I did want this extension to apply to all jobs, Copyable or not.\n\nWell, I just take the Copyable constraint off of the Action in this extension. Now, Job conforms to Cancellable, without assuming Action is Copyable.\n\nToday, we've seen how copying works in Swift, and where it can create challenges. Noncopyable types are a useful tool to improve program correctness, with the trade-off of thinking about ownership. We've taken our first steps towards adopting noncopyable generics in the standard library, with Optional, UnsafePointer, and Result. You can learn more by reading the Swift Evolution proposals on: noncopyable generics, borrowing and consuming pattern matching, and noncopyable standard library primitives. You can also learn more in The Swift Programming Language book. More generally, if you want to learn about copy-on-write, and best-practices for designing generic types, check out Modern Swift API Design, from WWDC 2019.\n\nThank you and have a great WWDC!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "0:52",
+      "title": "Player as a struct",
+      "language": "swift",
+      "code": "struct Player {\n  var icon: String\n}\n\nfunc test() {\n  let player1 = Player(icon: \"🐸\")\n  var player2 = player1\n  player2.icon = \"🚚\"\n  assert(player1.icon == \"🐸\")\n}"
+    },
+    {
+      "timestamp": "1:55",
+      "title": "Player as a class",
+      "language": "swift",
+      "code": "class PlayerClass {\n  var icon: String\n  init(_ icon: String) { self.icon = icon }\n}\n\nfunc test() {\n  let player1 = PlayerClass(\"🐸\")\n  let player2 = player1\n  player2.icon = \"🚚\"\n  assert(player1.icon == \"🐸\")\n}"
+    },
+    {
+      "timestamp": "3:00",
+      "title": "Deeply copying a PlayerClass",
+      "language": "swift",
+      "code": "class PlayerClass {\n  var data: Icon\n  init(_ icon: String) { self.data = Icon(icon) }\n\n  init(from other: PlayerClass) {\n    self.data = Icon(from: other.data)\n  } \n}\n\nfunc test() {\n  let player1 = PlayerClass(\"🐸\")\n  var player2 = player1\n  player2 = PlayerClass(from: player2)\n  player2.data.icon = \"🚚\"\n  assert(player1.data.icon == \"🐸\")\n}\n\nstruct Icon {\n  var icon: String\n  init(_ icon: String) { self.icon = icon }\n  init(from other: Icon) { self.icon = other.icon }\n}"
+    },
+    {
+      "timestamp": "5:10",
+      "title": "Copyable BankTransfer",
+      "language": "swift",
+      "code": "class BankTransfer {\n  var complete = false\n\n  func run() {\n    assert(!complete)\n    // .. do it ..\n    complete = true\n  }\n\n  deinit {\n    if !complete { cancel() }\n  }\n\n  func cancel() { /* ... */ }\n}\n\nfunc schedule(_ transfer: BankTransfer,\n              _ delay: Duration) async throws {\n\n  if delay < .seconds(1) {\n    transfer.run()\n  }\n\n  try await Task.sleep(for: delay)\n  transfer.run()\n}\n\nfunc startPayment() async {\n  let payment = BankTransfer()\n  log.append(payment)\n  try? await schedule(payment, .seconds(3))\n}\n\nlet log = Log()\n\nfinal class Log: Sendable {\n  func append(_ transfer: BankTransfer) { /* ... */ }\n}"
+    },
+    {
+      "timestamp": "7:46",
+      "title": "Copying FloppyDisk",
+      "language": "swift",
+      "code": "struct FloppyDisk: ~Copyable {}\n\nfunc copyFloppy() {\n  let system = FloppyDisk()\n  let backup = consume system\n  load(system)\n  // ...\n}\n\nfunc load(_ disk: borrowing FloppyDisk) {}"
+    },
+    {
+      "timestamp": "8:18",
+      "title": "Missing ownership for FloppyDisk",
+      "language": "swift",
+      "code": "struct FloppyDisk: ~Copyable { }\n\nfunc newDisk() -> FloppyDisk {\n  let result = FloppyDisk()\n  format(result)\n  return result\n}\n\nfunc format(_ disk: FloppyDisk) {\n  // ...\n}"
+    },
+    {
+      "timestamp": "9:00",
+      "title": "Consuming ownership",
+      "language": "swift",
+      "code": "struct FloppyDisk: ~Copyable { }\n\nfunc newDisk() -> FloppyDisk {\n  let result = FloppyDisk()\n  format(result)\n  return result\n}\n\nfunc format(_ disk: consuming FloppyDisk) {\n  // ...\n}"
+    },
+    {
+      "timestamp": "9:26",
+      "title": "Borrowing ownership",
+      "language": "swift",
+      "code": "struct FloppyDisk: ~Copyable { }\n\nfunc newDisk() -> FloppyDisk {\n  let result = FloppyDisk()\n  format(result)\n  return result\n}\n\nfunc format(_ disk: borrowing FloppyDisk) {\n  var tempDisk = disk\n  // ...\n}"
+    },
+    {
+      "timestamp": "9:55",
+      "title": "Inout ownership",
+      "language": "swift",
+      "code": "struct FloppyDisk: ~Copyable { }\n\nfunc newDisk() -> FloppyDisk {\n  var result = FloppyDisk()\n  format(&result)\n  return result\n}\n\nfunc format(_ disk: inout FloppyDisk) {\n  var tempDisk = disk\n  // ...\n  disk = tempDisk\n}"
+    },
+    {
+      "timestamp": "10:28",
+      "title": "Noncopyable BankTransfer",
+      "language": "swift",
+      "code": "struct BankTransfer: ~Copyable {\n  consuming func run() {\n    // .. do it ..\n    discard self\n  }\n\n  deinit {\n    cancel()\n  }\n\n  consuming func cancel() {\n    // .. do the cancellation ..\n    discard self\n  }\n}"
+    },
+    {
+      "timestamp": "11:10",
+      "title": "Schedule function for noncopyable BankTransfer",
+      "language": "swift",
+      "code": "func schedule(_ transfer: consuming BankTransfer,\n              _ delay: Duration) async throws {\n\n  if delay < .seconds(1) {\n    transfer.run()\n    return\n  }\n\n  try await Task.sleep(for: delay)\n  transfer.run()\n}"
+    },
+    {
+      "timestamp": "12:12",
+      "title": "Overview of conformance constraints",
+      "language": "swift",
+      "code": "struct Command { }\n\nprotocol Runnable {\n  consuming func run()\n}\n\nextension Command: Runnable {\n  func run() { /* ... */ }\n}\n\nfunc execute1<T>(_ t: T) {}\n\nfunc execute2<T>(_ t: T) \n  where T: Runnable {\n  t.run()\n}\n\nfunc test(_ cmd: Command, _ str: String) {\n  execute1(cmd)\n  execute1(str)\n\n  execute2(cmd)\n  execute2(str) // expected error: 'execute2' requires that 'String' conform to 'Runnable'\n}"
+    },
+    {
+      "timestamp": "15:50",
+      "title": "Noncopyable generics: 'execute' function",
+      "language": "swift",
+      "code": "protocol Runnable: ~Copyable {\n  consuming func run()\n}\n\nstruct Command: Runnable {\n  func run() { /* ... */ }\n}\n\nstruct BankTransfer: ~Copyable, Runnable {\n  consuming func run() { /* ... */ }\n}\n\nfunc execute2<T>(_ t: T)\n  where T: Runnable {\n  t.run()\n}\n\nfunc execute3<T>(_ t: consuming T)\n  where T: Runnable,\n        T: ~Copyable {\n  t.run()\n}\n\nfunc test() {\n  execute2(Command())\n  execute2(BankTransfer()) // expected error: 'execute2' requires that 'BankTransfer' conform to 'Copyable'\n\n  execute3(Command())\n  execute3(BankTransfer())\n}"
+    },
+    {
+      "timestamp": "18:05",
+      "title": "Conditionally Copyable",
+      "language": "swift",
+      "code": "struct Job<Action: Runnable & ~Copyable>: ~Copyable {\n  var action: Action?\n}\n\nfunc runEndlessly(_ job: consuming Job<Command>) {\n  while true {\n    let current = copy job\n    current.action?.run()\n  }\n}\n\nextension Job: Copyable where Action: Copyable {}\n\nprotocol Runnable: ~Copyable {\n  consuming func run()\n}\n\nstruct Command: Runnable {\n  func run() { /* ... */ }\n}"
+    },
+    {
+      "timestamp": "19:27",
+      "title": "Extensions of types with noncopyable generic parameters",
+      "language": "swift",
+      "code": "extension Job {\n  func getAction() -> Action? {\n    return action\n  }\n}\n\nfunc inspectCmd(_ cmdJob: Job<Command>) {\n  let _ = cmdJob.getAction()\n  let _ = cmdJob.getAction()\n}\n\nfunc inspectXfer(_ transferJob: borrowing Job<BankTransfer>) {\n  let _ = transferJob.getAction() // expected error: method 'getAction' requires that 'BankTransfer' conform to 'Copyable'\n}\n\n\nstruct Job<Action: Runnable & ~Copyable>: ~Copyable {\n  var action: Action?\n}\n\nextension Job: Copyable where Action: Copyable {}\n\nprotocol Runnable: ~Copyable {\n  consuming func run()\n}\n\nstruct Command: Runnable {\n  func run() { /* ... */ }\n}\n\nstruct BankTransfer: ~Copyable, Runnable {\n  consuming func run() { /* ... */ }\n}"
+    },
+    {
+      "timestamp": "20:14",
+      "title": "Cancellable for Jobs with Copyable actions",
+      "language": "swift",
+      "code": "protocol Cancellable {\n  mutating func cancel()\n}\n\nextension Job: Cancellable {\n  mutating func cancel() {\n    action = nil\n  }\n}"
+    },
+    {
+      "timestamp": "21:00",
+      "title": "Cancellable for all Jobs",
+      "language": "swift",
+      "code": "protocol Cancellable: ~Copyable {\n  mutating func cancel()\n}\n\nextension Job: Cancellable where Action: ~Copyable {\n  mutating func cancel() {\n    action = nil\n  }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Copyable",
+        "url": "https://developer.apple.com/documentation/Swift/Copyable"
+      },
+      {
+        "title": "Forum: Programming Languages",
+        "url": "https://developer.apple.com/forums/topics/programming-languages-topic?cid=vf-a-0010"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10170/4/993789F1-AF44-4E20-8C66-BF59DAC6C1F6/downloads/wwdc2024-10170_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10170/4/993789F1-AF44-4E20-8C66-BF59DAC6C1F6/downloads/wwdc2024-10170_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "415",
+      "year": "2019",
+      "title": "Modern Swift API Design",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/415"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:47:43.099Z"
+}

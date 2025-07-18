@@ -1,0 +1,130 @@
+{
+  "id": "10195",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10195/",
+  "title": "Model your schema with SwiftData",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Swift"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Rishi: Hello, my name is Rishi Verma, and this session covers how to code your models to build a schema for SwiftData. I'll begin by covering how you can utilize schema macros to their fullest potential and how you can evolve your schema with schema migrations as your app changes. Before getting started, please watch \"Meet SwiftData\" and \"Build an app with SwiftData,\" as this content will develop upon the concepts introduced in those videos. SwiftData is a powerful framework for data modeling and management and enhances your modern Swift app. Like SwiftUI, it focuses entirely on code, with no external file formats, and uses Swift's new macro system to create a seamless API experience.\n\nI am working on the SampleTrips app, which allows users to plan out some upcoming trips. Each trip is to be created with a name, a destination, as well as start and end dates. A trip can also contain relationships for bucket list items and where the travelers will stay. Adding SwiftData is as simple as adding the import and decorating the Trip with @Model. That's it. The @Model macro conforms my Trip class to PersistentModel and generates a descriptive schema. The code defining my model is now the source of truth for my application's schema. The default behavior of my trip model is good, but I think I can fine-tune it a little. SwiftData's schema macros allow me to customize the behavior of the persistence experience to work perfectly for my app. When I published my app with the original schema, I did not ensure each trip name was unique. This caused a few conflicts between trips with the same name that I now need to resolve. This can be fixed with the @Attribute schema macro and using the unique option. SwiftData will generate a schema for my trip's model that now ensures any trip that I save to the persistent back end will have a unique name. If a trip already exists with that name, then the persistent back end will update to the latest values. This is called an upsert. An upsert starts as an insert. If the insert collides with existing data, it becomes an update and updates the properties of the existing data. I can apply unique constraints on other properties as well, so long as they are primitive value types such as numerics, string, or UUID, or I can even decorate a to-one relationship. My schema needs a bit more work. I want to remove these pesky underscores from my start_date and end_date that I originally specified. If I just rename the variables, this would be seen as a new property in my generated schema. I don't want SwiftData to create these new properties. Instead, I want to preserve the existing data as is. I can do so by simply mapping the original name to the property name using @Attribute and specifying the originalName: parameter. By mapping these from the original name, I can avoid data loss. This also ensures my schema update will be a simple migration for the next release of the SampleTrips app. And the @Attribute macro can do so much more, including store large data externally and provide support for transformables.\n\nMy trips are shaping up nicely, but now I want to work on the relationships. When I add a new bucket list item or a living accommodation to my trip, SwiftData will implicitly discover the inverses between my models and set them for me. The implicit inverses do not require any annotations. They just work. Implicit inverses use a default delete rule that will nullify the bucket list items and living accommodation properties when a trip is deleted. However, I want my bucket list items and living accommodation to be deleted along with the trip. I can easily do that by adding the @Relationship macro with a cascade delete rule. Now when I delete my trip, it will delete those relationships as well. And the @Relationship macro does so much more, including the originalName modifier and the ability to specify the minimum and maximum count on a to-many relationship. The SampleTrips app is shaping up nicely, but I still have an update to do. Now, I want to add a way to track how many times I view a trip. This way I can gauge how excited I am about taking a vacation. I can't wait! I do not want this view count to be persisted by SwiftData, however, and I can easily do that with the @Transient macro. I simply decorate my property with @Transient, and this particular property will not be persisted. It's just that easy. The @Transient macro helps you avoid persisting unnecessary data. Make sure you provide a default value for transient properties. This ensures they have logical values when fetched from SwiftData. For more information on utilizing these schema macros, check out the SwiftData documentation. The SampleTrips app schema has gone through several evolutions as I tailored the persistence experience. I need to ensure that my app can handle those updates from release to release. And when you make a change to your schema, like adding or removing a property, a data migration occurs. These migrations can be tricky scenarios, but SwiftData makes it easy. VersionedSchema and SchemaMigrationPlan are here to help you with that. Whenever you prepare to release a new version of your app with changes to your SwiftData models, define a VersionedSchema that encapsulates your previously released schema. Each distinct version of your schema should be defined as a VersionedSchema so that SwiftData knows what changes occurred between them. Then, use your total ordering of VersionedSchemas to create a SchemaMigrationPlan. This will allow SwiftData to perform the needed migrations in order. Once you've laid out your ordered schemas in the migration plan, you can begin to define each migration stage. There are two different types of migration stages available to you. The first is a lightweight migration stage. Lightweight migrations do not require any additional code to migrate the existing data for my next app release. Modifications like adding originalName to my date properties or specifying the delete rules on my relationships are lightweight migration eligible. However, making the name of a trip unique is not eligible for a lightweight migration. I need to create a custom migration stage for this change, in which I can deduplicate my trips, before their names are made unique. I start by taking the original schema from my first release and encapsulating it in a VersionedSchema. I name this versioned schema SampleTripsSchemaV1. Each of my versioned schemas list the model classes they define. Version 2 of my schema is where I added the uniqueness constraint on trip names. I create another versioned schema that also encapsulates the changes I made to the Trip model class. I do the same for version 3 of my schema, capturing the name changes made to start and end date. Now that I have all of my VersionedSchemas, I construct a SchemaMigrationPlan to describe how to handle the migrations from release to release. It's rather simple. I just provide the total ordering of my application's schemas. Then, I need to annotate which migrations are lightweight or custom. For V1 to V2, I need a custom stage where I can perform an operation before the data is migrated. In the willMigrate closure, I can deduplicate my trips before the migration happens. SwiftData will detect when a migration from V1 to V2 will occur and will perform this closure for me. The other migration for originalName is lightweight, so I can add that stage in as well. Now that I've defined all of the details about my migration plans, it's time to perform the migrations. I setup my ModelContainer with my current schema and the migration plan, and I'm done. My users can upgrade from any version to the latest release, and I have ensured the data will be preserved. I can't wait to use the SampleTrips app to plan my upcoming vacation. Harness schema macros to convey additional metadata for your schema, and as your application evolves, capture those evolutions in a VersionedSchema so your app can migrate from any previous release. Check out these other talks, and we look forward to seeing the amazing things you all make with SwiftData. It has been an honor.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "0:56",
+      "title": "Original Trip model",
+      "language": "swift",
+      "code": "import SwiftUI\nimport SwiftData\n\n@Model\nfinal class Trip {\n    var name: String\n    var destination: String\n    var start_date: Date\n    var end_date: Date\n    \n    var bucketList: [BucketListItem]? = []\n    var livingAccommodation: LivingAccommodation?\n}"
+    },
+    {
+      "timestamp": "1:50",
+      "title": "Adding a unique attribute",
+      "language": "swift",
+      "code": "@Model \nfinal class Trip {\n    @Attribute(.unique) var name: String\n    var destination: String\n    var start_date: Date\n    var end_date: Date\n    \n    var bucketList: [BucketListItem]? = []\n    var livingAccommodation: LivingAccommodation?\n}"
+    },
+    {
+      "timestamp": "2:48",
+      "title": "Specifying original property names",
+      "language": "swift",
+      "code": "@Model \nfinal class Trip {\n    @Attribute(.unique) var name: String\n    var destination: String\n    @Attribute(originalName: \"start_date\") var startDate: Date\n    @Attribute(originalName: \"end_date\") var endDate: Date\n    \n    var bucketList: [BucketListItem]? = []\n    var livingAccommodation: LivingAccommodation?\n}"
+    },
+    {
+      "timestamp": "4:00",
+      "title": "Cascading delete rule",
+      "language": "swift",
+      "code": "@Model \nfinal class Trip {\n    @Attribute(.unique) var name: String\n    var destination: String\n    @Attribute(originalName: \"start_date\") var startDate: Date\n    @Attribute(originalName: \"end_date\") var endDate: Date\n    \n    @Relationship(.cascade)\n    var bucketList: [BucketListItem]? = []\n  \n    @Relationship(.cascade)\n    var livingAccommodation: LivingAccommodation?\n}"
+    },
+    {
+      "timestamp": "4:54",
+      "title": "Transient properties",
+      "language": "swift",
+      "code": "@Model \nfinal class Trip {\n    @Attribute(.unique) var name: String\n    var destination: String\n    @Attribute(originalName: \"start_date\") var startDate: Date\n    @Attribute(originalName: \"end_date\") var endDate: Date\n    \n    @Relationship(.cascade)\n    var bucketList: [BucketListItem]? = []\n  \n    @Relationship(.cascade)\n    var livingAccommodation: LivingAccommodation?\n\n    @Transient\n    var tripViews: Int = 0\n}"
+    },
+    {
+      "timestamp": "7:12",
+      "title": "Defining versioned schemas",
+      "language": "swift",
+      "code": "enum SampleTripsSchemaV1: VersionedSchema {\n    static var models: [any PersistentModel.Type] {\n        [Trip.self, BucketListItem.self, LivingAccommodation.self]\n    }\n\n    @Model\n    final class Trip {\n        var name: String\n        var destination: String\n        var start_date: Date\n        var end_date: Date\n    \n        var bucketList: [BucketListItem]? = []\n        var livingAccommodation: LivingAccommodation?\n    }\n\n    // Define the other models in this version...\n}\n\nenum SampleTripsSchemaV2: VersionedSchema {\n    static var models: [any PersistentModel.Type] {\n        [Trip.self, BucketListItem.self, LivingAccommodation.self]\n    }\n\n    @Model\n    final class Trip {\n        @Attribute(.unique) var name: String\n        var destination: String\n        var start_date: Date\n        var end_date: Date\n    \n        var bucketList: [BucketListItem]? = []\n        var livingAccommodation: LivingAccommodation?\n    }\n\n    // Define the other models in this version...\n}\n\nenum SampleTripsSchemaV3: VersionedSchema {\n    static var models: [any PersistentModel.Type] {\n        [Trip.self, BucketListItem.self, LivingAccommodation.self]\n    }\n\n    @Model\n    final class Trip {\n        @Attribute(.unique) var name: String\n        var destination: String\n        @Attribute(originalName: \"start_date\") var startDate: Date\n        @Attribute(originalName: \"end_date\") var endDate: Date\n    \n        var bucketList: [BucketListItem]? = []\n        var livingAccommodation: LivingAccommodation?\n    }\n\n    // Define the other models in this version...\n}"
+    },
+    {
+      "timestamp": "7:49",
+      "title": "Implementing a SchemaMigrationPlan",
+      "language": "swift",
+      "code": "enum SampleTripsMigrationPlan: SchemaMigrationPlan {\n    static var schemas: [any VersionedSchema.Type] {\n        [SampleTripsSchemaV1.self, SampleTripsSchemaV2.self, SampleTripsSchemaV3.self]\n    }\n    \n    static var stages: [MigrationStage] {\n        [migrateV1toV2, migrateV2toV3]\n    }\n\n    static let migrateV1toV2 = MigrationStage.custom(\n        fromVersion: SampleTripsSchemaV1.self,\n        toVersion: SampleTripsSchemaV2.self,\n        willMigrate: { context in\n            let trips = try? context.fetch(FetchDescriptor<SampleTripsSchemaV1.Trip>())\n                      \n            // De-duplicate Trip instances here...\n                      \n            try? context.save() \n        }, didMigrate: nil\n    )\n  \n    static let migrateV2toV3 = MigrationStage.lightweight(\n        fromVersion: SampleTripsSchemaV2.self,\n        toVersion: SampleTripsSchemaV3.self\n    )\n}"
+    },
+    {
+      "timestamp": "8:40",
+      "title": "Configuring the migration plan",
+      "language": "swift",
+      "code": "struct TripsApp: App {\n    let container = ModelContainer(\n        for: Trip.self, \n        migrationPlan: SampleTripsMigrationPlan.self\n    )\n    \n    var body: some Scene {\n        WindowGroup {\n            ContentView()\n        }\n        .modelContainer(container)\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Adopting SwiftData for a Core Data app",
+        "url": "https://developer.apple.com/documentation/CoreData/adopting-swiftdata-for-a-core-data-app"
+      },
+      {
+        "title": "SwiftData",
+        "url": "https://developer.apple.com/documentation/SwiftData"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10195/4/1FEA69A1-120E-4305-8976-D2E1D1530A13/downloads/wwdc2023-10195_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10195/4/1FEA69A1-120E-4305-8976-D2E1D1530A13/downloads/wwdc2023-10195_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10154",
+      "year": "2023",
+      "title": "Build an app with SwiftData",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10154"
+    },
+    {
+      "id": "10149",
+      "year": "2023",
+      "title": "Discover Observation in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10149"
+    },
+    {
+      "id": "10196",
+      "year": "2023",
+      "title": "Dive deeper into SwiftData",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10196"
+    },
+    {
+      "id": "10187",
+      "year": "2023",
+      "title": "Meet SwiftData",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10187"
+    },
+    {
+      "id": "10189",
+      "year": "2023",
+      "title": "Migrate to SwiftData",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10189"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:47:48.330Z"
+}

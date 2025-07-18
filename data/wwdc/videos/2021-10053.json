@@ -1,0 +1,184 @@
+{
+  "id": "10053",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10053/",
+  "title": "Qualities of a great Mac Catalyst app",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Essentials"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Bass music playing ♪  ♪ Owen Monsma: Hello, and welcome to \"Qualities of a great Mac Catalyst app.\" My name is Owen Monsma, and I'm a Cocoa engineer.\n\nAnd I'll be joined later by my colleague Dave Rahardja from UIKit.\n\nToday we're going to go over three important considerations for making an amazing Catalyst app.\n\nFirst, we'll cover some high-level changes that happen when you migrate to a Mac Catalyst app.\n\nNext, we'll dive into some specific code modifications you can make to improve your app experience on Mac.\n\nAnd we'll end with information about app distribution.\n\nSo let's begin with migrating your app to Mac Catalyst.\n\nThe first step toward a great Catalyst app is having a great iPad app, and your app already runs with no additional changes on Macs with M1.\n\nIf you have an M1 Mac, you can try this right away with the Designed for iPad run destination in Xcode.\n\nBy adopting these features on iPad, your Mac app will have a great head start.\n\nIf your app supports multitasking on iPad, you can automatically get multiple window support on Mac.\n\nAnd if you use UIMenuBuilder, your menus are automatically picked up in your app's menu bar, and by contextual menus with a secondary click on your views.\n\nWe also automatically bridge system behaviors like copy/paste and drag and drop.\n\nTo learn more about how your iPad app runs as-is on M1 Macs, check out our video, \"Qualities of great iPad and iPhone apps on Macs with M1.\" But you're here because you want to take things further.\n\nBy checking the Mac checkbox, you gain the ability to distribute to all Macs, and get access to additional APIs to further refine your app.\n\nSo let's do it with our app, Trip Planner! In our Xcode project settings, we check the Mac option under Deployment Info.\n\nNotice to the right, an additional pop-up appears, letting us choose between a scaled iPad interface and a Mac optimized interface.\n\nWe will examine this choice more in a little bit.\n\nFor now, let's click build and run in the Xcode toolbar.\n\nAnd our app builds and runs! Now, if your app failed to build, there are a few things to investigate.\n\nCertain deprecated frameworks and classes are unavailable for Mac Catalyst, so now is the time to modernize.\n\nNot only will this get your app running on Mac, but it will improve your iOS app, too.\n\nMoving from OpenGLES to Apple's own Metal framework unlocks the full power of the GPU.\n\nThe Contacts framework replaced the deprecated AddressBook and is a forward-looking, thread-safe way to handle contacts.\n\nAnd UIWebView is deprecated and has been superseded by WKWebView.\n\nAlso, make sure to check your third-party dependencies.\n\nIf those frameworks are distributed as an XCFramework bundle, make sure that they provide a Mac binary to link against.\n\nAs you begin work on your Mac app, watch for compiler warnings when building your project, and monitor the console log for runtime messages.\n\nThese warnings tell you how to fix your code so it runs well as a Mac Catalyst process.\n\nAnd remember to only use supported API so your app continues to run on future macOS releases.\n\nIt's also important to be aware of the lifecycle events that your app will receive when running on a Mac.\n\nIf your app currently relies on lifecycle events called on your app delegate, you should instead monitor scene lifecycles so your app can respond to events specific to the content of each window on the desktop.\n\nRemember, a Mac Catalyst app will not receive the sceneDidEnterBackground event as often as an iPad app.\n\nScenes enter the background state when a desktop window is minimized or closed.\n\nIf your app uses sceneDidEnterBackground to perform some routine work like autosaving a document, using a timer instead will ensure this action is taken regularly.\n\nFinally, remember that your Catalyst app may have zero scenes but continue to run in the foreground.\n\nThis state happens when all your app's windows have been closed, but your app's name remains visible in the menu bar.\n\nNow let's decide whether to optimize our interface for Mac.\n\nThis is one of the most important decisions to make when you first begin bringing your app over.\n\nUsing Mac idiom is recommended to make your app feel the most at home on Mac, but it does require some additional work.\n\nIn the Mac idiom, your app will run at 100 percent scale, giving you pixel-perfect text and images, and native AppKit controls.\n\nIf you want, you can add new Mac-specific assets in your asset catalog to take advantage of this additional detail.\n\nIt's good practice to provide both 1x and 2x assets to support all monitor resolutions.\n\nBe aware, the size metrics of many of your controls will change, so it is important to adjust your app's layout to accommodate.\n\nFor custom controls in your app, you have an additional choice.\n\nAutomatically, you get the Mac style of control.\n\nBut now you can opt out your buttons and sliders from this conversion to use customization APIs that are unavailable on Mac controls.\n\nIf you use any custom assets -- like setting the thumb on a UISlider -- they will appear larger than expected by default, so you may need to scale them or provide new assets.\n\nAlso keep in mind that Mac users expect AppKit-style controls, so custom controls should be used sparingly.\n\nFor more detail on the Mac idiom, check out our video, \"Optimize the interface of your Mac Catalyst app.\" Because a Catalyst app in the Mac idiom takes on AppKit control styles, both the appearance and behavior of some of your controls will change.\n\nIn our video, \"What's new in Mac Catalyst,\" we introduced the new pop-up button style which rounds out our suite of Mac button types.\n\nLet's dive into what makes these controls different and how the system picks which one to use.\n\nUnderstanding these controls and where they are commonly found will help you make informed choices about their use in your app.\n\nThe default UIButton type is UIButton type .system.\n\nWith this button type, the button automatically takes on the expected appearance for its context.\n\nIn the Mac idiom, this means it becomes a bordered push button.\n\nPull-down buttons are a Mac-native control used to provide a list of possible actions, and are drawn with a single-arrow indicator.\n\nA good example is the PDF pull-down in the print dialog, which presents actions such as Save as PDF or Send in Mail.\n\nTo get a pull-down button, make sure that you have assigned a UI menu to your button via its menu property, and additionally set showsMenuAsPrimaryAction to true.\n\nYour button will take on the pull-down look and present the menu on a click.\n\nAnd new to Catalyst with macOS Monterey are pop-up buttons.\n\nPop-up buttons look similar to pull-down buttons but have a double-arrow indicator, and they do something slightly different.\n\nWhere the pull-down triggers an action, a pop-up button is used to select one of a set of mutually exclusive options.\n\nFor example, selecting the day of the week.\n\nThe title in the button then updates to reflect the selection.\n\nThis is a good, Mac-friendly choice to replace a UIPickerView in your app.\n\nGetting this control is similar to a pull-down button, but the property changesSelectionAsPrimaryAction must also be true.\n\nFinally, checkboxes are used to represent a non-exclusive binary toggle, and are a more mouse-friendly alternative to a switch.\n\nAnd as it turns out, you get the checkbox with no additional work! Just make sure that the switch has a title set, and keep in mind the title property is only supported in the Mac idiom.\n\nBy default, the switch has a preferredStyle of automatic, and you can verify at runtime whether it is a switch or a checkbox using the read-only style property.\n\nNow, to dive into some specific code changes, let's hand things off to my colleague, Dave.\n\nDave Rahardja: Hi everyone, my name is Dave, and I'm an engineer on the UIKit team.\n\nLet's talk about some specific things you can do to make your Mac Catalyst app feel more at home.\n\nA Mac Catalyst app may have access to a lot more screen real estate.\n\nYour app's windows can be resized much larger on a Mac than on an iPad, and can be shown full screen.\n\nTake a moment to resize your app's windows and pay attention to its layout.\n\nMake sure you're using the additional space to show more content and controls to make your apps easier to use.\n\nLive resizing will put your app's layout performance to the test.\n\nYour app should do the least amount of work possible during layout to keep your app's windows responsive during resizing.\n\nTake special note of interactions in your app that rely on modal presentations and popovers.\n\nWith a larger display area, you can make these interactions always available by showing them as child views.\n\nNow, let's talk about pointer input devices.\n\nRemember that not all Macs have a trackpad, and some Macs are connected to input devices that don't support scrolling.\n\nIf your views rely on a pinch or rotate gesture to work, make sure that all of its capabilities are accessible using a mouse without scroll input.\n\nAdd additional buttons or other controls to your Mac Catalyst app's view to make sure all of its functionality is accessible.\n\nAdditionally, detecting keyboard modifiers on tap or pan gesture recognizers can sometimes provide faster access to your view's functionality.\n\nFor example, allowing Shift-pan to zoom.\n\nLet's talk about keyboard shortcuts and the main menu.\n\nThe main menu of a Mac app is a great place to discover all the actions available in your app, as well as their associated keyboard shortcuts.\n\nIf your app already supports keyboard shortcuts by returning key commands from its responders, add these commands to the main menu using the menu builder API instead.\n\nMoving all your keyboard shortcuts to the main menu makes them discoverable even when they are not currently enabled.\n\nWhat's more, using the MenuBuilder API to organize your shortcuts on Mac Catalyst also organizes them on the iPad shortcuts overlay.\n\nAs you build out your main menu, be sure to add all the actions needed to interact with your app.\n\nActions performed with gestures on an iPad should also be accessible by selecting items from the main menu.\n\nAdding keyboard shortcuts to your menu items will provide even quicker access to these actions.\n\nBecause menu bar and key command actions are routed starting from the first responder, make sure that the views that would be the target of those actions can become first responder and can accept focus.\n\nYou can do this by having your views return true for the canBecomeFirstResponder and canBecomeFocused properties.\n\nSince a Mac app must rely less on direct manipulation of views, and more on the user selecting a view and then selecting an action from the main menu, the ability for more of your app's views to become first responder and focused becomes more important on Mac Catalyst.\n\nFor more information about focus and first responders, check out the video, \"Focus on iPad keyboard navigation.\" While we're on the subject of responders, be sure to leave the responder chain unmodified in your app.\n\nIn other words, don't override nextResponder.\n\nLeaving the responder chain unmodified ensures that Mac Catalyst can route your actions to the appropriate targets.\n\nIf your app has to handle certain actions using objects that are not in its responder chain, use the target(for Action:, withSender:) function to delegate these actions to the appropriate object instead.\n\nLet's go over the code.\n\nIn this example, our view delegates the setAsFavorite action to a model object, while allowing other actions to continue to propagate up the responder chain.\n\nNow let's talk about scenes and how they work in a Mac Catalyst app.\n\nA Mac app may have many desktop windows open at the same time.\n\nIn a Mac Catalyst app, each of these windows is paired with a UIWindowScene.\n\nYour app may offer windows that have different functions.\n\nFor example, it may have a document window, a detail viewer window, a message composer window, and so on.\n\nThe best way to organize these different scene functions is by defining a scene configuration for each type of window.\n\nTo define scene configurations, add them to your Info.plist under the Application Scene Manifest entry.\n\nUnder the Application Session Role array, create one configuration for each type of scene your app supports.\n\nGive each of these configurations a name and choose the scene class, delegate class, and storyboard that will be instantiated when the scene is created.\n\nNow that we've defined our scene configurations, let's discuss how we can use them to create a new scene of a particular configuration.\n\nIn this example, we want to create a new detail viewer scene when a view is double-clicked.\n\nThe first thing we do is define a new user activity type for requesting a detail viewer scene.\n\nWe'll call it viewDetailActivityType.\n\nWhen we create that new user activity, we want to pass along an identifier for the item that we want to show in detail.\n\nTo do that, we define an itemIDKey that will hold that information in the user info dictionary.\n\nThen, in our double-click event handler, we create a new NSUserActivity object of the appropriate type, and set its userInfo property to a dictionary holding the itemID that we want to show.\n\nFinally, we call the UIApplication requestSceneSessionActivation function, passing in the user activity we just created.\n\nThis will cause the system to create our new scene.\n\nSo now we know how to request a new scene for a particular user activity type.\n\nNow let's talk about how to use that information to load the appropriate scene configuration.\n\nWe respond to scene creation requests by implementing the application configurationForConnecting function in the application delegate.\n\nIn our implementation, we examine if the incoming scene request contains any user activities.\n\nThe request can contain multiple user activities, but for this code example, we'll just examine the first one.\n\nIf there is an activity we need to handle, we then check its activityType.\n\nHere, we test if it's equal to the viewDetailActivityType.\n\nIf so, we return the scene configuration named DetailViewer.\n\nThis will cause the system to check in our Info.plist for a configuration of that name, and load the appropriate scene and scene delegate classes, and display the specified storyboard in a new desktop window.\n\nIf no specific scene configuration should be loaded, we fall back to returning the default configuration.\n\nThere is one more thing to do.\n\nRemember that we saved the itemID for the item to be shown? We still need to set that value on the view controller of the scene that we just created.\n\nWe do that in our SceneDelegate class.\n\nThe scene willConnectTo session function is called just before the scene is about to be shown on the desktop.\n\nThe user activity that was passed into our application delegate is also passed into this function in the scene delegate.\n\nWe can now extract the itemID from its userInfo dictionary and set it on our new view controller.\n\nUsing NSUserActivity to configure new scenes also makes it easier for your app to support state restoration.\n\nIf your scene delegate responds to the stateRestorationActivity (for Scene:) callback, the returned user activity will be saved by the system when your app exits.\n\nIf state restoration is enabled in System Preferences, the next time your app is launched, the system will recreate your scenes and pass each scene's user activity object to your app delegate's application configurationForConnecting SceneSession function.\n\nThis is the same function that is called when your app creates new scenes, as covered earlier.\n\nBy using a consistent set of activity types, you can use the same code to select the appropriate scene configuration when your app creates new desktop windows and during state restoration.\n\nThere is one thing you need to add to your scene delegate so your app can handle both new scene requests and state restoration with the same code, and that is to modify your scene willConnect session function in your scene delegate so that it falls back to the stateRestorationActivity if the activity in the scene connection options is nil.\n\nNow your app is ready to handle new scene requests and state restoration.\n\nFor more information on state restoration, check out the \"Introducing Multiple Windows on iPad\" video.\n\nNext, let's talk about your app's toolbar.\n\nA great Mac app uses its windows' toolbars to present frequently used actions and other navigation options for quick access.\n\nUnlike toolbars on iOS, the toolbar on a Mac Catalyst app's desktop window does not change as view controllers appear and disappear in the Split View controller or a navigation controller.\n\nBecause toolbars are strongly associated with scenes, the best place to configure your toolbar is in your scene delegate subclass.\n\nOne important item usually found on the toolbar is the sharing button.\n\nAdding an NSSharingServicePicker ToolbarItem to your toolbar allows your app to share the main content shown in your scene using the Mac's standard sharing menu.\n\nIn macOS Monterey, we have added the ability for the button to automatically use the activity items configuration shared by your scene.\n\nNotice that this is the same configuration that the new Share This function of Siri uses on iOS.\n\nA good way to provide a sharing configuration for your scene is to return an object from your RootViewController's activityItemsConfiguration property.\n\nOn Mac Catalyst, an NSSharingServicePicker ToolbarItem in your app's toolbar automatically uses this property.\n\nOn iOS, Siri uses the same property to share data using Share This.\n\nOf course, the toolbar is not the only place your app can offer items to share.\n\nOften, you'd want to allow sharing of images or other items through a context menu.\n\nTo do this, return an activityItemsConfiguration object from your view then add a contextMenuInteraction.\n\nHere are the results, on both Mac Catalyst and iPad.\n\nOn Mac Catalyst, note that a Copy action and a Share menu are automatically added.\n\nAnd when your app runs on iPad, a Copy and Share action are added.\n\nTapping the Share action automatically presents the share sheet.\n\nUsing the Activity Items Configuration API allows your app to declare what its views can share so the system can display the appropriate UI on each platform.\n\nNow that we've talked about how your app can share its data, let's talk about how your app can import images from an iPhone or iPad using Continuity Camera.\n\nIf your app uses a UITextView to display rich text, Continuity Camera support is automatically enabled in macOS Monterey.\n\nA right-click on a text view will show a context menu with an option to take a photo on your iPhone or iPad and automatically add it as an attachment.\n\nTo add support for Continuity Camera to any view, simply return a UIPasteConfiguration object that accepts images from your view's pasteConfiguration property, then add a UI contextMenuInteraction.\n\nThen implement the paste(itemProviders:) function to load and paste the incoming objects -- in this case, images.\n\nAs a bonus, returning a paste configuration from your view not only enables Continuity Camera when the configuration accepts images, it also automatically enables a Paste action in the context menu and allows your view to accept incoming drags, both on Mac Catalyst and iPad.\n\nSo those are some specific things you can do to help make your app a great Mac Catalyst app.\n\nNow let's go back to Owen to talk about distribution.\n\nOwen: Thanks, Dave.\n\nWhen it comes to releasing your app, the big thing to remember is that Mac Catalyst apps are Mac apps, and can be distributed through all the same means as any other Mac app.\n\nYou can publish your app on the Mac App Store, with the option for Universal Purchase so your existing iOS customers automatically get your Mac app.\n\nYou have access to TestFlight for beta releases of your app and to get early feedback on new builds.\n\nYou can also use App Notarization and distribute it yourself.\n\nAnd if you develop a framework, use XCFrameworks to distribute cross-platform, bundling together binaries for all platforms.\n\nToday, we've covered the process of building your iOS app for Mac with Mac Catalyst, and highlighted some important decisions and changes to make along the way.\n\nNow it's time to consider your own projects.\n\nIt's easy to get your app running on Mac, and with just a little bit of work, you can make your app feel right at home and make it available to a whole new set of excited customers.\n\nThank you! ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "6:50",
+      "title": "System button",
+      "language": "swift",
+      "code": "let button = UIButton(type: .system)\nbutton.setTitle(\"Button\", for: .normal)"
+    },
+    {
+      "timestamp": "7:06",
+      "title": "Pull-down button",
+      "language": "swift",
+      "code": "button.menu = UIMenu(...)\nbutton.showsMenuAsPrimaryAction = true"
+    },
+    {
+      "timestamp": "7:44",
+      "title": "Pop-up button",
+      "language": "swift",
+      "code": "button.menu = UIMenu(...)\nbutton.showsMenuAsPrimaryAction = true\nbutton.changesSelectionAsPrimaryAction = true"
+    },
+    {
+      "timestamp": "8:24",
+      "title": "Checkbox",
+      "language": "swift",
+      "code": "let checkbox = UISwitch()\nif checkbox.style == .checkbox {\n    checkbox.title = \"Checkbox\"\n}"
+    },
+    {
+      "timestamp": "13:20",
+      "title": "Delegating actions",
+      "language": "swift",
+      "code": "final class MyView: UIView {\n    override func target(forAction action: Selector, withSender sender: Any?) -> Any? {\n        if action == #selector(Model.setAsFavorite(_:)) {\n            return myModel\n        } else {\n            return super.target(forAction: action, withSender: sender)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "14:43",
+      "title": "Requesting a new scene",
+      "language": "swift",
+      "code": "let viewDetailActivityType = \"viewDetail\"\nlet itemIDKey = \"itemID\"\n\nfinal class MyView: UIView {\n    @objc func viewDoubleClicked(_ sender: Any?) {\n        let userActivity = NSUserActivity(activityType: viewDetailActivityType)\n        userActivity.userInfo = [itemIDKey: selectedItem.itemID]\n        UIApplication.shared.requestSceneSessionActivation(nil,\n            userActivity: userActivity,\n            options: nil,\n            errorHandler: { error in //...\n        })\n    }\n    //...\n}"
+    },
+    {
+      "timestamp": "15:57",
+      "title": "Responding to a new scene request",
+      "language": "swift",
+      "code": "let viewDetailActivityType = \"viewDetail\"\n\nfinal class AppDelegate: UIApplicationDelegate {\n    func application(_ application: UIApplication, \n        configurationForConnecting session: UISceneSession, \n        options: UIScene.ConnectionOptions) -> UISceneConfiguration {\n        if let activity = options.userActivities.first {\n            if activity.activityType == viewDetailActivityType {\n                return UISceneConfiguration(name: \"DetailViewer\", sessionRole:session.role)\n            }\n        }\n        return UISceneConfiguration(name: \"Default Configuration\",\n            sessionRole: session.role)\n    }\n    //...\n}"
+    },
+    {
+      "timestamp": "17:13",
+      "title": "Setting item ID on new scene's root view controller",
+      "language": "swift",
+      "code": "let itemIDKey = \"itemID\"\n\nfinal class SceneDelegate: UIWindowSceneDelegate {\n    func scene(_ scene: UIScene, willConnectTo session: UISceneSession,\n        options: UIScene.ConnectionOptions) {\n        if let userActivity = connectionOptions.userActivities.first {\n            if let itemId = userActivity.userInfo?[itemIDKey] as? ItemIDType {\n               // Set item ID on new view controller\n            }\n        }\n        //...\n    }\n    //..."
+    },
+    {
+      "timestamp": "17:47",
+      "title": "Saving state for later restoration",
+      "language": "swift",
+      "code": "final class SceneDelegate: UIWindowSceneDelegate {\n    func stateRestorationActivity(for scene: UIScene) -> NSUserActivity? {\n        //...\n    }\n}"
+    },
+    {
+      "timestamp": "17:57",
+      "title": "State restoration",
+      "language": "swift",
+      "code": "final class AppDelegate: UIApplicationDelegate {\n    func application(_ application: UIApplication, \n        configurationForConnecting session: UISceneSession, \n        options: UIScene.ConnectionOptions) -> UISceneConfiguration {\n        //...\n    }\n}"
+    },
+    {
+      "timestamp": "18:42",
+      "title": "Handle both new scene requests and state restoration",
+      "language": "swift",
+      "code": "let itemIDKey = \"itemID\"\n\nfinal class SceneDelegate: UIWindowSceneDelegate {\n    func scene(_ scene: UIScene, willConnectTo session: UISceneSession,\n        options connectionOptions: UIScene.ConnectionOptions) {\n        if let userActivity = connectionOptions.userActivities.first ??\n            session.stateRestorationActivity {\n            if let itemId = userActivity.userInfo?[itemIDKey] as? ItemIDType {\n               // Set item ID on new view controller\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "20:20",
+      "title": "Provide sharing configuration for the scene",
+      "language": "swift",
+      "code": "final class RootViewController: UIViewController {\n    override var activityItemsConfiguration: UIActivityItemsConfigurationReading? {\n      get { UIActivityItemsConfiguration(objects: [image]) }\n      //...\n    }\n}"
+    },
+    {
+      "timestamp": "20:56",
+      "title": "Support sharing through context menu",
+      "language": "swift",
+      "code": "final class MyView: UIView {\n    override var activityItemsConfiguration: UIActivityItemsConfigurationReading? {\n      get { UIActivityItemsConfiguration(objects: images) }\n      //...\n    }\n\n    func viewDidLoad() {\n      let contextMenuInteraction = UIContextMenuInteraction(delegate: self)\n      addInteraction(contextMenuInteraction)\n    }\n}"
+    },
+    {
+      "timestamp": "22:08",
+      "title": "Supporting continuity camera",
+      "language": "swift",
+      "code": "final class MyView: UIView {\n    override var pasteConfiguration: UIPasteConfiguration? {\n      get { UIPasteConfiguration(forAcceptingClass: UIImage.self) }\n      //...\n    }\n\n    func willMove(toWindow: UIWindow) {\n       addInteraction(contextMenuInteraction)\n    }\n\n    override func paste(itemProviders: [NSItemProvider]) {\n       for itemProvider in itemProviders {\n            if itemProvider.canLoadObject(ofClass: UIImage.self) {\n                if let image = try? await itemProvider.loadObject(ofClass:UIImage.self) {\n                    insertImage(image)\n                }          \n                //..."
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Accessibility design for Mac Catalyst",
+        "url": "https://developer.apple.com/documentation/Accessibility/accessibility_design_for_mac_catalyst"
+      },
+      {
+        "title": "Adding Menus and Shortcuts to the Menu Bar and User Interface",
+        "url": "https://developer.apple.com/documentation/uikit/uicommand/adding_menus_and_shortcuts_to_the_menu_bar_and_user_interface"
+      },
+      {
+        "title": "Building and improving your app with Mac Catalyst",
+        "url": "https://developer.apple.com/documentation/UIKit/building-and-improving-your-app-with-mac-catalyst"
+      },
+      {
+        "title": "Human Interface Guidelines: Mac Catalyst",
+        "url": "https://developer.apple.com/design/human-interface-guidelines/mac-catalyst"
+      },
+      {
+        "title": "Mac Catalyst",
+        "url": "https://developer.apple.com/documentation/UIKit/mac-catalyst"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10053/3/2422D003-327B-45A7-95E1-047C49B735B3/downloads/wwdc2021-10053_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10053/3/2422D003-327B-45A7-95E1-047C49B735B3/downloads/wwdc2021-10053_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10260",
+      "year": "2021",
+      "title": "Focus on iPad keyboard navigation",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10260"
+    },
+    {
+      "id": "10064",
+      "year": "2021",
+      "title": "Meet the UIKit button system",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10064"
+    },
+    {
+      "id": "10056",
+      "year": "2021",
+      "title": "Qualities of great iPad and iPhone apps on Macs with M1",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10056"
+    },
+    {
+      "id": "10057",
+      "year": "2021",
+      "title": "Take your iPad apps to the next level",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10057"
+    },
+    {
+      "id": "10052",
+      "year": "2021",
+      "title": "What's new in Mac Catalyst",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10052"
+    },
+    {
+      "id": "10059",
+      "year": "2021",
+      "title": "What's new in UIKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10059"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:26:51.639Z"
+}

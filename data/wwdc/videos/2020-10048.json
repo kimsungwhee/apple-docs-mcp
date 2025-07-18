@@ -1,0 +1,164 @@
+{
+  "id": "10048",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10048/",
+  "title": "Build complications in SwiftUI",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nHi, my name is Matthew Koonce and I'm a watchOS SwiftUI engineer.\n\nI'll be joined later by my colleague, August. Today we get to dive into all the awesome things you can build with SwiftUI complications. Complications are how you display timely and relevant information about your app on the watch face. Some of the most powerful and useful complications are able to distill complex information into something that can be quickly understood at a glance. For example, the UVI complication features vertical gauges with a color gradient which quickly tells me that sunscreen would be a good choice today.\n\nBuilding complications like the UVI chart can be challenging. But with SwiftUI complications, you can bring your knowledge about SwiftUI right to the watch face. And of course, we can't have SwiftUI complications without Xcode previews. Now you can view your complications on different faces at the same time.\n\nSo today we're going to take a look at how you can build your own complication in SwiftUI. To do that, we'll look at the new API in ClockKit and SwiftUI that make this all possible.\n\nWe'll see how our SwiftUI views work with watch face tinting and some best practices. Let's get started with the API.\n\nIn order to use SwiftUI views in complications, we turn to our trusty complication templates. ClockKit has dozens of predefined templates that provide easy-to-use layouts for your complications.\n\nNew in watchOS 7, we've added templates that take a SwiftUI view right alongside other ClockKit providers. These templates are for the Graphic Corner, Circular, Rectangular...\n\nand Extra Large families. But where SwiftUI really shines are the templates that take just a single SwiftUI view. These templates provide a full canvas for drawing in each family.\n\nAnd the GraphicRectangularFullView template is a brand-new template that gives you an even larger canvas for drawing.\n\nAnd with that canvas, you can use SwiftUI to do just about anything. SwiftUI's powerful drawing library is at your full disposal, allowing you to easily create novel designs for complications like this awesome tide chart from Dawn Patrol. So that's how you can get your SwiftUI views into ClockKit templates. We've also made changes in SwiftUI that bring more power and flexibility to complications.\n\nFirst, let's talk about text. We've updated text to be aware of the complication family it will appear on. The default font size will change for each family. For example, this same text shown here in the GraphicRectangular complication will be much larger on the Extra Large face. The default font has also changed to SF Rounded to look right at home on the face.\n\nAdditionally, text features new date formatters that work great on the watch face. In particular, the relative, offset and timer styles will be automatically kept up-to-date by the watch face.\n\nFor example, using the relative style for this date will make sure it's always accurate relative to now.\n\nSame for the timer style. I can place the date right inside an interpolated string and it will automatically show the time remaining on my Sourdough Timer.\n\nSo that's the improvements we've made to text. Next, let's look at two popular controls from complications that we've brought right into SwiftUI. Those are Progress View and Gauge.\n\nBoth Progress View and Gauge are super useful, and each have a specific purpose.\n\nProgress View is great for information that progresses in a linear fashion, like music. And the Gauge is great for information that varies over time, like temperature. Let's start with Progress View.\n\nIn its most simple setup, Progress View just has a single value and can be set with a style.\n\nIn this case, we're using the Circular style.\n\nWe can also add a label to the Progress View which describes its purpose. In our case, we're using the music note SF symbol.\n\nFinally, Progress Views can be tinted, completing the look of our musical Progress View.\n\nProgress View also comes in a linear style. And all the same API works just like you'd expect. Next, let's look at Gauge.\n\nGauge is a superpowerful control with a ton of configuration options. Let's take a look.\n\nHere we have a simple Gauge that shows the soil acidity level of our garden. It's using the CircularGaugeStyle.\n\nWe can also add a current value label that will appear in the center of the Gauge to provide some context at a glance.\n\nFor some Gauges, it might be useful to label the start and end values. In our case, our Gauge is from three to ten. So let's add those labels with the minimum and maximum value labels.\n\nLike Progress View, Gauge can also be tinted with a color. Here we add a green color.\n\nBut where Gauges really come into their own is with a gradient tint. By using SwiftUI's gradient, I can easily specify the color stops for my acidity Gauge.\n\nGauge also comes in a linear style which is great for Rectangular complications like on the Modular Compact face.\n\nSo that's the Gauge API. But one thing to remember is that both Gauge and Progress Views are available in SwiftUI as a new control that you can build as needed. For example, we can use a Circular Gauge in a Rectangular complication...\n\nor use Gauges right in the app.\n\nSo that's the new API we've added to SwiftUI and ClockKit. Next, let's talk about one of my favorite features of watch faces, watch face tinting.\n\nWatch faces support a full range of tinted colors, allowing for even more personalization. Complications take on this face color, giving each face a unique style.\n\nSome faces, like the Solar Dial face, take this a step further and alters the tint color and the color of each complication as the day progresses.\n\nSo understanding how your complication will behave on a tinted watch face is intrinsic to the design of your complication. So let's dive into how watch face tinting works.\n\nI have a full color view here of a yellow apple over a blue circle. When the watch face becomes tinted by a color, one of two possible tinting effects will be applied.\n\nThe first is a desaturated tint. And the second is a color opacity tint.\n\nLet's start by talking about desaturated tinting.\n\nDesaturated tinting is the default tinting mode for complications. When the watch face is tinted, it creates a grayscale version of your view.\n\nSome faces, like the Extra Large face, may apply a single color over this desaturated view. Let's see how we can build a SwiftUI complication that becomes desaturated on the watch face.\n\nHere I have the code for my view which is a ZStack of a circle and an apple image.\n\nOn the watch face that looks pretty good.\n\nWhen the watch face color is changed to red... you can see that the default desaturation mode kicks in, and the view becomes desaturated automatically on the watch face.\n\nAnd on the Extra Large face, a single color is applied over the desaturated view. So that's pretty easy. With no changes to our SwiftUI view, we get a good tinted complication.\n\nWith that said, be mindful about the colors you choose for your complication.\n\nIf I had instead chosen colors with a similar brightness, the apple will just disappear when the view is desaturated. So it's important to consider how your view will look desaturated when building a complication.\n\nSo that's desaturated tinting. Next, let's look at color opacity tinting. While desaturated tinting is the default tinting behavior, color opacity is an alternative tinting style that we can opt into.\n\nThis tinting style works by creating layers within our complication. And then the watch face applies a color to each layer.\n\nStarting with our fullColor view, we first want to identify the layers of our complication. Watch faces support two distinct layers.\n\nIn this case, we've chosen the circle to be separated from the apple. These will now be our two layers. Next, as the name implies, the watch face only considers the opacity of each view.\n\nSince each of these views are at full opacity, they both become white.\n\nThen the watch face applies a color to the appropriate layer. Each watch face determines the color applied to each layer. In this case, the watch face determined that the circle's layer should become red and the apple's layer should remain white.\n\nThen the layers are brought back together.\n\nIt's up to the watch face to define how the chosen color is applied to each layer. On the Extra Large face, for example, our apple is white on a red background...\n\nbut will be red on a white background on the Meridian face.\n\nAnd other faces, like the Solar Dial face, may apply a different color to both layers.\n\nSo let's return to our example, this time using the Extra Large face and see how we can make our complication use a color opacity tint.\n\nI want my circle and my apple to each be in their own distinct layer. By default, all view content is considered to be in the background layer.\n\nBy applying the complicationForeground modifier, I've determined that the apple image should be promoted to the foreground layer. And the circle will remain in the background layer. Now that I have distinct layers, color opacity tinting kicks in.\n\nWhen the watch face color is changed to red... the apple now becomes white and the circle becomes red.\n\nIf I change the color of the face again, you'll see that the background changes right along with it. On the Extra Large face, the background layer was given the watch face color. Let's look at a different face.\n\nOn the Meridian face, you'll notice that the opposite layers are colored.\n\nSo that's color opacity tinting, where we create distinct opacity layers within our view hierarchy. Then the watch face applies a color to these layers for a striking result.\n\nIn some cases, you may want to make additional changes to your view for tinting. For example, you may want to change the background color to use a gradient.\n\nOr you may want to remove the background entirely.\n\nWe can do that with the new ComplicationRenderingMode.\n\nThe rendering mode has two values, fullColor for when this view is being rendered for a full color face, and tinted for when this view will be shown on a tinted face.\n\nWe can get the current value out of the environment.\n\nLet's return to our example and see how we can use the ComplicationRenderingMode.\n\nFirst, I can use the environment to get the current rendering mode.\n\nNext, let's use the rendering mode by changing the fill of our circle and the complication is for color or tinted.\n\nWe'll add a switch statement to check for the current value of rendering mode.\n\nIn the fullColor case, we keep our circle exactly the same using a blue fill color...\n\nbut in the tinted case, we're gonna change the fill entirely. Instead of a single color, we're gonna use a linear gradient.\n\nIn particular, a gradient that only changes the opacity of this view. Recall from earlier, this is a color opacity complication. Therefore the opacity of the view is the only thing being considered when it's shown onscreen. Since the opacity is the only thing we can change, this gradient goes from an opacity of one to an opacity of zero.\n\nSo now we have a tinted complication with an opacity gradient fill in tinted mode and a blue fill in fullColor mode. That was a lot of information, so let's go over some key takeaways.\n\nFirst, by default, a SwiftUI view will be desaturated on the watch face. If you want a color opacity complication, use the complicationForeground modifier to group pieces of a view together for tinting.\n\nAnd finally, the ComplicationRenderingMode allows for advanced customization of a view for fullColor and tinted complications. So now we've learned about all the new API that you can use to build amazing SwiftUI complications. But to see it all happen in action, I'd like to hand it over to August. Thank you, Matthew. I'm August Joki, a watch face engineer, and I'm gonna show you how to use what we've learned in Xcode. Not long ago, we released new sample code for creating and updating complications. It's called Coffee Tracker. Here's what the app looks like.\n\nIt already includes complications. This'll make a great place to show off the new SwiftUI complication features.\n\nMatthew and I have been working on incorporating a new SwiftUI view to show the user their historical caffeine consumption. They can see the equivalent number of cups of coffee consumed in the past week, and the chart incorporates the colors of the app. The view's turning out really nice, and we think it'd make a great Graphic Rectangular complication. Let's go to Xcode to see how to incorporate SwiftUI and complication templates and how to support the two options for tinting. While previously working on the History View of the app, we set up a preview to quickly see changes we make to our view. Simple views may not need any changes for inclusion in a complication or only need a new property or two to key off of for rendering in a complication.\n\nBut because our chart is fairly complex, we decided we will create a new view to use in our complication. The separate view allows us to encapsulate any changes that are specific to the complication.\n\nWe add the new view to our preview because we want to see the Apps version of the HistoryView alongside our new ComplicationHistoryView to ensure we are not accidentally modifying it. Let's take the HistoryChart part of the HistoryView to use in our complication.\n\nTo preview our complication, we start by creating a FullViewGraphicRectangularTemplate using the new SwiftUI view.\n\nBut the template is not a SwiftUI view itself so it can't be previewed on its own. To address this, we've added a new function to CLKComplicationTemplate: previewContext. It is defined when both ClockKit and SwiftUI are imported together. The function wraps the template in a SwiftUI view that Previews knows how to transform into a clock face with a complication template set on it. Every complication template previewed is set on a face that is best suited for its family. Thanks to the power of SwiftUI, our complication looks almost done right out of the gate. But the default Graphic Rectangular font size is a bit large for the kind of content we are displaying. Let's start by fixing that.\n\nWe add a font modifier to the chart to set a size more suitable for displaying in our complication.\n\nWe also wanna take up all the available space for the GraphicRectangular FullView template. Matthew will explain complication safe areas in more detail later. That font size looks great. And since we can see our chart is next to other complications on the watch face, we should provide some context for our complications data. Adding a title is a great way to provide that context.\n\nSince this is all SwiftUI, we can add \"Weekly Coffee\" as a text and wrap it up together with the History Chart in a VStack. And now that is looking really polished. But what does our complication look like when the face is tinted? To find out, let's set the preview's face color to blue.\n\nNothing is blending together, but we lost all of our color. Let's use complicationForeground to make the title adopt the tint color.\n\nNow our title's automatically tinted to match the color of the face. Since we are focusing on supporting tinting, let's focus our previews on tinting too.\n\nNow we can see what a multicolor face looks like right next to a tinted face. And I've just noticed that using complicationForeground also made the gradient and the Gauges disappear. That's because, as soon as we adopt tinting support, our complication is no longer getting desaturated. Instead, only the opacity of our view hierarchy is used. That means everything in the hierarchy is reduced to their opacity values, the parts marked with complicationForeground are grouped together and have the same color wash applied to them. As we learned earlier, we have another way to work with tinting: the ComplicationRenderingMode environment value. Let's use it to change how we render the chart when tinted. But first, let's paint our previews so that we can watch in real time the complication update as we are making changes to a different file. Here we have the view that creates a column for a given day.\n\nWe add an environment property for ComplicationRenderingMode and pass the new property to our custom HistoryGaugeStyle to hide the background when tinted. We can see that the chart now renders differently from the fullColor case.\n\nWith ComplicationRenderingMode, we are able to change pieces of our view hierarchy while keeping the code pads from drastically diverging between fullColor and tinted rendering. Let's go back to ComplicationHistoryView. We've seen what our new complication looks like with a blue face color, but what about the other sample preview colors? We can take advantage of the power of using ClockKit and SwiftUI together to enumerate the PreviewFaceColors to see them all at the same time. We can now make sure our complication looks good with a sampling of different options a user could set for their face color. I've shown you how easy it is to use SwiftUI and complication templates, how to quickly support tinting with complicationForeground and how to make use of complicationRenderingMode for finer-grained tinting control. And now I'll hand it back to Matthew to talk about best practices. Thank you. Thanks, August. That was some pretty cool stuff. SwiftUI makes it really seamless to create compelling charts like our weekly summary view. It has never been easier to turn that into a complication.\n\nNext, let's talk about some best practices to consider when building your own SwiftUI complication.\n\nFirst, it's important to know that tapping anywhere on a complication will always launch your app. Buttons, gestures and other interactive elements are not supported in complications.\n\nStick to text, images and drawing primitives when building your complication.\n\nWe've added a new runtime warning to Xcode, in case you try to use a view that is not compatible with complications.\n\nAnd finally, remember that a complication is a timeline composed of static views. Therefore, SwiftUI animations are not supported.\n\nWe want you to also consider the performance characteristics of your view.\n\nIn order to keep the watch face performing at a high level, every SwiftUI view's performance is measured before it's shown on screen.\n\nConsult the Human Interface Guidelines and our documentation to ensure you use appropriately sized images for each complication...\n\nand be mindful about the runtime costs of certain drawing attributes, such as blurs and formatted text, and only use what is absolutely necessary.\n\nNote that poorly performing views may penalize your complication's runtime.\n\nWatch out for runtime warnings like this one regarding the size or complexity of your view.\n\nIf your complication is giving a runtime warning like this, treat it like a build error and make sure you fix it before shipping your complication for the best experience for your customers.\n\nFinally, some layout best practices.\n\nUse the default font size for each complication as a guide for the kinds of views that you should build.\n\nFor example, the Extra Large complication may have a large canvas for drawing, but its purpose is to provide large and easy-to-see information.\n\nNote that the Circular and Rectangular complication families will mask your content to their respective shapes.\n\nAnd the Rectangular Full View complication features a safe area for layout to help prevent your content from being clipped on the watch face.\n\nThis new larger drawing area could be clipped by the corners of the Apple Watch display on certain watch faces. By default, the safe area provides you with space that's safe for all complication placements. If you'd like to use the full area of the complication, like we did for the Weekly Coffee complication, you can use the edgesIgnoringSafeArea modifier.\n\nThis will give you that little bit of extra space. Be mindful, though, about the layout of your content to prevent it being clipped. So that was a look at some of the awesome things that you can now do with SwiftUI complications. We saw how, for the first time, you can bring your knowledge about SwiftUI right to the watch face.\n\nWe saw some great new APIs for Text, Progress View and Gauge and how our complications are tinted on the watch face.\n\nAnd how you can use Xcode previews to work on multiple complications at the same time and on different watch face colors.\n\nIf you've never built a complication before, or you wanna freshen up your knowledge about complication templates and descriptors, check out the \"Create Complications for Apple Watch\" talk.\n\nAnd to make sure your complications are always showing the right information at the right time, I highly recommend watching \"Keep Your Complications Up to Date.\" Thank you. [chimes]",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:17",
+      "title": "Relative Text",
+      "language": "swift",
+      "code": "import SwiftUI\nimport ClockKit\n\nstruct RelativeText: View {\n    var body: some View {\n        VStack(alignment: .leading) {\n            Text(\"Count Down\")\n                .font(.headline)\n                .foregroundColor(.accentColor)\n            Label(\"Nap Time\", systemImage: \"moon.fill\")\n            Text(Date() + 100, style: .relative)\n        }\n        .frame(maxWidth: .infinity, alignment: .leading)\n    }\n}\n\nstruct RelativeText_Previews: PreviewProvider {\n    static var previews: some View {\n        CLKComplicationTemplateGraphicRectangularFullView(RelativeText())\n            .previewContext()\n    }\n}"
+    },
+    {
+      "timestamp": "3:26",
+      "title": "Timer Text",
+      "language": "swift",
+      "code": "import SwiftUI\nimport ClockKit\n\nstruct TimerText: View {\n    var body: some View {\n        VStack(alignment: .leading) {\n            Label(\"Sourdough Timer\", systemImage: \"timer\")\n                .foregroundColor(.orange)\n            Text(\"Time remaining: \\(Date() + 100, style: .timer)\")\n        }\n        .frame(maxWidth: .infinity, alignment: .leading)\n    }\n}\n\nstruct TimerText_Previews: PreviewProvider {\n    static var previews: some View {\n        CLKComplicationTemplateGraphicRectangularFullView(TimerText())\n            .previewContext()\n    }\n}"
+    },
+    {
+      "timestamp": "4:04",
+      "title": "Progress View Sample #1",
+      "language": "swift",
+      "code": "import SwiftUI\nimport ClockKit\n\nstruct ProgressSample: View {\n    var body: some View {\n        ProgressView(value: 0.7)\n            .progressViewStyle(CircularProgressViewStyle())\n    }\n}\n\nstruct ProgressSample_Previews: PreviewProvider {\n    static var previews: some View {\n        CLKComplicationTemplateGraphicCircularView(ProgressSample())\n            .previewContext()\n    }\n}"
+    },
+    {
+      "timestamp": "4:15",
+      "title": "Progress View Sample #2",
+      "language": "swift",
+      "code": "import SwiftUI\nimport ClockKit\n\nstruct ProgressSample: View {\n    var body: some View {\n        ProgressView(value: 0.7) {\n            Image(systemName: \"music.note\")\n        }\n        .progressViewStyle(CircularProgressViewStyle())\n    }\n}\n\nstruct ProgressSample_Previews: PreviewProvider {\n    static var previews: some View {\n        CLKComplicationTemplateGraphicCircularView(ProgressSample())\n            .previewContext()\n    }\n}"
+    },
+    {
+      "timestamp": "4:23",
+      "title": "Progress View Sample #3",
+      "language": "swift",
+      "code": "import SwiftUI\nimport ClockKit\n\nstruct ProgressSample: View {\n    var body: some View {\n        ProgressView(value: 0.7) {\n            Image(systemName: \"music.note\")\n        }\n        .progressViewStyle(CircularProgressViewStyle(tint: .red))\n    }\n}\n\nstruct ProgressSample_Previews: PreviewProvider {\n    static var previews: some View {\n        CLKComplicationTemplateGraphicCircularView(ProgressSample())\n            .previewContext()\n    }\n}"
+    },
+    {
+      "timestamp": "4:29",
+      "title": "Progress View Sample #4",
+      "language": "swift",
+      "code": "import SwiftUI\nimport ClockKit\n\nstruct ProgressSample: View {\n    var body: some View {\n        VStack(alignment: .leading) {\n            Text(\"Water Reminder\")\n                .foregroundColor(.blue)\n            Text(\"32 oz. consumed\")\n            ProgressView(value: 0.7)\n                .progressViewStyle(LinearProgressViewStyle(tint: .blue))\n        }\n        \n    }\n}\n\nstruct ProgressSample_Previews: PreviewProvider {\n    static var previews: some View {\n        CLKComplicationTemplateGraphicRectangularFullView(ProgressSample())\n            .previewContext()\n    }\n}"
+    },
+    {
+      "timestamp": "4:45",
+      "title": "Gauge Sample #1",
+      "language": "swift",
+      "code": "import SwiftUI\nimport ClockKit\n\nstruct GaugeSample: View {\n    var body: some View {\n        Gauge(value: 5.8, in: 3...10) {\n            Image(systemName: \"drop.fill\")\n                .foregroundColor(.green)\n        }\n        .gaugeStyle(CircularGaugeStyle())\n    }\n}\n\nstruct GaugeSample_Previews: PreviewProvider {\n    static var previews: some View {\n        CLKComplicationTemplateGraphicCircularView(GaugeSample())\n            .previewContext()\n    }\n}"
+    },
+    {
+      "timestamp": "4:55",
+      "title": "Gauge Sample #2",
+      "language": "swift",
+      "code": "import SwiftUI\nimport ClockKit\n\nstruct GaugeSample: View {\n    @State var acidity = 5.8\n    \n    var body: some View {\n        Gauge(value: acidity, in: 3...10) {\n            Image(systemName: \"drop.fill\")\n                .foregroundColor(.green)\n        } currentValueLabel: {\n            Text(\"\\(acidity, specifier: \"%.1f\")\")\n        }\n        .gaugeStyle(CircularGaugeStyle())\n    }\n}\n\nstruct GaugeSample_Previews: PreviewProvider {\n    static var previews: some View {\n        CLKComplicationTemplateGraphicCircularView(GaugeSample())\n            .previewContext()\n    }\n}"
+    },
+    {
+      "timestamp": "5:02",
+      "title": "Gauge Sample #3",
+      "language": "swift",
+      "code": "import SwiftUI\nimport ClockKit\n\nstruct GaugeSample: View {\n    @State var acidity = 5.8\n    \n    var body: some View {\n        Gauge(value: acidity, in: 3...10) {\n            Image(systemName: \"drop.fill\")\n                .foregroundColor(.green)\n        } currentValueLabel: {\n            Text(\"\\(acidity, specifier: \"%.1f\")\")\n        } minimumValueLabel: {\n            Text(\"3\")\n        } maximumValueLabel: {\n            Text(\"10\")\n        }\n        .gaugeStyle(CircularGaugeStyle())\n    }\n}\n\nstruct GaugeSample_Previews: PreviewProvider {\n    static var previews: some View {\n        CLKComplicationTemplateGraphicCircularView(GaugeSample())\n            .previewContext()\n    }\n}"
+    },
+    {
+      "timestamp": "5:14",
+      "title": "Gauge Sample #4",
+      "language": "swift",
+      "code": "import SwiftUI\nimport ClockKit\n\nstruct GaugeSample: View {\n    @State var acidity = 5.8\n    \n    var body: some View {\n        Gauge(value: acidity, in: 3...10) {\n            Image(systemName: \"drop.fill\")\n                .foregroundColor(.green)\n        } currentValueLabel: {\n            Text(\"\\(acidity, specifier: \"%.1f\")\")\n        } minimumValueLabel: {\n            Text(\"3\")\n        } maximumValueLabel: {\n            Text(\"10\")\n        }\n        .gaugeStyle(CircularGaugeStyle(tint: .green))\n    }\n}\n\nstruct GaugeSample_Previews: PreviewProvider {\n    static var previews: some View {\n        CLKComplicationTemplateGraphicCircularView(GaugeSample())\n            .previewContext()\n    }\n}"
+    },
+    {
+      "timestamp": "5:21",
+      "title": "Gauge Sample #5",
+      "language": "swift",
+      "code": "import SwiftUI\nimport ClockKit\n\nstruct GaugeSample: View {\n    @State var acidity = 5.8\n    \n    var body: some View {\n        Gauge(value: acidity, in: 3...10) {\n            Image(systemName: \"drop.fill\")\n                .foregroundColor(.green)\n        } currentValueLabel: {\n            Text(\"\\(acidity, specifier: \"%.1f\")\")\n        } minimumValueLabel: {\n            Text(\"3\")\n        } maximumValueLabel: {\n            Text(\"10\")\n        }\n        .gaugeStyle(\n            CircularGaugeStyle(\n                tint: Gradient(colors: [.orange, .yellow, .green, .blue, .purple])\n            )\n        )\n    }\n}\n\nstruct GaugeSample_Previews: PreviewProvider {\n    static var previews: some View {\n        CLKComplicationTemplateGraphicCircularView(GaugeSample())\n            .previewContext()\n    }\n}"
+    },
+    {
+      "timestamp": "5:34",
+      "title": "Gauge Sample #6",
+      "language": "swift",
+      "code": "import SwiftUI\nimport ClockKit\n\nstruct GaugeSample: View {\n    @State var acidity = 5.8\n    \n    var body: some View {\n        VStack(alignment: .leading) {\n            Text(\"Garden Soil Acidity\")\n                .foregroundColor(.green)\n            Gauge(value: acidity, in: 3...10) {\n                Image(systemName: \"drop.fill\")\n                    .foregroundColor(.green)\n            } currentValueLabel: {\n                Text(\"\\(acidity, specifier: \"%.1f\")\")\n            } minimumValueLabel: {\n                Text(\"3\")\n            } maximumValueLabel: {\n                Text(\"10\")\n            }\n            .gaugeStyle(\n                LinearGaugeStyle(\n                    tint: Gradient(colors: [.orange, .yellow, .green, .blue, .purple])\n                )\n            )\n        }\n    }\n}\n\nstruct GaugeSample_Previews: PreviewProvider {\n    static var previews: some View {\n        CLKComplicationTemplateGraphicRectangularFullView(GaugeSample())\n            .previewContext()\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Building a watchOS app",
+        "url": "https://developer.apple.com/documentation/watchOS-Apps/building_a_watchos_app"
+      },
+      {
+        "title": "ClockKit",
+        "url": "https://developer.apple.com/documentation/ClockKit"
+      },
+      {
+        "title": "Creating and updating a complication’s timeline",
+        "url": "https://developer.apple.com/documentation/ClockKit/creating-and-updating-a-complication-s-timeline"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10048/4/A4A61EDD-9948-4DB8-98BB-8BA633D211CC/wwdc2020_10048_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10048/4/A4A61EDD-9948-4DB8-98BB-8BA633D211CC/wwdc2020_10048_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10051",
+      "year": "2022",
+      "title": "Go further with Complications in WidgetKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10051"
+    },
+    {
+      "id": "10194",
+      "year": "2021",
+      "title": "Swift concurrency: Update a sample app",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10194"
+    },
+    {
+      "id": "10046",
+      "year": "2020",
+      "title": "Create complications for Apple Watch",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10046"
+    },
+    {
+      "id": "10049",
+      "year": "2020",
+      "title": "Keep your complications up to date",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10049"
+    },
+    {
+      "id": "10100",
+      "year": "2020",
+      "title": "Meet Watch Face Sharing",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10100"
+    },
+    {
+      "id": "10041",
+      "year": "2020",
+      "title": "What's new in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10041"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:55:29.476Z"
+}

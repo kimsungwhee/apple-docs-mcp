@@ -1,0 +1,152 @@
+{
+  "id": "10058",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10058/",
+  "title": "SwiftUI on iPad: Organize your interface",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Raj Ramamurthy: Hello, and welcome to \"SwiftUI on iPad: Organize your interface.\" I'm Raj, and I work on SwiftUI. iPadOS 16 has a number of updates to allow building more productive, professional-grade apps with rich features. In this session, I'm going to discuss a few of them and talk about organizing the interface of your SwiftUI apps to shine on iPad. To start, I'll take you on a tour of lists and tables. Then, I'll talk about the SwiftUI selection model and how to integrate selection with menus. Finally, I'll discuss how to structure your app's navigation for iPad by using split views. But wait, there's more. This is actually the first session of a two-part series. In the second part, my colleague Harry takes a tour through toolbars, titles, and more. Harry covers some really important additions that take SwiftUI iPad apps to the next level, so please make sure to watch both sessions. Let's get started with lists and tables. I recently joined a few book clubs, but I'm running pretty behind. It's so hard to find a quiet place to read. So to help me focus on my reading, I've started working on an app to find these mythical quiet places. A quiet place is like a reading oasis, where the pages just fly. And this app helps me track all the quiet places that I've found. I've built the app for iPhone, but I think it'd be a fun exercise to update it for iPad to really take advantage of the larger display. By making the app better for iPad, I'll also be further along when I eventually bring it to the Mac as well. I won't be covering the Mac explicitly in this session, but many of the APIs shown also apply on macOS. Here is a list of all the quiet places that I've found so far. This list is a great place to start with updating the app. I've started working on the iPad version. It's not terrible, but it doesn't take advantage of the bigger screen. There's quite a bit of wasted space, and the information density is low. Thankfully, in iPadOS 16, there's a great solution for these sorts of information dense scenarios: multi-column tables. Let me show you what they look like. Here's the “All Places\" view after adopting the SwiftUI API for multi-column tables. I'll work up towards this screenshot over the next few minutes. Multi-column tables in SwiftUI were first introduced in macOS Monterey, and starting in iPadOS 16, the same table API is now available for iPad. Just like on the Mac, tables on iPad support multiple columns and sorting. Along with the introduction of tables on iPad, SwiftUI now supports sections in tables on iPad and the Mac.\n\nThe general guidance around tables from the previous session \"SwiftUI on the Mac: Build the fundamentals\" still applies on iPad, so I invite you to watch that session if you haven't already.\n\nLet's build up the table shown earlier, starting from the iPhone list. Here's the code for the places list from earlier.\n\nFirst, I'll switch from a list to a table. Tables have a different construction from lists. Instead of a view builder, tables accept a column builder.\n\nThe first column I'll add is for the place's name. The column requires a name for its header and a view builder to produce the view for each element in the collection. I've also specified a value key path, which will be important later when I add sorting to the table. Notice how similar the view builder is to the list-based construction. In fact, I can even reuse the PlaceCell type from before.\n\nIn compact size classes, tables only show their first column, which means my table still looks great on iPhone and in slide over on iPad.\n\nYou might notice that this is similar to a list in appearance. But I didn't just replace the table with a list, because reusing the table allows for scroll position and selection to be preserved when transitioning between size classes. In general, make sure to use the first column for compact-specific appearance, and always make sure you're testing your iPad apps in a variety of environments, like slide over.\n\nOkay, moving on. I'll add columns for the comfort and noise levels. For columns with just textual content, TableColumn offers a convenience API that lets me omit the view builder when my value points to a string. And in this case, I know the comfort level isn't going to need much room, so I've applied a fixed width.\n\nI can also add sorting to the table by using comparators. I'll create some state to store the comparators in. The state here is an array because it represents all of the comparators for the table. And setting the initial value to the name comparator allows the table to appear sorted when it's first displayed.\n\nNext, I'll pass a binding to my state into the table to wire everything up.\n\nBecause the columns each specify their value as a key path to a comparable field, they are sortable by default. And now the table is fully sortable by name, comfort level, and noise. Note that table doesn't handle the sorting on its own. That's up to me. I can use the onChange modifier to sort the data when the sort order changes.\n\nAll right, let's take it for a spin.\n\nThe table looks great, showing all the places data and really taking advantage of the larger screen. Unlike on the Mac, tables on iPad don't scroll horizontally, so it's important to limit the number of columns. This ensures that all of the columns can be shown at once. Each column shows its label in the header. And tapping on the label sorts that column. I can even sort by noise level.\n\nAnd in slide over, the table collapses into a single column that represents all of the information in a more condensed format. Now that I've updated the list into a table, let's dive into selection. In this section, I'll review the SwiftUI selection model and discuss integrating selection with menus. Along the way, I'm going to supercharge the places table with rich functionality. But first, I'll talk about how selection works in SwiftUI. SwiftUI includes a robust API for managing list and table selection. Here's a diagram with a list containing a few rows. Each row has a tag. These tags are unique values for each row that help the list manage selection. In this diagram, the tags are shown in green circles.\n\nAlong with the tag, there's also some state that holds the selection. This is the type that holds the tag values. For example, with multiple selection, this is a set that holds the tags for each selected row. The job of the list is to coordinate between the tag in each row and the selection state. And it does this via its selection binding. So when a row is selected, such as row number two here, the list adds it to the set via the selection binding. And similarly, if some other part of the app programmatically changes the set, say to add three like shown here, the list selects it because the selection binding changes. This general model is the same across iOS and macOS. So there are two parts to selection: a tag and some state. Next, I'd like to talk about where tags come from. A tag is just a value for a view in a selectable container that is used to track whether that view is selected. In many cases, SwiftUI can automatically synthesize tags on your behalf. Tags are similar to identifiers, but not quite the same. When using ForEach, SwiftUI will automatically derive the tag for a view from its explicit identity. And tables will use their row value's identifier as the selection tag. In the places app, that means the place struct's identifier type will be used. For more information about explicit identity, check out \"Demystify SwiftUI.\" To manually tag views, use the tag modifier. This is what ForEach does under the hood. The tag modifier takes a Hashable value. However, when using the tag modifier, be careful– it's important that all of the views in a selectable container share the same tag type. Otherwise, SwiftUI might not know how to select the view. Note that if you use the ID modifier, it doesn't set the tag. So that's an overview of tags. Let's bring back the diagram from earlier.\n\nNow that I've explained the tag part of this diagram, I'd like to focus on the other half of the selection equation: the selection state. In the previous example, I used a set, but there are other options too.\n\nYou can use these data structures to represent selection. SwiftUI supports single selection, new in macOS Ventura, required selection for macOS sidebars, and multiple selection.\n\niPadOS 16 also introduces lightweight multiple selection. Now, with a keyboard attached, you don't need to enter edit mode to select multiple rows, which helps avoid modality. When using a keyboard, you can use common shortcuts like shift and command to extend and modify the selection. And this works great with the pointer. Here's what the places table looks like after adopting selection. In this example, I have an attached keyboard and trackpad, so the rows aren't indented, but they're still selected. However, when using touch, I'll still need to enter edit mode, which is accelerated by using a two-finger pan. SwiftUI supports this gesture automatically. Speaking of edit mode, there are some updates with single selection and edit mode as well. In iOS 16, list selection on iPhone and iPad no longer requires edit mode when selecting a single row. And this is super useful for coordinating with the updated navigation APIs.\n\nWith all of these updates, that brings us to this table, which builds upon the previous table by adding a new column for edit mode. Edit mode is only required when using multiple selection without a keyboard. So with that, I'll update the places table to support selection. I can easily add selection to the places table by adding some state to store the selection. After creating the state, I'll pass a binding to the table's initializer. Table enforces that its selection type matches its row identifier, so I've used the place ID type as the selection type. Since I want multiple selection, I've used a set for the selection state. Table tags its rows automatically, so I don't need to tag anything myself.\n\nAnd now I can select rows in the table. But I haven't really done anything with the selection. I think it'd be great to add a button that allows me to add the selected places to a guide that I can share with others in my book club. This is the code to add the toolbar button. If there is a non-empty selection, the button will now show up. I've also added an edit button, which complements the existing lightweight selection support, but it provides an affordance to enter and exit edit mode when there is no keyboard. A good iPad app shines both with and without the keyboard, so it's important to offer controls to enter and exit edit mode.\n\nWe're getting there. Now we have a button that shows up when we select rows as well as a button to enter and exit edit mode. Please make sure to watch the second session in this series for more information about toolbars. I'm pretty happy with the toolbar button here, but we can do more. For actions on selection, it's a great practice to keep them as easy to access as possible. That's why in iOS 16, iPadOS 16, and macOS Ventura, SwiftUI adds support for multi-select context menus. Multi-select context menus allow for a context menu to be presented that operates on a set of selected identifiers. Let's examine the anatomy of this table to understand more.\n\nItem-based context menus have three variations. First, you can show a menu on multiple items, such as the selection at the top.\n\nYou can also show a context menu on an individual item.\n\nAnd lastly, you can show a context menu on an empty area, where there is no content.\n\nLet's add support for this into our places table.\n\nI've omitted some details from the previous code examples so we can focus on the context menu. I've added the new contextMenu modifier that takes a selection type. This needs to match the selection type of the list or table, so since I'm using a table, I'll use the PlaceID type.\n\nThe closure is passed a set of the items to act on, so if it's empty, I know the menu is for the empty area. I think a button to add a new place would work great for the empty area. That way, when I'm on the go and find a new quiet place to read, I can add it quickly. Note that if the view builder for the empty set of items doesn't resolve to a view, SwiftUI won't show a menu on the empty area. Next, let's handle a single selection. If the set has only a single item, I know the menu is being shown for a single place. And for both single and multiple selections, I want to be able to add these places to a guide, so I'll add another view to the menu. Let's check out our progress. Here's the new context menu support in action. Clicking on the empty area shows a menu item to add a new place. Selecting a single row shows a context menu for just that row. And I can extend the selection with the keyboard, creating this blue highlight. I can then activate a context menu over multiple rows, allowing me to easily add places to a guide.\n\nThis table is looking pretty snazzy now, so I think it's time to add some structure around it. To do that, I'll need a split view. Navigation is a fundamental part of the iPad experience. And split views are a great way to avoid modality on iPad's larger display by showing more information at once without the need to drill in. In this section, I'm going to cover some updates to SwiftUI around navigation and split views. In the previous sections, I created the places table and added rich features like selection and edit mode. But I think the places app is lacking some structure. So in this section, I'll build the foundation of our app's structure by leveraging a navigation split view. New in iPadOS 16 and macOS Ventura, SwiftUI has improved support for split views with the NavigationSplitView type. SwiftUI supports two or three column split views and has multiple styles for complex control over how the columns are displayed. I'm not going to fully cover how to present navigation content in this session, so for that, I invite you to check out the SwiftUI cookbook for navigation. Curt has quite a few recipes for cooking up some really tasty navigation experiences. Instead, I'm going to focus more on split views. Here's a diagram showing a two column split view on iPad. In SwiftUI, the leading column is called the sidebar column and the trailing column is called the detail column. Notice how the columns are balanced next to each other here. In landscape, SwiftUI offers this by default. In portrait, however, the sidebar hides out of the way, showing only the detail column. Tapping on the sidebar button shows the sidebar, which appears over the detail column, dimming it underneath.\n\nGenerally, a two column split view will prefer to show only the detail column when space constrained, because the detail column often shows more important information than the sidebar column. If you'd like to customize this behavior, you can either always prefer the detail column with the prominentDetail navigation split view style or balance the weighting with the balanced NavigationSplitView style. NavigationSplitView also supports three column layouts. With three columns, there is an additional column between the sidebar and detail called the content column. If you're coming from UIKit, you may know this as the supplementary column. In landscape, the content and detail column are shown, and the sidebar can be toggled. After tapping on the toolbar button, the detail column slides out of the way, making room for the sidebar and content. In portrait, only the detail column is shown, and tapping on the toolbar button shows the content. From there, tapping again shows the sidebar. The sidebar and content both overlay the detail.\n\nIn general, I recommend sticking with the automatic style for three column split views because it makes the best use of the available space and is specialized for larger displays. Just like the two column split view, the three column split view collapses to a stack in compact size classes. Now that I've covered the basics of split views, it's time to add one to the places app. Here is the content view. I've created a NavigationSplitView with two columns here. The first column is the sidebar column and the second column is the detail column. The detail column is populated by links from the sidebar column, but if nothing is presented, the placeholder with \"select a place\" will be shown instead.\n\nHere's a screenshot of the placeholder. It's pretty great. This is using the automatic style, which shows the sidebar in landscape, hiding it out of the way in portrait. Tapping on a row in the sidebar presents that row in the detail column. And when using slide over, the columns collapse automatically. This is just the tip of the iceberg– there are so many exciting navigation additions, including better support for state restoration, deep linking, and even richer programmatic control. Again, I encourage you to check out the navigation cookbook session for more.\n\nI've built some awesome iPad features into the app, and I'm excited to go find some peaceful places to read. Hopefully I'll be caught up with my book club soon. In this session, I've covered how to leverage tables for rich display of data, how to manage sophisticated selection interactions, and how to avoid modality with split views.\n\nMake sure to check out the related sessions and refine your SwiftUI apps to leverage the power of iPad.\n\nThank you. ♪ ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:10",
+      "title": "Places List",
+      "language": "swift",
+      "code": "struct PlacesList: View {\n    @Binding var modelData: ModelData\n\n\n    var body: some View {\n        List(modelData.places) { place in\n            PlaceCell(place)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "3:18",
+      "title": "Places Table",
+      "language": "swift",
+      "code": "struct PlacesTable: View {\n    @Binding var modelData: ModelData     @State private var sortOrder = [KeyPathComparator(\\Place.name)]\n\n    var body: some View {\n        Table(modelData.places, sortOrder: $sortOrder) {\n            TableColumn(\"Name\", value: \\.name) { place in\n                PlaceCell(place)\n            }\n            TableColumn(\"Comfort Level\", value: \\.comfortDescription).width(200)\n            TableColumn(\"Noise\", value: \\.noiseLevel) { place in\n                NoiseLevelView(level: place.noiseLevel)\n            }\n        }\n        .onChange(of: sortOrder) {\n            modelData.sort(using: $0)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "10:25",
+      "title": "Places Table with selection",
+      "language": "swift",
+      "code": "struct PlacesTable: View {\n    @EnvironmentObject var modelData: ModelData\n    @State private var sortOrder = [KeyPathComparator(\\Place.name)]\n    @State private var selection: Set<Place.ID> = []\n\n    var body: some View {\n        Table(modelData.places, selection: $selection, sortOrder: $sortOrder) {\n            // columns\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "10:26",
+      "title": "Places Table toolbar additions",
+      "language": "swift",
+      "code": "Table(modelData.places, selection: $selection, sortOrder: $sortOrder) {\n    ...\n}\n.toolbar {\n    ToolbarItemGroup(placement: .navigationBarTrailing) {\n        if !selection.isEmpty {\n           AddToGuideButton(selection)\n        }\n    }\n\n    ToolbarItemGroup(placement: .navigationBarLeading) {\n        EditButton()\n    }\n}"
+    },
+    {
+      "timestamp": "12:34",
+      "title": "Item context menus",
+      "language": "swift",
+      "code": "// Item context menus\n\nTable(modelData.places, selection: $selection, sortOrder: $sortOrder) {\n    ...\n}\n.contextMenu(forSelectionType: Place.ID.self) { items in\n    if items.isEmpty {\n        // Empty area\n        AddPlaceButton()\n    } else {\n        if items.count == 1 {\n            // Single item\n            FavoriteButton(isSet: $modelData.places[items.first!].isFavorite)\n        }\n\n        // Single and multiple items\n        AddToGuideButton(items)\n    }\n}"
+    },
+    {
+      "timestamp": "16:55",
+      "title": "Navigation Split View example",
+      "language": "swift",
+      "code": "// Navigation Split View example\n\nstruct ContentView: View {\n    var body: some View {\n        NavigationSplitView {\n            SidebarView()\n       } detail: {\n            Text(\"Select a place\")\n        }\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "contextMenu(menuItems:preview:)",
+        "url": "https://developer.apple.com/documentation/SwiftUI/View/contextMenu(menuItems:preview:)"
+      },
+      {
+        "title": "EditMode",
+        "url": "https://developer.apple.com/documentation/SwiftUI/EditMode"
+      },
+      {
+        "title": "List",
+        "url": "https://developer.apple.com/documentation/SwiftUI/List"
+      },
+      {
+        "title": "NavigationSplitView",
+        "url": "https://developer.apple.com/documentation/SwiftUI/NavigationSplitView"
+      },
+      {
+        "title": "NavigationSplitViewStyle",
+        "url": "https://developer.apple.com/documentation/SwiftUI/NavigationSplitViewStyle"
+      },
+      {
+        "title": "Tables",
+        "url": "https://developer.apple.com/documentation/SwiftUI/Tables"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10058/3/A2E41140-1058-4AFF-BF2C-5058A6588994/downloads/wwdc2022-10058_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10058/3/A2E41140-1058-4AFF-BF2C-5058A6588994/downloads/wwdc2022-10058_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10061",
+      "year": "2022",
+      "title": "Bring multiple windows to your SwiftUI app",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10061"
+    },
+    {
+      "id": "110343",
+      "year": "2022",
+      "title": "SwiftUI on iPad: Add toolbars, titles, and more",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110343"
+    },
+    {
+      "id": "10054",
+      "year": "2022",
+      "title": "The SwiftUI cookbook for navigation",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10054"
+    },
+    {
+      "id": "10052",
+      "year": "2022",
+      "title": "What's new in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10052"
+    },
+    {
+      "id": "10009",
+      "year": "2022",
+      "title": "What’s new in iPad app design",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10009"
+    },
+    {
+      "id": "110932",
+      "year": "2022",
+      "title": "WWDC22 Day 4 recap",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110932"
+    },
+    {
+      "id": "10022",
+      "year": "2021",
+      "title": "Demystify SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10022"
+    },
+    {
+      "id": "10062",
+      "year": "2021",
+      "title": "SwiftUI on the Mac: Build the fundamentals",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10062"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:53:43.296Z"
+}

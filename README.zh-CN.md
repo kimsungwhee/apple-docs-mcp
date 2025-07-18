@@ -16,6 +16,7 @@
 - 📰 **文档更新**: 跟踪 WWDC 公告、技术更新和发布说明
 - 🎯 **技术概览**: Apple 平台和技术的综合指南，具有分层导航
 - 💻 **示例代码库**: 浏览和搜索演示 Apple 技术的完整工作示例项目
+- 🎥 **WWDC 视频库**: 搜索和探索 WWDC 会议，包含完整文字记录、代码示例和资源
 - 🔗 **相关 API 发现**: 通过智能推荐查找相关、类似和替代 API
 - 📊 **平台兼容性**: 分析 Apple 生态系统中的平台支持和版本兼容性
 - ⚡ **高性能**: 基于内存的缓存系统，按内容类型优化 TTL
@@ -295,14 +296,33 @@ npm install && npm run build
 "仅显示测试版示例代码项目"
 ```
 
-### 💻 示例代码库
+### 🎥 WWDC 视频搜索
 ```
-"显示 SwiftUI 示例代码项目"
-"查找机器学习示例代码"
-"获取 UIKit 示例项目"
-"显示精选 WWDC 示例代码"
-"查找 Core Data 示例实现"
-"仅显示测试版示例代码项目"
+"搜索关于 SwiftUI 的 WWDC 视频"
+"查找机器学习的 WWDC 会议"
+"显示 WWDC 2024 视频"
+"搜索 async/await WWDC 演讲"
+"查找关于 Swift 并发的 WWDC 视频"
+"显示无障碍主题的 WWDC 会议"
+```
+
+### 📺 WWDC 视频详情
+```
+"获取 WWDC 会议 10176 的详情"
+"显示 WWDC23 SwiftData 会议的文字记录"
+"获取 WWDC 视频 10019 的代码示例"
+"显示 Vision Pro WWDC 会议的资源"
+"获取 'Meet async/await in Swift' 会议的文字记录"
+```
+
+### 📋 WWDC 主题和年份
+```
+"列出所有 WWDC 主题"
+"显示 Swift 主题的 WWDC 视频"
+"获取关于开发者工具的 WWDC 视频"
+"列出 2023 年的 WWDC 视频"
+"显示所有 SwiftUI 和 UI 框架会议"
+"获取机器学习 WWDC 内容"
 ```
 
 ### 🛠️ 高级用法
@@ -323,6 +343,10 @@ npm install && npm run build
 | `get_documentation_updates` | 跟踪 Apple 文档更新 | WWDC 公告，技术更新，发布说明，beta 过滤 |
 | `get_technology_overviews` | 获取技术概览和指南 | 综合指南，分层导航，平台过滤 |
 | `get_sample_code` | 浏览 Apple 示例代码项目 | 框架过滤，测试版状态，搜索，精选示例 |
+| `search_wwdc_videos` | 搜索 WWDC 视频会议 | 关键词搜索，主题/年份过滤，会议元数据 |
+| `get_wwdc_video_details` | 获取 WWDC 视频详情和文字记录 | 完整文字记录，代码示例，资源，平台信息 |
+| `list_wwdc_topics` | 列出所有可用的 WWDC 主题 | 19 个主题类别，从 Swift 到空间计算 |
+| `list_wwdc_years` | 列出所有可用的 WWDC 年份 | 会议年份及视频数量 |
 | `get_framework_index` | 框架 API 结构树 | 分层浏览，深度控制，类型过滤 |
 | `get_related_apis` | 查找相关 API | 继承、遵循、"参见"关系 |
 | `resolve_references_batch` | 批量解析 API 引用 | 从文档中提取和解析所有引用 |
@@ -347,7 +371,12 @@ apple-docs-mcp/
 │   │   ├── get-related-apis.ts       # 相关 API 发现
 │   │   ├── resolve-references-batch.ts # 批量引用解析
 │   │   ├── get-platform-compatibility.ts # 平台分析
-│   │   └── find-similar-apis.ts      # 类似 API 推荐
+│   │   ├── find-similar-apis.ts      # 类似 API 推荐
+│   │   └── wwdc/                     # WWDC 视频工具
+│   │       ├── wwdc-handlers.ts      # WWDC 工具处理程序
+│   │       ├── content-extractor.ts  # 视频内容提取
+│   │       ├── topics-extractor.ts   # 主题列表
+│   │       └── video-list-extractor.ts # 视频列表解析
 │   └── utils/                        # 工具函数和辅助程序
 │       ├── cache.ts                  # 带 TTL 支持的内存缓存
 │       ├── constants.ts              # 应用程序常量和 URL
@@ -377,6 +406,7 @@ apple-docs-mcp/
 | 框架索引 | 1 小时 | 100 项 | 稳定结构，变化较少 |
 | 技术列表 | 2 小时 | 50 项 | 很少变化，内容较大 |
 | 文档更新 | 30 分钟 | 100 项 | 定期更新，WWDC 公告 |
+| WWDC 视频数据 | 2 小时 | 无限制 | 稳定内容，本地 JSON 文件 |
 
 ## 🧪 开发
 

@@ -159,7 +159,7 @@ function applyTechnologyFilters(
       // 如果 limit 为 0，返回空数组
       return [];
     }
-    
+
     let totalCount = 0;
     filteredGroups = filteredGroups.map(group => {
       const availableSlots = filters.limit! - totalCount;

@@ -1,0 +1,195 @@
+{
+  "id": "10260",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10260/",
+  "title": "Focus on iPad keyboard navigation",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, I'm Michael Ochs. I'm a framework engineer on the UIKit team. Welcome to Focus on iPad keyboard navigation.\n\nPeople love using hardware keyboards with their iPads. Mac Catalyst and iPadOS 15 introduce powerful API to support keyboard navigation in your app.\n\nNavigating any app with a keyboard on iPadOS will feel very familiar. The tab key navigates between significant areas in an app. The arrow keys navigate within an area, and an item can be selected with the return key on iPadOS or the space bar on Mac Catalyst. If your app already uses these key commands, your custom commands will no longer work. I'll show you how to resolve these conflicts later. First, let me show you keyboard navigation in action. In Photos, I can press the tab key to move the focus from the Library cell in the sidebar to the photos grid on the right. Now I can navigate between the photos in the grid using the arrow keys. Once I found the photo I'm looking for, I can select it by pressing return.\n\nOnce you compile with the iOS 15 SDK, this behavior will be enabled automatically for text fields, text views, and sidebars. You should also opt in other collection, table, and custom views for a great experience. I'll show you how to do this in a minute.\n\nI know this is an exciting feature, but don't make every element in your app keyboard navigable. Keyboard navigation is intended to give users access to key features of your app, so focus on text input, lists, and collection views. Leave controls such as buttons, segmented controls, and switches aside. Full Keyboard access already allows these controls to be keyboard navigable. To learn more about full Keyboard access, check out \"Support Full Keyboard Access in your iOS app.\" Keyboard navigation on iPadOS uses the same focus system as tvOS If you have written tvOS apps before, many of the APIs will feel familiar. However, there are some new APIs and behavioral differences that you should be aware of. If you wanna learn more about the focus system in general, check out \"Focus Interaction in tvOS.\" In this video, I'm going to show you how to make more content in your app focusable and how to customize the appearance of these focusable items. I'll show you some special behavior in sidebars that you should be aware of, and we are going to talk about focus groups, a new way to define structure in your app. At the end, I'm going to show you some important changes in the responder chain that you should be familiar with. But now, let's take a look at how to make more elements in your UI focusable. canBecomeFocused is the single source of truth. It is a read-only property of UIFocusItem. Override it and return true to make an item focusable. Now, you might be wondering, what is a focus item? The backbone of the focus system are the two protocols: UIFocusItem and UIFocusEnvironment. FocusItems are simply that, items that can be focused. FocusEnvironments define the hierarchy of focusable items. UIView conforms to both of these protocols, since any view can be focused itself, but it can also contain subviews that can be focused. UIViewController, on the other hand, only conforms to UIFocusEnvironment, since it doesn't provide any visuals itself. You can also implement both protocols on your own objects. This allows you to adopt focus in content that is rendered with other technologies, like Metal. The most likely candidates for keyboard navigation are cells in a table or collection view. UIKit offers some convenience APIs, so you don't have to subclass. Set allowsFocus to true on a table or collection view to make all of its cells focusable. Note that in sidebars, allowsFocus is true by default.\n\nFor more fine-grained control, you can use canFocusItemAt indexPath in your delegate to control focusability for each cell individually. Both of these methods will only have an effect on cells that don't override canBecomeFocused.\n\nIf a focus item is not behaving as you would expect, there are some debugging tools available. In lldb you can call UIFocusDebugger. CheckFocusability(for item:) and pass in the item you want to debug. For example, a view that you are trying to make focusable. It will give you an explanation of why the focus system does not consider this item to be focusable.\n\nSo, we talked about how to make your UI focusable. Let's take a closer look at the appearance of focused items. There are two styles you will commonly see throughout the system. First, there is the Halo Effect, similar to the focus ring on macOS. In fact, this is the default effect on Mac Catalyst. On iPadOS, you can use this effect by assigning a UIFocusHaloEffect to the focusEffect property. If initialized with no arguments, the system will infer the shape of the halo. You can also customize the shape to better match the content. For example, if an image has rounded corners, the halo should match its appearance by also having rounded corners.\n\nUIFocusHaloEffect has a number of initializers for different shapes, including one for rounded rects. Use these initializers to make sure the halo's shape creates an outline around your view's content. The Halo Effect also gives you control over its position in the view hierarchy. Here the halo is rendering above the badge on the image, but it would look better if the halo was between the image and the badge. By specifying the image view as the referenceView, UIKit will render the halo on top of the image and below the badge. The reference view defines the relative order of the halo in the view hierarchy. You can also specify a container view, which defines the superview of the halo effect. This is useful if the direct superview of the focused item is clipping its content.\n\nBoth of these are optional, and you should only provide them if the inferred appearance isn't what you expect.\n\nCells in collection and table views should show a halo around them only when they have fully-opaque content, like an image. In all other cases, when a cell becomes focused, it should look highlighted. This means the background should turn into the tint color of your app, and the foreground color for text and icons should be adjusted for good contrast. This highlight appearance is not available as a UIFocusEffect. Instead, you will get this appearance automatically when using the background and content configurations introduced in iOS 14. To learn more about these, take a look at \"Modern cell configuration.\" If you're not using background and content configurations, the sample app shows you how to get the correct color in all cases. Make sure to check that out.\n\nNow, if you want to apply a custom appearance, first set the focusEffect property to nil. This turns off any system styling. Next override didUpdateFocus (in: context withAnimationCoordinator :) on your focus item. If the next focused item is self, apply styling to indicate focus. If the previously-focused item is self, restore the nonfocused appearance. You should only make changes in didUpdateFocus(in: context) when the next or previously focused item is relevant to this environment. This is because all ancestor environments of the previously focused item, as well as the next focused item, receive a call to didUpdateFocus(in: context). So every superview and view controller will get this call. This allows for very flexible implementations, where a parent can react to focus changes of a child. Now let's take a closer look at a feature specific to sidebars and similar context-changing UI. Selection and focus are two different concepts. However, in a sidebar, when I move focus, the selection follows.\n\nLikewise, if I select a new cell by tapping on it, focus also moves to this newly-selected cell.\n\nThis is called \"selection follows focus.\" Set this property on any table or collection view to the behavior you want for most of the cells. If you want to change the behavior for individual cells, implement selectionFollowsFocus ForItemAtIndexPath in your delegate. Turning off selectionFollowsFocus is useful when selecting a cell causes a disruptive action to occur, such as pushing a new view controller in the same column or presenting an alert.\n\nFor example, in Photos, selecting \"new album\" shows an alert asking for the album's name.\n\nWhen using the delegate, the value of the property still matters. Set selectionFollowsFocus to the overall intent of the collection view and then use the delegate to express special behavior for individual cells. The system will take both values into account when choosing the right behavior.\n\nNow, let's take a look at focus groups, a new feature for keyboard navigation to express structure in your app. UIKit automatically infers focus groups from the hierarchy, but you can also declare them explicitly to customize how the tab key moves focus through your app.\n\ntvOS only uses directional focus. You can reach every single element simply by swiping on the Siri Remote or using the arrow keys on a keyboard. iPadOS and Mac Catalyst, on the other hand, have two different methods of navigating with the keyboard: The arrow keys and the tab key. Unlike tvOS, the arrow keys only move focus within a defined area of your app. These areas are called focus groups. For example, I can navigate the list of reminders using the up and down arrow keys.\n\nTo navigate the lists, I can press the tab key to focus on the search field and then press tab again to move to the lists. If I press tab one more time, focus loops back to the reminders.\n\nThe reminders, the search field, and the lists are each a focus group, and the tab key moves focus between them.\n\nWhen focus moves to a group, it chooses an item inside of that group to focus on. That item is called the group's primary item.\n\nA group's primary item can change. For example, here I focus on the second reminder. The focus system remembers this when I switch away from this group, and when I come back to the reminders, focus moves to the second item again as this item is now the group's primary item. The tab key connects the primary items of each group and moves focus between them. This is called the tab loop.\n\nSome environments define their own focus groups by default. These include scroll views like collection and table view, as well as text input classes, like text fields and text views. If an environment does not define its own group, it inherits the group of the parent environment, commonly its superview or view controller. For example, by default, every cell automatically belongs to the group of its collection view. By being in the same group, you can navigate between cells with the arrow keys. To define a focus group yourself, assign a focus group identifier to any view or view controller. When two environments share the same identifier, either explicitly or by inheritance, they are part of the same group. To customize the primary item of a group, assign a focus group priority to that item. This defines how important an item is within the group. The visible item with the highest priority is the group's primary item. By default, the system assigns one of the predefined priorities: Ignored, the default priority; previously focused; prioritized, indicating an item is more important than others, like a selected cell; and currently focused, which is the highest priority possible. It's important to understand that you can never lower the priority of an item below its system-provided priority. Instead, you should raise the priority of a different item.\n\nFor example, if you assign a priority higher than .previouslyFocused to a cell, that cell will become more important than the last-focused item of that group. So even if this customized cell and the previously focused cell are both visible, the customized cell would become the primary item because it has a higher priority. So, now you know how to group your items together. Next, let's focus on how these groups are sorted. Here, we see Reminders again. As mentioned before, each table and collection view, as well as each text field, define its own group.\n\nAs seen before, when pressing the tab key continuously, focus goes from the search field to the lists in the sidebar, and then to the reminders on the right.\n\nThis is what UIKit does by default. However, if you built this kind of container view yourself, focus would move from the search field straight to the reminders because all the groups are sorted in reading order, leading to trailing, top to bottom. The focus system does not know that the sidebar is a distinct column.\n\nTo ensure the search field and lists are sorted in one continuous block, you can put them in a common parent group. This is done by defining a focus group identifier on the sidebar's container view. Even though this new group does not contain any focusable items directly, the tab loop will move from the search field group to the lists group before moving on to the reminders list.\n\nMany standard UIKit presentations already provide these intermediate groups. For custom container views, declare your own focusGroupIdentifier on common ancestors. Focus groups are an easy way to define the visual structure of your app. You don't have to define a fixed order for your tab loop. Instead, the system uses focus groups to derive a tab loop order that takes into account reading direction, layout, and visibility to provide a consistent experience. When customizing focus groups in your app, UIFocusDebugger is your friend. If you call checkFocusGroupTree (for environment:) it'll print the focus group structure, starting at the passed-in environment. You can even pass in the focus system itself to see all current groups.\n\nNow, this textual structure is helpful, but there's one more debugging tool. Remember the screenshot I showed you with the focus groups and Reminders? You can actually get this live in your app. When enabled, the focus loop debugger visualizes the tab loop order in your app when you press and hold the option key.\n\nAnd when pressing option and control, you get a visualization of the focus groups. In this mode, the primary item of a group is indicated by a dotted line.\n\nTo enable it, go to your scheme settings in Xcode, select \"run,\" and then \"arguments.\" Then add the launch argument -UIFocusLoopDebuggerEnabled YES, and don't forget to put the dash in front of it. Now, whenever you run your app from Xcode, this debug overlay is available right in your app. This covers the basics of focus on iPadOS and Mac Catalyst. There's one more topic to cover for keyboard navigation, and that's the responder chain.\n\nSince both the responder chain and the focus system are dealing with keyboard input, UIKit synchronizes these systems as much as possible to make sure the focused item is always inside the first responder or is the first responder itself.\n\nLet's look at a simplified view hierarchy with a text field and a collection view cell. Currently, the text field is focused, indicated by the solid ring, and it is also the first responder, indicated by the dashed ring. When focus moves to this collection view cell, UIKit also tries to move the first responder to this cell. If this cell returns false from canBecomeFirstResponder, the system iterates up the responder chain to find a responder that returns true. In this case, that responder is the cell's view controller.\n\nNote that the inverse is also true. When the first responder changes, the focus system will try to find a new focusable item inside of that responder. With this relationship between the first responder and the focused item, key events will always be delivered to the focused item and move up the responder chain from there. This allows for some interesting new behavior. For example, if a cell responds to a key command and becomes focused, the key command is delivered to that cell. For ways to use this, take a look at our sample app.\n\nWhen updating your app for iPadOS 15, be conscious about where you call becomeFirstResponder. Since the responder chain and focus are synchronized, changing the first responder will force focus to update. This might be very disruptive to your users. It is typically best to avoid calling becomeFirstResponder, especially in response to a focus update.\n\nThe focus system provides a consistent experience across all apps. To do this, it needs priority for certain key commands. If your app is using a key command like tab or arrow down, that key command will no longer work when compiling with the iOS 15 SDK. If this key command is used to build your own custom keyboard navigation, you can leave it untouched. It'll work on previous versions, and on iPadOS 15, the focus system will take over. Otherwise, remap this key command. If you really want to continue using this key command, make sure it doesn't break keyboard navigation, and then set wantsPriorityOverSystemBehavior to true. If you want to learn more about improvements to keyboard shortcuts, check out \"Take your iPad apps to the next level.\" If you handle presses manually by implementing pressesBegan, pressesChanged, pressesEnded, and pressesCancelled, make sure to implement all of these methods and call super consistently for presses that you don't handle. Keyboard navigation in iPadOS 15 and Mac Catalyst is a powerful tool for your users. Make collection and table views focusable to provide a great user experience. Update your key commands so they don't collide with keyboard navigation. Also, check out the sample app, which illustrates a couple more features, such as building a great search experience, custom selections, focus guides, and much more. I can't wait to see what you're building with keyboard navigation on iPadOS 15. Thank you for watching. [percussive music]",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:01",
+      "title": "canBecomeFocused",
+      "language": "swift",
+      "code": "override var canBecomeFocused: Bool { true }"
+    },
+    {
+      "timestamp": "4:00",
+      "title": "allowsFocus",
+      "language": "swift",
+      "code": "class MyViewController: UICollectionViewController {\n    override func viewDidLoad() {\n        super.viewDidLoad()\n        self.collectionView.allowsFocus = true\n    }\n}"
+    },
+    {
+      "timestamp": "4:23",
+      "title": "canFocusItemAtIndexPath",
+      "language": "swift",
+      "code": "class MyCollectionViewDelegate: NSObject, UICollectionViewDelegate {\n    func collectionView(_ collectionView: UICollectionView,\n                canFocusItemAt indexPath: IndexPath) -> Bool {\n        return true\n    }\n}"
+    },
+    {
+      "timestamp": "4:40",
+      "title": "UIFocusDebugger checkFocusability(for:)",
+      "language": "swift",
+      "code": "po UIFocusDebugger.checkFocusability(for:)"
+    },
+    {
+      "timestamp": "5:48",
+      "title": "UIFocusHaloEffect",
+      "language": "swift",
+      "code": "let focusEffect = UIFocusHaloEffect(roundedRect: self.bounds, cornerRadius: self.layer.cornerRadius, curve: .continuous)\nself.focusEffect = focusEffect"
+    },
+    {
+      "timestamp": "6:03",
+      "title": "ReferenceView and ContainerView",
+      "language": "swift",
+      "code": "let focusEffect = UIFocusHaloEffect(roundedRect: self.bounds, cornerRadius: self.layer.cornerRadius, curve: .continuous)\n\n// make sure the effect is added right above the image view\nfocusEffect.referenceView = self.imageView\n\n// make sure the effect is added to our scroll view\nfocusEffect.containerView = self.scrollView\n\nself.focusEffect = focusEffect"
+    },
+    {
+      "timestamp": "7:43",
+      "title": "Custom focus effects",
+      "language": "swift",
+      "code": "init(frame: CGRect) {\n   super.init(frame: frame)\n   self.focusEffect = nil\n}\n\nfunc didUpdateFocus(in context: UIFocusUpdateContext, withAnimationCoordinator coordinator: UIFocusAnimationCoordinator) {\n    if context.nextFocusedItem == self {\n        // This view is focused. Customize its appearance.\n    }\n    else if context.previouslyFocusedItem == self {\n        // This view was focused.\n    }\n}"
+    },
+    {
+      "timestamp": "9:08",
+      "title": "Selection Follows Focus",
+      "language": "swift",
+      "code": "var selectionFollowsFocus: Bool"
+    },
+    {
+      "timestamp": "9:16",
+      "title": "Selection Follows Focus for Item at Index Path",
+      "language": "swift",
+      "code": "func collectionView(_ collectionView: UICollectionView, selectionFollowsFocusForItemAt indexPath: IndexPath) -> Bool {\n    return self.action(for: indexPath).type != .showAlert\n}"
+    },
+    {
+      "timestamp": "12:12",
+      "title": "Focus Group Identifier",
+      "language": "swift",
+      "code": "self.focusGroupIdentifier = \"com.myapp.groups.sidebar\""
+    },
+    {
+      "timestamp": "12:52",
+      "title": "UIFocusGroupPriority",
+      "language": "swift",
+      "code": "extension UIFocusGroupPriority {\n    public static let ignored: UIFocusGroupPriority // 0\n    public static let previouslyFocused: UIFocusGroupPriority // 1000\n    public static let prioritized: UIFocusGroupPriority // 2000\n    public static let currentlyFocused: UIFocusGroupPriority // NSIntegerMax\n}"
+    },
+    {
+      "timestamp": "13:40",
+      "title": "Focus Group Priority on a cell",
+      "language": "swift",
+      "code": "// Customizing an item’s focus group priority\n\nfunc collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {\n    let cell = ...\n    if self.isCallToActionCell(at: indexPath) {\n        // This cell is not as important as a selected cell but should\n        // be chosen over the last focused cell in this group.\n        cell.focusGroupPriority = .previouslyFocused + 10\n    }\n    return cell\n}"
+    },
+    {
+      "timestamp": "15:46",
+      "title": "UIFocusDebugger checkFocusGroupTree(for:)",
+      "language": "swift",
+      "code": "po UIFocusDebugger.checkFocusGroupTree(for:)"
+    },
+    {
+      "timestamp": "19:16",
+      "title": "wantsPriorityOverSystemBehavior",
+      "language": "swift",
+      "code": "keyCommand.wantsPriorityOverSystemBehavior = true"
+    },
+    {
+      "timestamp": "19:36",
+      "title": "pressesBegan",
+      "language": "swift",
+      "code": "override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {\n    if (/* check presses of interest */) {\n        // handle the press\n    }\n    else {\n        super.pressesBegan(presses, with: event)\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "About focus interactions for Apple TV",
+        "url": "https://developer.apple.com/documentation/UIKit/about-focus-interactions-for-apple-tv"
+      },
+      {
+        "title": "Adding hardware keyboard support to your app",
+        "url": "https://developer.apple.com/documentation/UIKit/adding-hardware-keyboard-support-to-your-app"
+      },
+      {
+        "title": "Adding Menus and Shortcuts to the Menu Bar and User Interface",
+        "url": "https://developer.apple.com/documentation/uikit/uicommand/adding_menus_and_shortcuts_to_the_menu_bar_and_user_interface"
+      },
+      {
+        "title": "Adjusting your layout with keyboard layout guide",
+        "url": "https://developer.apple.com/documentation/UIKit/adjusting-your-layout-with-keyboard-layout-guide"
+      },
+      {
+        "title": "Navigating an app’s user interface using a keyboard",
+        "url": "https://developer.apple.com/documentation/UIKit/navigating-an-app-s-user-interface-using-a-keyboard"
+      },
+      {
+        "title": "UIKit",
+        "url": "https://developer.apple.com/documentation/UIKit"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "sampleProject": "https://developer.apple.com/sample-code/wwdc/2017/Implementing-Advanced-Text-Input-Features.zip",
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10260/4/E0BC9390-870B-4D59-9A0C-74941EAF4E36/downloads/wwdc2021-10260_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10260/4/E0BC9390-870B-4D59-9A0C-74941EAF4E36/downloads/wwdc2021-10260_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10053",
+      "year": "2021",
+      "title": "Qualities of a great Mac Catalyst app",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10053"
+    },
+    {
+      "id": "10056",
+      "year": "2021",
+      "title": "Qualities of great iPad and iPhone apps on Macs with M1",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10056"
+    },
+    {
+      "id": "10120",
+      "year": "2021",
+      "title": "Support Full Keyboard Access in your iOS app",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10120"
+    },
+    {
+      "id": "10057",
+      "year": "2021",
+      "title": "Take your iPad apps to the next level",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10057"
+    },
+    {
+      "id": "10059",
+      "year": "2021",
+      "title": "What's new in UIKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10059"
+    },
+    {
+      "id": "10027",
+      "year": "2020",
+      "title": "Modern cell configuration",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10027"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:54:10.747Z"
+}

@@ -1,0 +1,150 @@
+{
+  "id": "10226",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10226/",
+  "title": "Debug with structured logging",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Nathan: Hello, everyone. My name is Nathan. And I'm an engineer on the Xcode Debugger UI team. Today, I'm excited to introduce to you the brand-new Debug Console coming to Xcode 15.\n\nIn this session, I'll quickly give you a tour of the Debug Console. Next, I'll show just how useful the Debug Console can be by diagnosing a real bug in my own application. Then, I'll introduce you to some improvements coming to LLDB. And finally, I'll share tips on how you can take advantage of Apple's Unified Logging APIs to improve your diagnostic experience.\n\nLet's dig in and go over what's new in the Debug Console. On my device, I have launched the Backyard Birds app. This app allows users to manage backyards and care for virtual birds.\n\nAfter launching the application, the Debug Console has been populated with many logs. Immediately, I notice the console is no longer prefixing each log with the metadata I am used to. Instead, attention is focused on the underlying message the developer intended for me to view. Of course, I may still want to view the additional information associated with these logs, so we provide the ability to view this by selecting the metadata options button in the lower left of the Debug Console and choosing the types best suited for the current need. In this case I will select, Type, Library, Subsystem, and Category.\n\nWith this now enabled, the metadata is placed below each log in the console and is made smaller and more subtle as to not take away from the intended output. I also may come across logs that have a yellow or red background. This indicates that these logs are of higher importance and represent an error and fault respectively. If I don't want to see the metadata of all logs simultaneously, the console allows me to inspect the metadata of a single log by selecting the log in question and then quick-looking it by pressing space. With this, a pop-up window appears providing me with all available metadata. This even includes information like the call site where the name of the function that originally emitted the log is displayed. While viewing this additional metadata is great, where the new Debug Console really shines is in its filtering capabilities. It is easy for the console to fill up with logs I just don't care about, but with Xcode 15, filtering them out is easier than ever. Now the console can perform complex, tokenized filtering to easily locate logs that are most relevant to my needs. The console also offers many different ways to create these filters.\n\nOf course, the filter can be entered directly in the filter bar, like this.\n\nWhile doing so, an autocomplete popover will appear, providing me with assistance in creating the filter I am trying to enter.\n\nAdditionally, the filter menu provides quick access to filters for specific types of logs, allowing me to choose the types I would like to view.\n\nAnd lastly, when I secondary click a log that I am more or less interested in, the console provides options to hide and show similar logs to quickly focus on or exclude a particular set of logs from my view, like this.\n\nAll of these filtering methods allow for me to quickly and efficiently cut through all of the output I have, allowing me to locate the logs most relevant to my current debugging needs. Now, let's use the new Debug Console to find and fix a real issue with my application. I have received reports that some users have noticed, after updating their profile, that the content does not seem to be saved. Let's discover how, by taking advantage of good logging practices and a little help from the new Debug Console, I can quickly and easily identify the cause of this bug.\n\nFirst, I will attempt to recreate the issue by selecting Account in the tab bar. I will now select the pencil to edit my account.\n\nFinally, I will try changing my display name.\n\nAfter this, it seems to have worked, but if I exit the page and review my account, the change seems to get lost. Now, a few things come to mind that could have gone wrong, but let's explore how the new Debug Console can help me narrow this down to find the root of this problem. While performing these steps, a large amount of output has been generated in the Debug Console. Thankfully, with the new console, it is always great to find too many logs, as filters can be set to find what I am most interested in. In this case, I have a few categories dedicated to only account management. To focus on these, I will filter for all categories in my project containing \"account\" by entering it in the filter field and selecting the category filter from the popup.\n\nThis now leaves me with all logging from the account-related portions of my code. With this filter set, the output becomes much more manageable. A few of these logs seem to indicate that I have requested to set the \"displayName\" property. Let's investigate deeper to find why my app didn't work like I expected. Now, I can't remember exactly where this code is located, so by hovering over the log I am more interested in and selecting the source location in the lower right corner...\n\nXcode will jump to the source of the log, where, in this case, I requested to set the display name. After reviewing the source code, I seem to call the setDisplayName function on the current account to actually perform this operation. Let's jump into the function that is responsible for updating the account information to investigate deeper into this issue. After reviewing this code more, I have discovered that while I had been sending these changes to my central accounts database, I seem to have forgotten to update the local account cache. After updating the database, I should set the local display name to the new one, like this.\n\nWhile I'm at it, I notice the same bug for the email address. Thankfully, this can be fixed in the same way.\n\nLet's now set a breakpoint on the line to verify my suspicion and check that this has resolved my issue.\n\nNow I will rebuild my application and recreate the previous steps to pause at this location. After getting to this location, I want to verify that my suspicion is right. To do that, I will \"po\" the current state of Account and check that I get the stale data that I am expecting.\n\nOh, no. It seems that I only get the address of this object. Well, why is that? It turns out that \"po\", while very common, is not the type of expression I want to run, as I have not declared my own custom debug description for this class. In fact, in this case, I want to just run \"p\", so let me do that now.\n\nNow, this is what I wanted, and this confirms my suspicion that the display name was not getting set alone by updating the database. Let's now step over the line I added and confirm that the display name has been updated.\n\nPerfect--it seems my update has solved this issue. Now I can get back to feeding my birds. Let's now \"step in\" to LLDB inside Xcode 15, where we've made the simplest LLDB expression even better. Thinking back to when I was solving that bug, I found myself using \"po\" in a place where it wasn't right. At best, this can make the expression take longer to perform, but at worst, it can simply give back the address of the property when I don't implement CustomStringConvertible, as was my case. This leaves me frustrated, making me wish that there was a better option. I then followed this up by running \"p\" on the property, where I got the correct result. However there are many other commands, like \"expression\", “v”, \"vo\", \"frame variable\", and many more that I may need to remember. This can be difficult to do, so to assist developers, we're introducing Do What I Mean Print. Do What I Mean Print allows for you to save time by using a single command to evaluate many different expressions in your code, all while returning you the result in the fastest possible way.\n\nOf course, you don't want to enter this long command each time you want to inspect a variable. Therefore, we replaced the previous \"p\" alias to now perform Do What I Mean Print. This will allow you to simply run \"p\" for the majority of use cases. Additionally, for times when you do actually want to print the custom object description for a variable, you could run the Do What I Mean Print command with the optional object description flag. However, we have also replaced the previous \"po\" alias to now perform Do What I Mean Print with the custom object description. By using the new Do What I Mean Print functions, you can now run one of two commands for many different expressions that would, in the past, require multiple different commands to get the intended output in the fastest possible way. Finally, let's go over ways to make sure everyone is getting the most out of their logging, therefore improving one's debugging experience and allowing you to more effectively locate and resolve issues that may be hard to recreate or may rely on reports received by users. First, I will remind everyone that standard I/O is for command-line UI and OSLog is for debugging. Therefore, \"print\" should rarely be used to log events in your program's execution. It is far better to use OSLog to obtain structured logging from end users as well as retain structure in the Debug Console. Let's now take a moment to work through a few examples of how easy it is to convert from standard I/O to OSLog. This is a simple function that I want to add some additional logging to. It is good practice to log any tasks being done as well as the result of executing those tasks. Let me take a moment to add this in the best way I know how. Great--I 've now added a few simple \"print\" statements to help me follow this code. I am now printing the action I am doing in this function as well as printing when the task has been completed with its result. After doing this to more places inside my project, though, it has become difficult to find where all of this output is coming from. This has caused me to start adding markers to my prints as many people have needed to do. This feels like it's getting out of hand, though. After adding all of this additional output, it has further cluttered up my console. I just wish there was a better way for me to get all of this metadata without all the extra work. Well, it turns out OSLog does just what I need. Now, I would like to update this function to take advantage of Unified Logging. To get started, I will first need to import OSLog into my project, then allowing me to create a log handle. This is where I would specify the subsystem and category I want my logs to represent. These can be any string that makes my debug filtering easier, but it is common to use a bundle identifier for subsystem and class or component name for category. Once I have created my logger, all I must do is call the provided functions on the logger object to specify the level of log and provide the message I want to display. This reads much better and results in significantly less code in the long run. Let me now get an idea of what this will look like in the console when I run it.\n\nFor this, let's isolate two of these logs so we can inspect where all this metadata will come from. In the log output, I will find the message I intended to output with the additional metadata I have specified for the log directly below it, if enabled. Some of this metadata is collected from the location where I wrote the initial log, like the message and level. Others are collected from when I created the log handle to save repetition, like subsystem and category. And some are handled in the background. These include timestamp, library name, process ID, thread ID, and source location, just to name a few. All this information can assist greatly when needed but takes tons of space when printed out on all logs regardless of one's needs. Thankfully, the new Debug Console allows for you to customize its view to deliver just what you want. Lastly, to get the most out of your logging, please consider this when building your applications. First, you should always create separate log handles for different components of your application, therefore allowing you to set meaningful search terms on the underlying metadata to more quickly be able to locate logs most relevant to a section of your application. Also, take advantage of OSLogStore to collect valuable diagnostics when issues occur with your application in the field. And finally, keep in mind that OSLog is a tracing facility. This means it is capable of providing you with complex performance analysis of your application using tools like Instruments. In this example, I am using the logging profiling template to analyze the performance of my application using OSLogs and signposts. Now, let's recap what we just went over and what you can do to improve your own programming experience. First, you should explore the new Debug Console in Xcode 15, where we have provided tons of improvements for all of your logging needs. Next, you should work to migrate your code from standard I/O to OSLog, providing you with all the new features the new Debug Console has to offer. Then, try out LLDB's new Do What I Mean Print or \"p\" command and make sure to use this when performing variable inspections first. And finally, for more information on Apple's Unified Logging APIs please watch our previous sessions, \"Measuring Performance Using Logging\" and \"Explore logging in Swift.\" Happy logging, and thanks for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "5:17",
+      "title": "Calling setDisplayName from Edit Account page",
+      "language": "swift",
+      "code": ".onSubmit {\n    logger.info(\"Requesting to change displayName to \\(displayName)\")\n    accountViewModel.setDisplayName(displayName)\n}"
+    },
+    {
+      "timestamp": "5:34",
+      "title": "Account Data Setters (Before Fix)",
+      "language": "swift",
+      "code": "public func setDisplayName(_ newDisplayName: String) {\n    logger.info(\"Sending Request to update DisplayName\")\n\n    Database.setValueForKey(Database.Key.displayName, value: newDisplayName, forAccount: account.id)\n\n    logger.info(\"Updated DisplayName to '\\(newDisplayName)'\")\n}\n\npublic func setEmailAddressName(_ newEmailAddress: String) {\n    logger.info(\"Sending Request to update EmailAddress\")\n\n    Database.setValueForKey(Database.Key.emailAddress, value: newEmailAddress, forAccount: account.id)\n\n    logger.info(\"Updated EmailAddress to '\\(newEmailAddress)'\")\n}"
+    },
+    {
+      "timestamp": "6:04",
+      "title": "Account Data Setters (After Fix)",
+      "language": "swift",
+      "code": "public func setDisplayName(_ newDisplayName: String) {\n    logger.info(\"Sending Request to update DisplayName\")\n\n    Database.setValueForKey(Database.Key.displayName, value: newDisplayName, forAccount: account.id)\n\n    account.displayName = newDisplayName\n\n    logger.info(\"Updated DisplayName to '\\(newDisplayName)'\")\n}\n\npublic func setEmailAddressName(_ newEmailAddress: String) {\n    logger.info(\"Sending Request to update EmailAddress\")\n\n    Database.setValueForKey(Database.Key.emailAddress, value: newEmailAddress, forAccount: account.id)\n\n    account.emailAddress = newEmailAddress\n\n    logger.info(\"Updated EmailAddress to '\\(newEmailAddress)'\")\n}"
+    },
+    {
+      "timestamp": "6:35",
+      "title": "po account",
+      "language": "swift",
+      "code": "(lldb) po account"
+    },
+    {
+      "timestamp": "6:39",
+      "title": "po account (with result)",
+      "language": "swift",
+      "code": "(lldb) po account\n<Account: 0x60000223b2a0>"
+    },
+    {
+      "timestamp": "7:00",
+      "title": "p account",
+      "language": "swift",
+      "code": "(lldb) p account"
+    },
+    {
+      "timestamp": "7:04",
+      "title": "po account (with result)",
+      "language": "swift",
+      "code": "(lldb) p account\n(BackyardBirdsData.Account) =0x000060000223b2a0 {\n\tid = 3A9FC684-8DFC-4D7D-B645-E393AEBA14EE\n\tjoinDate = 2023-06-05 16:41:00 UTC\n\tdisplayName = \"Sample Account\"\n\temailAddress = \"sample_account@icloud.com\"\n\tisPremiumMember = true\n}"
+    },
+    {
+      "timestamp": "7:18",
+      "title": "p account (after fix)",
+      "language": "swift",
+      "code": "(lldb) p account\n(BackyardBirdsData.Account) =0x000060000223b2a0 {\n\tid = 3A9FC684-8DFC-4D7D-B645-E393AEBA14EE\n\tjoinDate = 2023-06-05 16:41:00 UTC\n\tdisplayName = \"Johnny Appleseed\"\n\temailAddress = \"johnny_appleseed@icloud.com\"\n\tisPremiumMember = true\n}"
+    },
+    {
+      "timestamp": "9:43",
+      "title": "Login Method Skeleton",
+      "language": "swift",
+      "code": "func login(password: String) -> Error? {\n    var error: Error? = nil\n\n    //...\n\n    loggedIn = true\n    return error\n}"
+    },
+    {
+      "timestamp": "9:56",
+      "title": "Login Method with Print Statements",
+      "language": "swift",
+      "code": "func login(password: String) -> Error? {\n    var error: Error? = nil\n    print(\"Logging in user '\\(username)'...\")\n\n    …\n\n    if let error {\n        print(\"User '\\(username)' failed to log in. Error: \\(error)\")\n    } else {\n        loggedIn = true\n        print(\"User '\\(username)' logged in successfully.\")\n    }\n    return error\n}"
+    },
+    {
+      "timestamp": "10:18",
+      "title": "Login Method with Extended Print Statements",
+      "language": "swift",
+      "code": "func login(password: String) -> Error? {\n    var error: Error? = nil\n    print(\"🤖 Logging in user '\\(username)'... (\\(#file):\\(#line))\")\n\n    //...\n\n    if let error {\n        print(\"🤖 User '\\(username)' failed to log in. Error: \\(error) (\\(#file):\\(#line))\")\n    } else {\n        loggedIn = true\n        print(\"🤖 User '\\(username)' logged in successfully. (\\(#file):\\(#line))\")\n    }\n    return error\n}"
+    },
+    {
+      "timestamp": "10:40",
+      "title": "Login Method with Partial OSLog Transition",
+      "language": "swift",
+      "code": "import OSLog\n\nlet logger = Logger(subsystem: \"BackyardBirdsData\", category: \"Account\")\n\nfunc login(password: String) -> Error? {\n    var error: Error? = nil\n    print(\"🤖 Logging in user '\\(username)'... (\\(#file):\\(#line))\")\n\n    //...\n\n    if let error {\n        print(\"🤖 User '\\(username)' failed to log in. Error: \\(error) (\\(#file):\\(#line))\")\n    } else {\n        loggedIn = true\n        print(\"🤖 User '\\(username)' logged in successfully. (\\(#file):\\(#line))\")\n    }\n    return error\n}"
+    },
+    {
+      "timestamp": "11:00",
+      "title": "Login Method with OSLog Statements",
+      "language": "swift",
+      "code": "import OSLog\n\nlet logger = Logger(subsystem: \"BackyardBirdsData\", category: \"Account\")\n\nfunc login(password: String) -> Error? {\n    var error: Error? = nil\n    logger.info(\"Logging in user '\\(username)'...\")\n\n    //...\n\n    if let error {\n        logger.error(\"User '\\(username)' failed to log in. Error: \\(error)\")\n    } else {\n        loggedIn = true\n        logger.notice(\"User '\\(username)' logged in successfully.\")\n    }\n    return error\n}"
+    },
+    {
+      "timestamp": "11:16",
+      "title": "Example Logging Statements",
+      "language": "swift",
+      "code": "let logger = Logger(subsystem: \"BackyardBirdsData\", category: \"Account\")\nlogger.error(\"User '\\(username)' failed to log in. Error: \\(error)\")\nlogger.notice(\"User '\\(username)' logged in successfully.\")"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Logging",
+        "url": "https://developer.apple.com/documentation/os/logging"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10226/5/FFFDC5A2-A309-4C9B-B908-B19B51F18FB0/downloads/wwdc2023-10226_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10226/5/FFFDC5A2-A309-4C9B-B908-B19B51F18FB0/downloads/wwdc2023-10226_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10165",
+      "year": "2023",
+      "title": "What’s new in Xcode 15",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10165"
+    },
+    {
+      "id": "10168",
+      "year": "2020",
+      "title": "Explore logging in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10168"
+    },
+    {
+      "id": "405",
+      "year": "2018",
+      "title": "Measuring Performance Using Logging",
+      "url": "https://developer.apple.com/videos/play/wwdc2018/405"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:40:43.302Z"
+}

@@ -1,0 +1,218 @@
+{
+  "id": "10070",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10070/",
+  "title": "Build a desktop-class iPad app",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Mohammed: Hi, I'm Mohammed from UIKit. Thank you for joining me for this deep dive into building a Desktop Class iPad app. In this video, we'll use iPadOS 16 APIs to update an existing iPad app to a desktop class experience. We'll start by using new navigation bar API to surface powerful functionality, increase UI density, and provide customizability.\n\nThen, we'll adopt new UICollectionView and menu API to enable complex workflows and quick actions on multiple selections. And we'll round things out by enabling the new Find and Replace experience and enhancing text editing with the new Edit Menu. The app we'll be updating is a Markdown editor built for iPadOS 15. As we walk through each step of the modernization process, I'll discuss best practices and motivations behind our choices, giving you an idea of the factors you should consider while taking your own app through a similar process.\n\nIf you'd like a bit of a primer before getting started, check out “Meet Desktop Class iPad” for a breakdown of all of UIKit's new iPadOS APIs, and check out “What's new in iPad app design” for tips on how to design the best Desktop Class iPad app possible. All right, let's dive right in! To start things off, let's consider the organization of our app's controls. Since the app is designed for iPadOS 15, it already exposes its most important controls in the navigation bar and places secondary controls in various menus and popovers.\n\nIn iPadOS 16, UIKit formalizes the existing navigation style and introduces two new ones with a denser and more customizable layout. This allows apps to express the layout that's most appropriate to their content while bringing more functionality to the forefront of the UI.\n\nNavigator apps have a familiar push / pop navigation model. This is generally appropriate for apps that display hierarchical data, like Settings.\n\nBrowsers, like Safari or Files are ideal for looking through and navigating back and forth between multiple documents or folder structures.\n\nAnd Editors are great for focused viewing or editing of individual documents.\n\nBeing a Markdown editor, this style is the perfect choice for our app.\n\nThe editor style aligns the title towards the leading edge of the bar, opening up its center for a new set of items. This'll allow us to expose additional functionality that might've been hidden away in other views or menus. We're going to do a few things to make as much use of this design as possible. We'll start by customizing the built-in back action to fit our needs. Then we'll add a title menu with some document info and common document actions. We'll also add support for renaming via the new built-in rename UI. And finally, we'll make previously buried functionality more easily accessible by bringing it to the center of the bar. Let's start by opting into the editor style by setting our view controller's navigationItem's style property to .editor.\n\nThis immediately gives us the leading aligned title and opens up the center area.\n\nAfter that, let's remove our trailing done button and replace it using the new backAction API. This way we get a more standard look for the action that dismisses this view and returns to the document picker.\n\nNext let's figure out whether our app would benefit from a title menu. As the name implies, the title menu is presented from the navigation bar's title view. It's a great place to show document metadata and surface actions that apply to the whole document. If your app isn't document based, it may be a good place to surface actions that apply to the entire view.\n\nFor our app, it makes sense to use the document menu's header to surface some useful information about the document. We'll also be able to provide a draggable representation of the document and easy access to sharing functionality. And now it's time to write some code! Our app is UIDocument backed, so we can use the UIDocument's fileURL to instantiate a UIDocumentProperties object.\n\nNext, we'll use that same URL to create an NSItemProvider.\n\nThen we'll use the item provider to create a UIDragItem which we'll return from the properties object's dragItemsProvider.\n\nWe'll also use it to construct a UIActivityViewController which we'll return from the properties object's activityViewControllerProvider. And finally, we'll set the properties object as the editor view controller's navigationItem's documentProperties. The code we just wrote results in this document header, which provides a quick overview of the document including its name, size, and an icon representation. Since we specified drag item and activity view controller providers, I can drag the icon to copy the document outside the app or tap the share button to bring up an activity view controller.\n\nIn addition to displaying the document header, the title menu is a good place to provide functionality that applies to the entire document. There are two kinds of actions that can be displayed in this menu: system-provided ones with pre-defined localized titles and symbol images, and entirely custom ones that the app provides.\n\nSince it comes with some additional behavior, let's start with the rename action. We can add this action to our menu by conforming to the rename delegate protocol. When triggered, the action presents the bar's built-in rename UI.\n\nFirst we'll assign our view controller as its navigation item's renameDelegate.\n\nThen, we'll implement navigationItemDidEndRenamingWithTitle to handle the actual renaming of the displayed document.\n\nThis function is called when the rename action is committed. It's the app's responsibility to handle this by actually renaming the document. The API is intentionally open ended to support any kind of data model your app may have. Moving on to other system provided actions, we'll first need to override their functions on our editor view controller. Here we've implemented the duplicate and move functions. UIKit automatically surfaces system-provided actions, including the rename action, in the navigationItem's titleMenuProvider as an array of suggested UIMenuElements. To include them in our title menu, we'll just add them to the returned menu's children.\n\nIn addition to the system-vended actions, we can add entirely custom actions or even whole menu hierarchies. Here I've added an Export submenu with export as HTML and PDF sub-actions.\n\nAnd with that, tapping the title view now brings up a menu with the document header and all the actions we just added. And when I select rename, the built-in rename UI is activated and I'm able to rename the document.\n\nNow that we've started establishing the base structure of our app, it's a good time to check in on how things look when we build our app with Mac catalyst. When we run the app on a Mac, we'll find that the editor style with its leading aligned title has been translated nicely.\n\nOur back action has also been carried over, and when clicked, brings up a file browser.\n\nThe system provided actions and rename functionality are automatically surfaced in the app's File menu. Note that the titleMenuProvider is not called on Mac Catalyst, so our custom actions are not included in the File menu. To expose these actions, we would need to manually add them to the app's main menu using the main UIMenuSystem.\n\nAll right, let's continue our modernization process. We'll keep checking in on the Mac as we make progress towards our goal. Let's consider the opportunities made available by the bar's center area. The iOS 15 version of the app has a menu that holds a number of secondary controls and tools. With center items, we're able to make these tools more discoverable.\n\nSince the center area is customizable, we can include a large set of controls without worrying about filling the UI with less commonly used ones. Each person can tailor the bar's contents to fit their workflow. The first step in enabling customization is specifying a customizationIdentifier on the navigation item.\n\nNext, we'll define the center items as UIBarButtonItemGroups. Groups are an existing concept that's been extended to UINavigationBar and enhanced to support customization in iOS 16. This screenshot shows the set of center items we'd like to show by default. The synchronize scrolling button all the way on the left provides an important function that can't be reached by any other means, so it makes sense to place it in a fixed group using UIBarButtonItem's new creatingFixedGroup() function. Fixed groups are not customizable and cannot be moved by the user.\n\nThe add link button, on the other hand, doesn't provide critical functionality, and the same task can be achieved by typing link tags in the editor, so we'll use creatingOptionalGroup to create a completely customizable item. And we'll give it a unique customizationIdentifier so the customization is persisted across app launches.\n\nWe'll follow a similar process to define the remaining items in the default set, then move on to lower priority items that don't need to be available by default. One such item is the text format group, which includes the bold, italics, and underline items.\n\nIt's not important enough to show by default, but we want it in the customization popover so it can be dragged into the bar.\n\nTo achieve this, we'll use UIBarButtonItemGroup's optionalGroup initializer with isInDefaultCustomization set to false.\n\nWe'll also be sure to give the group a representative item so it has a title in the popover, and has a compact representation that it can be collapsed to when the bar runs out of space.\n\nBack on the iPad, the center items we defined show up in the center of the bar. If I click the newly added More button, a menu shows up with a Customize Toolbar action. And if I click that, the customization mode is activated.\n\nThe sync scrolling button that we marked as fixed is de-emphasized and static, while all the other items lift and shake to show that they're customizable.\n\nOptional items like the Format group show up in the popover and can be dragged into the bar.\n\nWhen we run the app on a Mac, we find that the center items have been converted to fully customizable macOS toolbar buttons.\n\nBefore we move on, let's go back to the iPad for a minute and resize the app. Now that we have less space available in the toolbar, the center items are no longer visible. UIKit automatically handles showing and hiding center items in response to the available space. Any items that don't fit are displayed in the overflow menu. Standard bar button items are automatically converted to their menu representation, but we're also able to provide a custom menu representation if we like. Since UIKit has no insight into the purpose of a custom view item, our slider item isn't automatically translated. We'll need to manually specify a menu representation.\n\nHere's our slider item. It's a single bar button item with a custom view, wrapped in an optional bar button group. To provide the core functionality of the slider, we'll define the menu representation as a UIMenu with Decrease, Reset, and Increase actions.\n\nUsing UIMenu's new preferredElementSize property, we can give the menu a more compact side by side appearance.\n\nAnd using the new keepsMenuPresented attribute, we can keep the menu presented after each action is performed, allowing the font size to be changed multiple times without dismissing and re-presenting the menu. Let's run this on the iPad again. Now when we bring up the overflow menu, the slider appears as an inline menu with three side-by-side actions, covering the full functionality of the slider.\n\nSince the small element size doesn't exist on the Mac, the actions will appear as standard macOS menu items. And that's it for UI organization and customization. Next, let's look into speeding up some workflows in the app using new collection view and menu API. Our app has a table of contents sidebar that can be used to quickly navigate the document or take action on top level tags. Prior to iOS 16, adding the ability to edit multiple items would've likely meant implementing a distinct edit mode, with bulk actions relegated to buttons in a toolbar.\n\niOS 16 introduces a new design for multi-item menus with a flock of items that clearly communicates which items the menu affects and provides a direct transition to a multi-item drag. In a desktop class iPad app, this new menu design is best paired with a lighter weight selection style. \"Lightweight\" here means selecting multiple items without kicking the collection view into an edit mode or making significant changes to the app's UI. We can achieve this and enable keyboard focus using existing API. First, we'll set allowsMultipleSelection to true.\n\nThen we'll enable keyboard focus by setting allowsFocus to true.\n\nAnd we'll allow focus to drive selection by setting selectionFollowsFocus to true.\n\nIf we run this on our iPad, we immediately notice that as each item is added to the selection, it still fires its selection action, causing the editor view to scroll. Let's head back to our code and figure out what's going on.\n\nThere it is! The code in didSelectItemAtIndexPath tries to disallow scrolling while in edit mode by checking the collectionView's isEditing property. Now that we allow multiple selection outside of edit mode, this code runs for every selection. We can fix this using a new UICollectionViewDelegate method. We'll implement performPrimaryActionForItemAtIndexPath and just move our scrolling code to this new function. Since this function is only called when a single item is tapped and the collection view is not editing, we no longer need the check for edit mode.\n\nAnd since we don't have any selection related behavior, we can remove our implementation of did select item at indexPath.\n\nBack on the iPad, selecting multiple items no longer scrolls to the corresponding text in the editor view. With that done, let's actually add support for the menu.\n\nIn iPadOS 16, UICollectionViewDelegate's existing single item menu method is deprecated. Its replacement supports displaying menus for anywhere from zero to many items. The number of items in the given indexPaths array depends on how many items are selected, and where the menu is invoked.\n\nIf the array is empty, then the menu was invoked in the blank space between cells.\n\nIf it has a single indexPath, then it was invoked on an item that is either deselected or is the sole selected one.\n\nIf it has more than one item, then the menu was invoked on an item that is part of a multiple selection.\n\nIf I head back to the iPad, select the top four items again, and two-finger click one of the selected items, a new multi-item menu comes up.\n\nWhen I do the same thing on a Mac, a ring is drawn around the selected cells to highlight them.\n\nWith multi-item menus done, let's look into enhancing the text editing experience using the new Find and Replace and edit menu features. Our app uses a UITextView for its editor and doesn't require any custom Find and Replace behavior, so all we need to do to enable the default system functionality is set the text view's isFindInteractionEnabled property to true. With that set, hitting Command+F while editing text brings up the Find and Replace UI.\n\nAdding custom actions to the text view's edit menu doesn't take much, and can enable some great quick editing features. We'll just implement the new UITextViewDelegate method edit menu for text in range suggested actions. In the implementation, we can construct and return a UIMenu that combines custom actions, like this Hide action, with the system menu.\n\nAnd this is the result. W hen I select some text and bring up the edit menu, both our custom actions and the system-provided ones are displayed. For more information about Find and Replace and the edit menu, check out “Adopt desktop class editing interactions.” And that's it! With these few changes, we've taken some great basic steps towards making our app desktop class and translating it seamlessly to the Mac. Use the APIs offered in iPadOS 16 to take your own app through a similar process. Start by choosing a navigation style that fits your app. Enhance document workflows with document properties and the title menu. And surface important functionality and provide customizability with center items. Enable quickly acting on multiple items with multi-item menus. And enhance your app's text editing experience using Find and Replace and the new edit menu. Whether you're building a new app or updating an existing one, I can't wait to use the apps you build with these new tools. Thanks for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:36",
+      "title": "Enable UINavigationBar editor style.",
+      "language": "swift",
+      "code": "navigationItem.style = .editor"
+    },
+    {
+      "timestamp": "3:52",
+      "title": "Set a back action.",
+      "language": "swift",
+      "code": "navigationItem.backAction = UIAction(…)"
+    },
+    {
+      "timestamp": "4:48",
+      "title": "Create a document properties header.",
+      "language": "swift",
+      "code": "let properties = UIDocumentProperties(url: document.fileURL)\n\nif let itemProvider = NSItemProvider(contentsOf: document.fileURL) {\n    properties.dragItemsProvider = { _ in\n        [UIDragItem(itemProvider: itemProvider)]\n    }\n    properties.activityViewControllerProvider = {\n        UIActivityViewController(activityItems: [itemProvider], applicationActivities: nil)\n    }\n}\n\nnavigationItem.documentProperties = properties"
+    },
+    {
+      "timestamp": "6:36",
+      "title": "Adopt rename title menu action and rename UI",
+      "language": "swift",
+      "code": "override func viewDidLoad() {\n    navigationItem.renameDelegate = self\n}\n\nfunc navigationItem(_ navigationItem: UINavigationItem, didEndRenamingWith title: String) {\n    // Rename document using methods appropriate to the app’s data model\n}"
+    },
+    {
+      "timestamp": "7:09",
+      "title": "Adopt system provided title menu actions.",
+      "language": "swift",
+      "code": "override func duplicate(_ sender: Any?) {\n    // Duplicate document\n}\n\noverride func move(_ sender: Any?) {\n    // Move document\n}\n\nfunc didOpenDocument() {\n    ...\n    navigationItem.titleMenuProvider = { [unowned self] suggested in\n        var children = suggested\n\n        ...\n\n        return UIMenu(children: children)\n    }\n}"
+    },
+    {
+      "timestamp": "7:10",
+      "title": "Add custom title menu actions",
+      "language": "swift",
+      "code": "func didOpenDocument() {\n    ...\n    navigationItem.titleMenuProvider = { [unowned self] suggested in\n        var children = suggested\n        children += [\n            UIMenu(title: \"Export…\", \n                   image: UIImage(systemName: \"arrow.up.forward.square\"), \n                   children: [\n                UIAction(title: \"HTML\", image: UIImage(systemName: \"safari\")) { ... },\n                UIAction(title: \"PDF\", image: UIImage(systemName: \"doc\")) { ... }\n            ])\n        ]\n        return UIMenu(children: children)\n    }\n}"
+    },
+    {
+      "timestamp": "9:35",
+      "title": "Enable customization for center items",
+      "language": "swift",
+      "code": "navigationItem.customizationIdentifier = \"editorView\""
+    },
+    {
+      "timestamp": "10:00",
+      "title": "Define a fixed center item group.",
+      "language": "swift",
+      "code": "UIBarButtonItem(title: \"Sync Scrolling\", ...).creatingFixedGroup()"
+    },
+    {
+      "timestamp": "10:23",
+      "title": "Define an optional (customizable) center item group.",
+      "language": "swift",
+      "code": "UIBarButtonItem(title: \"Add Link\", ...).creatingOptionalGroup(customizationIdentifier: \"addLink\")"
+    },
+    {
+      "timestamp": "10:56",
+      "title": "Define a non-default optional center item group.",
+      "language": "swift",
+      "code": "UIBarButtonItemGroup.optionalGroup(customizationIdentifier: \"textFormat\",\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t isInDefaultCustomization: false,\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t representativeItem: UIBarButtonItem(title: \"Format\", ...)\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t items: [\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t      UIBarButtonItem(title: \"Bold\", ...),\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t      UIBarButtonItem(title: \"Italics\", ...),\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t      UIBarButtonItem(title: \"Underline\", ...),\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t ])"
+    },
+    {
+      "timestamp": "13:16",
+      "title": "Define a custom menu representation for a bar button item group.",
+      "language": "swift",
+      "code": "sliderGroup.menuRepresentation = UIMenu(title: \"Text Size\",\n                                        preferredElementSize: .small,\n                                        children: [\n    UIAction(title: \"Decrease\",\n             image: UIImage(systemName: \"minus.magnifyingglass\"),\n             attributes: .keepsMenuPresented) { ... },\n    UIAction(title: \"Reset\",\n             image: UIImage(systemName: \"1.magnifyingglass\"),\n             attributes: .keepsMenuPresented) { ... },\n    UIAction(title: \"Increase\",\n             image: UIImage(systemName: \"plus.magnifyingglass\"),\n             attributes: .keepsMenuPresented) { ... },\n])"
+    },
+    {
+      "timestamp": "15:10",
+      "title": "Enable multiple selection and keyboard focus in a UICollectionView.",
+      "language": "swift",
+      "code": "// Enable multiple selection\ncollectionView.allowsMultipleSelection = true\n\n// Enable keyboard focus\ncollectionView.allowsFocus = true\n\n// Allow keyboard focus to drive selection \ncollectionView.selectionFollowsFocus = true"
+    },
+    {
+      "timestamp": "16:11",
+      "title": "Add a primary action to UICollectionView items.",
+      "language": "swift",
+      "code": "func collectionView(_ collectionView: UICollectionView, \n                    performPrimaryActionForItemAt indexPath: IndexPath) {\n  \n    // Scroll to the tapped element\n    if let element = dataSource.itemIdentifier(for: indexPath) {\n        delegate?.outline(self, didChoose: element)\n    }\n}"
+    },
+    {
+      "timestamp": "16:56",
+      "title": "Add a multi-item menu to UICollectionView.",
+      "language": "swift",
+      "code": "func collectionView(_ collectionView: UICollectionView, \n                      contextMenuConfigurationForItemsAt indexPaths: [IndexPath], \n                      point: CGPoint) -> UIContextMenuConfiguration? {\n\n    if indexPaths.count == 0 {\n        // Construct an empty space menu\n    } \n    else if indexPaths.count == 1 {\n        // Construct a single item menu\n    } \n    else {\n        // Construct a multi-item menu\n    }\n}"
+    },
+    {
+      "timestamp": "18:12",
+      "title": "Enable Find and Replace in UITextView.",
+      "language": "swift",
+      "code": "textView.isFindInteractionEnabled = true"
+    },
+    {
+      "timestamp": "18:34",
+      "title": "Add custom actions to UITextView's edit menu.",
+      "language": "swift",
+      "code": "func textView(_ textView: UITextView,\n              editMenuForTextIn range: NSRange,\n              suggestedActions: [UIMenuElement]) -> UIMenu? {\n    \n    if textView.selectedRange.length > 0 {\n        let customActions = [ UIAction(title: \"Hide\", ... ) { ... } ]\n        return UIMenu(children: customActions + suggestedActions)\n    }\n    \n    return nil\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Building a desktop-class iPad app",
+        "url": "https://developer.apple.com/documentation/UIKit/building-a-desktop-class-ipad-app"
+      },
+      {
+        "title": "centerItemGroups",
+        "url": "https://developer.apple.com/documentation/UIKit/UINavigationItem/centerItemGroups"
+      },
+      {
+        "title": "collectionView(_:contextMenuConfigurationForItemsAt:point:)",
+        "url": "https://developer.apple.com/documentation/UIKit/UICollectionViewDelegate/collectionView(_:contextMenuConfigurationForItemsAt:point:)"
+      },
+      {
+        "title": "collectionView(_:performPrimaryActionForItemAt:)",
+        "url": "https://developer.apple.com/documentation/UIKit/UICollectionViewDelegate/collectionView(_:performPrimaryActionForItemAt:)"
+      },
+      {
+        "title": "Supporting desktop-class features in your iPad app",
+        "url": "https://developer.apple.com/documentation/UIKit/supporting-desktop-class-features-in-your-ipad-app"
+      },
+      {
+        "title": "titleMenuProvider",
+        "url": "https://developer.apple.com/documentation/UIKit/UINavigationItem/titleMenuProvider"
+      },
+      {
+        "title": "UIDocumentProperties",
+        "url": "https://developer.apple.com/documentation/UIKit/UIDocumentProperties"
+      },
+      {
+        "title": "UINavigationItem.ItemStyle",
+        "url": "https://developer.apple.com/documentation/UIKit/UINavigationItem/ItemStyle"
+      },
+      {
+        "title": "UINavigationItemRenameDelegate",
+        "url": "https://developer.apple.com/documentation/UIKit/UINavigationItemRenameDelegate-5j4ws"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10070/3/03E2BD27-04DD-4C07-A662-B94B7F784C65/downloads/wwdc2022-10070_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10070/3/03E2BD27-04DD-4C07-A662-B94B7F784C65/downloads/wwdc2022-10070_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10056",
+      "year": "2023",
+      "title": "Build better document-based apps",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10056"
+    },
+    {
+      "id": "10071",
+      "year": "2022",
+      "title": "Adopt desktop-class editing interactions",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10071"
+    },
+    {
+      "id": "10076",
+      "year": "2022",
+      "title": "Bring your iOS app to the Mac",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10076"
+    },
+    {
+      "id": "10069",
+      "year": "2022",
+      "title": "Meet desktop-class iPad",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10069"
+    },
+    {
+      "id": "10068",
+      "year": "2022",
+      "title": "What's new in UIKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10068"
+    },
+    {
+      "id": "10009",
+      "year": "2022",
+      "title": "What’s new in iPad app design",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10009"
+    },
+    {
+      "id": "110931",
+      "year": "2022",
+      "title": "WWDC22 Day 3 recap",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110931"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:53:15.418Z"
+}

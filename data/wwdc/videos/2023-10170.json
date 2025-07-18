@@ -1,0 +1,200 @@
+{
+  "id": "10170",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10170/",
+  "title": "Beyond the basics of structured concurrency",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Evan: Hi, my name is Evan. Today, we are going beyond the basics of structured concurrency, exploring how structured tasks can simplify realizing useful behaviors. Before we get started, if you're new or want to review structured concurrency, feel free to watch the \"Explore structured concurrency in Swift\" and \"Swift concurrency: Behind the scenes\" sessions from WWDC 2021.\n\nToday, we will review the task hierarchy, and how it unlocks automatic task cancellation, priority propagation, and useful task-local value behaviors.\n\nThen we will cover some patterns with task groups to help manage resource usage.\n\nFinally, we'll look at how all of these come together to facilitate profiling and tracing tasks in a server environment.\n\nStructured concurrency enables you to reason about concurrent code using well-defined points where execution branches off and runs concurrently, and where results from that execution rejoin, similar to how \"if\"-blocks and \"for\"-loops define how control-flow behaves in synchronous code. Concurrent execution is triggered when you use an \"async let\", a task group, or create a task or detached task.\n\nResults rejoin the current execution at a suspension point, indicated by an \"await\".\n\nNot all tasks are structured.\n\nStructured tasks are created using \"async let\" and task groups, while unstructured tasks are created using Task and Task.detached. Structured tasks live to the end of the scope where they are declared, like local variables, and are automatically cancelled when they go out of scope, making it clear how long the task will live.\n\nWhenever possible, prefer structured Tasks. The benefits of structured concurrency discussed later do not always apply to unstructured tasks.\n\nBefore we dive into the code, let's come up with a concrete example.\n\nSuppose we have a kitchen with multiple chefs preparing soup. Soup preparation consists of multiple steps.\n\nThe chefs have to cut ingredients, marinate chicken, bring the broth to a boil, and finally, cook the soup before it is ready to serve. Some tasks can be performed in parallel, while others must be done in a specific order.\n\nLet's see how we can express this in code.\n\nFor now, we'll focus on the makeSoup function.\n\nYou may find yourself creating unstructured Tasks to add concurrency to your functions, and awaiting their values when necessary.\n\nWhile this expresses which tasks can run concurrently and which cannot, this is not the recommended way to use concurrency in Swift. Here is the same function expressed using structured concurrency. Since we have a known number of child tasks to create, we can use the convenient \"async let\" syntax. These tasks form a structured relationship with their parent task. We will talk about why this is important shortly.\n\nmakeSoup calls a number of asynchronous functions.\n\nOne of them is \"chopIngredients\", which takes a list of ingredients and uses a task group to chop all of them concurrently.\n\nNow that we are familiar with makeSoup, let's take a look at the task hierarchy. Child tasks are indicated by the colored boxes, while the arrows point from parent task to child task.\n\nmakeSoup has three child tasks for chopping ingredients, marinating chicken, and boiling broth.\n\nchopIngredients uses a task group to create a child task for each ingredient. If we have three ingredients, it too will create three children.\n\nThis parent-child hierarchy forms a tree, the task tree.\n\nNow that we've introduced the task tree, let's start identifying how that benefits our code. Task cancellation is used to signal that the app no longer needs the result of a task and the task should stop and either return a partial result or throw an error.\n\nIn our soup example, we may want to stop making a soup order if that customer left, decided they wanted to order something else, or it's closing time.\n\nWhat causes task a cancellation? Structured tasks are cancelled implicitly when they go out of scope, though you can call \"cancelAll\" on task groups to cancel all active children and any future child tasks.\n\nUnstructured tasks are cancelled explicitly with the \"cancel\" function.\n\nCancelling the parent task results in the cancellation of all child tasks.\n\nCancellation is cooperative, so child tasks aren't immediately stopped.\n\nIt simply sets the \"isCancelled\" flag on that task. Actually acting on the cancellation is done in your code.\n\nCancellation is a race.\n\nIf the task is cancelled before our check, \"makeSoup\" throws a \"SoupCancellationError\".\n\nIf the task is cancelled after the guard executes, the program will carry on preparing the soup.\n\nIf we are going to throw a cancellation error instead of returning a partial result, we can call \"Task.checkCancellation\", which throws a \"CancellationError\" if the task was cancelled. It's important to check the task cancellation status before starting any expensive work to verify that the result is still necessary. Cancellation checking is synchronous, so any function, asynchronous or synchronous, that should react to cancellation should check the task cancellation status before continuing. Polling for cancellation with \"isCancelled\" or \"checkCancellation\" is useful when the task is running, but there are times when you may need to respond to cancellation while the task is suspended and no code is running, like when implementing an AsyncSequence. This is where \"withTaskCancellationHandler\" is useful.\n\nLet's introduce a shift function.\n\nThe cook should make soups as orders come in until the end of their shift, signaled by a task cancellation.\n\nIn one cancellation scenario, the asynchronous for-loop gets a new order before it is cancelled. The \"makeSoup\" function handles the cancellation as we defined earlier, and throws an error.\n\nIn another scenario, the cancellation may take place while the task is suspended, waiting on the next order.\n\nThis case is more interesting because the task isn't running, so we can't explicitly poll for the cancellation event.\n\nInstead, we have to use the cancellation handler to detect the cancellation event and break out of the asynchronous for-loop. The orders are produced from an AsyncSequence.\n\nAsyncSequences are driven by an AsyncIterator, which defines an asynchronous \"next\" function.\n\nLike with synchronous iterators, the \"next\" function returns the next element in the sequence, or nil to indicate that we are at the end of the sequence. Many AsyncSequences are implemented with a state machine, which we use to stop the running sequence.\n\nIn our example here, when \"isRunning\" is true, the sequence should continue emitting orders. Once the task is cancelled, we need to indicate that the sequence is done and should shut down.\n\nWe do this by synchronously calling the \"cancel\" function on our sequence state machine.\n\nNote that because the cancellation handler runs immediately, the state machine is shared mutable state between the cancellation handler and main body, which can run concurrently. We'll need to protect our state machine.\n\nWhile actors are great for protecting encapsulated state, we want to modify and read individual properties on our state machine, so actors aren't quite the right tool for this.\n\nFurthermore, we can't guarantee the order that operations run on an actor, so we can't ensure that our cancellation will run first. We'll need something else. I've decided to use atomics from the Swift Atomics package, but we could use a dispatch queue or locks.\n\nThese mechanisms allow us to synchronize the shared state, avoiding race conditions, while allowing us to cancel the running state machine without introducing an unstructured task in the cancellation handler.\n\nThe task tree automatically propagates task cancellation information. Instead of having to worry about a cancellation token and synchronization, we let the Swift runtime handle it for us safely.\n\nRemember, cancellation does not stop a task from running, it only signals to the task that it has been cancelled and should stop running as soon a possible.\n\nIt is up to your code to check for cancellation.\n\nNext, let's consider how the structured task tree helps propagate priority and avoid priority inversions.\n\nFirst, what is priority, and why do we care? Priority is your way to communicate to the system how urgent a given task is. Certain tasks, like responding to a button press, need to run immediately or the app will appear frozen.\n\nMeanwhile, other tasks, like prefetching content from a server, can run in the background without anyone noticing.\n\nSecond, what is a priority inversion? A priority inversion happens when a high-priority task is waiting on the result of a lower-priority task.\n\nBy default, child tasks inherit their priority from their parent, so assuming that makeSoup is running in a task at medium priority, all child tasks will also run at medium priority.\n\nLet's say a VIP guest who comes to our restaurant looking for soup.\n\nWe give their soup a higher priority to ensure we get a good review.\n\nWhen they await their soup, the priority of all child tasks is escalated, ensuring that no high-priority task is waiting on a lower-priority task, avoiding the priority inversion.\n\nAwaiting a result from a task with a higher priority escalates the priority of all child tasks in the task tree.\n\nNote that awaiting the next result of a task group escalates all child tasks in the group, since we don't know which one is most likely to complete next.\n\nThe concurrency runtime uses priority queues to schedule tasks, so higher-priority tasks are selected to run before lower-priority tasks.\n\nThe task keeps the escalated priority for the remainder of its lifetime.\n\nIt's not possible to undo a priority escalation.\n\nWe effectively satisfied our VIP guest with a speedy soup delivery and got a good review, so our kitchen is starting to get popular now. We want to ensure we're using our resources effectively and noticed that we're creating a lot of chopping tasks.\n\nLet's investigate some useful patterns for managing concurrency with task groups.\n\nWe only have space for so many cutting boards.\n\nIf we chop too many ingredients simultaneously, we'll run out of space for other tasks, so we want to limit the number of ingredients getting chopped at the same time.\n\nGoing back to our code, we want to investigate the loop creating the chopping tasks.\n\nWe replace the original loop over each ingredient with a loop that starts up to the maximum number of chopping tasks.\n\nNext, we want the loop collecting results to start a new task each time an earlier task finishes.\n\nThe new loop waits until one of the running tasks finish and, while there are still ingredients to chop, adds a new task to chop the next ingredient.\n\nLet's distill this idea down to see the pattern more clearly.\n\nThe initial loop creates up to the maximum number of concurrent tasks, ensuring that we don't create too many.\n\nOnce the maximum number of tasks is running, we wait for one to finish.\n\nAfter it finishes and we haven't hit a stopping condition, we create a new task to keep making progress.\n\nThis limits the number of concurrent tasks in the group since we won't start new work until earlier tasks finish.\n\nEarlier, we talked about chefs working in shifts and using cancellation to indicate when their shift was over.\n\nThis is the Kitchen Service code handling the shift.\n\nEach cook starts their shift in a separate task.\n\nOnce the cooks are working, we start a timer. When the timer finishes, we cancel all ongoing shifts.\n\nNotice that none of the tasks return a value. New in Swift 5.9 is the withDiscardingTaskGroup API. Discarding task groups don't hold onto the results of completed child tasks. Resources used by tasks are freed immediately after the task finishes.\n\nWe can change the run method to make use of a discarding task group.\n\nDiscarding task groups automatically clean up their children, so there is no need to explicitly cancel the group and clean up.\n\nThe discarding task group also has automatic sibling cancellation.\n\nIf any of the child tasks throw an error, all remaining tasks are automatically cancelled.\n\nThis is ideal for our use case here. We can throw a \"TimeToCloseError\" when the shift is over, and it will automatically end the shift for all chefs.\n\nThe new discard task group automatically releases resources when a task finishes, unlike the normal task groups where you have to collect the result. This helps reduce memory consumption when you have many tasks that don't need to return anything, like when you're processing a stream of requests.\n\nIn some situations, you'll want to return a value from your task group, but also want to limit the number of concurrent tasks. We covered a general pattern for using the completion of one task to start another, avoiding a task explosion. We're making soup more efficiently than ever, but we still need to scale up more.\n\nIt's time to move production to the server.\n\nWith that comes challenges of tracing orders as they are processed.\n\nTask-local values are here to help.\n\nA task-local value is a piece of data associated with a given task, or more precisely, a task hierarchy. It's like a global variable, but the value bound to the task-local value is only available from the current task hierarchy.\n\nTask-local values are declared as static properties with the \"TaskLocal\" property wrapper.\n\nIt's a good practice to make the task local optional.\n\nAny task that doesn't have the value set will need to return a default value, which is easily represented by a nil optional. An unbound task local contains its default value.\n\nIn our case, we have an optional String, so it's nil and there is no cook associated with the current task. Task-local values can't be assigned to explicitly, but must be bound for a specific scope. The binding lasts for the duration of the scope, and reverts back to the original value at the end of the scope.\n\nGoing back to the task tree, each task has an associated place for task-local values.\n\nWe bound the name \"Sakura\" to the \"cook\"task-local variable before making soup. Only makeSoup stores the bound value. The children do not have any values saved in their task-local storage.\n\nLooking for the value bound to a task-local variable involves recursively walking each parent until we find a task with that value.\n\nIf we find a task with the value bound, the task local will assume that value.\n\nIf we reach the root, indicated by the task not having a parent, the task local was not bound and we get the original default value. The Swift runtime is optimized to run these queries faster.\n\nInstead of walking the tree, we have a direct reference to the task with the key we're looking for.\n\nThe recursive nature of the task tree lends itself nicely to shadowing values without losing the former value.\n\nSuppose we want to track the current step in the soup-making process.\n\nWe can bind the \"step\" variable to \"soup\" in \"'makeSoup\", then rebind it to \"chop\" in \"chopIngredients\".\n\nThe value bound in chopIngredients will shadow the former value until we return from chopIngredients, where we observe the original value.\n\nThrough the powers of video editing magic, we've moved our service to the cloud to keep up with the demands for soup.\n\nWe still have the same soup-making functionality, but it's on a server instead.\n\nWe'll need to observe orders as they pass through the system to ensure they're being completed in a timely manner and to monitor for unexpected failures.\n\nThe server environment handles many requests concurrently, so we'll want to include information that will allow us to trace a given order.\n\nLogging by hand is repetitive and verbose, which leads to subtle bugs and typos.\n\nOh no, I've accidentally logged the entire order instead of just the order ID.\n\nLet's find out how we can use task-local values to make our logging more reliable.\n\nOn Apple devices, you'll want to continue using the OSLog APIs directly, but as parts of your application move to the cloud, you'll need other solutions.\n\nSwiftLog is a logging API package with multiple backing implementations, allowing you to drop in a logging back end that suites your needs without making changes to your server.\n\nMetadataProvider is a new API in SwiftLog 1.5.\n\nImplementing a metadata provider makes it easy to abstract your logging logic to ensure that you're emitting consistent information about relevant values.\n\nThe metadata provider uses a dictionary-like structure, mapping a name to the value being logged. We want to automatically log the orderID task-local variable, so we check to see if it was defined, and if it is, add it to the dictionary. Multiple libraries may define their own metadata provider to look for library-specific information, so the MetadataProvider defines a \"multiplex\" function, which takes multiple metadata providers and combines them into a single object.\n\nOnce we have a metadata provider, we initialize the logging system with that provider, and we're ready to start logging.\n\nThe logs automatically include information specified in the metadata provider, so we don't need to worry about including it in the log message.\n\nThe logs show as order 0 enters the kitchen, and where our chefs picks up that order.\n\nValues in the metadata provider are listed clearly in the log, making it easier for you to track an order through the soup-making process.\n\nTask-local values allow you to attach information to a task hierarchy.\n\nAll tasks, except detached tasks, inherit task-local values from the current task. They are bound in a given scope to a specific task tree, providing you with low-level building blocks to propagate additional context information through the task hierarchy. Now we'll use the task hierarchy and tools it provides us to trace and profile a concurrent distributed system. When working with concurrency on Apple platforms, Instruments is your friend. The Swift Concurrency instrument gives you insight into the relationships between your structured tasks. For more information, check out the session, \"Visualize and optimize Swift concurrency.\" Instruments also introduced an HTTP traffic instrument in the \"Analyze HTTP Traffic in instruments\" session. The HTTP traffic analyzer only shows traces for events happening locally.\n\nThe profile shows a grey box while waiting for a response from the server, so we'll need more information to understand how to improve the performance of our server.\n\nIntroducing the new Swift Distributed Tracing package.\n\nThe task tree is great for managing child tasks in a single task hierarchy.\n\nDistributed tracing allows you to leverage the benefits of the task tree across multiple systems to gain insight into performance characteristics and task relationships. The Swift Distributed Tracing package has an implementation of the OpenTelemetry protocol, so existing tracing solutions, like Zipkin and Jaeger, will work out of the box.\n\nOur goal with Swift Distributed Tracing is to fill in the opaque \"waiting for response\" in Xcode Instruments with detailed information about what is happening in the server. We'll need to instrument our server code to figure out where we need to focus.\n\nDistributed tracing is a little different from tracing processes locally.\n\nInstead of getting a trace per-function, we instrument our code with spans using the \"withSpan\" API.\n\nSpans allow us to assign names to regions of code that are reported in the tracing system. Spans don't need to cover an entire function.\n\nThey can provide more insight on specific pieces of a given function.\n\nwithSpan annotates our tasks with additional trace IDs and other metadata, allowing the tracing system to merge the task trees into a single trace. The tracing system has enough information to provide you with insight into the task hierarchy, along with information about the runtime performance characteristics of a task.\n\nThe span name is presented in the tracing UI.\n\nYou'll want to keep them short and descriptive so that you can easily find information about a specific span without clutter.\n\nWe can attach additional metadata with the use of span attributes, so we don't need to clutter the span name with the order ID.\n\nHere we've replaced the span name with the \"#function\" directive to automatically fill the span name with the function name, and used the span attribute to attach the current order ID to the span information reported to the tracer.\n\nTracing systems usually present the attributes while inspecting a given span.\n\nMost spans come with HTTP status codes, request and response sizes, start and end times, and other metadata making it easier for you to track information passing through your system.\n\nAs noted on the previous slide, you can define your own attributes. For more examples of how you can leverage spans, please check out the swift-distributed-tracing-extras repository.\n\nIf a task fails and throws an error, that information is also presented in the span and reported in the tracing system. Since spans contain both timing information and the relationships of tasks in the tree, it's a helpful way to track down errors caused by timing races and identify how they impact other tasks. We've talked about the tracing system and how it can reconstruct task trees using the trace IDs and how you can attach your own attributes to a span, but we haven't started working this into a distributed system yet. The beauty of the tracing system is that there is nothing more that needs to be done.\n\nIf we factor a chopping service out of our kitchen service, otherwise keeping the same code, the tracing system will automatically pick up the traces and relate them across different machines in the distributed system.\n\nThe trace view will indicate that the spans are running on a different machine, but will otherwise be the same. Distributed tracing is most powerful when all parts of the system embrace traces, including the HTTP clients, servers, and other RPC systems.\n\nSwift Distributed Tracing leverages task-local values, built on the task trees, to automatically propagate all of the information necessary to produce reliable cross-node traces. Structured tasks unlock the secrets of your concurrent systems, providing you with tools to automatically cancel operations, automatically propagate priority information, and facilitate tracing complex distributed workloads.\n\nAll of these work because of the structured nature of concurrency in Swift.\n\nI hope this session excited you about structured concurrency, and that you'll reach for structured tasks before using unstructured alternatives.\n\nThank you for watching! I can't wait to see what other useful patterns you'll come up with using structured concurrency.\n\nMm, soup! ♪ ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:27",
+      "title": "Unstructured concurrency",
+      "language": "swift",
+      "code": "func makeSoup(order: Order) async throws -> Soup {\n    let boilingPot = Task { try await stove.boilBroth() }\n    let choppedIngredients = Task { try await chopIngredients(order.ingredients) }\n    let meat = Task { await marinate(meat: .chicken) }\n    let soup = await Soup(meat: meat.value, ingredients: choppedIngredients.value)\n    return await stove.cook(pot: boilingPot.value, soup: soup, duration: .minutes(10))\n}"
+    },
+    {
+      "timestamp": "2:42",
+      "title": "Structured concurrency",
+      "language": "swift",
+      "code": "func makeSoup(order: Order) async throws -> Soup {\n    async let pot = stove.boilBroth()\n    async let choppedIngredients = chopIngredients(order.ingredients)\n    async let meat = marinate(meat: .chicken)\n    let soup = try await Soup(meat: meat, ingredients: choppedIngredients)\n    return try await stove.cook(pot: pot, soup: soup, duration: .minutes(10))\n}"
+    },
+    {
+      "timestamp": "3:00",
+      "title": "Structured concurrency",
+      "language": "swift",
+      "code": "func chopIngredients(_ ingredients: [any Ingredient]) async -> [any ChoppedIngredient] {\n    return await withTaskGroup(of: (ChoppedIngredient?).self,\n                               returning: [any ChoppedIngredient].self) { group in\n         // Concurrently chop ingredients\n         for ingredient in ingredients {\n             group.addTask { await chop(ingredient) }\n         }\n         // Collect chopped vegetables\n         var choppedIngredients: [any ChoppedIngredient] = []\n         for await choppedIngredient in group {\n             if choppedIngredient != nil {\n                choppedIngredients.append(choppedIngredient!)\n             }\n         }\n         return choppedIngredients\n    }\n}"
+    },
+    {
+      "timestamp": "4:32",
+      "title": "Task cancellation",
+      "language": "swift",
+      "code": "func makeSoup(order: Order) async throws -> Soup {\n    async let pot = stove.boilBroth()\n\n    guard !Task.isCancelled else {\n        throw SoupCancellationError()\n    }\n\n    async let choppedIngredients = chopIngredients(order.ingredients)\n    async let meat = marinate(meat: .chicken)\n    let soup = try await Soup(meat: meat, ingredients: choppedIngredients)\n    return try await stove.cook(pot: pot, soup: soup, duration: .minutes(10))\n}"
+    },
+    {
+      "timestamp": "4:58",
+      "title": "Task cancellation",
+      "language": "swift",
+      "code": "func chopIngredients(_ ingredients: [any Ingredient]) async throws -> [any ChoppedIngredient] {\n    return try await withThrowingTaskGroup(of: (ChoppedIngredient?).self,\n                                   returning: [any ChoppedIngredient].self) { group in\n        try Task.checkCancellation()\n        \n        // Concurrently chop ingredients\n        for ingredient in ingredients {\n            group.addTask { await chop(ingredient) }\n        }\n\n        // Collect chopped vegetables\n        var choppedIngredients: [any ChoppedIngredient] = []\n        for try await choppedIngredient in group {\n            if let choppedIngredient {\n                choppedIngredients.append(choppedIngredient)\n            }\n        }\n        return choppedIngredients\n    }\n}"
+    },
+    {
+      "timestamp": "5:47",
+      "title": "Cancellation and async sequences",
+      "language": "swift",
+      "code": "actor Cook {\n    func handleShift<Orders>(orders: Orders) async throws\n       where Orders: AsyncSequence,\n             Orders.Element == Order {\n\n        for try await order in orders {\n            let soup = try await makeSoup(order)\n            // ...\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "6:41",
+      "title": "Cancellation and async sequences",
+      "language": "swift",
+      "code": "public func next() async -> Order? {\n    return await withTaskCancellationHandler {\n        let result = await kitchen.generateOrder()\n        guard state.isRunning else {\n            return nil\n        }\n        return result\n    } onCancel: {\n        state.cancel()\n    }\n}"
+    },
+    {
+      "timestamp": "7:40",
+      "title": "AsyncSequence state machine",
+      "language": "swift",
+      "code": "private final class OrderState: Sendable {\n    let protectedIsRunning = ManagedAtomic<Bool>(true)\n    var isRunning: Bool {\n        get { protectedIsRunning.load(ordering: .acquiring) }\n        set { protectedIsRunning.store(newValue, ordering: .relaxed) }\n    }\n    func cancel() { isRunning = false }\n}"
+    },
+    {
+      "timestamp": "10:55",
+      "title": "Limiting concurrency with TaskGroups",
+      "language": "swift",
+      "code": "func chopIngredients(_ ingredients: [any Ingredient]) async -> [any ChoppedIngredient] {\n    return await withTaskGroup(of: (ChoppedIngredient?).self,\n                               returning: [any ChoppedIngredient].self) { group in\n        // Concurrently chop ingredients\n        for ingredient in ingredients {\n            group.addTask { await chop(ingredient) }\n        }\n\n        // Collect chopped vegetables\n        var choppedIngredients: [any ChoppedIngredient] = []\n        for await choppedIngredient in group {\n            if let choppedIngredient {\n                choppedIngredients.append(choppedIngredient)\n            }\n        }\n        return choppedIngredients\n    }\n}"
+    },
+    {
+      "timestamp": "11:01",
+      "title": "Limiting concurrency with TaskGroups",
+      "language": "swift",
+      "code": "func chopIngredients(_ ingredients: [any Ingredient]) async -> [any ChoppedIngredient] {\n    return await withTaskGroup(of: (ChoppedIngredient?).self,\n                               returning: [any ChoppedIngredient].self) { group in\n        // Concurrently chop ingredients\n        let maxChopTasks = min(3, ingredients.count)\n        for ingredientIndex in 0..<maxChopTasks {\n            group.addTask { await chop(ingredients[ingredientIndex]) }\n        }\n\n        // Collect chopped vegetables\n        var choppedIngredients: [any ChoppedIngredient] = []\n        for await choppedIngredient in group {\n            if let choppedIngredient {\n                choppedIngredients.append(choppedIngredient)\n            }\n        }\n        return choppedIngredients\n    }\n}"
+    },
+    {
+      "timestamp": "11:17",
+      "title": "Limiting concurrency with TaskGroups",
+      "language": "swift",
+      "code": "func chopIngredients(_ ingredients: [any Ingredient]) async -> [any ChoppedIngredient] {\n    return await withTaskGroup(of: (ChoppedIngredient?).self,\n                               returning: [any ChoppedIngredient].self) { group in\n        // Concurrently chop ingredients\n        let maxChopTasks = min(3, ingredients.count)\n        for ingredientIndex in 0..<maxChopTasks {\n            group.addTask { await chop(ingredients[ingredientIndex]) }\n        }\n\n        // Collect chopped vegetables\n        var choppedIngredients: [any ChoppedIngredient] = []\n        var nextIngredientIndex = maxChopTasks\n        for await choppedIngredient in group {\n            if nextIngredientIndex < ingredients.count {\n                group.addTask { await chop(ingredients[nextIngredientIndex]) }\n                nextIngredientIndex += 1\n            }\n            if let choppedIngredient {\n                choppedIngredients.append(choppedIngredient)\n            }\n        }\n        return choppedIngredients\n    }\n}"
+    },
+    {
+      "timestamp": "11:26",
+      "title": "Limiting concurrency with TaskGroups",
+      "language": "swift",
+      "code": "withTaskGroup(of: Something.self) { group in\n    for _ in 0..<maxConcurrentTasks {\n        group.addTask { }\n    }\n    while let <partial result> = await group.next() {\n        if !shouldStop { \n            group.addTask { }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "11:56",
+      "title": "Kitchen Service",
+      "language": "swift",
+      "code": "func run() async throws {\n    try await withThrowingTaskGroup(of: Void.self) { group in\n        for cook in staff.keys {\n            group.addTask { try await cook.handleShift() }\n        }\n\n        group.addTask {\n            // keep the restaurant going until closing time\n            try await Task.sleep(for: shiftDuration)\n        }\n\n        try await group.next()\n        // cancel all ongoing shifts\n        group.cancelAll()\n    }\n}"
+    },
+    {
+      "timestamp": "12:41",
+      "title": "Introducing DiscardingTaskGroups",
+      "language": "swift",
+      "code": "func run() async throws {\n    try await withThrowingDiscardingTaskGroup { group in\n        for cook in staff.keys {\n            group.addTask { try await cook.handleShift() }\n        }\n\n        group.addTask { // keep the restaurant going until closing time\n            try await Task.sleep(for: shiftDuration)\n            throw TimeToCloseError()\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "14:10",
+      "title": "TaskLocal values",
+      "language": "swift",
+      "code": "actor Kitchen {\n    @TaskLocal static var orderID: Int?\n    @TaskLocal static var cook: String?\n    func logStatus() {\n        print(\"Current cook: \\(Kitchen.cook ?? \"none\")\")\n    }\n}\n\nlet kitchen = Kitchen()\nawait kitchen.logStatus()\nawait Kitchen.$cook.withValue(\"Sakura\") {\n    await kitchen.logStatus()\n}\nawait kitchen.logStatus()"
+    },
+    {
+      "timestamp": "16:17",
+      "title": "Logging",
+      "language": "swift",
+      "code": "func makeSoup(order: Order) async throws -> Soup {\n     log.debug(\"Preparing dinner\", [\n       \"cook\": \"\\(self.name)\",\n       \"order-id\": \"\\(order.id)\",\n       \"vegetable\": \"\\(vegetable)\",\n     ])\n     // ... \n}\n\n func chopVegetables(order: Order) async throws -> [Vegetable] {\n     log.debug(\"Chopping ingredients\", [\n       \"cook\": \"\\(self.name)\",\n       \"order-id\": \"\\(order.id)\",\n       \"vegetable\": \"\\(vegetable)\",\n     ])\n     \n     async let choppedCarrot = try chop(.carrot)\n     async let choppedPotato = try chop(.potato)\n     return try await [choppedCarrot, choppedPotato]\n}\n\nfunc chop(_ vegetable: Vegetable, order: Order) async throws -> Vegetable {\n    log.debug(\"Chopping vegetable\", [\n      \"cook\": \"\\(self.name)\",\n      \"order-id\": \"\\(order)\",\n      \"vegetable\": \"\\(vegetable)\",\n    ])\n    // ...\n}"
+    },
+    {
+      "timestamp": "17:33",
+      "title": "MetadataProvider in action",
+      "language": "swift",
+      "code": "let orderMetadataProvider = Logger.MetadataProvider {\n    var metadata: Logger.Metadata = [:]\n    if let orderID = Kitchen.orderID {\n        metadata[\"orderID\"] = \"\\(orderID)\"\n    }\n    return metadata\n}"
+    },
+    {
+      "timestamp": "17:50",
+      "title": "MetadataProvider in action",
+      "language": "swift",
+      "code": "let orderMetadataProvider = Logger.MetadataProvider {\n    var metadata: Logger.Metadata = [:]\n    if let orderID = Kitchen.orderID {\n        metadata[\"orderID\"] = \"\\(orderID)\"\n    }\n    return metadata\n}\n\nlet chefMetadataProvider = Logger.MetadataProvider {\n    var metadata: Logger.Metadata = [:]\n    if let chef = Kitchen.chef {\n        metadata[\"chef\"] = \"\\(chef)\"\n    }\n    return metadata\n}\n\nlet metadataProvider = Logger.MetadataProvider.multiplex([orderMetadataProvider,\n                                                          chefMetadataProvider])\n\nLoggingSystem.bootstrap(StreamLogHandler.standardOutput, metadataProvider: metadataProvider)\n\nlet logger = Logger(label: \"KitchenService\")"
+    },
+    {
+      "timestamp": "18:13",
+      "title": "Logging with metadata providers",
+      "language": "swift",
+      "code": "func makeSoup(order: Order) async throws -> Soup {\n    logger.info(\"Preparing soup order\")\n    async let pot = stove.boilBroth()\n    async let choppedIngredients = chopIngredients(order.ingredients)\n    async let meat = marinate(meat: .chicken)\n    let soup = try await Soup(meat: meat, ingredients: choppedIngredients)\n    return try await stove.cook(pot: pot, soup: soup, duration: .minutes(10))\n}"
+    },
+    {
+      "timestamp": "20:30",
+      "title": "Profile server-side execution",
+      "language": "swift",
+      "code": "func makeSoup(order: Order) async throws -> Soup {\n    try await withSpan(\"makeSoup(\\(order.id)\") { span in\n        async let pot = stove.boilWater()\n        async let choppedIngredients = chopIngredients(order.ingredients)\n        async let meat = marinate(meat: .chicken)\n        let soup = try await Soup(meat: meat, ingredients: choppedIngredients)\n        return try await stove.cook(pot: pot, soup: soup, duration: .minutes(10))\n    }\n}"
+    },
+    {
+      "timestamp": "21:36",
+      "title": "Profiling server-side execution",
+      "language": "swift",
+      "code": "func makeSoup(order: Order) async throws -> Soup {\n    try await withSpan(#function) { span in\n        span.attributes[\"kitchen.order.id\"] = order.id\n        async let pot = stove.boilWater()\n        async let choppedIngredients = chopIngredients(order.ingredients)\n        async let meat = marinate(meat: .chicken)\n        let soup = try await Soup(meat: meat, ingredients: choppedIngredients)\n        return try await stove.cook(pot: pot, soup: soup, duration: .minutes(10))\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10170/5/4608ED1F-4D83-4444-83A0-DF3EACCE4369/downloads/wwdc2023-10170_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10170/5/4608ED1F-4D83-4444-83A0-DF3EACCE4369/downloads/wwdc2023-10170_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10164",
+      "year": "2023",
+      "title": "What’s new in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10164"
+    },
+    {
+      "id": "110350",
+      "year": "2022",
+      "title": "Visualize and optimize Swift concurrency",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110350"
+    },
+    {
+      "id": "10212",
+      "year": "2021",
+      "title": "Analyze HTTP traffic in Instruments",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10212"
+    },
+    {
+      "id": "10134",
+      "year": "2021",
+      "title": "Explore structured concurrency in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10134"
+    },
+    {
+      "id": "10254",
+      "year": "2021",
+      "title": "Swift concurrency: Behind the scenes",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10254"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:41:06.790Z"
+}

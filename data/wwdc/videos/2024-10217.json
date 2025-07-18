@@ -1,0 +1,294 @@
+{
+  "id": "10217",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10217/",
+  "title": "Explore Swift performance",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Swift"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "My name is John McCall and today we are going to explore Swift performance.\n\nWhen you work a lot in a programming language, it's important to have a good intuition for the performance of different operations in that language. Programmers coming from C often have that. For better or worse, the translation of C into machine code is pretty literal.\n\nLocal variables like these are allocated on the stack.\n\nHeap allocations only happen if you make a call. The compiler might still move things into registers, optimize memory, and find all sorts of other clever ways to make things faster. But there's a baseline for how things are compiled that you can feel confident about.\n\nSwift is not always so simple. Partly that has to do with safety, that nice little translation you get from C will happily scribble all over memory if your code is wrong. But Swift also provides a lot of tools for abstraction that C doesn't, closures, generics, and so on. Those abstractions have non-trivial implementations with costs that aren't quite as visible as an explicit call to malloc. But that doesn't mean that you can't develop a similar intuition for how your code will actually run. And that's critical for when you need to do performance work. So in this talk, we're going to explore the low-level performance of Swift.\n\nFirst, we're going to talk about what we mean by performance. Next, we'll talk about the principles that you should do be thinking about, when you look at low-level performance. And we'll end by exploring some of the details of how key features in Swift are implemented, and what impact that has on performance.\n\nSo what do we mean by performance? That's a pretty deep question. It'd be nice if you could just take your program and feed it to some tool and have it spit out a single number, that was all we needed to know about performance. Maybe Safari has a performance score of 9.2. Sadly, that's not how it works. Performance is multidimensional and situational. Usually, we care about performance because of some macroscopic problem. Our daemon is drawing too much power, or our UI feels awkwardly slow to click around in, or our app keeps getting jetsam’ed.\n\nWhen you're investigating these problems, you generally work top down. You make measurements with tools like instruments, and that shows you places to dig in on.\n\nA lot of the time, you're going to solve these problems with algorithmic improvements, without ever getting into the low-level performance of your code.\n\nBut sometimes you do need to dig into low-level performance. Maybe you've narrowed your investigation down to a single part of the execution trace, and there's not much more you can do with it at an algorithmic level. It just seems slow. Going further requires understanding how your code is actually running, and that requires a more bottom-up approach. Low-level performance tends to be dominated by these four considerations: First, we're doing a lot of calls that aren't being optimized effectively. Second, we're wasting a lot of time, or memory, because of how our data is represented. Third, we're spending too much time allocating memory, or fourth, we're spending a lot of time unnecessarily copying and destroying values. Most features in Swift have implications for one or more of these costs. I'm going to get into all of them, but let me add one last consideration first. Swift has a powerful optimizer. There are things that you never see as performance issues, because the compiler does a good job at eliminating them. There are limits to the optimization. The way you write code can have a significant impact on how much the optimizer can do. So as I go through this, I’m also going to be talking about optimization potential, because it’s an important part of programming for performance. If you’re uncomfortable relying on the optimizer, let me make a suggestion. When performance is an important part of your project, you need to be regularly monitoring it. So when you identify hot spots during top-down investigation, try to find ways to measure them, and then automate those measurements as part of your development process. Once you’re doing that, you’re well set up to identify regressions, whether it’s because you somehow confused the optimizer or just because you accidentally added some quadratic algorithm. And now you’re verifying that the optimizer is still doing what you’re asking of it.\n\nWith all that said, let’s dig on those four principles of low-level performance. The first is function calls.\n\nThere are four costs associated with function calls. Three of them are things that we do. First, we have to set up the arguments for the call.\n\nWe also have to resolve the address of the function we’re calling.\n\nAnd we have to allocate space for the function’s local state.\n\nThe fourth is something that we don’t do: This whole thing might inhibit optimization, both in the caller and in the function it calls.\n\nSo. Four costs.\n\nLet’s look at argument passing first. There’s two levels to this cost. At the lowest level, when we make a call, we have to put arguments in the right place for the calling convention. On modern processors, these costs are usually hidden by register renaming, so they don’t make much difference in practice.\n\nAt a higher level, though, the compiler may have to add copies of values to match the ownership conventions of the function. This often does show up in profiles as extra retains and releases, on one side of the call or the other. I’ll come back to this in a few minutes.\n\nThe next two costs, function resolution and optimization impact, both come down to the same issue: Do we know at compile time exactly which function we’re calling? If so, we say the call uses static dispatch; otherwise, it uses dynamic dispatch. Static dispatch is more efficient, it’s a little faster at the processor level, but more importantly, there’s a lot of optimization that’s possible at compile time, like inlining and generic specialization, if the compiler can see that function definition. But dynamic dispatch is what enables polymorphism and other powerful tools for abstraction.\n\nIn Swift, only specific kinds of calls use dynamic dispatch, and you can tell by looking at the declaration you’re calling.\n\nIn this example, I have a call to update on a value of protocol type. What kind of call this is depends on where the method is declared.\n\nIf it’s declared in the main body of the protocol, it’s a protocol requirement, and the call to it uses dynamic dispatch.\n\nBut if it’s declared in a protocol extension, the call uses static dispatch. This is a really important difference, both semantically and for performance.\n\nThe last cost of function calls is allocating memory for local state. In order to run, this function needs some memory. It’s an ordinary, synchronous function, so it allocates that memory on the C stack. Allocating space on the C stack can be done by just subtracting from the stack pointer.\n\nIf you compile this, you’ll get assembly code that manipulates the stack pointer at the start and end of the function.\n\nWhen we enter the function, the stack pointer is pointing into the C stack. We start by subtracting some number from the stack pointer in our assembly, we can see it’s 208 bytes. This allocates what’s traditionally called the CallFrame, and it gives the function space to execute. Now we can run the body of the function.\n\nRight before we return, we add 208 bytes back to the stack pointer, deallocating the memory we allocated before.\n\nYou can think of the CallFrame as having a layout like a C struct. Ideally, all of the local state of the function just becomes fields in the CallFrame. Now the reason I say putting things in the CallFrame is ideal is that the compiler is always going to emit that subtraction at the start of the function. It has to, in order to make space to save critical things like the return address. Subtracting a larger constant doesn’t take any longer, so if we need memory in the function, allocating it as part of the CallFrame is as close as it gets to free.\n\nThat ties nicely into the next low-level principle we want to look at, which is memory allocation.\n\nTraditionally, we think of there as being three kinds of memory. Of course, to the computer, these all ultimately come from the same pool of RAM; but we allocate and use them in different patterns, on our programs. And that’s significant to the operating system, which makes it significant for performance.\n\nGlobal memory is allocated and initialized when the program is loaded. This isn’t free, but it’s close to it. The big drawback with global memory is that it only works for specific patterns with a fixed amount of memory that will live for the entire duration of the program. That matches well with global variables and static member variables, but not with much else.\n\nWe already talked about CallFrames as an example of stack allocation. Like global memory, stack memory is very cheap, but it only works in certain patterns. In this case, the memory has to be scoped: there has to be a point in the current function where we’re guaranteed that there will be no more uses of that memory.\n\nThat matches well with a typical local variable.\n\nThe last kind of memory is the heap. Heap memory is very flexible: you can allocate it at an arbitrary time and deallocate it in an arbitrary time later.\n\nThat flexibility makes allocation and deallocation substantially more expensive than either of the other kinds.\n\nThe heap is used for some obvious things like class instances, but it’s also used for some features where we simply don’t have strong enough static lifetime restrictions to use anything else.\n\nOften, when we allocate heap memory, the memory ends up having shared ownership, which means we have multiple, independent references to the same memory. Swift manages the lifetime of those allocations with reference counting.\n\nIn Swift, we call incrementing the reference count a retain, and decrementing the reference count a release.\n\nNow that we’ve talked about allocating memory, I want to cover how Swift uses that memory to store values. We call this memory layout.\n\nIn most conversations about Swift, when we talk about values, we’re usually talking about a high-level concept, irrespective of what’s stored where in memory.\n\nFor example, after this initialization, we might say that the value of this variable is an array of two doubles.\n\nWhen we need to talk about how things look in memory, sometimes people still use the word value. Now in this talk, that’s going to be confusing, so I’ll use the more technical word representation instead. The representation of a value is how it’s arranged in memory. The variable array is a name for memory that holds a reference to a buffer object that’s currently initialized with the representations of two double values.\n\nI'll also use the phrase inline representation to mean just the portion of the representation that you get without following any pointers. So the inline representation of our variable array is a single buffer reference, ignoring what that buffer actually contains. The MemoryLayout type in the standard library just measures inline representation. So for array, it’s just 8 bytes, the size of a single 64-bit pointer.\n\nOkay. Every value in Swift is part of some containing context.\n\nLocal scopes contain all of the values used within them: local variables, intermediate results, and so on. Structs and classes contain all of their stored properties. Arrays and Dictionaries contain all of their elements via their buffer and so on.\n\nEvery value in Swift also has a type.\n\nThe value’s type dictates how the value is represented in memory, including its inline representation. The value’s context dictates where the memory comes from to hold the inline representation.\n\nSo let’s see how that looks in our example. Our array is a local variable. So we have an array value, that’s contained by a local scope.\n\nLocal scopes place inline representations in the function’s CallFrame if they can. That's gonna work here, so somewhere in this CallFrame, there’s space for the inline representation of an Array of Double.\n\nWhat is the inline representation of an Array of Double? Well, Array is a struct, and the inline representation of a struct is just the inline representation of all its stored properties. If you look at the standard library source code, this could be a little hard to see, but I’ll give you a spoiler: At the end of the day, Array has a single stored property, and it’s a class reference. And a class reference is just a pointer to an object.\n\nSo really, our CallFrame just stores that pointer.\n\nIn Swift, structs, tuples, and enums, all use inline storage: Everything they contain is laid out inline in their container, typically in the order it was declared.\n\nClasses and actors use out-of-line storage: Everything they contain is laid out inline in an object, and the container just stores a pointer to that object. This difference has major performance implications. To explain those, I need to talk about our last low-level principle, which is value copying. Now, there’s a basic concept in Swift called ownership. Ownership of a value means responsibility for managing that value’s representation.\n\nWe just saw that the inline representation of an Array is a reference to a buffer object. References like this are managed using reference counting. When we say that a container has ownership of an Array value, that means there’s an invariant that the underlying array buffer has been retained as part of storing the value into the container. The container is then responsible for eventually balancing that retain with a release.\n\nIf nothing else, that has to happen when the container goes away in this example, where the container is a local scope, the object will be released when the variable goes out of scope.\n\nAny use of a value or variable in Swift interacts with this ownership system somehow; this is a key part of memory safety. There are three main kinds of ownership interaction: a value can be consumed, it can be mutated, or it can be borrowed.\n\nConsuming a value means transferring ownership of its representation from one place to another. The most important operation that naturally needs to consume a value is assigning the value into memory.\n\nNow that happens in our example: Initializing a variable, requires us to transfer ownership of the initial value into the variable.\n\nSometimes we can do that without any copies. In this example, the initial value of the variable is an array literal, which naturally produces a new, independent value. Swift can just transfer the ownership of that value directly into the variable.\n\nIf we initialize a second variable with the value of the first, we again need to transfer ownership of a value into the new variable.\n\nBut now the initial value expression does not naturally produce a new value: It just refers to an existing variable. We can’t just steal the value out of that variable, because there might be more uses of it.\n\nIn order to get an independent value, we have to copy the current value of the old variable. Since the value is an array, copying it means retaining its buffer.\n\nNow, this is something that’s frequently optimized. If the compiler can see that aren’t any more uses of the original variable, it should be able to transfer the value here without a copy.\n\nYou can also use the consume operator to request this explicitly. If you do try to use the variable past this point where it's explicitly consumed Swift will complain and tell you there isn’t a value there anymore.\n\nThe second way to use a value is mutation. Mutating a value means temporarily taking ownership of the current value stored in some mutable variable. The key difference from consuming is that the variable still expects to have ownership of the value afterwards.\n\nWhen you call a mutating method like this, you’re transferring ownership of the value currently in the variable over to the method. Swift will prevent you from simultaneously using the variable in any other way during the call.\n\nWhen the method is done, it transfers ownership of the new value back to the variable. This maintains the invariant that the variable has ownership of its value.\n\nThe last way to use values is to borrow them. Borrowing a value means asserting that nobody else can consume or mutate it. This is what you naturally want to do when you just want to read a value. All you care about is that nobody else is changing or destroying that value out from under you.\n\nPassing an argument is one of the most common situations that usually should just borrow. If I pass my array to print, ideally that should just pass the information along without doing any extra work. However, there are some situations where Swift needs to defensively copy arguments instead of borrowing them. In order to borrow a value, Swift has to prove that there aren’t any simultaneous attempts to mutate or consume it. In this simple example, it should be able to do that reliably. In more complex examples, it sometimes struggles. When the storage is in a class property, for example, it can be hard for Swift to prove that the property isn’t modified at the same time, so it may need to add a defensive copy.\n\nThis is an area where Swift is actively evolving improvements, both with improvements to the optimizer, and with new features to let you explicitly borrow values to avoid copies.\n\nWhat does it actually mean to copy a value? It depends on the inline representation of the value. Copying a value means copying the inline representation so that you get a new inline representation with independent ownership.\n\nThat means that copying a class value means copying the ownership of the reference, which just means retaining the object it refers to. Copying a struct value means recursively copying all of the struct’s stored properties.\n\nThat means that choosing between inline and out-of-line storage involves some real trade-offs. Inline storage avoids allocating memory on the heap and for small types, this is great. For larger types, the cost of copying can become a significant drag on performance, if you find yourself doing a lot of copies. There’s no hard-and-fast rule here for getting the best performance.\n\nThe cost of copying large structs comes in two parts. First, when we’re copying value types, we’re often not just copying bits. These three stored properties are all represented using object references that will have to be retained when we copy the enclosing structs. So, if we made this a class, copying it would have to do a retain of the class object. But copying it as a struct actually still does three retains of these individual fields.\n\nAlso, each copy of this value will need its own storage for all these stored properties. So if we expect to copy this value around a lot, we may end up using a lot more memory. If this type used out-of-line storage instead, each copy would refer to the same object, so the memory would be re-used. Again, no hard-and-fast rules, but something you should be thinking about.\n\nNow in Swift we encourage you to write types with value semantics, where a copy of the value behaves like it’s totally unrelated to where you copied it from.\n\nStructs behave this way, but always use inline storage. Class types use out-of-line storage, but they naturally have reference semantics.\n\nOne way to get both out-of-line storage and value semantics is to wrap the class in a struct and then use copy-on-write. The standard library uses this technique in all of Swift’s fundamental data structures, like Array, Dictionary, and String.\n\nWe’ve spent a lot of time talking about these four basic principles. As part of that, we’ve seen how they translate into some basic Swift features like structs, classes, and functions. Now let’s put them together to talk about some high-level features in Swift. We’ll start with dynamically-sized types. Structs in C are always constant-size, but Swift types can have a size determined at runtime. That comes up in two cases.\n\nFirst, many value types in the SDK reserve the right to add and change their stored properties in a future OS update, that includes types like Foundation’s URL.\n\nThis means that everything about their layout has to be treated as unknown at compile time.\n\nSecond, a type parameter of a generic type can usually be replaced by any type with any possible representation, so again we have to treat its layout as unknown.\n\nNow there’s an exception to this second rule when the type parameter is constrained to be a class. In this case, we know that it has to have the representation of a class type, which is to say, always a pointer. This can lead to much more efficient code even when generic substitution doesn’t kick in, if you’re able to accept the constraint.\n\nAlright. How does Swift handle memory layout and allocation when the compiler doesn’t statically know the representation of a type? Well, it depends on what kind of container is storing the value. For most containers, Swift can just do the layout at runtime. For example, this Connection struct contains a URL. Because the layout of URL isn’t known statically, the layout of Connection can’t be known statically, either. But that’s fine, it just becomes the problem of whatever contains the Connection.\n\nThe compiler knows the static layout of Connection up until it reaches the first dynamically-sized property. The rest of the layout will be filled in dynamically by the Swift runtime, the first time this program needs the layout of the type.\n\nIf URL ends up being 24 bytes, then Connection will be laid out at runtime exactly like the compiler would’ve laid it out if it had known that statically. The compiler will just have to load sizes and offsets dynamically instead of being able to use constants.\n\nSome containers, however, must have constant size. In these cases, the compiler must allocate memory for the value separately from the main allocation for the container.\n\nFor example, the compiler can only request constant amounts of global memory. If you make a global variable of a type like URL, the compiler will create a global variable of pointer type. When you access the global variable for the first time, as part of lazily running its initializer, Swift will also lazily allocate space for it on the heap.\n\nA similar thing happens with local variables, because CallFrames must also have a constant size.\n\nThe CallFrame just contains a pointer to the URL. When the variable comes into scope, the function will have to allocate it dynamically, then free it when it goes out of scope.\n\nHowever, because local variables are scoped, this allocation can still be done on the C stack. When we enter the function, we allocate the CallFrame as normal.\n\nWhen the variable comes into scope, we simply do another subtraction from the stack pointer for the size of the variable.\n\nWhen the variable goes out of scope, we can reset the stack pointer to what it was before.\n\nSo far, we’ve only been talking about synchronous functions. What about async functions? The central idea with async functions is that C threads are a precious resource, and holding on to a C thread just to block is not making good use of that resource. As a result, async functions are implemented in two special ways: First, they keep their local state on a separate stack from the C stack, and second, they’re actually split into multiple functions at runtime.\n\nSo, let’s look at an example async function.\n\nThere’s one potential suspension point, await, in this function.\n\nAll of these local functions have uses that cross that suspension point, so they can’t be saved on the C stack.\n\nWe just talked about how sync functions allocate their local memory on the C stack by subtracting from the stack pointer.\n\nAsync functions conceptually work the same way, except they don’t allocate out of a large, contiguous stack.\n\nInstead, async tasks hold on to one or more slabs of memory.\n\nWhen an async function wants to allocate memory on the async stack, it asks the task for memory. The stack tries to satisfy that from the current slab and if it can, great.\n\nThe task will mark that part of the slab as used and give it to the function.\n\nIf most of the slab is occupied however, that allocation might not fit.\n\nThe task then has to allocate a new slab with malloc.\n\nAnd the allocation comes out of that.\n\nIn either case, deallocation just hands the memory back to the task, where it becomes marked as unused.\n\nBecause this allocator is only used by a single task and uses a stack discipline, it's typically significantly faster than malloc. The overall performance profile is similar to that of synchronous functions, just with a bit higher overhead for calls.\n\nNow in order to actually run, an async function must be split into partial functions that span the gaps between the potential suspension points of the function. In this case, because there’s one await in the function, we end up with two partial functions.\n\nThe first partial function starts with the entry to the original function. If the array is empty, it will just return to the async caller. Otherwise, it pulls the first task out and awaits it.\n\nThe other partial function picks up after that await. First, it adds the result of the task it awaited to the output array, then tries to continue the loop. If there are no more tasks, it returns to the async caller. Otherwise, it will loop back and await the next task.\n\nThe key idea here is that there’s only at most one partial function on the C stack.\n\nWe enter one partial function and run like an ordinary C function until the next potential suspension point. If the partial function needs some local state that doesn’t have to cross a suspension point, it can allocate that into its C CallFrame.\n\nAt that point, the partial function tail-calls the next partial function. Its CallFrame disappears from the C stack, and the frame for the next is allocated.\n\nThen that partial function runs until it reaches a potential suspension point.\n\nIf a task ever needs to actually suspend, it just returns normally on the C stack, which will typically go directly to the concurrency runtime so the thread can immediately be re-used for something else.\n\nIn my examples so far, I’ve always shown a func declaration. How do closures work, and what impact do they have on local allocation? Closures are always passed around as values of function type. This function takes an argument that’s a non-escaping function.\n\nFunction values in Swift are always a pair of a function pointer and a context pointer. So in C terms, this function signature looks something like this.\n\nA call to the function value in Swift simply calls the function pointer, passing the context pointer as an implicit extra argument.\n\nA closure expression that captures values from the enclosing scope has to package those values up into the context. How this works depends on the kind of function value it has to produce.\n\nIn this case, the function is a non-escaping function. As a result, we know that the function value will not be used after the call completes, which means it does not need to be memory-managed and we can allocate the context with a scoped allocation.\n\nThe context will therefore just be a simple structure containing the captured value.\n\nThe context can be allocated on the stack, and the address of that will be passed to sumTwice.\n\nIn the closure function, we know the type of the paired context and can just pull the data we need out of it.\n\nThis is different for escaping closures. We no longer know, that the closure will only be used within the duration of the call. Therefore, the context object must be heap-allocated and managed with retains and releases.\n\nThe context essentially behaves like an instance of an anonymous Swift class.\n\nNow in Swift, when you refer to a local var in a closure, you capture that variable by reference. This allows you to make changes to the variable that will be observed in the original scope and vice-versa.\n\nIf the var is only captured by non-escaping closures, this doesn’t change the lifetime of the variable. As a result, the closures can handle this by just capturing a pointer to the variable’s allocation.\n\nBut if the var is captured by an escaping closure, the lifetime of the var can be extended for as long as the closure is alive.\n\nAs a result, the var also has to be heap-allocated, and the closure context has to retain a reference to that object.\n\nLet’s wrap up by talking about generics.\n\nThis function is generic over its data model. We already talked about how the layout of this type is statically unknown and how that’s handled in different containers.\n\nWe haven’t yet talked about how protocol constraints work. In particular, how does Swift actually execute this call that uses a protocol requirement? Swift protocols are represented at runtime with a table of function pointers, one for each requirement in the protocol. That table looks roughly like this in C.\n\nAny time we have a protocol constraint, we’re passing around a pointer to the appropriate table.\n\nIn a generic function like this, the type and witness tables become hidden extra parameters. Everything in this signature at runtime corresponds straightforwardly to something from the original Swift signature.\n\nWhen we work with values of protocol type, it’s different. In this case, we’ve made this function more flexible each element of the array is now allowed to be a different type of data model. But that has trade-offs for how efficiently it will run.\n\nThe inline representation of a protocol like AnyDataModel looks like this in C. We have storage for the value and fields to record the value’s type and any conformances we know it has.\n\nBut this has to be a fixed-size type its representation can’t change sizes in order to support different types of data model. No matter how large we make the value storage, there’s potentially going to be a data model that won’t fit into it. What do we do? Swift uses an arbitrary buffer size of 3 pointers. If the value stored in a protocol type can fit into that buffer, Swift will put it there, inline. Otherwise, it allocates space for the value on the heap and just stores that pointer in the buffer.\n\nSo these function signatures look very similar, but they actually have very different characteristics.\n\nThe first function takes a homogeneous array of data models. Those data models will be efficiently packed in the array. The type information will be passed once to the function, as separate top-level arguments.\n\nThe function can also be specialized if the caller knows what type it’s being called with. Here we’re calling it on an array with a known type. The optimizer can easily either inline this call or produce a specialized version of the function that works with this exact argument type. This removes any abstraction cost associated with generics, making the update call go directly to its implementation in MyDataModel’s conformance.\n\nThe second function takes a heterogeneous array of data models. This is more flexible, if you’ve got data models of different types, it’s probably what you need. But each element of the array now has its own dynamic type, and the values won’t be densely packed in the array.\n\nOptimizing this in practice is also much more difficult; the compiler would have to perfectly reason about how data flows into the array and gets used in the function. Now, that doesn’t completely doom your performance, but it does mean you’ll be getting a lot less help from the compiler in this one place. And as I wrap up this talk, that’s what I want to leave you with. Please don’t come away from this thinking: \"John told us to not use protocol types.\" Everything I mentioned as a cost in this talk is just that: It's a cost, and sometimes costs are worth paying. Because abstraction is a powerful and useful tool, and you should take advantage of it. I hope the information in this talk helps you to develop an intuition for the performance of your Swift code. Thank you for watching!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "0:24",
+      "title": "An example C function, with self-evident allocation",
+      "language": "swift",
+      "code": "int main(int argc, char **argv) {\n  int count = argc - 1;\n  int *arr = malloc(count * sizeof(int));\n  int i;\n  for (i = 0; i < count; ++i) {\n    arr[i] = atoi(argv[i + 1]);\n  }\n  free(arr);\n}"
+    },
+    {
+      "timestamp": "0:50",
+      "title": "An example Swift function, with a lot of implicit abstraction",
+      "language": "swift",
+      "code": "func main(args: [String]) {\n  let arr = args.map { Int($0) ?? 0 }\n}"
+    },
+    {
+      "timestamp": "4:39",
+      "title": "An example of a function call",
+      "language": "swift",
+      "code": "URLSession.shared.data(for: request)"
+    },
+    {
+      "timestamp": "6:30",
+      "title": "A Swift function that calls a method on a value of protocol type",
+      "language": "swift",
+      "code": "func updateAll(models: [any DataModel], from source: DataSource) {\n    for model in models {\n        model.update(from: source)\n    }\n}"
+    },
+    {
+      "timestamp": "6:40",
+      "title": "A declaration of the method where it's a protocol requirement using dynamic dispatch",
+      "language": "swift",
+      "code": "protocol DataModel {\n    func update(from source: DataSource)\n}"
+    },
+    {
+      "timestamp": "6:50",
+      "title": "A declaration of the method where it's a protocol extension method using static dispatch",
+      "language": "swift",
+      "code": "protocol DataModel {\n    func update(from source: DataSource, quickly: Bool)\n}\n\nextension DataModel {\n    func update(from source: DataSource) {\n        self.update(from: source, quickly: true)\n    }\n}"
+    },
+    {
+      "timestamp": "7:00",
+      "title": "The same function as before, which we're now talking about the local state within",
+      "language": "swift",
+      "code": "func updateAll(models: [any DataModel],\n               from source: DataSource) {\n    for model in models {\n        model.update(from: source)\n    }\n}"
+    },
+    {
+      "timestamp": "7:18",
+      "title": "Partial assembly code for that function, showing instructions to adjust the stack pointer",
+      "language": "swift",
+      "code": "_$s4main9updateAll6models4fromySayAA9DataModel_pG_AA0F6SourceCtF:\n    sub   sp, sp, #208\n    stp   x29, x30, [sp, #192]\n    …\n    ldp   x29, x30, [sp, #192]\n    add   sp, sp, #208\n    ret"
+    },
+    {
+      "timestamp": "7:59",
+      "title": "A C struct showing one possible layout of the function's call frame",
+      "language": "swift",
+      "code": "// sizeof(CallFrame) == 208\nstruct CallFrame {\n    Array<AnyDataModel> models;\n    DataSource source;\n    AnyDataModel model;\n    ArrayIterator iterator;\n    ...\n    void *savedX29;\n    void *savedX30;\n};"
+    },
+    {
+      "timestamp": "10:50",
+      "title": "A line of code containing a single variable initialization",
+      "language": "swift",
+      "code": "var array = [ 1.0, 2.0 ]"
+    },
+    {
+      "timestamp": "11:44",
+      "title": "Using the MemoryLayout type to examine a type's inline representation",
+      "language": "swift",
+      "code": "MemoryLayout.size(ofValue: array) == 8"
+    },
+    {
+      "timestamp": "12:48",
+      "title": "The variable initialization from before, now placed within a function",
+      "language": "swift",
+      "code": "func makeArray() {\n    var array = [ 1.0, 2.0 ]\n}"
+    },
+    {
+      "timestamp": "15:42",
+      "title": "Initializing a second variable with the contents of the first",
+      "language": "swift",
+      "code": "func makeArray() {\n    var array = [ 1.0, 2.0 ]\n    var array2 = array\n}"
+    },
+    {
+      "timestamp": "16:27",
+      "title": "Taking the value of an existing variable with the consume operator",
+      "language": "swift",
+      "code": "func makeArray() {\n    var array = [ 1.0, 2.0 ]\n    var array2 = consume array\n}"
+    },
+    {
+      "timestamp": "16:58",
+      "title": "A call to a mutating method",
+      "language": "swift",
+      "code": "func makeArray() {\n    var array = [ 1.0, 2.0 ]\n    array.append(3.0)\n}"
+    },
+    {
+      "timestamp": "17:40",
+      "title": "Passing an argument that should be borrowable",
+      "language": "swift",
+      "code": "func makeArray() {\n    var array = [ 1.0, 2.0 ]\n    print(array)\n}"
+    },
+    {
+      "timestamp": "18:10",
+      "title": "Passing an argument that will likely have to be defensively copied",
+      "language": "swift",
+      "code": "func makeArray(object: MyClass) {\n    object.array = [ 1.0, 2.0 ]\n    print(object.array)\n}"
+    },
+    {
+      "timestamp": "19:27",
+      "title": "Part of a large struct type",
+      "language": "swift",
+      "code": "struct Person {\n    var name: String\n    var birthday: Date\n    var address: String\n    var relationships: [Relationship]\n    ...\n}"
+    },
+    {
+      "timestamp": "21:22",
+      "title": "A Connection struct that contains a property of the dynamically-sized URL type",
+      "language": "swift",
+      "code": "struct Connection {\n    var username: String\n    var address: URL\n    var options: [String: String]\n}"
+    },
+    {
+      "timestamp": "21:40",
+      "title": "A GenericConnection struct that contains a property of an unknown type parameter type",
+      "language": "swift",
+      "code": "struct GenericConnection<T> {\n    var username: String\n    var address: T\n    var options: [String: String]\n}"
+    },
+    {
+      "timestamp": "21:51",
+      "title": "The same GenericConnection struct, except with a class constraint on the type parameter",
+      "language": "swift",
+      "code": "struct GenericConnection<T> where T: AnyObject {\n    var username: String\n    var address: T\n    var options: [String: String]\n}"
+    },
+    {
+      "timestamp": "23:23",
+      "title": "A global variable of URL type",
+      "language": "swift",
+      "code": "var address = URL(string: \"...\")"
+    },
+    {
+      "timestamp": "23:42",
+      "title": "A local variable of URL type",
+      "language": "swift",
+      "code": "func workWithAddress() {\n    var address = URL(string: \"...\")\n}"
+    },
+    {
+      "timestamp": "25:02",
+      "title": "An async function",
+      "language": "swift",
+      "code": "func awaitAll(tasks: [Task<Int, Never>]) async -> [Int] {\n    var results = [Int]()\n    for task in tasks {\n        results.append(await task.value)\n    }\n    return results\n}"
+    },
+    {
+      "timestamp": "28:21",
+      "title": "A function that takes an argument of function type",
+      "language": "swift",
+      "code": "func sumTwice(f: () -> Int) -> Int {\n  return f() + f()\n}"
+    },
+    {
+      "timestamp": "28:30",
+      "title": "A C function roughly corresponding to the Swift function",
+      "language": "swift",
+      "code": "Int sumTwice(Int (*fFunction)(void *),\n             void *fContext) {\n  return fFunction(fContext)\n       + fFunction(fContext);\n}"
+    },
+    {
+      "timestamp": "28:47",
+      "title": "A function call that passes a closure expression as a function argument",
+      "language": "swift",
+      "code": "func sumTwice(f: () -> Int) -> Int {\n  return f() + f()\n}\n\nfunc puzzle(n: Int) -> Int {\n  return sumTwice { n + 1 }\n}"
+    },
+    {
+      "timestamp": "29:15",
+      "title": "C code roughly corresponding to the emission of the non-escaping closure",
+      "language": "swift",
+      "code": "struct puzzle_context {\n  Int n;\n};\n\nInt puzzle(Int n) {\n  struct puzzle_context context = { n };\n  return sumTwice(&puzzle_closure, &context);\n}\n\nInt puzzle_closure(void *_context) {\n  struct puzzle_context *context =\n    (struct puzzle_context *) _context;\n  return _context->n + 1;\n}"
+    },
+    {
+      "timestamp": "29:34",
+      "title": "The function and its caller again, now taking an escaping function as its parameter",
+      "language": "swift",
+      "code": "func sumTwice(f: @escaping () -> Int) -> Int {\n  return f() + f()\n}\n\nfunc puzzle(n: Int) -> Int {\n  return sumTwice { n + 1 }\n}"
+    },
+    {
+      "timestamp": "29:53",
+      "title": "A closure that captures a local variable by reference",
+      "language": "swift",
+      "code": "func sumTwice(f: () -> Int) -> Int {\n  return f() + f()\n}\n\nfunc puzzle(n: Int) -> Int {\n  var addend = 0\n  return sumTwice {\n    addend += 1\n    return n + addend\n  }\n}"
+    },
+    {
+      "timestamp": "30:30",
+      "title": "Swift types roughly approximating how escaping variables and closures are handled",
+      "language": "swift",
+      "code": "class Box<T> {\n  let value: T\n}\n\nclass puzzle_context {\n  let n: Int\n  let addend: Box<Int>\n}"
+    },
+    {
+      "timestamp": "30:40",
+      "title": "A generic function that calls a protocol requirement",
+      "language": "swift",
+      "code": "protocol DataModel {\n    func update(from source: DataSource)\n}\n\nfunc updateAll<Model: DataModel>(models: [Model], from source: DataSource) {\n    for model in models {\n        model.update(from: source)\n    }\n}"
+    },
+    {
+      "timestamp": "31:03",
+      "title": "A C struct roughly approximating a protocol witness table",
+      "language": "swift",
+      "code": "struct DataModelWitnessTable {\n    ConformanceDescriptor *identity;\n    void (*update)(DataSource source,\n                   TypeMetadata *Self);\n};"
+    },
+    {
+      "timestamp": "31:20",
+      "title": "A C function signature roughly approximating how generic functions receive generic parameters",
+      "language": "swift",
+      "code": "void updateAll(Array<Model> models,\n               DataSource source,\n               TypeMetadata *Model,\n               DataModelWitnessTable *Model_is_DataModel);"
+    },
+    {
+      "timestamp": "31:36",
+      "title": "A function that receives an array of values of protocol type",
+      "language": "swift",
+      "code": "protocol DataModel {\n    func update(from source: DataSource)\n}\n\nfunc updateAll(models: [any DataModel], from source: DataSource)"
+    },
+    {
+      "timestamp": "31:49",
+      "title": "A C struct roughly approximating the layout of the Swift type `any DataModel`",
+      "language": "swift",
+      "code": "struct AnyDataModel {\n    OpaqueValueStorage value;\n    TypeMetadata *valueType;\n    DataModelWitnessTable *value_is_DataModel;\n};\n\nstruct OpaqueValueStorage {\n    void *storage[3];\n};"
+    },
+    {
+      "timestamp": "31:50",
+      "title": "A contrast of the two Swift function signatures from before",
+      "language": "swift",
+      "code": "protocol DataModel {\n    func update(from source: DataSource)\n}\n\nfunc updateAll<Model: DataModel>(models: [Model],\n                            from source: DataSource) {\n    for model in models {\n        model.update(from: source)\n    }\n}\n\nfunc updateAll(models: [any DataModel], from source: DataSource) {\n    for model in models {\n        model.update(from: source)\n    }\n}"
+    },
+    {
+      "timestamp": "32:57",
+      "title": "Specialization of a generic function for known type parameters",
+      "language": "swift",
+      "code": "func updateAll<Model: DataModel>(models: [Model],\n                            from source: DataSource) {\n    for model in models {\n        model.update(from: source)\n    }\n}\n\nvar myModels: [MyDataModel]\nupdateAll(models: myModels, from: source)\n\n// Implicitly generated by the optimizer\nfunc updateAll_specialized(models: [MyDataModel],\n                           from source: DataSource) {\n    for model in models {\n        model.update(from: source)\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Forum: Programming Languages",
+        "url": "https://developer.apple.com/forums/topics/programming-languages-topic?cid=vf-a-0010"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10217/5/8228D59A-1164-48DA-86CD-79F2191061DC/downloads/wwdc2024-10217_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10217/5/8228D59A-1164-48DA-86CD-79F2191061DC/downloads/wwdc2024-10217_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10170",
+      "year": "2024",
+      "title": "Consume noncopyable types in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10170"
+    },
+    {
+      "id": "411",
+      "year": "2019",
+      "title": "Getting Started with Instruments",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/411"
+    },
+    {
+      "id": "416",
+      "year": "2016",
+      "title": "Understanding Swift Performance",
+      "url": "https://developer.apple.com/videos/play/wwdc2016/416"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:47:36.671Z"
+}

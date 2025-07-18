@@ -1,0 +1,134 @@
+{
+  "id": "10042",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10042/",
+  "title": "Build SwiftUI apps for tvOS",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello, and welcome to WWDC. Hello, everyone. My name is Tanu Singhal, and I'm an engineer on the tvOS team. Today, we'll talk about building SwiftUI apps for Apple TV. We'll introduce new APIs, we'll discuss best practices, and we'll go over some examples that'll help you create experiences that look and feel familiar to TV users. First, we'll discuss button styles and context menus that are new on tvOS 14.\n\nNext, we'll talk about managing focus in our apps.\n\nAnd finally, we'll learn to create layouts that look good on the largest screen in the home. There are some button styles that are unique to TV. Let's look at an example. Say we're building an app for streaming music on Apple TV.\n\nHere's a mock-up that we received from our design team.\n\nThey'd like us to create these buttons that have a movement effect when we drag on the Siri Remote, just like the one you see under \"Albums\" here.\n\nTo create such buttons in SwiftUI, we can use the new Card-Button-Style.\n\nA Card-Button creates a platter that raises and looks highlighted when it's focused. It also adds directional movement to the button when you drag on the Siri Remote.\n\nTo create a Card-Button, you simply add the button style modifier to any button, and set it to Card-Button-Style.\n\nCard-Button-Styles can really enhance the appearance of your buttons. However, there might be times when you don't want the default highlighting and focus effects that we offer with the preexisting button styles. In such a case, you can create your own button style. This adds no existing effects for pressing and focused states. And a custom button style is really easy to configure and customize.\n\nTo create your own button style, you first conform to the Button-Style protocol...\n\nthen in the makeBody method, you can leverage the configuration to return any view.\n\nOnce the button style is set up, it can be added to any button using the button style modifier. Now we've set up the buttons in our app, but we've received another feature request. When we long-press on an album button, we want to present some quick actions, like the ones you see here.\n\nThese can be created easily in SwiftUI using context menus. Context menus can be added to any button or view and they're invoked after the long-press gesture.\n\nWe can add actions to the context menu using regular buttons.\n\nHere's some code showing how you can create a context menu. We simply add the context menu modifier, and then we can add some buttons within it. As you've seen, it's really easy to use the new button styles and context menus. We think these will look great in your apps.\n\nNext, we'll discuss focus. Focus is the primary way to interact with a TV app. And it's incredibly important to be able to focus on views, as well as determine if a view is focused.\n\nTo learn more about focus, let's look at another example from our music app.\n\nHere we have the \"Now Playing\" screen.\n\nWe want to focus on the currently playing song. And for this focused song, we would like to display the name of the artist, as well as the name of the album, along with some music emoji.\n\nFor the songs that are not focused, we simply display the name of the artist without the name of the album.\n\nTo implement this, first, we need to be able to focus on the Song-View. One way to do this is by using the focusable modifier. The focusable modifier creates a focusable wrapper on top of your existing view.\n\nNote that this modifier is not meant for intrinsically focusable views. So, if you have a button or list, or a UIKit view that manages focus in UIKit, then it's best to not have a focusable modifier on that, because this modifier will add another focusable wrapper on top of your existing view. To manage the focused and non-focused state, in tvOS 13, you would have to use the onFocusChange callback for the focusable modifier.\n\nHowever, new in tvOS 14, we're introducing the isFocused environment variable.\n\nThis lets you check whether or not a view is in focus, even if the view itself is not focusable.\n\nThe isFocused environment variable will return true if the nearest focusable ancestor of your view is focused.\n\nSo now, we'll look at the code for the Song-View that we saw before.\n\nThis just has an image followed by some text labels.\n\nWe've refactored the text labels into a Details-View.\n\nWithin the Details-View, we can simply use the environment variable for isFocused to check whether or not this view is focused.\n\nSo if the Song-View that's the parent of the Details-View is focused, then our isFocused variable would be true.\n\nWe'll use this isFocused variable to display either the artist and the album name, along with the emojis, or simply the artist name when the view is not focused.\n\nNotice, in our Song-View, we are using a button so we don't need to use the focusable modifier at all, because the button is focusable already.\n\nUsing a button also has the advantage of giving us selection and accessibility for free.\n\nWe've added the button style that's our own button style, because we didn't want the default highlighting and focus effect offered by the existing button styles.\n\nNow, at this point, our app is mostly set up, and it's ready to start streaming music.\n\nBut, we also want to add a paid version of this app, so users can listen to premium content.\n\nTo create this paid version, we are first setting up a sign in screen.\n\nThis screen simply has a username and password field followed by a log in button. Notice that the username field is what's focused by default. tvOS will geometrically compute the view that should be focused on load. This is typically the topmost or leading focusable view on the screen.\n\nIn this case, it makes sense for the username to be focused. However, there are times when we already know the username and password, and we want to focus on the log in button instead.\n\nTo implement this in SwiftUI, we can use the new default focus APIs.\n\nWe're introducing the prefersDefaultFocus modifier that allows you to specify the view that prefers to be focused by default. Now, we want to make sure that you don't accidentally change focus for an entire global view hierarchy when you're only working on a small custom view. To support this, we have created the focus-Scope modifier, which allows you to limit default focus preferences just to a specific view. We'll look at the code for the log in screen that we saw. This is simply a VStack with a TextField, a Secure-Field and a button. Now I'll add some focus management code to this.\n\nDon't worry about reading all of it at once. We'll go over it line by line. We have a state variable to figure out if the credentials are filled. Now, we add the prefersDefaultFocus modifier to the username TextField, and the first parameter of this modifier is a Boolean that should be true if this view prefers default focus. In this case, the username prefers default focus when the credentials are not filled. We'll also add the same modifier to the log in button, but this prefers default focus when the credentials are filled. Next, we want to limit our focus preferences just to the VStack that we're working on. To do this, we create a namespace. The namespace is a dynamic property that provides us with a unique ID which can be used to identify any view.\n\nWe'll add this namespace to the focus-Scope modifier that we've added to our VStack.\n\nNext, we'll pass the same namespace to the prefersDefaultFocus modifiers as the second parameter. By doing this, we have set up our default focus preferences in a way that they apply only to this VStack. So if focus was meant to be within the VStack, then our username or log in button would be focused depending on whether or not the credentials are filled. However, if focus was supposed to be somewhere else in the view hierarchy, then our modifiers will not impact global focus, which is what we want. In addition to setting default focus, we also need to reset focus sometimes. This can be done using the new reset-Focus environment action. This environment action resets focus back to default and, again, the focus updates stay scoped to the namespace that you provide. So, in the sign in screen example that we saw earlier, let's say we also want to add a clear button, which clears the username and password and resets focus back to the username. To implement that, we'll use the reset-Focus environment action. Then, when the clear button is triggered, we call reset-Focus for the same namespace that we had in our focus-Scope.\n\nSince the credentials have been cleared at this point, our focus will get reset back to the username. In this section, we learned about the isFocus environment variable, as well as the new modifiers and environment actions that can be used to control default focus. We think you'll find these really useful as you create your SwiftUI apps.\n\nFinally, we'll learn to build layouts that are commonly seen on Apple TV. Here's a view that we saw earlier from the music streaming app. You may have seen similar layouts across various Apple TV apps.\n\nThis is made up of shelves that scroll horizontally.\n\nTo implement this screen, we can use the new Lazy Grids.\n\nLazy Grids arrange child views in a grid container that scrolls vertically or horizontally.\n\nThe grid items can specify properties such as size, alignment, and spacing, that help with building the layout. To learn more about grids, you can check out the following two sessions: In this session, though, we'll learn to leverage a Lazy Grid to build the layout that we just saw.\n\nIn our Shelf-View, we have created a Scroll-View that scrolls horizontally.\n\nWithin the horizontal Scroll-View, we have added a Lazy-H-Grid.\n\nNow, we can add a lot of items to this Lazy-H-Grid, and they won't all get initialized at once. They'll get loaded as and when they're needed, while we scroll.\n\nFor the Lazy Grid, we also set up Grid-Items. Grid-Items can be a flexible or fixed size and we can customize the spacing between Grid-Items.\n\nWithin our Lazy Grid, we simply add the content that we want to present in our cells.\n\nNow, our shelf is ready, and we can stack together multiple shelves in a VStack along with a few text labels to create the layout that we saw before.\n\nIt's as easy as that to create beautiful Grid layouts on Apple TV. So, to recap, we encourage you to try out the new Card-Button Styles and context menus on tvOS 14. They're really easy to use, and they will look great in your apps.\n\nThe new focus APIs can help you manage focus better in your apps, and we think you'll find them really useful.\n\nFinally, we hope you'll leverage Lazy Grids to quickly build layouts for tvOS. We cannot wait to see what you build next with SwiftUI. Thank you, and have an amazing WWDC.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:42",
+      "title": "CardButtonStyle",
+      "language": "swift",
+      "code": "Button(albumLabel, action: playAlbum)\n    .buttonStyle(CardButtonStyle())"
+    },
+    {
+      "timestamp": "2:24",
+      "title": "Custom Button Styles",
+      "language": "swift",
+      "code": "struct MyNewButtonStyle: ButtonStyle {\n    func makeBody(configuration: Configuration) -> some View {\n        configuration.label\n           .background(configuration.isPressed ? … : …) // Custom styling\n    }\n}           \n\nButton(albumLabel, action: playAlbum)\n    .buttonStyle(MyNewButtonStyle())"
+    },
+    {
+      "timestamp": "3:19",
+      "title": "Context Menus",
+      "language": "swift",
+      "code": "AlbumView()\n    .contextMenu {\n        Button(\"Add to Favorites\", action: addAlbumToFavorites)\n        Button(\"View Artist\", action: viewArtistPage)\n        Button(\"Discover Similar Albums\", action: viewSimilarAlbums)\n    }"
+    },
+    {
+      "timestamp": "5:47",
+      "title": "isFocused Environment Variable",
+      "language": "swift",
+      "code": "struct SongView: View {\n    var body: some View {\n        Button(action: playSong) {\n            VStack {\n                Image(albumArt)\n                DetailsView(...)\n            }\n        }.buttonStyle(MyCustomButtonStyle())\n    }\n}\n\nstruct DetailsView: View {\n    ...\n    @Environment(\\.isFocused) var isFocused: Bool\n    var body: some View {\n        VStack {\n            Text(songName)\n            Text(isFocused ? artistAndAlbum : artistName)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "8:42",
+      "title": "Login Screen (Default Focus)",
+      "language": "swift",
+      "code": "var body: some View {\n    VStack {\n        TextField(\"Username\", text: $username)\n\n        SecureField(\"Password\", text: $password)\n\n        Button(\"Log In\", action: logIn)\n\n    }\n\n}"
+    },
+    {
+      "timestamp": "8:51",
+      "title": "Default Focus",
+      "language": "swift",
+      "code": "@Namespace private var namespace\n@State private var areCredentialsFilled: Bool\n\nvar body: some View {\n    VStack {\n        TextField(\"Username\", text: $username)\n            .prefersDefaultFocus(!areCredentialsFilled, in: namespace)            \n        SecureField(\"Password\", text: $password)\n\n        Button(\"Log In\", action: logIn)\n           .prefersDefaultFocus(areCredentialsFilled, in: namespace)\n    }\n    .focusScope(namespace)\n}"
+    },
+    {
+      "timestamp": "11:12",
+      "title": "Reset Focus",
+      "language": "swift",
+      "code": "@Namespace private var namespace\n@State private var areCredentialsFilled: Bool\n@Environment(\\.resetFocus) var resetFocus\n\nvar body: some View {\n    VStack {\n        TextField(\"Username\", text: $username)\n            .prefersDefaultFocus(!areCredentialsFilled, in: namespace)            \n        SecureField(\"Password\", text: $password)\n\n        Button(\"Log In\", action: logIn)\n           .prefersDefaultFocus(areCredentialsFilled, in: namespace)\n\n        Button(\"Clear\", action: { \n            username = \"\"; password = \"\"\n            areCredentialsFilled = false\n            resetFocus(in: namespace)\n        })\n    }\n    .focusScope(namespace)\n}"
+    },
+    {
+      "timestamp": "12:45",
+      "title": "Lazy Grids",
+      "language": "swift",
+      "code": "struct ShelfView: View {\n    var body: some View {\n        ScrollView([.horizontal]) {\n            LazyHGrid(rows: [GridItem()]) {\n                ForEach(playlists, id: \\.self) { playlist in                \n                    Button(action: goToPlaylist) {\n                        Image(playlist.coverImage)\n                            .resizable()\n                            .frame(…)\n                    }\n                    .buttonStyle(CardButtonStyle())\n                }\n            }\n        }\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "CardButtonStyle",
+        "url": "https://developer.apple.com/documentation/SwiftUI/CardButtonStyle"
+      },
+      {
+        "title": "Human Interface Guidelines: Designing for tvOS",
+        "url": "https://developer.apple.com/design/human-interface-guidelines/designing-for-tvos"
+      },
+      {
+        "title": "isFocused",
+        "url": "https://developer.apple.com/documentation/SwiftUI/EnvironmentValues/isFocused"
+      },
+      {
+        "title": "prefersDefaultFocus(_:in:)",
+        "url": "https://developer.apple.com/documentation/SwiftUI/View/prefersDefaultFocus(_:in:)"
+      },
+      {
+        "title": "Supporting Multiple Users in Your tvOS App",
+        "url": "https://developer.apple.com/documentation/TVServices/supporting-multiple-users-in-your-tvos-app"
+      },
+      {
+        "title": "SwiftUI",
+        "url": "https://developer.apple.com/documentation/SwiftUI"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10042/4/B38E5ED8-1188-4675-877A-272A47769177/wwdc2020_10042_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10042/4/B38E5ED8-1188-4675-877A-272A47769177/wwdc2020_10042_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10041",
+      "year": "2020",
+      "title": "What's new in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10041"
+    },
+    {
+      "id": "204",
+      "year": "2019",
+      "title": "Introducing SwiftUI: Building Your First App",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/204"
+    },
+    {
+      "id": "240",
+      "year": "2019",
+      "title": "SwiftUI On All Devices",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/240"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:24:41.227Z"
+}

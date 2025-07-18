@@ -1,0 +1,108 @@
+{
+  "id": "10106",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10106/",
+  "title": "Meet Scribble for iPad",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello, and welcome to WWDC.\n\nHello. Welcome to \"Meet Scribble for iPad.\" My name is Daniel Gobera. I'm an engineer in the Pencil and Paper team. And I'll be joined later by my colleague, Evan Long. Scribble is a fantastic new way of entering text on iPad using Apple Pencil through handwriting recognition. In this video, we'll see an overview on how Scribble works. We'll look at the aspects that make a great writing experience. We'll take a tour of the APIs that support Scribble, and finally, we'll see some examples on how to customize the behavior of Scribble so you're getting the best possible experience in your app. When bringing Scribble to the iPad, we wanted to do it in a big way. Centered around the Apple Pencil, Scribble is deeply integrated into the system, which means you can just write directly into any text field, and not on a separate writing area.\n\nTranscription happens on the fly as you write. There are no modes, no tapping. You just write. Scribble on iPadOS is part of the system experience, which means it's available to all apps by default, the same way the keyboard is. It works anywhere where you can enter text. It is built on top of a best-in-class handwriting recognition engine that is fast, it's incredibly accurate, and runs entirely on the device, so it's always available and completely private.\n\nIt recognizes handwriting in English, Simplified and Traditional Chinese and Cantonese. So, let's see an overview of the aspects that make up a great writing experience. This will give you a set of guidelines that you can use to make sure your app is getting the best possible experience with Scribble.\n\nThe first key aspect is that Scribble makes text input feel fluid and effortless. Here we see an example of searching in Maps.\n\nNotice how you can just start writing directly without tapping on the field first. If you notice that there are any fields in your app that don't accept Scribble writing directly and it's necessary to tap on them first, you should adopt the APIs that we're gonna show a little bit later. Scribble is direct, meaning that the position of the Pencil tells the system where the text should get inserted. We see an example here of filling out a form with multiple fields in Safari, and notice how you can effortlessly jump from field to field. The strokes are ephemeral, as the transcription happens on the fly as you write. Makes it feel almost like you're dictating with motion.\n\nThe second design principle is consistency. Scribble needs to work everywhere where you would expect to be able to enter text. Here we see an example in Reminders, where every item on the list contains text that you can normally edit, so naturally you can just start writing on any of them. Now, we noticed that some people found it natural to write on the blank area below the list to create a new entry. This is not normally a text input view, so Reminders adopted the API, that we'll describe a little bit later, to allow writing in this area. And this created a great new way of adding a new reminder very easily. There's also a small set of editing gestures that people need to learn only once, and they work exactly the same anywhere where you can edit text with Scribble. We can see an example when composing an e-mail. You can draw a horizontal line to select text and perform the normal text editing actions. You can also scratch out some text that you want to delete. This all adds up to create a reliable and familiar interaction model. Our final design principle is Pencil friendliness. The iOS user interface was designed primarily for Touch, and it works really, really well for Pencil input. But you'll notice a few places where we made some adjustments, and I want to highlight some of them. Let's start with reducing distractions. A good example we see here is placeholders in text fields. When you start writing into a field that has a placeholder, it disappears to avoid overlapping the strokes, and that keeps the handwriting readable. You get this behavior for free with Standard Text Controls.\n\nStable layout means that the text field and the text inside should not move or scroll while you're writing. As an example, you might know that some search fields tend to shift their position when they become focused. This is great for a keyboard, but it can be a problem when you're trying to write into it with your Pencil.\n\nSo Scribble detects when you're writing on a search field that moves, and it waits for you to make a pause before making it first responder and inserting the text. If you use the standard search controller, you get this behavior for free. But if you have a custom field with a similar shifting animation, you need to tell Scribble about this, and you can request delaying focusing of the field to adopt the same behavior.\n\nIt's also really important that there's always enough space to write. A good example is the Messages app. You'll notice that the message field is near the corner of the screen, so there's really not a lot of space to write more than a few words.\n\nSo Messages detects that you're using Scribble, and it adjusts the size of the field so it's much more comfortable to write - even a longer sentence.\n\nWe know many apps have a similar layout, especially messaging apps, and we recommend that you apply the same behavior using the API that we'll show a little bit later.\n\nSo let's see an overview of the APIs that support Scribble, some existing ones and some new ones.\n\nScribble relies on existing Text Input APIs from iOS: Standard Text Controls and the UIKit Text Input infrastructure. There's also two new APIs that we're introducing in iOS 14 that allow customizing the behavior of Scribble.\n\nLet's talk about the existing Text Input APIs first.\n\nStandard Text Controls are things like text fields, text views, and search fields that you can get from UIKit. It also includes standard editable web content and forms in web pages through WebKit.\n\nThe great news is that all of these work out of the box, and they work really well with Scribble. We recommend that you stick to these as much as possible, and they're highly customizable to adapt to the look and feel of your app. Now, it's worth noting that password fields are not supported by Scribble, because the recommended way of entering passwords is through AutoFill. Next is the UIKit Text Input infrastructure.\n\nIf you have a custom text editing experience, there's a set of protocols that you must implement for your view to work with the keyboard and with the iOS text input system.\n\nScribble relies on these same APIs to talk to your text view.\n\nIn particular, it's really important to have a very good and complete implementation of UITextInput.\n\nThis is how Scribble gets information about the text content, the selection, and how it's gonna make changes to the text in your view.\n\nWe also recommend that you use UITextInteraction to get the standard cursor and selection UI from the system, so you don't have to implement your own.\n\nIf you're interested in more details about these topics, check out these great talks from previous WWDC 2012 and 2017. And now Evan's gonna give us an overview on how to use the new APIs to customize the behavior of Scribble in your app.\n\nThank you, Daniel. As Daniel mentioned, when using standard UIKit text controls, Scribble will just work. But there are cases that may require customizing the Scribble experience. And to support those customizations, we've introduced UIScribbleInteraction and UIIndirectScribbleInteraction in iOS 14.\n\nFirst, UIScribbleInteraction.\n\nInteractions are added to views. Here, we've added UIScribbleInteraction to a text field.\n\nThe interaction has a delegate, and this delegate is where an app can customize the Scribble experience.\n\nFor example, disabling Scribble on the view, delaying that view from becoming first responder until handwriting has momentarily paused, or simply being informed when Scribble handwriting begins or ends. Now let's go through some practical cases of how to use UIScribbleInteraction.\n\nSome apps have added in-line completion fields. For example, Spotlight's search field. This works well for keyboard input, but would visually interfere with handwriting.\n\nBy using a UIScribbleInteraction previously added to this field, it's possible to check if the view is currently handling handwriting and to update the completion text accordingly. In this case, simply by hiding it. Now, in order to optimize UI layout for Scribble, we need to know if handwriting is likely, or if it has completed.\n\nOne place to do this is in the initial appearance or setup of the UI. Here, the app uses UIScribbleInteraction's class property, isPencilInputExpected. When the property is true, the app makes the text area a little larger.\n\nRather than changing the UI as part of view setup, it is also possible to update it after the user finishes writing via the delegate method, scribbleInteractionDidFinishWriting. And it's worth noting, in both of the approaches we just saw, the UI is changed while the user is not writing. Some apps mix drawing and editable text. In cases like this, it makes sense to disable Scribble to allow drawing.\n\nThis can be done with ScribbleInteraction's shouldBeginAt delegate method, by returning \"false\" when the app is in a drawing mode.\n\nNow let's look at UIIndirectScribbleInteraction.\n\nJust like UIScribbleInteraction, UIIndirectScribbleInteraction is also added to a view. This interaction is used by Reminders to allow writing below the list of current reminders, to create a new one.\n\nThis is also the interaction to use for UI that would become editable in response to a tap gesture.\n\nAnd this interaction has a delegate. This delegate provides the system information about elements.\n\nElements are regions within the view that can be written into. There can be more than one element, and the size of the elements can vary. Let's take a closer look at how UIIndirectScribbleInteraction was used in our sample app.\n\nOur sample app allows adding an engraving to the back of a laptop. This engraving element does not become editable until it is tapped. So I can tap with my finger, a text field is installed that becomes first responder, and I can enter my name. But if I remove the text, and instead try to write with Apple Pencil, it doesn't work. That's because the engraving field alone is not editable text input. So let's add a UIIndirectScribbleInteraction to make this work with Scribble.\n\nTo surface the engraving field as a writable area, we install a UIIndirectScribbleInteraction.\n\nNext we need to implement the delegate methods describing the writable regions.\n\nThe first thing is to implement the delegate method that provides a list of identifiers for all writable elements.\n\nIn this case, the engraving field has a single writable region. So we can call the completion handler immediately with an identifier.\n\nNext, we need to provide the system information about the element's location.\n\nThis is done with the frameForElement delegate method. It is possible to return smaller regions that can be written into, but we want to allow writing into the whole view. So, in this case, we just return the bounds.\n\nNext, we need to handle the case where the system requests we focus a responder that supports text input.\n\nThis is done with the focusElementIfNeeded method.\n\nIf a text field is not installed, we'll create it and add one to the view hierarchy.\n\nThen we will ensure the installed text field becomes first responder.\n\nAnd finally, return that text field with the completion handler.\n\nThe last piece of information required by the system is to indicate if a particular element is focused.\n\nWe only have the one field in this case. So if we have a field, and it's first responder, we'll return \"true,\" otherwise, we'll always return \"false.\" Now if I try writing my name in the engraving area, I can do so.\n\nSo just to recap the APIs that support Scribble: Standard Text Controls in the system from UIKit and WebKit will just work. Scribble will also work for custom text editors that implement the text input protocols.\n\nAnd to customize Scribble, this is done via the two interactions added in iOS 14.\n\nSo grab your Pencil and test your apps with Scribble.\n\nSee how you fit into the design principles we covered earlier and use Standard Text Controls to get most of these behaviors for free.\n\nAnd apply those Scribble interactions for that final polish, things like creating space to write and allowing Scribble where expected.\n\nThank you for watching, and we look forward to your app\nScribbling to success in iOS 14.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "9:15",
+      "title": "isHandlingWriting Example",
+      "language": "swift",
+      "code": "func updateSearchCompletion() {\n    customSearchField.hideCompletionText = interaction.isHandlingWriting\n}"
+    },
+    {
+      "timestamp": "9:35",
+      "title": "UIScribbleInteraction.isPencilInputExpected",
+      "language": "swift",
+      "code": "override func viewDidAppear(_ animated: Bool) {\n    if UIScribbleInteraction.isPencilInputExpected {\n        let lineHeight = textField.font?.lineHeight ?? 17.0\n        let heightForScribble = lineHeight * 4.0\n        heightConstraint.constant = heightForScribble\n    }\n}"
+    },
+    {
+      "timestamp": "9:51",
+      "title": "scribbleInteractionDidFinishWriting",
+      "language": "swift",
+      "code": "func scribbleInteractionDidFinishWriting(_ interaction: UIScribbleInteraction) {\n    let lineHeight = textField.font?.lineHeight ?? 17.0\n    let heightForScribble = lineHeight * 4.0\n    heightConstraint.constant = heightForScribble\n}"
+    },
+    {
+      "timestamp": "10:08",
+      "title": "Should Begin",
+      "language": "swift",
+      "code": "func scribbleInteraction(_ interaction: UIScribbleInteraction,\n                         shouldBeginAt location: CGPoint) -> Bool {\n    return !appIsInDrawingMode()\n}"
+    },
+    {
+      "timestamp": "11:41",
+      "title": "Install UIIndirectScribbleInteraction in Engraving Field",
+      "language": "swift",
+      "code": "override init(frame: CGRect) {\n    super.init(frame: frame)\n    indirectScribbleInteraction = UIIndirectScribbleInteraction(delegate: self)\n    addInteraction(indirectScribbleInteraction)\n    ...\n}"
+    },
+    {
+      "timestamp": "11:48",
+      "title": "Request Elements",
+      "language": "swift",
+      "code": "func indirectScribbleInteraction(_ interaction: UIInteraction,\n                                 requestElementsIn rect: CGRect,\n                                 completion: @escaping ([ElementIdentifier]) -> Void) {\n    completion([\"EngravingIdentifier\"])\n}"
+    },
+    {
+      "timestamp": "12:14",
+      "title": "Frame for element",
+      "language": "swift",
+      "code": "func indirectScribbleInteraction(_ interaction: UIInteraction,\n                                 frameForElement elementIdentifier: String) -> CGRect {\n    return bounds\n}"
+    },
+    {
+      "timestamp": "12:28",
+      "title": "Focus Element if Needed",
+      "language": "swift",
+      "code": "func indirectScribbleInteraction(_ interaction: UIInteraction,\n                                 focusElementIfNeeded elementIdentifier: String,\n                                 referencePoint focusReferencePoint: CGPoint,\n                                 completion: @escaping ((UIResponder & UITextInput)?) -> Void)\n{\n    if editingTextField == nil {\n        createTextField()\n    }\n    editingTextField?.becomeFirstResponder()\n    \n    completion(editingTextField)\n}"
+    },
+    {
+      "timestamp": "12:57",
+      "title": "Is Element Focused",
+      "language": "swift",
+      "code": "func indirectScribbleInteraction(_ interaction: UIInteraction,\n                                 isElementFocused elementIdentifier: String) -> Bool {\n    // Indicate if our only element is currently installed and focused\n    return editingTextField?.isFirstResponder ?? false\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Customizing Scribble with Interactions",
+        "url": "https://developer.apple.com/documentation/PencilKit/customizing-scribble-with-interactions"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10106/4/AD9A0416-4A7E-4ED7-86AD-8EEEF7199216/wwdc2020_10106_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10106/4/AD9A0416-4A7E-4ED7-86AD-8EEEF7199216/wwdc2020_10106_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10109",
+      "year": "2020",
+      "title": "Support hardware keyboards in your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10109"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:55:14.188Z"
+}

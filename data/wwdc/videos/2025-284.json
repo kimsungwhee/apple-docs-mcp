@@ -1,0 +1,316 @@
+{
+  "id": "284",
+  "year": "2025",
+  "url": "https://developer.apple.com/videos/play/wwdc2025/284/",
+  "title": "Build a UIKit app with the new design",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Design"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, welcome to “Build a UIKit app with the new design”. I’m Sanaa, an engineer on the UIKit team. In this video, I will show you how to adopt the new design, and bring Liquid Glass to your apps! iOS 26 introduces a beautiful new design, updating the look and feel of materials and controls across the system. Central to this design is a new material called Liquid Glass.\n\nIt is translucent, dynamic and alive. Throughout the system, UIKit’s components and materials have been updated with Liquid Glass.\n\nYour apps get this new appearance as soon as you recompile with the new SDK. If you haven’t already, I highly recommend watching the design videos “Meet Liquid Glass” and “Design with the Liquid Glass design system” to gain an overview, and learn the best practices of the new design system.\n\nI will start with how tab views and split views adopt the new design system, and float above the content.\n\nThen, I will cover the new look and behavior of navigation bars and toolbars, which are now transparent, contain liquid glass buttons, and give more space to your content.\n\nAfter that, I will go over the new updates to presentations, including an updated zoom transition, and new behavior for alerts and action sheets.\n\nThen, I will describe how the Search experience has been updated, with more options for the search bar positioning.\n\nI will go over Controls, like buttons, switches, and sliders, and finish with how to adopt the Liquid Glass look and feel in your custom UI elements.\n\nI will start with Tab views and split views.\n\nUITabBarController and UISplitViewController have been updated with the new liquid glass appearance.\n\nTab bars provide persistent, top-level navigation within your app. They provide an overview of your app at a glance, and help people quickly switch from section to section. With the new design, the tab bar on iPhone floats above the content, and can be configured to minimize on scroll, keeping the focus on your content.\n\nTo allow the tab bar to minimize on scroll set tabBarMinimizeBehavior to the desired direction. Here, the TV app is setting it to .onScrollDown. The tab bar re-expands when scrolling in the opposite direction.\n\nAbove the tab bar, you can have an accessory view like the mini player in the Music app. UITabBarController displays the accessoryView above the tab bar, matching its appearance. When the tab bar is minimized, the accessory view animates down to display inline with the tab bar.\n\nTo set a bottom accessory, create a UITabAccessory with your contentView. Then, set the bottomAccessory property on UITabBarController.\n\nWhen the accessory is inline with the tab bar, there is less space available to display it. Here, the Music app is accommodating the reduced space by hiding some of the media controls in the Mini player.\n\nTo adjust the accessory view, register to observe changes to the tabAccessoryEnvironment trait. Check if the accessory view is inline with the tab bar, and update the view if needed.\n\nYou can also use updateProperties to update your accessory view with the automatic trait tracking behavior.\n\nTo learn more about automatic trait tracking and the new updateProperties method, check out “What’s new in UIKit”.\n\nOn iPad, the tab bar and sidebar are also lifted into Liquid Glass. They float above your app’s content when using UITabBarController. By adopting UITab and UITabGroup, you get automatic adaptivity for your app, allowing people to switch between tab bar and sidebar on iPad. To learn more, check out the videos “Elevate your tab and sidebar experience in iPadOS” from WWDC24, and \"Make your UIKit app more flexible” from WWDC25.\n\nWith the new design, Sidebars look best when there is vibrant content underneath matching the main scroll view. The TV app on iOS 26 is a great example of this. The artwork appears to extend across the entire screen and underneath the sidebar. It remains centered, and fully visible. This effect is used across many apps in iOS 26, and your app will also look great using the new UIBackgroundExtensionView! The ExtensionView should cover the entire width, including the leading safe area inset for the sidebar. The input of the effect is a content view you provide. For example, an image view. It is placed in the view hierarchy and seamlessly extended to fill the empty space.\n\nThis is a special effect that should be used with purpose. Sections like the list of episodes at the bottom naturally scroll underneath the sidebar and don't need to be extended.\n\nElements on top of the artwork, like the show name and description, also shouldn't be extended. Make sure to add these as siblings of the extension view, not as subviews.\n\nThe show view controller already has an image view for the poster artwork. To add the effect, create a BackgroundExtensionView, and assign the image view to its contentView property. Add the extensionView to your hierarchy. And finally, add the detailsView as a sibling of the extensionView. By default, the content view fills the safe area of the extension view. All edges with a positive safe area inset get extended to fill the empty space. In this example, these are the top edge for the navigation and status bar, and the leading edge for the sidebar. Because the TV app has very little content in the navigation bar that could cover the artwork, it doesn't need the extension effect at the top. Instead, the content view is manually positioned outside the safe area at the top.\n\nI will go back to the code example to manually adjust the effect layout. First, set automaticallyPlacesContentView to false on the extensionView. Use AutoLayout constraints to position the image view at the top of the screen. And to extend the image view underneath the sidebar, add a constraint for the leadingAnchor equal to the extensionView's safeAreaLayoutGuide.\n\nAnd don't forget to add constraints for the trailing and bottom anchors as well.\n\nNow I’ll go over how navigation bars and toolbars look and behave in the new design. In iOS 26, navigation bars and toolbars also adopt the new glass appearance and float above the content. When you specify toolbar or navigation barButton items, the system automatically separates them into visual groups of items. Each group shares a glass background.\n\nBy default, bar button items using images share the background with other image buttons. Button groups with multiple items, also share their backgrounds.\n\nText buttons, the system “Done” and “Close” buttons, and prominent style buttons have separate glass backgrounds . This example shows these rules in action, where the “Select” button at the beginning, and the “Done” button at the end don’t share the glass background with the 4 image buttons in the middle. To set up the navigationBar, assign all BarButtonItems directly to the navigationItem’s rightBarButtonItems. This gets the default system behavior that I described previously. To further break items into separate groups, use a fixedSpace item. In this example, I want to separate the “Share” button, so I insert a fixedSpace between the share and info buttons.\n\nBar buttons use labelColor by default to improve legibility. If color is needed to communicate information about the action, you can specify a different tint color.\n\nFor example, here I’m going to update the flag button to use systemOrange as the tintColor.\n\nOnly the Flag symbol will get colored.\n\nTo tint the button background, set the style to prominent.\n\nPreviously, you might have used flexible spaces to evenly distribute the items in your toolbar. With Liquid Glass, by default, each flexibleSpace item separates the background between items.\n\nTo evenly distribute the items, and group them in a single background use flexible spaces with hidesSharedBackground set to false.\n\nIn iOS 26, UINavigationItem provides more control over the title and large title areas in the navigationBar. This includes the addition of a new subtitle that is rendered below the title.\n\nUse attributed strings for fine grained adjustments to both the title and subtitle.\n\nSpecify custom views to add interactive elements Large titles are now placed at the top of the content scroll view, and scroll with the content underneath the bar.\n\nTo keep the large title visible, extend the scroll view fully under the navigationBar.\n\nIn this example, Mail places the search field in the toolbar, and shows the number of unread emails in the navigation bar using the new subtitle API.\n\nWhen filtering emails, Mail shows the current filter in a button below the large title. The button is set as the largeSubtitleView on the navigationItem, appearing below the large title in the navigationBar. As part of the new design system in iOS 26, the bar background is now transparent by default. Remove any background customization from your navigation and toolbars. Using UIBarAppearance or backgroundColor interferes with the glass appearance.\n\nBar buttons use a glass background. Lay out your customView contents using the layout margins to get the correct spacing.\n\nAll scroll views underneath navigation or toolbars automatically apply a visual treatment. This ensures legibility of overlapping content in the bars. This is called an edge effect. This new edge effect isn’t just for system bars. You can also use it with custom containers of views that overlay an edge of a scroll view! This example shows two buttons overlaying the bottom edge of the scroll view. To insert an edge effect behind this stack of buttons, create a ScrollEdgeElementContainerInteraction, assign the contentScrollView and the edge, then add it to the buttonsContainerView. For denser UIs with a lot of floating elements, opt in to a hard edge style on any edge of a scroll view. This has a similar appearance to the standard bar backgrounds in iOS 18. Enable it by setting the style of the edge effect to .hard iOS 18 introduced an always-interactive, interruptible zoom transition. iOS 26 brings the same fluidity to the standard navigation slide transition.\n\nHere, I’m using the Notes app. I can open a note and the app stays responsive during the transition.\n\nI can immediately swipe back if I selected the wrong note, or start scrolling while the transition is still settling. Similarly, I can immediately tap the back button multiple times to go even further back quickly.\n\nThis is great because people can interact with your app at any time. But of course, that also means that your app needs to be ready to interact at any time. To learn how to correctly handle interruptible transitions, check out the video “Enhance your UI animations and transitions”. I can now also swipe back anywhere within the content area, not just the leading edge. The new content backswipe gesture automatically checks for other competing interactions.\n\nFor example, Swipe actions prevent content backswipe. However, non-interactive areas would allow it.\n\nTo gain priority over content backswipe, custom gestures need to set failure requirements on interactiveContentPopGestureRecognizer.\n\nThe new design extends to presentations as well, including the new dynamic zoom transition. When a presentation, like a menu or a popover is originated from a glass button, the button morphs into the overlay.\n\nThis maintains visual continuity between the source and the presentation throughout the animation.\n\nMenus get this behavior automatically. Popovers also get this new animation when their source is a barButtonItem. Sheets can adopt this effect by using the updated Zoom Transition Set the preferred transition on the presented viewController to .zoom and return the source barButtonItem in the closure.\n\nSheets have an updated design in iOS 26. They adapt their appearance from smaller to larger heights. To take advantage of their new glass appearance, remove any custom backgrounds.\n\nActionSheets on iPad are anchored to their source views. Starting in iOS 26, they behave the same on iPhone, appearing directly over the originating view.\n\nOn the alertController, make sure to set the sourceItem or the sourceView on popoverPresentationController, regardless of which device it’s displayed on. Assigning the source view automatically applies the new transitions to action sheets as well! Action sheets presented inline don’t have a cancel button because the cancel action is implicit by tapping anywhere else. If you don’t specify a source, the action sheet will be centered, and you will have a cancel button. iOS 26 provides a new, more integrated search experience, letting you position the search field where it best suits the needs of your app.\n\nOn iPhone, the search bar moves automatically to the toolbar, this keeps the search field easily accessible.\n\nIf you already have a toolbar, include a searchBarPlacementBarButtonItem along with other bar buttons. This will position search exactly where you want.\n\nIt will appear either as an expanded field or a toolbar button, depending on available space.\n\nOn iPad, for universally accessible search, follow the macOS toolbar pattern. Place search at the trailing edge of the navigationBar. This is ideal for split views. To enable this behavior, set searchBarPlacementAllowsExternalIntegration on the navigation item to true.\n\nTo have search available while switching between views, use a UITabBarController. It can now include a distinct tab for Search on the trailing side. When tapped, the search button expands into a search field, and the other buttons collapse.\n\nThis search tabView is a great place for placing search suggestions. By default, one of these suggestions can be selected, or the search field can be tapped to start searching.\n\nTo have the search field activate automatically when the search tab is tapped, set automaticallyActivateSearch to true on that tab.\n\nFor dedicated search views, consider including search as a section in the sidebar or tab bar. The search bar can be integrated in the trailing edge of the navigation bar, stacked, or placed centered in the regular width on iPad. To center the searchBar, use integratedCentered as the preferredSearchBarPlacement. When the tab bar is visible, the search bar is placed below it Now I’ll talk about the updated look of controls.\n\nControls on iOS are redesigned with a new look and feel, while remaining completely familiar. Sizes are updated slightly for controls like UISwitch. Check that your layouts are set up to accommodate size updates.\n\nControl thumbs, like those on switch and segmentedControl, automatically have a new liquid glass appearance for interactions.\n\nIn addition to the existing button styles, two new glass appearances are available with UIButtonConfiguration. Use the .glass() configuration to get standard glass. And .prominentGlass() to get glass tinted with your app’s tint color.\n\nAnd with sliders, in addition to the liquid glass effects on the thumb, they now preserve momentum and stretch when they are moved. On iOS 26, sliders now support tick marks with a TrackConfiguration. This configuration is used to set up the look and behavior for the slider. For example, to limit this speed slider to only 5 values, set a track configuration with allowsTickValuesOnly and 5 tick marks.\n\nSliders can also be configured to use a neutral value, to anchor the slider fill at any location along the track, instead of just the minimum end. This lets the slider fill show the difference between the selected value and the neutral value. In this example, the slider fill shows a higher speed selected than the default one. Sliders can also take a thumbless style to look like a progress bar when not interactive. This is great for media playback, to not distract with a large thumb while the media is playing. Those are places where system controls have adopted liquid glass. For your special use cases, UIKit also offers APIs to adopt the new Liquid Glass look and feel. When using Liquid Glass in your UI, it is crucial to keep the design intent of liquid glass in mind. Liquid Glass is distinct from other visual effects, like UIBlurEffect. As such, it has specific places where it is appropriate to use. Liquid Glass is designed to be an interactive layer. It floats above your content, right below your fingertips, and provides the main controls that the user touches. For that reason, limit Liquid Glass to the most important elements of your app. Where possible, use the system views and controls for the best experience.\n\nMaps uses Liquid Glass for custom buttons that are floating above the map. They feel natural as a distinct control layer. This makes them a great candidate, to use the glass effect for a floating illusion. And when the sheet expands, Maps removes the buttons. This prevents glass elements from overlapping other glass elements, and keeps the illusion of a single floating layer of glass intact.\n\nTo use glass with custom views, create a UIVisualEffectView, create a new UIGlassEffect, in an animation block, set the effect.\n\nGlass appears using a special materialize animation.\n\nBy default, the glass is in a capsule shape. To customize the shape, use the new cornerConfiguration API.\n\nGlass has a dark and a light appearance. It adapts to the selected userInterfaceStyle. When adding glass to an existing glass container, it adapts its appearance automatically. To have corners automatically adapt to their container, use .containerRelative cornerConfiguration. When moving the view closer to the container’s corner, its corner radius adapts automatically.\n\nWhen moving further away the corner radius decreases, to maintain concentricity automatically. Glass adapts the appearance based on its size.\n\nA larger size is more opaque.\n\nA smaller size is clearer, and switches between light and dark mode automatically, to increase contrast.\n\nTo add content, like labels and images, use the visualEffectView’s contentView. The label automatically becomes vibrant, based on its textColor. This ensures legibility against a wide variety of backgrounds.\n\nDepending on the colors behind, the glass and its content will switch to light or dark mode automatically, when using dynamic colors.\n\nTo highlight prominent views, set .tintColor on the glass, and animate it alongside any other glass properties. Animate changes to your content, like textColor, here at the same time.\n\nTo use a custom tint color with glass, create a new UIGlassEffect, assign a custom tintColor, and animate the effect to the new UIGlassEffect. Tinted glass color, automatically adapts to a vibrant version. To remove content on top of your glass, animate the content’s alpha to zero.\n\nInteractive system elements, like buttons, react to user interactions. When tapping the button, it scales and bounces. To get that same kind of interactivity in your custom views, set isInteractive to true on the glassEffect.\n\nAnd finally, when you no longer need the glass on screen animate it out by setting the effect to nil.\n\nAlways prefer setting the effect property over the alpha to ensure that the glass dematerializes or materializes with the appropriate animation. In these examples, there was only a single view using Liquid Glass. Glass has additional, built-in behavior, when multiple elements interact. Liquid Glass can seamlessly blend between different shapes.\n\nTo dynamically merge glass views, use a UIGlassContainerEffect configure a UIVisualEffectView with it, create your glass views, and add them as subviews to your containers contentView. As long as there is space between them, they appear as two separate views.\n\nOnly if they get closer, they start merging like small droplets of water.\n\nTo control the distance at which they start affecting each other, use the spacing property on UIGlassContainerEffect.\n\nWhen animating into an overlapping frame, glass views combine into a single shape.\n\nTo split glass into multiple elements, first, add them to the same position without animation. Then, animate them out together! UIGlassContainerEffect does more than just enabling animations. It enforces a uniform adaptation! Glass dynamically adapts to its background, but still gets a consistent appearance.\n\nI went over the UIKit components and materials updated in Liquid Glass. UIKit gives you all the tools you need to update your app to the new design. Going from here, start by building your app with Xcode 26. Much of the new design will work in your app immediately. Audit your app screen by screen, and identify which views stand out.\n\nIf you have custom controls, decide whether standard UIKit controls may be a better fit. And lastly, determine how you can make your special use cases stand out with Liquid Glass.\n\nI am looking forward to checking out your app after you adopt the new design system. Thank you for watching!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:31",
+      "title": "Minimize tab bar on scroll",
+      "language": "swift",
+      "code": "// Minimize tab bar on scroll\n\ntabBarController.tabBarMinimizeBehavior = .onScrollDown"
+    },
+    {
+      "timestamp": "3:08",
+      "title": "Add a bottom accessory",
+      "language": "swift",
+      "code": "// Add a bottom accessory\n\nlet nowPlayingView = NowPlayingView()\nlet accessory = UITabAccessory(contentView: nowPlayingView)\ntabBarController.bottomAccessory = accessory"
+    },
+    {
+      "timestamp": "3:35",
+      "title": "Update the accessory with the tabAccessoryEnvironment trait",
+      "language": "swift",
+      "code": "// Update the accessory with the trait\n\nregisterForTraitChanges([UITraitTabAccessoryEnvironment.self]) { (view: MiniPlayerView, _) in\n    let isInline = view.traitCollection.tabAccessoryEnvironment == .inline\n    view.updatePlayerAppearance(inline: isInline)\n}\n\n// Automatic trait tracking with updateProperties()\noverride func updateProperties() {\n    super.updateProperties()\n    let isInline = traitCollection.tabAccessoryEnvironment == .inline\n    updatePlayerAppearance(inline: isInline)\n}"
+    },
+    {
+      "timestamp": "5:51",
+      "title": "Extend content under the sidebar",
+      "language": "swift",
+      "code": "// Extend content underneath the sidebar\n\nlet posterImageView = UIImageView(image: ...)\n\nlet extensionView = UIBackgroundExtensionView()\nextensionView.contentView = posterImageView\nview.addSubview(extensionView)\n\nlet detailsView = ShowDetailsView()\nview.addSubview(detailsView)"
+    },
+    {
+      "timestamp": "6:51",
+      "title": "Adjust the effect layout",
+      "language": "swift",
+      "code": "// Adjust the effect layout\n\nlet posterImageView = UIImageView(image: ...)\n\nlet extensionView = UIBackgroundExtensionView()\nextensionView.contentView = posterImageView\nextensionView.automaticallyPlacesContentView = false\nview.addSubview(extensionView)\n\nposterImageView.translatesAutoresizingMaskIntoConstraints = false\nNSLayoutConstraint.activate([\n    posterImageView.topAnchor.constraint(equalTo: extensionView.topAnchor),\n    posterImageView.leadingAnchor.constraint(equalTo: extensionView.safeAreaLayoutGuide.leadingAnchor),\n    posterImageView.trailingAnchor.constraint(equalTo: extensionView.safeAreaLayoutGuide.trailingAnchor),\n    posterImageView.bottomAnchor.constraint(equalTo: extensionView.safeAreaLayoutGuide.bottomAnchor),\n])"
+    },
+    {
+      "timestamp": "8:38",
+      "title": "Custom grouping",
+      "language": "swift",
+      "code": "// Custom grouping\n\nnavigationItem.rightBarButtonItems = [\n    doneButton,\n    flagButton,\n    folderButton,\n    infoButton,\n    .fixedSpace(0),\n    shareButton,\n    selectButton\n]"
+    },
+    {
+      "timestamp": "8:53",
+      "title": "UIBarButtonItem tint color and style",
+      "language": "swift",
+      "code": "// Tint color and style\n\nlet flagButton = UIBarButtonItem(image: UIImage(systemName: \"flag.fill\"))\nflagButton.tintColor = .systemOrange\nflagButton.style = .prominent"
+    },
+    {
+      "timestamp": "9:10",
+      "title": "Toolbar with evenly distributed items in a single background",
+      "language": "swift",
+      "code": "// Toolbar with evenly distributed items, grouped in a single background.\n\nlet flexibleSpace = UIBarButtonItem.flexibleSpace()\nflexibleSpace.hidesSharedBackground = false\n\ntoolbarItems = [\n   .init(image: UIImage(systemName: \"location\")),\n   flexibleSpace,\n   .init(image: UIImage(systemName: \"number\")),\n   flexibleSpace,\n   .init(image: UIImage(systemName: \"camera\")),\n   flexibleSpace,\n   .init(image: UIImage(systemName: \"trash\")),\n]"
+    },
+    {
+      "timestamp": "10:15",
+      "title": "Titles and subtitles",
+      "language": "swift",
+      "code": "// Titles and subtitles\n\nnavigationItem.title = \"Inbox\"\nnavigationItem.subtitle = \"49 Unread\""
+    },
+    {
+      "timestamp": "10:27",
+      "title": "Large subtitle view",
+      "language": "swift",
+      "code": "// Titles and subtitles\n\nnavigationItem.title = \"Inbox\"\nnavigationItem.largeSubtitleView = filterButton"
+    },
+    {
+      "timestamp": "11:20",
+      "title": "Edge effect for a custom container",
+      "language": "swift",
+      "code": "// Edge effect’s custom container\n\nlet interaction = UIScrollEdgeElementContainerInteraction()\ninteraction.scrollView = contentScrollView\ninteraction.edge = .bottom\n\nbuttonsContainerView.addInteraction(interaction)"
+    },
+    {
+      "timestamp": "11:48",
+      "title": "Hard edge effect style",
+      "language": "swift",
+      "code": "// Hard edge effect style\n\nscrollView.topEdgeEffect.style = .hard"
+    },
+    {
+      "timestamp": "13:55",
+      "title": "Morph popover from its source button",
+      "language": "swift",
+      "code": "// Morph popover from its source button\n\nviewController.popoverPresentationController?.sourceItem = barButtonItem"
+    },
+    {
+      "timestamp": "14:07",
+      "title": "Morph sheet from bar button",
+      "language": "swift",
+      "code": "// Morph sheet from bar button\n\nviewController.preferredTransition = .zoom { _ in \n     folderBarButtonItem\n}"
+    },
+    {
+      "timestamp": "14:46",
+      "title": "Source item for action sheets",
+      "language": "swift",
+      "code": "// Setting source item for action sheets\n\nalertController.popoverPresentationController?.sourceItem = barButtonItem"
+    },
+    {
+      "timestamp": "15:36",
+      "title": "Placing search in the toolbar",
+      "language": "swift",
+      "code": "// Place search bar in a toolbar\n\ntoolbarItems = [\n    navigationItem.searchBarPlacementBarButtonItem,\n    .flexibleSpace(),\n    addButton\n]"
+    },
+    {
+      "timestamp": "16:01",
+      "title": "Universally accessible search on iPad",
+      "language": "swift",
+      "code": "// Place search at the trailing edge of the navigation bar\n\nnavigationItem.searchBarPlacementAllowsExternalIntegration = true"
+    },
+    {
+      "timestamp": "16:47",
+      "title": "Activate the search field when search bar is tapped",
+      "language": "swift",
+      "code": "// Activate the search field when search bar is tapped\n\nsearchTab.automaticallyActivatesSearch = true"
+    },
+    {
+      "timestamp": "17:03",
+      "title": "Search as a dedicated view",
+      "language": "swift",
+      "code": "// Search as a dedicated view\n\nnavigationItem.preferredSearchBarPlacement = .integratedCentered"
+    },
+    {
+      "timestamp": "17:52",
+      "title": "Buttons",
+      "language": "swift",
+      "code": "// Standard glass\nbutton.configuration = .glass()\n\n// Prominent glass\ntintedButton.configuration = .prominentGlass()"
+    },
+    {
+      "timestamp": "18:16",
+      "title": "Neutral slider with 5 ticks and a neutral value",
+      "language": "swift",
+      "code": "// Neutral slider with 5 ticks and a neutral value\nslider.trackConfiguration = .init(allowsTickValuesOnly: true,\n                                  neutralValue: 0.2,\n                                  numberOfTicks: 5)"
+    },
+    {
+      "timestamp": "18:59",
+      "title": "Thumbless slider",
+      "language": "swift",
+      "code": "// Thumbless slider\nslider.sliderStyle = .thumbless"
+    },
+    {
+      "timestamp": "20:28",
+      "title": "Glass for custom views",
+      "language": "swift",
+      "code": "// Adopting glass for custom views\n\nlet effectView = UIVisualEffectView()\naddSubview(effectView)\n\nlet glassEffect = UIGlassEffect()\n// Animating setting the effect results in a materialize animation\nUIView.animate {\n    effectView.effect = glassEffect\n}"
+    },
+    {
+      "timestamp": "20:49",
+      "title": "Custom corner configuration",
+      "language": "swift",
+      "code": "// Custom corner configuration\n\nUIView.animate {\n    effectView.cornerConfiguration = .fixed(8)\n}"
+    },
+    {
+      "timestamp": "20:54",
+      "title": "Dark mode",
+      "language": "swift",
+      "code": "// Adapting to dark mode\n\nUIView.animate {\n    view.overrideUserInterfaceStyle = .dark\n}"
+    },
+    {
+      "timestamp": "21:02",
+      "title": "Adding glass to an existing glass container",
+      "language": "swift",
+      "code": "// Adding glass to an existing glass container\n\nlet container = UIVisualEffectView()\ncontainer.effect = UIGlassEffect()\n\ncontainer.contentView.addSubview(effectView)"
+    },
+    {
+      "timestamp": "21:08",
+      "title": "Container relative corners",
+      "language": "swift",
+      "code": "// Container relative corners\n\nUIView.animate {\n    effectView.cornerConfiguration = .containerRelative()\n    effectView.frame.origin = CGPoint(x: 10, y: 10)\n}"
+    },
+    {
+      "timestamp": "21:23",
+      "title": "Container relative corners, animated",
+      "language": "swift",
+      "code": "// Container relative corners\n\nUIView.animate {\n    effectView.frame.origin = CGPoint(x: 30, y: 30)\n}"
+    },
+    {
+      "timestamp": "21:30",
+      "title": "Glass adapts based on its size",
+      "language": "swift",
+      "code": "// Glass adapts based on its size\n\nUIView.animate {\n    view.overrideUserInterfaceStyle = .light\n    effectView.bounds.size = CGSize(width: 250, height: 88)\n}\n\nUIView.animate {\n    effectView.bounds.size = CGSize(width: 150, height: 44)\n}"
+    },
+    {
+      "timestamp": "21:49",
+      "title": "Adding content to glass views",
+      "language": "swift",
+      "code": "// Adding content to glass views\n\nlet label = UILabel()\nlabel.text = \"WWDC25\"\nlabel.textColor = .secondaryLabel\n\neffectView.contentView.addSubview(label)"
+    },
+    {
+      "timestamp": "22:15",
+      "title": "Applying tint color to glass",
+      "language": "swift",
+      "code": "// Applying tint color to glass\n\nlet glassEffect = UIGlassEffect()\nglassEffect.tintColor = .systemBlue\n\nUIView.animate {\n    effectView.effect = glassEffect\n    label.textColor = .label\n}"
+    },
+    {
+      "timestamp": "22:33",
+      "title": "Using custom colors with glass",
+      "language": "swift",
+      "code": "// Using custom colors with glass\n\nlet glassEffect = UIGlassEffect()\nglassEffect.tintColor = UIColor(displayP3Red: r,\n                                green: g,\n                                blue: b,\n                                alpha: 1)\n\nUIView.animate {\n    effectView.effect = glassEffect\n    // Animate out the label\n    label.alpha = 0\n}"
+    },
+    {
+      "timestamp": "23:03",
+      "title": "Enabling interactive glass behavior",
+      "language": "swift",
+      "code": "// Enabling interactive glass behavior\n\nlet glassEffect = UIGlassEffect()\nglassEffect.isInteractive = true\n\neffectView.effect = glassEffect"
+    },
+    {
+      "timestamp": "23:20",
+      "title": "Animating glass out using dematerialize animation",
+      "language": "swift",
+      "code": "// Animating glass out using dematerialize animation\n\nUIView.animate {\n    effectView.effect = nil\n}"
+    },
+    {
+      "timestamp": "23:52",
+      "title": "Adding glass elements to a container",
+      "language": "swift",
+      "code": "// Adding glass elements to a container\n\nlet container = UIGlassContainerEffect()\nlet containerView = UIVisualEffectView(effect: container)\n\nlet glassEffect = UIGlassEffect()\nlet view1 = UIVisualEffectView(effect: glassEffect)\nlet view2 = UIVisualEffectView(effect: glassEffect)\n\ncontainerEffectView.contentView.addSubview(view1)\ncontainerEffectView.contentView.addSubview(view2)"
+    },
+    {
+      "timestamp": "24:12",
+      "title": "Adjusting the container spacing",
+      "language": "swift",
+      "code": "// Adjusting the container spacing\n\nlet containerEffect = UIGlassContainerEffect()\ncontainerEffect.spacing = 20\ncontainerEffectView.effect = containerEffect"
+    },
+    {
+      "timestamp": "24:27",
+      "title": "Merging two glass views",
+      "language": "swift",
+      "code": "// Merging two glass views\n\nUIView.animate {\n    view1.frame = finalFrame\n    view2.frame = finalFrame\n}"
+    },
+    {
+      "timestamp": "24:33",
+      "title": "Dividing glass into multiple views",
+      "language": "swift",
+      "code": "// Dividing glass into multiple views\n\nUIView.performWithoutAnimation {\n    for view in finalViews {\n        containerEffectView.contentView.addSubview(view)\n        view.frame = startFrame\n    }\n}\n\nUIView.animate {\n    for view in finalViews {\n        view.frame = finalFrame(for: view)\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Adopting Liquid Glass",
+        "url": "https://developer.apple.com/documentation/TechnologyOverviews/adopting-liquid-glass"
+      },
+      {
+        "title": "Human Interface Guidelines",
+        "url": "https://developer.apple.com/design/human-interface-guidelines"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/284/4/afb20876-65b2-4aeb-bd50-66e4df1b2281/downloads/wwdc2025-284_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/284/4/afb20876-65b2-4aeb-bd50-66e4df1b2281/downloads/wwdc2025-284_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "356",
+      "year": "2025",
+      "title": "Get to know the new design system",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/356"
+    },
+    {
+      "id": "282",
+      "year": "2025",
+      "title": "Make your UIKit app more flexible",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/282"
+    },
+    {
+      "id": "219",
+      "year": "2025",
+      "title": "Meet Liquid Glass",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/219"
+    },
+    {
+      "id": "243",
+      "year": "2025",
+      "title": "What’s new in UIKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/243"
+    },
+    {
+      "id": "10147",
+      "year": "2024",
+      "title": "Elevate your tab and sidebar experience in iPadOS",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10147"
+    },
+    {
+      "id": "10145",
+      "year": "2024",
+      "title": "Enhance your UI animations and transitions",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10145"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:34:44.454Z"
+}

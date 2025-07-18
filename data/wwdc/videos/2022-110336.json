@@ -1,0 +1,92 @@
+{
+  "id": "110336",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/110336/",
+  "title": "What's new in Screen Time API",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services",
+    "Business & Education",
+    "Essentials"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Hello, everyone, my name is MaryAshley Etefia, and I'm a software engineer for Screen Time. The COVID-19 pandemic put a lot of pressure on our industry to respond to the growing demand for digital health and productivity resources. The pandemic reinforced society's need for balance and has put everyone's ability to successfully manage their own space to the test. Last year, we introduced to you all the Screen Time API, which allowed you to build new apps to help your users manage their child's relationship with their device.\n\nWe were very pleased to see the creative and productive ways that you all have made use of our product. It excites us to see you embracing our culture of thinking differently. We are also very thankful for the feedback we have received in the past year. Before I introduce to you all what's new in iOS 16's ScreenTime API, I would first like to recap some highlights from our iOS 15 release.\n\nLast year's Screen Time API introduced three new frameworks: Family Controls, Managed Settings, and Device Activity. In iOS 15, these frameworks brought new capabilities to your parental control apps. To jog your memory, let's take quick look at all three. Family Controls is essentially a gateway since it authorizes access to the Screen Time API. This framework allowed you to prevent removal of your parental control app, and it protected user privacy by providing opaque tokens used to identify apps and websites. With ManagedSettings, your app could apply restrictions, filter web traffic, and shield activity, much like Screen Time does, but customized with your app's branding and functionality.\n\nThe Device Activity framework allowed you to execute code on the start and end of timing windows, as well as whenever usage of an app or website exceeded a threshold.\n\nEach of these three frameworks have had some exciting new updates in iOS 16.\n\nThese updates are not only going to make our API easier for you to use but are also going to enhance the experience of our users.\n\nI'll walk you through the details using our demo application, Worklog.\n\nWorklog encourages good habits for new professionals by restricting access to certain apps until a certain usage metric is met. I would like to show you how Aniyah, the owner of this iPhone, can impose these restrictions on herself using iOS 16's ScreenTime API.\n\nLets start with Family Controls.\n\nIf you remember from iOS 15, Family Controls was only capable of authorizing child devices via iCloud authentication.\n\nWe are happy to inform you that in iOS 16, Family Controls is now capable of authorizing independent users from their own device. This new authorization method means the Screen Time API can be used to build more than just parental controls apps. Unlike the existing parental control authorization, individual authorization can be used by any number of apps per device. Also, since individual authorization is not for parental control use cases, implicit restrictions for iCloud sign-out and deletion of an app do not apply. Let's look at how to use the new authorization.\n\nThe first thing your app needs to do on launch is request authorization for FamilyControls. I will use a shared Authorization Center to make this request when Worklog first launches. The request can either result in updating the authorization status or throwing an error.\n\nSince this app has never been run on this iPhone before, requestAuthorization will ask for Aniyah's approval with an alert. Tapping on Allow will then prompt the user to authenticate with Face ID, Touch ID, or device passcode to continue. Once the user has successfully authenticated, calling requestAuthorization again will not prompt with an alert again, but instead silently succeed. Once an app has authorized with Family Controls, two switches are added in Settings for the app. One in Screen Time, under the Apps with Screen Time Access List and one in per app settings, labeled as Screen Time Restrictions. Parents and individual users can choose to deauthorize the app from Family Controls via either of these switches. As you can see, using the new individual authorization is just as simple as using the parental controls authorization, and we've made some nice improvements to both with our use of async. Now, lets look at the new changes to Managed Settings.\n\nManaged Settings has been revamped to make developer use a lot more easy, particularly in the use of Managed Settings Store. For those of you who are unfamiliar, a Managed Settings Store is a data store that applies settings to the current user or device.\n\nIn iOS 15, you could only have one Managed Settings Store per process. Also, your app and device activity extensions had to have different Managed Settings Stores.\n\nThis made it difficult to change settings in response to device activity.\n\nNow, in iOS 16, you can create up to 50 Managed Settings Stores per process, each with their own unique name. These named stores are also automatically shared between your app and all your app extensions. Also, you can now remove all the settings in any given named store all at once. I'd like to show you how Worklog uses named stores.\n\nWhen Worklog launches for the first time and Aniyah's device has been successfully authorized, we create a Gaming ManagedSettingsStore.\n\nThis store will contain our gaming restrictions, which, in Worklog's case, includes shielding for all gaming websites.\n\nWorklog also has a store named \"Social\" which shields social media apps and websites as soon as the app is launched for the first time. However, when using Worklog, Aniyah can click the Allow for Evenings button, which will create a Device Activity Schedule that only allows social media between 5:00 and 8:00 p.m. Once it's 5:00 p.m., our Device Activity Monitor un-restricts the corresponding named store.\n\nWhen the timing window ends at 8:00 p.m., we re-apply restrictions to social media apps and websites on Aniyah's device. Now, some of you may be wondering, \"Didn't our Gaming store restrict gaming websites?\" \"Won't clearing all the settings in our Social store conflict with our settings from our Gaming store?\" The answer is no. The most restrictive setting always wins, therefore Gaming websites will still remain restricted on Aniyah's device. We feel that these new named stores are extremely powerful and will make it a lot simpler for you to develop apps using Managed Settings.\n\nBut we're not done yet. We've also added a very exciting feature to the Device Activity framework.\n\nIn iOS 15, Device Activity allowed your app to respond to the start and end of timing windows, as well as usage thresholds for apps and websites. In iOS 16, Device Activity has a new reporting service which enables your app to create completely custom usage reports using SwiftUI. The usage data is provided to a new extension point where you can customize which data is shown to the user, as well as how it's rendered on screen. These device activity reports allow for you to completely customize your user's experience, whilst providing the end user with complete privacy.\n\nIn Worklog, you can see us establish a DeviceActivityReport.Context and a DeviceActivityFilter. You can think of a DeviceActivityReport.Context as a customizable type that tells your report what type of view to draw based on DeviceActivity Data.\n\nYou can customize the timing windows of whichever report context by specifying a DeviceActivityFilter. We will then set the definition of our device activity report context inside of our DeviceActivityReportScene in order to tell the scene what to represent. Our content defines our custom configuration, PieChartView.Configuration, as well as the resulting SwiftUI view for this report. Then, inside of makeConfiguration, we will map over Aniyah's DeviceActivity Data, in order to hydrate our pie chart view's configuration. The framework will invoke makeConfiguration whenever new usage data is fetched so you do not need to invoke it yourself.\n\nHere, you can see how PieChartView.Configuration serves as a view model for our pie chart view by providing the view with Aniyah's device activity data. Finally, we are able to render our custom SwiftUI report by defining it in the body of our DeviceActivityReport extension. The pie chart report that we created for Worklog is just one of the exciting ways that you can customize device activity reports.\n\nThat concludes our briefing of what's new to iOS 16's Screen Time API. As you can see, the Screen Time API continues to support features like core restrictions and device activity monitoring in the same secure yet privacy-preserving way that we first launched it. To recap, independent users can now authorize with Family Controls with the option of authorizing multiple third party applications per device, Managed Settings Stores now locally share settings between apps and their app extensions, and as a result, you are now allowed to manage multiple named stores in your application, and finally, the Device Activity framework is introducing a new privacy-preserving UI that reveals usage data to users and is customizable.\n\nWe believe that these new enhancements and additions will broaden the amount of users capable of engaging with your application. Thank you for inspiring this new release and thank you for your future contributions to the digital health and productivity space. We cannot wait to see the new and exciting ways that you make use of the Screen Time API. We welcome any feedback that you have and we will continue working to make this technology more accessible for you as well as our users. Thank you.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:12",
+      "title": "Request aAhuthorization",
+      "language": "swift",
+      "code": "// APP: Request Authorization\n\nimport SwiftUI\nimport FamilyControls\n\n@main\nstruct Worklog: App {\n    let center = AuthorizationCenter.shared\n    var body: some Scene {\n        WindowGroup {\n            VStack {…}\n                .onAppear {\n                    Task {\n                        do {\n                            try await center.requestAuthorization(for: .individual)\n                        } catch {\n                            print(\"Failed to enroll Aniyah with error: \\(error)\")\n                        }\n                    }\n                }\n        }\n    }"
+    },
+    {
+      "timestamp": "5:13",
+      "title": "Managed settings store",
+      "language": "swift",
+      "code": "// MONITOR EXTENSION: Handle Social category at start/end of interval\n\nimport DeviceActivity\nimport ManagedSettings\n\nclass WorklogMonitor: DeviceActivityMonitor {\n    let database = BarkDatabase()\n    override func intervalDidStart(for activity: DeviceActivityName) {\n        super.intervalDidStart(for: activity)\n        let socialStore = ManagedSettingsStore(named: .social)\n        socialStore.clearAllSettings()\n    }\n    \n    override func intervalDidEnd(for activity: DeviceActivityName) {\n        super.intervalDidEnd(for: activity)\n        let socialStore = ManagedSettingsStore(named: .social)\n        let socialCategory = database.socialCategoryToken\n        socialStore.shield.applicationCategories = .specific([socialCategory])\n        socialStore.shield.webDomainCategories = .specific([socialCategory])\n    }\n}"
+    },
+    {
+      "timestamp": "7:02",
+      "title": "Device activity report and filter",
+      "language": "swift",
+      "code": "// APP: Top-level view\n\nimport SwiftUI\nimport DeviceActivity\n\nextension DeviceActivityReport.Context {\n    static let pieChart = Self(“Pie Chart\")\n}\n\n@main\nstruct Worklog: App {\n    private let thisWeek = DateInterval(...)\n    @State private var context: DeviceActivityReport.Context = .pieChart\n    @State private var filter = DeviceActivityFilter(segment: .daily(during: thisWeek))\n\n    var body: some Scene {\n        WindowGroup {\n            GeometryReader { geometry in\n                VStack(alignment: .leading) {\n                   DeviceActivityReport(context: context, filter: filter)\n                        .frame(height: geometry.size.height * 0.75)\n                    \n       \n    }\n}"
+    },
+    {
+      "timestamp": "7:24",
+      "title": "Device activity report",
+      "language": "swift",
+      "code": "// REPORT EXTENSION: Configure Custom Device Activity Report\n\nimport SwiftUI\nimport DeviceActivity\n\nstruct PieChartReport: DeviceActivityReportScene {\n    let context: DeviceActivityReport.Context = .pieChart\n    let content: (PieChartView.Configuration) -> PieChartView\n    \n    func makeConfiguration(representing data: [DeviceActivityData]) \n        -> PieChartView.Configuration {\n        var totalUsageByCategory: [ActivityCategory:TimeInterval]\n        totalUsageByCategory = data.map(…)\n        \n        return PieChartView.Configuration(totalUsageByCategory: totalUsageByCategory)\n    }\n}"
+    },
+    {
+      "timestamp": "7:55",
+      "title": "Configure Custom Device Activity Report",
+      "language": "swift",
+      "code": "// REPORT EXTENSION: Configure Custom Device Activity Report\n\nimport SwiftUI\nimport DeviceActivity\n\nstruct PieChartView: View {\n    struct Configuration {\n        let totalUsageByCategory: [ActivityCategory:TimeInterval]\n    }\n    \n    let configuration: Configuration\n    \n    var body: some View {\n        // A complex view that renders a bar graph based on Aniyah’s usage per category.\n        PieChart(usage: configuration.totalUsageByCategory)\n    }\n}"
+    },
+    {
+      "timestamp": "8:05",
+      "title": "Present custom report",
+      "language": "swift",
+      "code": "// REPORT EXTENSION: Draw Custom Device Activity Report\n\nimport SwiftUI\nimport DeviceActivity\n\n@main\nstruct WorklogReportExtension: DeviceActivityReportExtension {\n    var body: some DeviceActivityReportScene {\n        PieChartReport { configuration in\n            PieChartView(configuration: configuration)\n        }\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "DeviceActivity",
+        "url": "https://developer.apple.com/documentation/DeviceActivity"
+      },
+      {
+        "title": "FamilyControls",
+        "url": "https://developer.apple.com/documentation/FamilyControls"
+      },
+      {
+        "title": "ManagedSettings",
+        "url": "https://developer.apple.com/documentation/ManagedSettings"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/110336/4/DB808128-449E-420A-9FA1-E5CF7403B7FD/downloads/wwdc2022-110336_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/110336/4/DB808128-449E-420A-9FA1-E5CF7403B7FD/downloads/wwdc2022-110336_sd.mp4?dl=1"
+  },
+  "extractedAt": "2025-07-18T09:14:46.143Z"
+}

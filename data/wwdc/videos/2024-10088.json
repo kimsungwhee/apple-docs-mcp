@@ -1,0 +1,113 @@
+{
+  "id": "10088",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10088/",
+  "title": "Capture HDR content with ScreenCaptureKit",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video",
+    "Graphics & Games"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome! My name is Ben, I am a software engineer on the ScreenCaptureKit team. Every day, people use ScreenCaptureKit to share their screens in video conference calls sharing high-quality streams with others around the world, taking screenshots and supporting remote desktop applications. When you use ScreenCaptureKit, your app will be integrated with the system UI experience. Your app can present the built-in picker to provide a familiar way to choose stream content.\n\nPresenter overlay is available to enhance your app’s screen sharing experience. And, people can see a preview of what your app is sharing in the system UI. I’ll be showing you some new ways ScreenCaptureKit helps you build these same kinds of experiences in your app. Let’s say your app has a streaming feature. You’ll now be able to capture streams and screenshots with HDR. Your app may currently capture screen and audio content. I'll show you how to get microphone output from the same stream that provides you screen and audio samples.\n\nIf your app uses recorded screen content, you’ll be interested in the convenient recording API. ScreenCaptureKit handles all of the asset writing details for you.\n\nIn order to understand how to capture HDR content, let’s first get familiar with the basics for capturing screen and audio.\n\nHere’s the SCStream, it is the object that you use to receive screen and audio samples in your app.\n\nUse it to capture an entire screen, or just specific windows and apps.\n\nTell the stream what to capture by providing it an SCContentFilter. Say you’d like to customize the stream’s output, like specify a different resolution or pixel format. For this, use the SCStreamConfiguration to customize stream output.\n\nOnce you’ve set up a stream, you'll be able to receive screen and audio samples by using the SCStreamOutput.\n\nThese are the basic building blocks for capturing content, if you’d like more detail check out the previous ScreenCaptureKit videos.\n\nNew this year, you can capture HDR content. High Dynamic Range, or HDR, provides you with a wider range of brightness levels and colors when compared to the Standard Dynamic Range, or SDR. HDR offers high-contrast, resulting in more details in both shadows and highlights.\n\nIt also provides a wider range of colors.\n\nI’m happy to tell you that the SCStream now outputs High Dynamic Range of captured content.\n\nPeople receiving streamed HDR content will now experience the same rich details as the source.\n\nTo enable HDR capture in your app, you’ll configure your stream by setting some new properties on the SCStreamConfiguration. And here are the properties: captureDynamicRange tells ScreenCaptureKit to output screen content in either SDR or HDR. For HDR, set it to either hdrLocalDisplay or hdrCanonicalDisplay. But wait, what do I mean by local vs canonical display? When you use local display, you are telling ScreenCaptureKit that you are both capturing and rendering HDR content on the same screen.\n\nFor canonical display, it means you are capturing HDR content that is optimized for sharing with other HDR devices.\n\nThe next property to configure is pixelFormat. It describes how color information is stored for each pixel in an image.\n\nFor HDR you will use a format that has at least 10-bits per component. For most situations 10-bit YCbCr will be the best choice.\n\nThe third property is the colorSpaceName, which describes the range of colors and the transfer function for how they map to digital values. HDR requires either HLG or PQ transfer functions, for example, the Display P3 PQ color space.\n\nAnd finally, there is the colorMatrix that is used to transform colors between the BGRA and YCbCr color spaces. If this sounds like a lot of information, don’t worry, because the SCStreamConfiguration is here to help you.\n\nIt provides two convenient presets for HDR. captureHDRStreamLocalDisplay and captureHDRStreamCanonicalDisplay If the destination for captured HDR content is the local display, use the Local Display preset. This configuration will be pre-populated with the values included here.\n\nIf the destination for HDR content will be other displays, use the Canonical Display preset. The values for this preset are listed here.\n\nIf your app requires different output settings, you are free to change any of these properties to suit the needs of your app. Let’s now go over a code example that uses a preset to capture HDR.\n\nBegin by using SCShareableContent to get a list of available content.\n\nThe entire display will be captured here, so create an SCContentFilter for capturing the entire display.\n\nUse the new preset API to get a configuration for the HDR canonical display.\n\nAnd use the filter and configuration to create the SCStream.\n\nTo receive HDR screen samples in your app, add an output with the screen type.\n\nAnd finally, start the stream to begin receiving HDR samples! Now, let’s say your app only needs a single screenshot instead of a stream. For this, the SCScreenshotManager offers a screenshot API. And I’m happy to tell you that you can also use this API to take screenshots in HDR! Just like SCStream, the SCScreenshotManager uses a content filter and a stream configuration.\n\nAnd just like SCStream, presets are available for taking HDR screenshots. Here are the recommended preset values for taking HDR screenshots for either the local or canonical display.\n\nI will now show an example of some code that uses the local display preset to take an HDR screenshot.\n\nThe first thing you will do is create a configuration for HDR local display.\n\nIf your app needs CMSampleBuffers for the screenshot, use the captureSampleBuffer function.\n\nIf CGImage is preferred, use the captureImage function.\n\nSo that’s how you can use the new APIs to get stunning HDR content from both streams and screenshots. If you would like to learn more about how to utilize HDR in your app, I invite you to check out these videos for supporting HDR images and media.\n\nAnd with that, you can get started capturing HDR images and video with ScreenCaptureKit. To accompany your beautiful HDR streams, this year, you can also record the microphone along with your system audio.\n\nBy providing a new microphone output on a stream, your app can now capture three types of media: screen, system audio, and microphone.\n\nFor your app to capture microphone audio on a stream, the SCStreamConfiguration offers two new properties. captureMicrophone lets your app turn on microphone capture. microphoneCaptureDeviceID lets you choose which microphone device to capture.\n\nTo receive microphone samples in your app, you’ll use the SCStreamOutput. So let’s now step through some code for capturing microphone audio. You’ll first create a stream configuration to tell SCStream to capture the microphone. Set the captureMicrophone and microphoneCaptureDeviceID properties to capture the default microphone.\n\nCreate the SCStream with the filter and the configuration. And here’s where you add an output to the stream with the new microphone type. Now, start capture and use the SCStreamOutput’s didOutputSampleBuffer function to receive samples. So that’s all there is to it. Your app now gets all screen, audio and microphone content from an SCStream. One of the most common uses for receiving stream output is to write the samples to a file. You can now accomplish this by using a new API that has been added to the SCStream. Use this API to easily record and save screen, audio and microphone content in your app. Let’s go over how this works. Just like before, you will configure your SCStream to capture content. You will also use this same stream for recording.\n\nTo record, you just add this new output. The SCRecordingOutput can be configured using the SCRecordingOutputConfiguration.\n\nThis configuration lets you specify where to save the file, the file type and the video codec.\n\nThere is also the new SCRecordingOutputDelegate protocol that you may use to respond to the recording events on the stream. Let’s now check out some code for recording with this new API. You will first create an instance of the SCRecordingOutputConfiguration.\n\nSet an outputURL to specify where to save the file.\n\nYou may optionally customize the file type and video codec for the saved file. Next, create an SCRecordingOutput instance with the recording configuration and set the delegate for receiving events.\n\nYou will then add the configured recordingOutput to the stream.\n\nCall startCapture to start the stream, which will also start recording.\n\nAt some time in the future, you will call stopCapture to stop both the stream and recording. In some cases, you may want to keep streaming after you stop recording. To continue streaming content, call removeRecordingOutput instead to only stop recording.\n\nDuring recording, your app will be notified about events via SCRecordingOutputDelegte. You will be notified when a recording starts, if an error occurs, and when the recording has successfully finished. At this moment the recorded file is now ready for use in your app.\n\nAnd that’s it. This new recording API provides you a simple and convenient way to record screen, audio and microphone content in your app.\n\nTo recap, you can now use ScreenCaptureKit to capture HDR content in your app. A new microphone output is available to receive microphone samples from a stream. And finally, there is a new recording API, giving you an easy way to record screen, audio, and microphone content. To learn more about all of the amazing features ScreenCaptureKit offers, be sure to check out these previous videos. Thank you so much for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "5:22",
+      "title": "Capture HDR",
+      "language": "swift",
+      "code": "// Get content that is currently available for capture.\nlet availableContent = try await SCShareableContent.current\n        \n// Create instance of SCContentFilter to record entire display.\nguard let display = availableContent.displays.first else { return }\nlet filter = SCContentFilter(display: display, excludingWindows: [])\n\n// Create a configuration using preset for HDR stream canonical display.\nlet config = SCStreamConfiguration(preset: .captureHDRStreamCanonicalDisplay)\n\n// Create a stream with the filter and stream configuration.\nlet stream = SCStream(filter: filter, configuration: config, delegate: self)\n\n// Add a stream output to capture screen content.\ntry stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: nil)\n\n// Start the capture session.\ntry await stream.startCapture()"
+    },
+    {
+      "timestamp": "6:40",
+      "title": "Use a local display preset to capture HDR",
+      "language": "swift",
+      "code": "// Create an SCStreamConfiguration with preset for HDR.\nlet config = SCStreamConfiguration(preset: .captureHDRScreenshotLocalDisplay)\n\n// Call the screenshot API to get CMSampleBuffer representation\nlet screenshotBuffer = try await SCScreenshotManager.captureSampleBuffer(contentFilter: filter, configuration:config)\n\n// Call the screenshot API to get CGImage representation.\nlet screenshotImage = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration:config)"
+    },
+    {
+      "timestamp": "8:05",
+      "title": "Capture samples of microphone audio",
+      "language": "swift",
+      "code": "// Create instance of SCStreamConfiguration.\nlet config = SCStreamConfiguration()\n\n// Enable microphone capture and set id of microphone to capture.\nconfig.captureMicrophone = true\nconfig.microphoneCaptureDeviceID = AVCaptureDevice.default(for: .audio)?.uniqueID\n\n// Create an SCStream instance.\nlet stream = SCStream(filter: filter, configuration: config, delegate: self)\n\n// Add stream outputs for capturing screen and microphone.\ntry stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: nil)\ntry stream.addStreamOutput(self, type: .microphone, sampleHandlerQueue: nil)\n\n// Start the capture session\ntry await stream.startCapture()\n\n// Implement SCStreamOutput function to receive samples.\nfunc stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {\n    switch type {\n    case .screen:\n        handleLatestScreenSample(sampleBuffer)\n    case .audio:         \n        handleLatestAudioSample(sampleBuffer)\n    case .microphone:\n        handleLatestMicrophoneSample(sampleBuffer)\n    }\n}"
+    },
+    {
+      "timestamp": "9:38",
+      "title": "Record to file",
+      "language": "swift",
+      "code": "// Create a recording output configuration.\nlet recordingConfiguration = SCRecordingOutputConfiguration()\n\n// Configure the outputURL (optionally set file type and video codec).\nrecordingConfiguration.outputURL = url\nrecordingConfiguration.outputFileType = .mov\nrecordingConfiguration.videoCodecType = .hevc\n        \n// Create the recording output with the configuration.\nlet recordingOutput = SCRecordingOutput(configuration: recordingConfiguration, delegate: self)\n\n// Add an SCRecordingOutput to the stream.\ntry stream.addRecordingOutput(recordingOutput)\n\n// Start capturing (which will also start recording).\ntry await stream.startCapture()\n\n// Stop recording.\ntry await stream.stopCapture()\n\n//OR\n// Stop recording, but keep stream running.\ntry stream.removeRecordingOutput(recordingOutput)"
+    },
+    {
+      "timestamp": "10:27",
+      "title": "Respond to delegate events",
+      "language": "swift",
+      "code": "func recordingOutputDidStartRecording(_ recordingOutput: SCRecordingOutput) {\n    // Recording started asynchronously after addRecordOutput.\n}\n\nfunc recordingOutput(_ recordingOutput: SCRecordingOutput, didFailWithError error: Error) {\n    // Recording failed with error.\n}\n        \nfunc recordingOutputDidFinishRecording(_ recordingOutput: SCRecordingOutput) {\n    // Recording finished after calling either removeRecordOutput or stopCapture.\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Forum: Media Technologies",
+        "url": "https://developer.apple.com/forums/topics/media-technologies?cid=vf-a-0010"
+      },
+      {
+        "title": "ScreenCaptureKit",
+        "url": "https://developer.apple.com/documentation/ScreenCaptureKit"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10088/4/D333573B-E8F2-4420-8709-B8FE3095D56B/downloads/wwdc2024-10088_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10088/4/D333573B-E8F2-4420-8709-B8FE3095D56B/downloads/wwdc2024-10088_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10177",
+      "year": "2024",
+      "title": "Use HDR for dynamic image experiences in your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10177"
+    },
+    {
+      "id": "10181",
+      "year": "2023",
+      "title": "Support HDR images in your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10181"
+    },
+    {
+      "id": "10136",
+      "year": "2023",
+      "title": "What’s new in ScreenCaptureKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10136"
+    },
+    {
+      "id": "10156",
+      "year": "2022",
+      "title": "Meet ScreenCaptureKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10156"
+    },
+    {
+      "id": "10155",
+      "year": "2022",
+      "title": "Take ScreenCaptureKit to the next level",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10155"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:22:13.707Z"
+}

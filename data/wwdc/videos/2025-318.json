@@ -1,0 +1,158 @@
+{
+  "id": "318",
+  "year": "2025",
+  "url": "https://developer.apple.com/videos/play/wwdc2025/318/",
+  "title": "Share visionOS experiences with nearby people",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, I’m Connor, and I’m an engineer on the visionOS FaceTime team. I’m excited to introduce you to a new capability that makes sharing and collaboration more powerful than ever before.\n\nIn visionOS 26, you can share apps and experiences with nearby people in the same space. This makes it possible to watch, listen, or collaborate in your favorite apps on Vision Pro with others around you. In this video, you’ll learn how to design and build apps that are meant to be shared with nearby people. I’ll start by giving an overview of the feature. Then I'll show you how to use SharePlay to build interactive experiences for people in the same space. Finally, you’ll learn how to anchor shared content to the physical space that you're in, using ARKit and shared world anchors. I’ll begin by showing you how sharing with nearby people works in visionOS 26. There's a whole new way to share apps that’s more intuitive and discoverable than ever before. Every window has a button to the right of the window bar that opens a share menu when tapped. From there, you can select from a list of nearby people and easily start sharing with them.\n\nWhen someone shares, the window appears for everyone exactly where the sharer had placed it in the room. The window bar turns green, telling you that the window is shared with everyone in the same place.\n\nThis experience creates a shared context, and it’s what makes sharing in the same space feel so magical. Since shared windows are in the same place for everyone, it’s possible to discuss, point to, and interact with the app like it’s really there in the room.\n\nThe system makes sure that everyone sees the app appear in the same place with the same size.\n\nAfter it appears, anyone is able to move a shared window, and it moves for everyone, while naturally orienting toward the group.\n\nYou can even resize the app together, or snap it to your shared surroundings. If anyone holds the digital crown to re-center, the app moves back to a good place for everyone. And if someone does point to something or moves their hand over the window, content fades to make sure that person stays visible.\n\nThis shared context isn’t only for people in the same room. One of the most exciting parts of sharing nearby is its deep integration with FaceTime. When you’re sharing an app with nearby people, you can start FaceTime to invite, hang out, and collaborate with people who are remote as well.\n\nIf they join on visionOS, they’ll appear in your space as a spatial Persona. This unlocks a whole new level of presence that makes it feel like you’re all really in the same space together.\n\nWhen someone joins as a spatial Persona, the system finds an optimal location to place them alongside the nearby people.\n\nWhere the system decides to place spatial Personas depends on the type of window being shared. For example, if someone joins while a volumetric window is being shared, they fill in any gaps surrounding the volume. The result is a layout that’s ideal for both nearby and remote participants.\n\nPeople can also join from any other platform that supports FaceTime, such as iOS or macOS.\n\nWhen they join, their video is shown next to the shared window. This makes it easy to interact with the app and talk to others at the same time. By default, sharing a window starts a view-only experience that works even if others don’t have the app. This requires no app adoption. However, to create an interactive experience that people can share in the same space, then adopt SharePlay.\n\nSharePlay is a key part of collaboration in FaceTime across Apple platforms. SharePlay apps support real-time interaction, allowing people to watch movies, listen to music, play games, collaborate, and do so much more together. Any existing SharePlay app on visionOS can be shared with nearby people, no changes required. That being said, there are exciting new capabilities in SharePlay that let you design and enhance your app specifically for people in the same space.\n\nIf you’re new to SharePlay, I strongly recommend watching the “Build custom experiences with Group Activities” and “Build spatial SharePlay experiences” videos first. I’m going to expand on concepts introduced in those videos. I'll cover several topics in this section that will help you create a great nearby  shared experience. First, I’ll go over the importance of exposing a SharePlay activity to the new Share menu, so people can easily start sharing. After that, you'll learn how to enhance experiences for people in the same space by checking for nearby participants, followed by placing content relative to people using nearby participant poses. Then, I’ll include an example of shared media playback using AVPlayer to get perfectly in sync nearby shared video and audio.\n\nFinally, for apps with multiple windows, I’ll walk you through choosing which one you want to be associated with SharePlay. To start, one of the first things you need to do is make your SharePlay activity available in the Share menu.\n\nWith the introduction of the new Share menu in visionOS 26, sharing apps is easier than ever before. To take full advantage of that, you need to expose a GroupActivity to the Share menu with SwiftUI or UIKit API. Then, when people tap on the Share button, they can activate that GroupActivity and start SharePlay.\n\nFor volumetric windows, the Share menu is only usable if the app has exposed an activity.\n\nAs an example, I want to create a SharePlay experience that lets me play board games with my friends when I visit them in person.\n\nTo start, I’ve created a simple group activity for my board game app, called BoardGameActivity. GroupActivities is the framework that powers SharePlay, and defining a GroupActivity is the first step to creating a shared experience. I also set up my game's main scene with a volumetric WindowGroup that shows the board game view.\n\nThis is a SwiftUI app, so to expose my BoardGameActivity to the share menu, I need to add a ShareLink to my view hierarchy.\n\nI pass in my BoardGameActivity since that’s the one I want to start, and I mark it hidden because I don’t actually want it to affect my app’s UI.\n\nWhen someone shares an exposed activity from the share menu, it automatically activates and creates a GroupSession. This works the same way as calling the activate() method manually on a GroupActivity.\n\nI can retrieve the automatically created GroupSession by observing the sessions on my BoardGameActivity.\n\nThen, to actually start SharePlay, I configure and join the session that’s created.\n\nNow people can start sharing my app directly from the share menu. That covers apps that are windowed or volumetric, but if your shared experience uses an immersive space, then there are extra considerations you’ll need to make to ensure the share menu is always accessible. For example, I want to turn my windowed experience into a full-size board game table placed on the floor of my room, with themed 3D objects around me to make the game feel more real. To do that, I need to put it in an ImmersiveSpace. But now I have a problem. How do people share my app since there’s no window bar in an immersive space? To solve this, I can offer my own button to let people start sharing without needing to use a window or volume.\n\nWhen someone presses that button, my app calls the activate method on my BoardGameActivity. New in visionOS 26, calling activate on an activity automatically prompts the share menu, even outside of FaceTime.\n\nThis works with windows and immersive spaces. From there, you can select nearby people or create a new FaceTime session to start sharing directly from your app.\n\nAn even better way to solve this in my app is to continue offering a non-immersive mode.\n\nThis way, people can share from the share menu on the non-immersive window, and then transition into immersive when everyone has joined.\n\nJust like before, I need to join the GroupSession to actually start SharePlay. As a reminder, I also need to get the system coordinator from the session and set supportsGroupImmersiveSpace to true to make sure my immersive space is shared and in the same place for everyone. Once you’ve made sure your app can be shared, it’s time to consider the best ways to enhance or customize your experience for people in the same space. To do this, you can explicitly check for nearby participants using new SharePlay API. This is especially important if people start FaceTime while sharing nearby.\n\nFor my board game app, I want to let people in the same space play against anyone joining from FaceTime. I’ll check which participants are physically together and proactively suggest those nearby people as teammates.\n\nTo do this, I need to know which participants are nearby and which participants are remote.\n\nI start with my GroupSession that I joined earlier. To get information about the participants in that session, I observe the active participants publisher on the GroupSession. From that participant state, I check the new isNearbyWithLocalParticipant property. This will be true if the participant is nearby with me. I exclude the local participant from this check, since I only care which other participants are nearby.\n\nWith that, I can make it so that the nearby participants are on the same team, and can play against the remote people. To create a great experience for people in the same space, you should also consider where nearby people are located relative to your app, in case you want to place content next to or facing toward them. New SharePlay API tells you exactly where people are placed when sharing starts. Here's an example.\n\nI’ve been assuming so far that nearby people share the app when they’re directly in front of it. In reality, nearby people can be anywhere in space when an app is shared. Apps share in place, so they won't automatically move between people when sharing starts. This is especially important to know for immersive space apps, as you may want to place content close to where the participants are, not just at the origin of the immersive space.\n\nIn this specific example, I want to show a scorecard to each nearby person in my Immersive Board Game app.\n\nTo do this, I would first have to know where the nearby participants are relative to my ImmersiveSpace scene. You can get this information from a new Pose property on ParticipantState.\n\nJust like before, I start with the group session that I joined earlier. To get information about the localParticipant, I access the system coordinator on the session, and then observe the localParticipantState’s async sequence on the system coordinator. Once I have the localParticipantState, I can read the new pose property on that state, which tells me where the local participant is placed relative to the ImmersiveSpace scene.\n\nThe pose property does not track a participant’s location in real-time, but it does update after key events, like when sharing starts or after someone holds the digital crown to recenter.\n\nOnce I know the local participant pose, I compute where to place the scorecard relative to each participant, so that it appears right next to them.\n\nIn addition to a participant’s actual pose, you can get their Seat Pose, which is at a fixed physical location relative to the app. To learn more about seat poses and customizing seat arrangements with spatial templates, I recommend watching the “Customize spatial Persona templates in SharePlay” video.\n\nUsing the information from that video, I can read seat poses to do something even more advanced in my app, and prompt people to move into their actual seats around the table. This tells them the best place to stand to enjoy my app’s content. If your app already uses seat poses, consider migrating to participant poses if you want to place content where people are already located in space.\n\nNext, if your experience involves shared video or audio, AVPlayer has been upgraded in visionOS 26 to coordinate playback for people in the same space. Bringing shared media into the same space creates a unique set of challenges, specifically because people are physically close to each other. When you share media with people nearby, you may hear audio coming from other participants' devices. This makes even small audio delays noticeable and disruptive to all nearby participants. That’s why it’s critical that everyone sees and hears the same thing at the same time. New in visionOS 26, AVPlayer and AVPlaybackCoordinator will precisely sync audio and video playback for people in the same space.\n\nTo demonstrate this, I want to add a new instructional video feature to my board game app. People can open a shared video at any time to learn how to play the game. Everyone should see and hear this video play at the exact same time. When the video is done, players can go back and apply what they just learned to play the game.\n\nIn my app, I’ll create an AVPlaybackCoordinator and set it up with my GroupSession. By doing this, I can trust that playback is precisely synced for people in the same space. In my app, that means everyone can see and hear the instructional video play at the same time, with no echo or delay.\n\nTo learn how to set up an AVPlaybackCoordinator for SharePlay, I recommend watching the “Coordinate media experiences with Group Activities” video. If you’re new to building media apps for visionOS, I also suggest watching the “Create a great spatial playback experience” video.\n\nNow the audio and video are perfectly in sync in my app. However, the addition of the instructional video window created a new problem I need to solve.\n\nMy app now has multiple WindowGroups open at the same time: the Board Game Volumetric window and the Instructional Video window. To support this, I have to be more explicit about which one I want to be shared while they’re both open.\n\nNew SharePlay API in visionOS 26 lets me use a view modifier to choose exactly which WindowGroup I want to be associated with SharePlay at any given time. This unlocks a whole new level of control for apps that support multiple windows.\n\nHere I have my app’s board game WindowGroup from before. To add my new instructional video, I’ll create a second WindowGroup to host the video view. Then, I can add the new .groupActivityAssociation view modifier to a view in that WindowGroup.\n\nBy passing in primary to the .groupActivityAssociation, I’m telling the system that I want this window to be the shared window while it’s open.\n\nNow, my board game app can switch to a shared video that’s perfectly in sync, and then back to the board game when everyone’s ready to play.\n\nI’m excited to see how you will take advantage of these improvements to create amazing social experiences. This truly is the best time to adopt SharePlay. But, Group Activities isn’t the only framework with new API designed for sharing with nearby people.\n\nARKit also has changes in visionOS 26 that allows people to anchor shared content in the same physical location using shared world anchors. Before I go there, I’m going to review some key concepts for immersive spaces and regular world anchors. If your app uses an ImmersiveSpace, you can freely place content anywhere in a person’s room. This is great for presenting something around a person, but an ImmersiveSpace is not guaranteed to stay in the same physical location. For example, if someone moves and holds the digital crown to recenter, the entire immersive space adjusts. This works for many use cases, but it can be a problem if you want your content to stay fixed in physical space over time.\n\nARKit offers a solution to this problem with World Anchors. World anchors allow apps to place content at fixed physical locations in a person's space. The system makes sure that this content always stays precisely anchored to that same location over time, even if someone holds the digital crown to recenter.\n\nImagine an app that wants to let people place virtual furniture in their real world to help them create a floor plan or just experiment with new designs. For an app like this, it’s incredibly important that the furniture stays at the same physical location and doesn’t drift over time. To build this app, I need to be able to place content at a specific location relative to the origin of my immersive space, and then use a world anchor to make sure it stays there.\n\nFirst, I set up with an ARKitSession and a WorldTrackingProvider, then run the WorldTrackingProvider on the session. When I want to add a new anchor for my furniture app, I’ll create a WorldAnchor at a specific transform for the furniture in the ImmersiveSpace, and add it to the WorldTrackingProvider.\n\nFinally, I listen to updates on the WorldTrackingProvider’s anchorUpdates sequence, which will be called when my new anchor is successfully added. Then I can put my furniture model under the anchor, and I’m done! Now that people in the same physical space can share apps, world anchors are more important than ever. When you're sharing with someone nearby, the room is part of your shared context. World anchors make it possible to take advantage of the space as a shared context.\n\nTo place shared content in a specific physical location while sharing apps should use new API to mark anchors as shared with nearby participants.\n\nDuring a SharePlay session, this API allows apps to create create a world anchor that's automatically shared with participants who are nearby, and only with nearby participants. You can only create shared anchors while SharePlay is active, and they do not persist after sharing ends, unlike regular world anchors.\n\nI’ll adopt this in my furniture planning app from earlier. Now, if any person adds a piece of furniture to the room, I want all nearby participants to see that furniture appear. This will really make it feel like we're collaboratively designing a room together.\n\nFirst, I need to make sure that shared world anchors are available before I try to create one. I observe the newWorldAnchorSharingAvailability on my WorldTrackingProvider. When this becomes available, I know my app is actively shared with people nearby, and I can create a shared world anchor.\n\nFrom there, creating a shared world anchor is very similar to creating a regular world anchor. For the person adding the furniture, I pass in sharedWithNearbyParticipants as true when creating the WorldAnchor. Then, on all the nearby participants’ WorldTrackingProviders, I receive the new shared anchor from the anchorUpdates sequence, and it has the exact same identifier across everyone’s devices. You can read and sync this identifier to make sure that the app knows what content to associate with the anchor on each device.\n\nShared world anchors can also be used in business apps using your own networking layer outside of SharePlay. If you're building a spatial business app that you want to share with people nearby, then watch the “Explore enhancements to your spatial business app” video to learn more.\n\nSharing with nearby people is all about enjoying content in the same room with others, And with shared world anchors, you’ll be able to create experiences that fully leverage the space people are in together.\n\nAfter watching this video, start by thinking about how your app could best support interactive shared experiences using SharePlay. How can people engage with your app’s content together? Once you’ve adopted SharePlay, make sure anyone can easily start sharing your app by supporting the new Share Menu. This is your chance to put your shared experience front and center, discoverable directly from system UI.\n\nThen think about how you can design your experience for people both near and far on any supported platform. Remember that sharing supports nearby and remote participants. Your app can now connect people in the same room with others across the world, so make sure you consider all these possibilities. And finally, create experiences that take advantage of physical space. Use World Anchors to make your virtual content feel more present and interactive within someone's actual room.\n\nWhen you combine all of this, the possibilities are endless. You can have collaborative whiteboard sessions on your physical wall, play immersive games in your living room, or transform your space into a theater for a movie night with friends. The ability to share experiences nearby is a powerful new way to connect and collaborate with people around you. I hope you’ll create experiences that make people feel more together while they’re together.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "6:21",
+      "title": "Expose an activity with GroupActivities and SwiftUI",
+      "language": "swift",
+      "code": "// Expose an activity with GroupActivities and SwiftUI\n\nimport SwiftUI\nimport GroupActivities\n\nstruct BoardGameActivity: GroupActivity, Transferable {\n    var metadata: GroupActivityMetadata = {\n        var metadata = GroupActivityMetadata()\n        metadata.title = \"Play Together\"\n        return metadata\n    }()\n}\n\nstruct BoardGameApp: App {\n    var body: some Scene {\n        WindowGroup {\n            BoardGameView()\n            ShareLink(item: BoardGameActivity(), preview: SharePreview(\"Play Together\"))\n                .hidden()\n        }\n        .windowStyle(.volumetric)\n    }\n}\n\nstruct BoardGameView: View {\n    var body: some View {\n        // Board game content\n    }\n}"
+    },
+    {
+      "timestamp": "7:14",
+      "title": "Join a GroupSession with GroupActivities",
+      "language": "swift",
+      "code": "// Join a GroupSession with GroupActivities\n\nfunc observeSessions() async {\n\n    // Sessions are created automatically when the activity is activated\n    for await session in BoardGameActivity.sessions() {\n\n        // Additional configuration and setup\n\n        // Join SharePlay\n        session.join()\n    }\n}"
+    },
+    {
+      "timestamp": "8:57",
+      "title": "Join and configure a GroupSession with GroupActivities",
+      "language": "swift",
+      "code": "// Join a GroupSession with GroupActivities\n\nfunc observeSessions() async {\n\n    // Sessions are created automatically when the activity is activated\n    for await session in BoardGameActivity.sessions() {\n\n        // Additional configuration and setup\n\n        guard let systemCoordinator = await session.systemCoordinator else { continue }\n        systemCoordinator.configuration.supportsGroupImmersiveSpace = true\n\n        // Join SharePlay\n        session.join()\n    }\n}"
+    },
+    {
+      "timestamp": "9:59",
+      "title": "Check for nearby participants with GroupActivities",
+      "language": "swift",
+      "code": "// Check for nearby participants with GroupActivities\n\nfunc observeParticipants(session: GroupSession<BoardGameActivity>) async {\n    for await activeParticipants in session.$activeParticipants.values {\n        let nearbyParticipants = activeParticipants.filter {\n            $0.isNearbyWithLocalParticipant && $0 != session.localParticipant\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "11:42",
+      "title": "Observe local participant pose with GroupActivities",
+      "language": "swift",
+      "code": "// Observe local participant pose with GroupActivities\n\nfunc observeLocalParticipantState(session: GroupSession<BoardGameActivity>) async {\n    guard let systemCoordinator = await session.systemCoordinator else { return }\n\n    for await localParticipantState in systemCoordinator.localParticipantStates {\n        let localParticipantPose = localParticipantState.pose\n        // Place presented content relative to the local participant pose\n    }\n}"
+    },
+    {
+      "timestamp": "15:54",
+      "title": "Associate a specific window with GroupActivities and SwiftUI",
+      "language": "swift",
+      "code": "// Associate a specific window with GroupActivities and SwiftUI\n\nimport SwiftUI\nimport GroupActivities\n\nstruct BoardGameApp: App {\n    var body: some Scene {\n        WindowGroup {\n            BoardGameView()\n            ShareLink(item: BoardGameActivity(), preview: SharePreview(\"Play Together\"))\n                .hidden()\n        }\n        .windowStyle(.volumetric)\n        \n        WindowGroup(id: \"InstructionalVideo\") {\n            InstructionalVideoView()\n                .groupActivityAssociation(.primary(\"InstructionalVideo\"))\n        }\n    }\n}\n\nstruct BoardGameView: View {\n    var body: some View {\n        // Board game content\n    }\n}\n\nstruct InstructionalVideoView: View {\n    var body: some View {\n        // Video content\n    }\n}"
+    },
+    {
+      "timestamp": "18:27",
+      "title": "Create a world anchor with ARKit",
+      "language": "swift",
+      "code": "// Create a world anchor with ARKit\n\nimport ARKit\n\nclass AnchorController {\n\n    func setUp(session: ARKitSession, provider: WorldTrackingProvider) async throws {\n        try await session.run([provider])\n    }\n\n    func createAnchor(at transform: simd_float4x4, provider: WorldTrackingProvider) async throws {\n        let anchor = WorldAnchor(originFromAnchorTransform: transform)\n        try await provider.addAnchor(anchor)\n    }\n\n    func observeWorldTracking(provider: WorldTrackingProvider) async {\n       for await update in provider.anchorUpdates {\n            switch update.event {\n            case .added, .updated, .removed:\n                // Add, update, or remove furniture\n                break\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "20:02",
+      "title": "Observe sharing availability with ARKit",
+      "language": "swift",
+      "code": "// Observe sharing availability with ARKit\n\nfunc observeSharingAvailability(provider: WorldTrackingProvider) async {\n    for await sharingAvailability in provider.worldAnchorSharingAvailability {\n         if sharingAvailability == .available {\n             // Store availability to check when creating a new shared world anchor\n         }\n     }\n}"
+    },
+    {
+      "timestamp": "20:24",
+      "title": "Create a shared world anchor with ARKit",
+      "language": "swift",
+      "code": "// Create a shared world anchor with ARKit\n\nimport ARKit\n\nclass SharedAnchorController {\n    \n    func setUp(session: ARKitSession, provider: WorldTrackingProvider) async throws {\n        try await session.run([provider])\n    }\n\n    func createAnchor(at transform: simd_float4x4, provider: WorldTrackingProvider) async throws {\n        let anchor = WorldAnchor(originFromAnchorTransform: transform,\n                                 sharedWithNearbyParticipants: true)\n        try await provider.addAnchor(anchor)\n    }\n\n    func observeWorldTracking(provider: WorldTrackingProvider) async {\n       for await update in provider.anchorUpdates {\n            switch update.event {\n            case .added, .updated, .removed:\n                // Add, update, or remove furniture. Updates with shared anchors from others!\n                let anchorIdentifier = update.anchor.id\n            }\n        }\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "AVPlaybackCoordinator",
+        "url": "https://developer.apple.com/documentation/AVFoundation/AVPlaybackCoordinator"
+      },
+      {
+        "title": "Building a guessing game for visionOS",
+        "url": "https://developer.apple.com/documentation/GroupActivities/building-a-guessing-game-for-visionos"
+      },
+      {
+        "title": "Configure your visionOS app for sharing with people nearby",
+        "url": "https://developer.apple.com/documentation/GroupActivities/configure-your-app-for-sharing-with-people-nearby"
+      },
+      {
+        "title": "groupActivityAssociation(_:)",
+        "url": "https://developer.apple.com/documentation/SwiftUI/View/groupActivityAssociation(_:)"
+      },
+      {
+        "title": "init(originFromAnchorTransform:sharedWithNearbyParticipants:)",
+        "url": "https://developer.apple.com/documentation/ARKit/WorldAnchor/init(originFromAnchorTransform:sharedWithNearbyParticipants:)"
+      },
+      {
+        "title": "worldAnchorSharingAvailability",
+        "url": "https://developer.apple.com/documentation/ARKit/WorldTrackingProvider/worldAnchorSharingAvailability-swift.property"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/318/5/b5e843e6-41fc-4ddd-8aa6-91e3ede41898/downloads/wwdc2025-318_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/318/5/b5e843e6-41fc-4ddd-8aa6-91e3ede41898/downloads/wwdc2025-318_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "223",
+      "year": "2025",
+      "title": "Explore enhancements to your spatial business app",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/223"
+    },
+    {
+      "id": "10201",
+      "year": "2024",
+      "title": "Customize spatial Persona templates in SharePlay",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10201"
+    },
+    {
+      "id": "10087",
+      "year": "2023",
+      "title": "Build spatial SharePlay experiences",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10087"
+    },
+    {
+      "id": "10070",
+      "year": "2023",
+      "title": "Create a great spatial playback experience",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10070"
+    },
+    {
+      "id": "10187",
+      "year": "2021",
+      "title": "Build custom experiences with Group Activities",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10187"
+    },
+    {
+      "id": "10225",
+      "year": "2021",
+      "title": "Coordinate media experiences with Group Activities",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10225"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:21:53.308Z"
+}

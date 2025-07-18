@@ -1,0 +1,120 @@
+{
+  "id": "10116",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10116/",
+  "title": "VoiceOver efficiency with custom rotors",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Accessibility & Inclusion"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello, and welcome to WWDC.\n\nHello, I'm Alex Walczak, and today I'll be showing you how adding Custom Rotors to VoiceOver can make your apps more accessible for all users. VoiceOver is Apple's screen reader that lets you interact with any Apple device even if you can't see the screen. You use VoiceOver by touching the screen to hear what's under your finger and then perform simple gestures to navigate the user interface.\n\nPeople who aren't looking at the screen rely on the rotor for many tasks, a couple of which I will show you today. By twisting two fingers on the screen, as if rotating a dial, the power of the rotor becomes enabled at your fingertips.\n\nA swipe down now moves you to the next rotor item on the screen and a swipe up moves you to the previous item. By adding custom rotors to your app that respond to simple flick gestures, you can transform how a user experiences your app. Navigating complex interfaces becomes so much easier and finding related elements in your app is as simple as a flick up or down. So to show you that, we'll look at a couple examples, beginning with how custom rotors make navigating a complex interface easier. But first, I'd like to show you the VoiceOver experience in my app without any custom rotors. I'm developing an app that shows your location on the map and Apple Stores and parks around you. I'll turn on VoiceOver so we can see how it traverses the views of the app, from top to bottom, following the layout direction of the user interface. Apple, Bay Street. San Francisco Bay. Bay Bridge. Alcatraz Island. This grid represents how people might experience my app through VoiceOver without any custom rotors. Just as in the demo, let's see how VoiceOver cursor moves not only between Apple Stores and parks, but also between bridges and other points of interest.\n\nNotice how someone using VoiceOver has to move sequentially through the items from all categories while someone looking at the screen will use an icon and its color to focus on items from a single category. How could we enable VoiceOver users to experience my app the same as anybody else? What we could start by doing is figuring out which items in the interface draw our attention visually. So in the case of my app, that would be the markers for Apple Stores and parks.\n\nNext, we can group these items by category, and then create custom rotors to explore items just within their categories.\n\nSo let's do that.\n\nWe'll implement a rotor for Apple Stores and another rotor for parks.\n\nWhen we do that, we can sort the items of each rotor by distance from the user.\n\nand include the distance in the accessibility information of each item.\n\nThis way, somebody using the rotor to interact with the UI can quickly scan the closest Apple Stores...\n\nand scan the closest parks...\n\njust as how somebody looking at the screen might focus on the locations closest to their position.\n\nLet's see how these two rotors operate once they're implemented.\n\nFirst, we look at the finished Apple Stores rotor. Apple Stores. Apple, Chestnut Street, 0.9 miles. Apple, Union Square, 1.8 miles. Apple, Stonestown, 4.6 miles. And now, we see the Parks rotor. Parks. Alamo Square, 0.8 miles. Corona Heights Park, 1.5 miles. Hippie Hill, 1.5 miles. In both examples, as the user moves through the sorted locations in each custom rotor, they can quickly determine which locations, either Apple Stores or parks, they are closest to.\n\nThis shows that custom rotors make it possible to deliver a similar experience for all users especially in navigating complex interfaces like this map.\n\nHow can we add these rotors to the app? Well, when VoiceOver lands on the 'map view', it looks for any custom rotors in the view's accessibilityCustomRotors property.\n\nMy app needs two rotors, one for Apple Stores and one for parks, so we'll be setting this property equal to two custom rotors.\n\nAnd since each rotor filters the same map annotations, we only need to implement one method to make both rotors.\n\nLet's start building this method which returns a new UIAccessibilityCustomRotor for one type of point of interest.\n\nA custom rotor is implemented with minimal extra work by the developer, thanks to a block syntax. After initializing a UIAccessibilityCustomRotor with a localized name, we'll perform some basic logic in the closure, and return a UIAccessibilityCustomRotor Item Result representing the next point of interest VoiceOver will land on.\n\nYou can extract the current rotor item from the block argument and prepare a list of possible items the user can move to.\n\nThe property 'searchDirection' tells you whether the user flipped up to go to the previous item or down to go to the next item.\n\nThis information can be used to decrement or increment the index in the list of possible items.\n\nReturn nil to tell the user they're at the first or last item and VoiceOver will remain focused on that point of interest. Otherwise, finish by returning a new UIAccessibilityCustomRotorItemResult with the previous or next item as the target element. I've described a number of steps here, but as a developer, remember that all you need to do to take advantage of the custom rotor API in your app is implement this closure and add your new custom rotor to your view's list of accessibility Custom Rotors. Custom rotors can have a huge impact on how somebody will interact with groups of elements in your app. But they aren't the only way to improve the accessibility of complex interfaces. To learn another way, check out this talk on how custom actions can enhance interactions with individual elements in your app. We've already seen that custom rotors can be used to find related elements like stores and parks on a map. Now let's learn how a custom rotor can be used on a different kind of content: text.\n\nMy app pulls up a brochure when you tap on a location, and since I'm planning a picnic at Golden Gate Park, I've pulled up its brochure.\n\nWow, so many things to do. Let's use the built-in Lines rotor which automatically appears for text, to navigate this brochure line by line.\n\nLines. Golden Gate Park. Plan your visit. Dutch Windmill. Visit in March to see the tulips in full bloom. This towering landmark stands on the park's eastern edge. East Meadow. Picnic area closed for maintenance. A great place for families with pets to have a picnic. Great. We were able to hear some of the content but look how long it took us to get to that first alert. We had to hear all the preceding content just to find out that I should definitely not be choosing East Meadow as my picnic spot. Not to mention, there are a couple more alerts we haven't gotten to, so we won't know if we've listened to all the alerts if we don't carefully listen to every line in this brochure, right? Wait, actually, we can implement a custom rotor to take us through just the alerts so we can hear this critical information as fast as anyone looking at the screen will notice the alert icons. So let's see what a rotor for 'alerts' will look like. Alerts. East Meadow. Picnic area closed for maintenance. Oak Woodlands Trail. Muddy trail conditions. Ocean Beach. Expect dense fog and high winds. Great. As expected, the 'alerts' rotor only moves among the alerts so we can plan our trip to the park so much more efficiently.\n\nOur text view only has one custom rotor, for alerts. So in our implementation, this time the textView's accessibilityCustomRotors property will just contain a single rotor. As before, we'll implement a method that also returns a new rotor, but instead of passing in a location type, such as a store or park, we'll pass in the type of text attribute we wish to put in the rotor.\n\nIn this case, that's the 'alerts' attribute.\n\nAs we expect, this method has a similar syntax to the maps example. So again, we initialize a UIAccessibilityCustomRotor with a localized name and implement the closure that returns the item VoiceOver will move to.\n\nWe can find all the alerts in the textView's attributed Text because they are all marked with a custom 'alerts' attribute. Given the range of the current rotor item in our text, our goal then is to find the range of the previous or next alert depending on the direction the user wants to go in. And here, we are doing just that: determining the range of the text we'll be searching for our custom alert attribute and the direction that we will search it based on the user's gesture.\n\nWhen a match for an alert is found, we know we can stop, at which point we return a new UIAccessibilityCustomRotorItemResult, passing in the new targetRange of our attribute.\n\nOtherwise, we pass in a nil targetRange to indicate that we are either at the first or last rotor item. But we must be careful here to ensure that targetRange is a UITextRange, and that targetElement conforms to the UITextInput protocol. This is quite a bit of information to absorb but when we take a step back, we can see that implementing a custom rotor in our app comes down to returning the previous or next CustomRotorItemResult from the block used to initialize the rotor.\n\nAccessibility custom rotors allow us to filter information from your app and focus only on particular categories. Earlier we saw how custom rotors improve a complex map-based app, and now we have just seen how custom rotors can enhance how a user interacts with text-based content as well. To go deeper on learning how to further improve the accessibility of text content, view this session on creating an accessible reading experience.\n\nAnd now that you've learned quite a bit about VoiceOver, including two ways you can make custom rotors, I encourage you to use your knowledge and audit your apps for accessibility. And for more details on that, have a look at the past session on app testing with VoiceOver. To conclude, here's what I hope you will do to improve VoiceOver efficiency in your app. First, identify the most visually complex areas of your interface. Turn on VoiceOver and determine if you could reach that content as easily as when VoiceOver is off. If not, this is as good of an experience as somebody who is not looking at the screen will get. So consider adding custom rotors where they can help.\n\nAfter all, you put in a lot of time designing your app for people, so make sure that it works well for everyone. Thanks, and have a great WWDC 2020.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:04",
+      "title": "mapView.accessibilityCustomRotors = [customRotor(for: .stores), customRotor(for: .parks)]",
+      "language": "swift",
+      "code": "mapView.accessibilityCustomRotors = [customRotor(for: .stores), customRotor(for: .parks)]"
+    },
+    {
+      "timestamp": "4:31",
+      "title": "map rotor 1",
+      "language": "swift",
+      "code": "// Custom map rotors\n\nfunc customRotor(for poiType: POI) -> UIAccessibilityCustomRotor {\n    UIAccessibilityCustomRotor(name: poiType.rotorName) { [unowned self] predicate in\n\n        return UIAccessibilityCustomRotorItemResult(    )\n    }\n}"
+    },
+    {
+      "timestamp": "4:56",
+      "title": "map rotor 2",
+      "language": "swift",
+      "code": "// Custom map rotors\n\nfunc customRotor(for poiType: POI) -> UIAccessibilityCustomRotor {\n    UIAccessibilityCustomRotor(name: poiType.rotorName) { [unowned self] predicate in\n        let currentElement = predicate.currentItem.targetElement as? MKAnnotationView\n        let annotations = self.annotationViews(for: poiType)\n        let currentIndex = annotations.firstIndex { $0 == currentElement }\n        return UIAccessibilityCustomRotorItemResult(    )\n\n    }\n}"
+    },
+    {
+      "timestamp": "5:04",
+      "title": "map rotor 3",
+      "language": "swift",
+      "code": "// Custom map rotors\n\nfunc customRotor(for poiType: POI) -> UIAccessibilityCustomRotor {\n    UIAccessibilityCustomRotor(name: poiType.rotorName) { [unowned self] predicate in\n        let currentElement = predicate.currentItem.targetElement as? MKAnnotationView\n        let annotations = self.annotationViews(for: poiType)\n        let currentIndex = annotations.firstIndex { $0 == currentElement }\n        let targetIndex: Int\n        switch predicate.searchDirection {\n        case .previous:\n            targetIndex = (currentIndex ?? 1) - 1\n        case .next:\n            targetIndex = (currentIndex ?? -1) + 1\n        }\n        return UIAccessibilityCustomRotorItemResult(    )\n\n    }\n}"
+    },
+    {
+      "timestamp": "5:17",
+      "title": "Maps rotor 4",
+      "language": "swift",
+      "code": "// Custom map rotors\n\nfunc customRotor(for poiType: POI) -> UIAccessibilityCustomRotor {\n    UIAccessibilityCustomRotor(name: poiType.rotorName) { [unowned self] predicate in\n        let currentElement = predicate.currentItem.targetElement as? MKAnnotationView\n        let annotations = self.annotationViews(for: poiType)\n        let currentIndex = annotations.firstIndex { $0 == currentElement }\n        let targetIndex: Int\n        switch predicate.searchDirection {\n        case .previous:\n            targetIndex = (currentIndex ?? 1) - 1\n        case .next:\n            targetIndex = (currentIndex ?? -1) + 1\n        }\n        guard 0..<annotations.count ~= targetIndex else { return nil } // Reached boundary\n        return UIAccessibilityCustomRotorItemResult(targetElement: annotations[targetIndex],\n                                                    targetRange: nil)\n    }\n}"
+    },
+    {
+      "timestamp": "8:07",
+      "title": "Text rotor 1",
+      "language": "swift",
+      "code": "// Custom text rotor\n\nfunc customRotor(for attribute: NSAttributedString.Key) -> UIAccessibilityCustomRotor {\n    UIAccessibilityCustomRotor(name: attribute.rotorName) { [unowned self] predicate in\n        var targetRange: UITextRange? // Goal: find the range of following `attribute`\n        let beginningRange = \n        guard let currentRange =    else { return nil }\n\n        switch predicate.searchDirection {   }\n\n        return UIAccessibilityCustomRotorItemResult(targetElement: self,\n                                                    targetRange: targetRange)\n    }\n}"
+    },
+    {
+      "timestamp": "8:20",
+      "title": "Text rotor 2",
+      "language": "swift",
+      "code": "// Custom text rotor\n\nfunc customRotor(for attribute: NSAttributedString.Key) -> UIAccessibilityCustomRotor {\n    UIAccessibilityCustomRotor(name: attribute.rotorName) { [unowned self] predicate in\n        var targetRange: UITextRange? // Goal: find the range of following `attribute`\n        let beginningRange = self.textRange(from: self.beginningOfDocument,\n                                            to: self.beginningOfDocument)\n        guard let currentRange = predicate.currentItem.targetRange ?? beginningRange else {\n            return nil\n        }\n        let searchRange: NSRange, searchOptions: NSAttributedString.EnumerationOptions\n        switch predicate.searchDirection {   }\n\n        return UIAccessibilityCustomRotorItemResult(targetElement: self,\n                                                    targetRange: targetRange)\n    }\n}"
+    },
+    {
+      "timestamp": "8:37",
+      "title": "Text rotor 3",
+      "language": "swift",
+      "code": "// Custom text rotor\n\nfunc customRotor(for attribute: NSAttributedString.Key) -> UIAccessibilityCustomRotor {\n    UIAccessibilityCustomRotor(name: attribute.rotorName) { [unowned self] predicate in\n        var targetRange: UITextRange? // Goal: find the range of following `attribute`\n        let beginningRange = \n        guard let currentRange =    else { return nil }\n        let searchRange: NSRange, searchOptions: NSAttributedString.EnumerationOptions\n        switch predicate.searchDirection {\n        case .previous:\n            searchRange = self.rangeOfAttributedTextBefore(currentRange)\n            searchOptions = [.reverse]\n        case .next:\n            searchRange = self.rangeOfAttributedTextAfter(currentRange)\n            searchOptions = []\n        }\n       \n        return UIAccessibilityCustomRotorItemResult(targetElement: self,\n                                                    targetRange: targetRange)\n    }\n}"
+    },
+    {
+      "timestamp": "9:06",
+      "title": "Text rotor 4 (end)",
+      "language": "swift",
+      "code": "// Custom text rotor\n\nfunc customRotor(for attribute: NSAttributedString.Key) -> UIAccessibilityCustomRotor {\n    UIAccessibilityCustomRotor(name: attribute.rotorName) { [unowned self] predicate in\n        var targetRange: UITextRange? // Goal: find the range of following `attribute`\n        let beginningRange =\n        guard let currentRange =    else { return nil }\n        let searchRange: NSRange, searchOptions: NSAttributedString.EnumerationOptions\n        switch predicate.searchDirection {   }\n        self.attributedText.enumerateAttribute(\n            attribute, in: searchRange, options: searchOptions) { value, range, stop in\n            guard value != nil else { return }\n            targetRange = self.textRange(from: range)\n            stop.pointee = true\n        }\n        return UIAccessibilityCustomRotorItemResult(targetElement: self,\n                                                    targetRange: targetRange)\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Accessibility for UIKit",
+        "url": "https://developer.apple.com/documentation/UIKit/accessibility-for-uikit"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10116/5/80EA07DE-B3B6-4DA6-80FE-BC03C5F0CB43/wwdc2020_10116_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10116/5/80EA07DE-B3B6-4DA6-80FE-BC03C5F0CB43/wwdc2020_10116_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10034",
+      "year": "2023",
+      "title": "Create accessible spatial experiences",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10034"
+    },
+    {
+      "id": "10119",
+      "year": "2021",
+      "title": "SwiftUI Accessibility: Beyond the basics",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10119"
+    },
+    {
+      "id": "250",
+      "year": "2019",
+      "title": "Making Apps More Accessible With Custom Actions",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/250"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:09:18.723Z"
+}

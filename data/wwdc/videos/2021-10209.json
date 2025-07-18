@@ -1,0 +1,68 @@
+{
+  "id": "10209",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10209/",
+  "title": "Discover breakpoint improvements",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Bass music playing ♪  ♪ Han Ming Ong: Hello, my name is Han Ming Ong. I'm an engineer in the Xcode Debugger UI team. Today, I want to talk about the improvements the team has made to breakpoints that will make your debugging more productive. Let’s start with some breakpoint basics to get everyone on the same page. When you encounter a bug in your program, it means it is not executing to your expectation, and you want to check with the debugger why reality has diverged. At this point, there are two common activities that you do. One, you inspect the process state to further understand the situation. Two, you ascertain your logic by stepping through the process execution. Both activities require you to pause, ideally just before the bug happens. And the best way to pause the process is to use a breakpoint. We're going to talk about three common breakpoints that you can create in Xcode. The first is source file breakpoints. These are breakpoints that are set in a single file. The most common type is the line breakpoint. It is the workhorse of breakpoints and is excellent for pausing on a line of code you want to inspect. The fastest way to create one is simply to click in the gutter, right next to the line you want to pause. Suppose at this point, I would like to check the logic of function convertedToVolume by stepping into it.\n\nBut when I step in, I'm actually stepping into a different expression. The compiler has rightly determined that adjustedDensity needs be executed first. Of course, I can step out and then step back into the function, but this can get laborious when you have to repeat it many times. What we are seeing here is that sometimes a line breakpoint is not granular enough. That's because the compiler has generated more than one location for LLDB to stop at. What we really want is to pause just before convertedToVolume is executed. In Xcode 13, we are introducing column breakpoints. This allows you to avoid the shortcomings of line breakpoints when you need to pause at certain expressions along a line. To set a column breakpoint on convertedToVolume, you Command-click on the expression to bring up the Actions popover and then select Set Column Breakpoint. Just like with a line breakpoint, you can click on the icon to disable or enable. You can double-click on it to bring up the breakpoint editor if you need to modify the breakpoint. Since we don’t need the line breakpoint anymore, we can delete it by dragging away from the gutter. You can do the same thing to our column breakpoint, but I'm just going to leave it there. Control or right mouse-click brings up the contextual menu which includes our previous action. Here I'm going to select Reveal in Breakpoint Navigator The subtitle has been amended to show you the column of the breakpoint. When we continue, we'll iterate through the next NutritionFact and hit our newly set column breakpoint. When the breakpoint hits, Xcode uses the line PC to tell you the paused line. It draws a light green highlight over the line. In Xcode 11.4, we introduced column PC. The column PC shows you the paused column by drawing a green underscore under an expression. So it lets you know the expression the debugger is going to execute next. Since I'm seeing the column PC under convertedToVolume, I can confidently do a one-step into the function. Column breakpoints are particularly useful for closures in Swift or blocks in Objective-C. Sometimes a single Swift line can have multiple closures, just like this single line 269. When a compiler compiles a file under debug condition, it creates a map called a line table that maps source lines and columns to compiled addresses. So for each closure on this line, the compiler generates a line table entry that the debugger will use to pause. Suppose I want to inspect the anonymous parameter $0 of the last closure, I can set a line breakpoint at 269 but after pausing, to reach the last closure, I need to do numerous step-in and step-out due to the generated line table entries. We have seen that with Xcode 13, we can simply set a column breakpoint at the last $0 and when paused, we are exactly where we want to be and we can inspect $0 to our heart's content. Hmm, looks having Fragrant Durian Smoothie -- for breakfast no less -- is a great way to start the day. Yummy! Let's move on to symbolic breakpoints. These are breakpoints on function names that will pause the process when those functions are executed. They are very helpful in situations where source file breakpoints cannot be used or are inconvenient. For instance, you don’t have access to the source files and hence, you can't compile them with debug info. Or you have many subclasses that implement a common function, and it is cumbersome to set a file breakpoint in each of them. Let’s take a look. We will click on the Add button at the bottom of the breakpoint navigator. This brings up a list of breakpoints we can create. We will select Symbolic Breakpoint and immediately the breakpoint editor appears so that we can enter the symbol name. Suppose we are interested in pausing in the toggle function that is implemented in a few classes. Instead of looking for each of them, we can just enter toggle here.  But you need to be careful about function names that are common words. This is because LLDB will match the name in all the libraries that are loaded in the process, including the system libraries. If unrestricted, there can be many resolved breakpoint locations, sometimes even in the thousands. This can be annoying if many of them are constantly hit by the execution path. Thankfully, we can restrict the search to a particular module. A module is a binary or image that can be loaded during execution, including the main binary. Here we enter \"Fruta,\" which is the binary name of our app. And we get three resolved locations, which is a lot more manageable. Since we have selected a smoothie, let’s toggle the favorite button. We will hit our symbolic breakpoint that was just set. Now, for symbolic breakpoints, you know it is fairly easy to make a typographic error. And then during program execution, the breakpoint doesn't hit and you are left scratching your head. Let’s try to create one called convertToMass.\n\nNew in Xcode 13, if a breakpoint is not resolved to any location by LLDB, Xcode will show you a dashed icon. There is a myriad of reasons why a breakpoint is not resolved but there are some common explanations. If you hover over the unresolved breakpoint icon, we have a tooltip that can help you out. The first couple of reasons pertain to the kind of breakpoint. So for a symbolic breakpoint, the name has to be spelled correctly and the symbol has to exist in its library. The next reason is more generic: the library for the breakpoint must be loaded. Sometimes, the library is only loaded after you have done some user action, like clicking on a button, and at that point, LLDB will automatically resolve the breakpoint for you. In this case, I suspect I have a bad spelling. Let’s figure it out. One way is to use the find navigator and search for \"convert.\" As you can see, there are quite a few results and it will take some time to analyze them visually. Instead, let’s use a different trick through LLDB. In Xcode console, we type `image` — which also means module — `lookup -r` for regex, `n` for name, `convert`  and we supply the module name, Fruta to restrict the search. You can see we only have four matches and have certainly misspelled the function name. It should be \"convertedToMass.\" Let’s copy and paste it into our breakpoint editor.\n\nAnd this time, LLDB has resolved it successfully and given us location number one.\n\nIf you are interested in other LLDB tips and tricks, please watch our previous presentation, \"LLDB: Beyond 'po'.\" Let’s bring up a different file.\n\nUnresolved breakpoints can also be seen in source file breakpoints. There are two reasons that pertain to them. First, the line for the breakpoint must be compiled. In this case, line 23 was not compiled because it's in the else part of the compiler condition. Also, the compiler must have generated debug info for the module. If not, you need to check your build settings. Next is runtime issue breakpoints. A runtime issue is an issue that occurs at runtime — for example, changing a UI state in a background thread. It is not as serious as a crash, and by default, Xcode doesn't pause your process, because it can be too disruptive when you are focusing on a different bug. Instead, when a runtime issue occurs, Xcode records the backtrace and presents it in the Issue navigator. But because the issue happened in the past, there's no point in inspecting the current process state. So sometimes, you do want to catch it when it happens. Having a runtime issue breakpoint allows you to pause in the debugger and poke at the process there and then. There are different types of runtime issue breakpoints. You can easily select a specific type by using the type popup. Bear in mind that for some of them, you need to enable the corresponding feature in the diagnostics tab of the scheme editor. You can go there by simply clicking on the Go To button. Since we want to make use of the main thread checker runtime issue breakpoint, we want to enable Main Thread Checker. I hope that my session has shown you the improvements we have made to breakpoints in Xcode 13. Breakpoints can greatly enhance your debugging prowess and should definitely be part of your repertoire. Thank you and enjoy the rest of WWDC. ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "0:01",
+      "title": "Using LLDB to find a symbol in the process",
+      "language": "swift",
+      "code": "image lookup -rn convert Fruta"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10209/6/D2CF5CC2-D0A6-4347-B833-DD9BECADB976/downloads/wwdc2021-10209_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10209/6/D2CF5CC2-D0A6-4347-B833-DD9BECADB976/downloads/wwdc2021-10209_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "110370",
+      "year": "2022",
+      "title": "Debug Swift debugging with LLDB",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110370"
+    },
+    {
+      "id": "429",
+      "year": "2019",
+      "title": "LLDB: Beyond \"po\"",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/429"
+    },
+    {
+      "id": "412",
+      "year": "2018",
+      "title": "Advanced Debugging with Xcode and LLDB",
+      "url": "https://developer.apple.com/videos/play/wwdc2018/412"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:43:08.055Z"
+}

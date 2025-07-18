@@ -1,0 +1,97 @@
+{
+  "id": "10159",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10159/",
+  "title": "Explore Core Image kernel improvements",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video",
+    "Graphics & Games"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Bass music playing ♪  David Hayward: Welcome, everyone.\n\nMy name is David Hayward.\n\nI'm a senior engineer on the Core Image team, and I'll be giving a short presentation today that will show you the latest best practices when adding custom Metal Core Image kernels to your Xcode project.\n\nIn this presentation, I will discuss the general benefits of writing custom CIKernels in Metal.\n\nNext, I will introduce two recommended ways that Metal CIKernels can be built.\n\nAnd then I will demonstrate step by step how to add these to your project.\n\nFirst off, let's review the benefits of writing custom CIKernels in Metal.\n\nBy writing CIKernels in Metal, you will get access to Core Image features such as automatic tiling and concatenation.\n\nIt will improve your app's performance by shifting some of the time to compile kernels from runtime to when your app is built.\n\nAnd doing so will give your kernels access to high-performance features such as gather-reads, group-writes, and half-float math.\n\nLast but not least, it will make your life as a developer easier by syntax highlighting as you type and inline error checking when you build.\n\nSo with that for motivation, I will now show you step by step how to add Metal Core Image kernels to your application.\n\nThere are now two recommended ways to add CIKernels to your project, and I will describe both methods in detail.\n\nI will refer to this as the extern method because it requires the kernel functions to be specified as extern \"C\" and built using custom build flags.\n\nThe second method is new in iOS 15 and macOS 12.\n\nI will refer to this as the stitchable method because it requires the kernel functions to be in attributed as stitchable.\n\nIts implementation uses Metal Dynamic Libraries.\n\nIn both methods, there are four general steps to follow.\n\nFirst, is to configure your project appropriately.\n\nSecond, is to add Metal CIKernel source files to your project.\n\nThird, is to write your Metal CIKernel code.\n\nAnd fourth is to write Swift or Objective-C code to initialize and apply your kernel to create a new CIImage.\n\nFirst, let's describe these four steps when using extern CIKernels, starting with project configuration.\n\nUnlike conventional Metal compute and graphics shaders, this Core Image Metal code needs to be compiled and linked with special flags.\n\nI recommend adding two custom build rules to your project targets which will make using these flags automatic.\n\nFirst, you will go to the project's target settings and add a build rule for files that end in .ci.metal.\n\nFor files with this extension, this rule will run a one-line script that calls the Metal compiler with the required -fcikernel flag.\n\nThis build rule will produce an output binary that will end in .ci.air.\n\nNext, you will add a second build rule for files that end in .ci.air.\n\nFor files with this extension, this rule will run a one-line script that calls the Metal linker with the required -cikernel flag.\n\nThis build rule will produce an output in your app's Resources directory that will end in .ci.metallib.\n\nNow that you have added the custom build rules, all you need to do is add .ci.metal sources to your project.\n\nTo do that, select from the File menu that you want to add a new Metal file and then give that new file a name ends in .ci.metal.\n\nThe next step is to write your CIKernel in the Metal source file.\n\nFirst, at the top of the source, you will include the CoreImage.h header so that you get access to all the classes that Core Image provides.\n\nThe kernel must be specified as extern \"C\" to be recognized by Core Image.\n\nThe content of your actual kernel implementation is up to your imagination.\n\nFor one example of what you can do, I recommend that you watch our WWDC 2020 presentation on \"HDR editing and playback using AVFoundation.\" The final step is to add Swift code to load your kernel and apply it to create a new image.\n\nKernels are typically used in a CIFilter subclass which will have properties such as an inputImage and other input parameters.\n\nI recommend that your filter instantiate its CIKernel object into a static property.\n\nThis way, the work of loading the metallib resource is done only once when it is first needed.\n\nBecause of the custom build rule I described earlier, you will need to specify a resource URL with the same name as your source and an extension of .ci.metallib.\n\nLastly, a CIFilter subclass must override the outputImage property.\n\nIn the getter, you will take the kernel from a static property and use its apply method to create a new image based on the input properties.\n\nSo that fully describes the process of building extern CIKernels.\n\nLet's now describe the new process of building stitchable CIKernels.\n\nWith the stitchable method, only one setting change is needed to configure your Xcode project.\n\nThis setting will tell the Metal linker to link against the Core Image framework.\n\nTo do this, just go to the project's target setting and add a build setting for Other Metal Linker Flags with the value \"-framework CoreImage\".\n\nBecause stitchable CIKernels don't require custom build rules, you can simply add .metal sources to your project without any special suffix.\n\nYou can add kernels in either one or several sources files.\n\nBy default, Xcode will build all of them into one .metallib resource.\n\nThe next step is to write your CIKernel in the Metal source file.\n\nAs before, you will include the CoreImage.h header to get access to the Core Image classes.\n\nBut with this method, the kernel must be attributed as ] to be recognized by Core Image.\n\nOnce again, the final step is to add Swift code to load your kernel, and apply it to create a new image.\n\nThe only change with stitchable CIKernels is that you can simply load the resource with the standard name of default.metallib.\n\nThat concludes the process of building stitchable CIKernels.\n\nIt is worth mentioning some of the benefits of using this method.\n\nStitchable kernels can link against other Metal libraries.\n\nAnd they now support input parameters that are integer and unsigned integer vector types.\n\nAnother niche benefit is that stitchable kernels can be compiled from source at runtime.\n\nMost applications should not use this feature because it will incur longer initial compile times.\n\nThat said, there are some classes of applications that may benefit from this flexibility.\n\nThere is one last topic to cover in this presentation.\n\nThe stitchable CIKernel implementation depends on two important Metal features.\n\nThe first is the new Metal Shading Language version 2.4.\n\nAmong other things, this versions supports the ] attribute that causes the compiler to associate additional metadata with each function.\n\nThe second is the Metal Dynamic Libraries feature that is used so that your kernels can link against the Core Image Metal classes.\n\nFor more details on these Metal features, be sure to watch the \"Discover Compilation Workflows in Metal\" presentation.\n\nBe aware, though, that Metal Dynamic Libraries are only supported on some graphics devices, specifically iPhone and iPad with A11 and later, all Macs with Apple silicon, and Intel Macs with AMD Navi and Vega GPUs.\n\nYour application should check the Metal device property supportsDynamicLibraries before using stitchable CIKernels.\n\nSo that concludes my step-by-step description of how to use the two recommended ways to add Metal CIKernels to your application.\n\nFor each method, I've covered how to configure your project, write the kernel source, and initialize the kernel objects.\n\nI hope that this allows you to add great visual effects to your app's images and videos.\n\nThank you and enjoy the rest of WWDC 2021! ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:54",
+      "title": "Extern CIKernels",
+      "language": "swift",
+      "code": "// MyKernels.ci.metal\n#include <CoreImage/CoreImage.h> // includes CIKernelMetalLib.h\n\nusing namespace metal;\n\nextern \"C\" float4 myKernel (coreimage::sample_t s, \n                            float param, \n                            coreimage::destination dest) \n{\n  float4 result = s;\n  \n  // Example code to create striped pattern\n\tfloat diagLine = dest.coord().x + dest.coord().y;\n\tfloat stripe   = fract(diagLine/20.0 + param*2.0);\n  \n  // Color range check\n\tif((stripe > 0.5) && ((s.r > 1) || (s.g > 1) || (s.b > 1)))\n\t\tresult = float4(2.0, 0.0, 0.0, 1.0);\n  \n\treturn result;\n}"
+    },
+    {
+      "timestamp": "4:32",
+      "title": "Load your extern CI kernel and apply it to create a new image",
+      "language": "swift",
+      "code": "class MyFilter: CIFilter {\n    var inputImage: CIImage?\n\tvar inputParam: Float = 0.0\n    static var kernel: CIColorKernel = { () -> CIColorKernel in \n\t  let url = Bundle.main.url(forResource: \"MyKernels\", \n                              withExtension: \"ci.metallib\")!\n      let data = try! Data(contentsOf: url)\n\t  return try! CIColorKernel(functionName: \"MyKernel\", \n                              fromMetalLibraryData: data)\n\t}()\n\toverride var outputImage : CIImage? {\n      get { guard let input = inputImage else { return nil }\n\t\treturn MyFilter.kernel.apply(extent:input.extent, \n                                 arguments:[input, inputParam]) }\n\t}\n}"
+    },
+    {
+      "timestamp": "6:18",
+      "title": "Stitchable CI Kernel",
+      "language": "swift",
+      "code": "// MyKernels.ci.metal\n#include <CoreImage/CoreImage.h> // includes CIKernelMetalLib.h\n\nusing namespace metal;\n\n[[stitchable]] float4 myKernel (coreimage::sample_t s, \n                                float param, \n                                coreimage::destination d) \n{\n  float4 result = s;\n  \n  // Example code to create striped pattern\n\tfloat diagLine = dest.coord().x + dest.coord().y;\n\tfloat stripe   = fract(diagLine/20.0 + param*2.0);\n  \n  // Color range check\n\tif((stripe > 0.5) && ((s.r > 1) || (s.g > 1) || (s.b > 1)))\n\t\tresult = float4(2.0, 0.0, 0.0, 1.0);\n  \n\treturn result;\n}"
+    },
+    {
+      "timestamp": "6:40",
+      "title": "Load your stitchable CI kernel and apply it to create a new image",
+      "language": "swift",
+      "code": "class MyFilter: CIFilter {\n    var inputImage: CIImage?\n\tvar inputParam: Float = 0.0\n    static var kernel: CIColorKernel = { () -> CIColorKernel in \n\t    let url = Bundle.main.url(forResource: \"default\", \n                                withExtension: \"metallib\")!\n\t\tlet data = try! Data(contentsOf: url)\n\t\treturn try! CIColorKernel(functionName: \"MyKernel\", fromMetalLibraryData: data)\n\t}()\n\toverride var outputImage : CIImage? {\n      get { guard let input = inputImage else { return nil }\n\t\treturn MyFilter.kernel.apply(extent:input.extent, arguments:[input, inputParam]) }\n\t}\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Core Image",
+        "url": "https://developer.apple.com/documentation/CoreImage"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10159/4/40A32E20-B4FF-4586-9C5B-1994F3A585A2/downloads/wwdc2021-10159_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10159/4/40A32E20-B4FF-4586-9C5B-1994F3A585A2/downloads/wwdc2021-10159_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10160",
+      "year": "2021",
+      "title": "Capture and process ProRAW images",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10160"
+    },
+    {
+      "id": "10021",
+      "year": "2020",
+      "title": "Build Metal-based Core Image kernels with Xcode",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10021"
+    },
+    {
+      "id": "10089",
+      "year": "2020",
+      "title": "Discover Core Image debugging techniques",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10089"
+    },
+    {
+      "id": "10008",
+      "year": "2020",
+      "title": "Optimize the Core Image pipeline for your video app",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10008"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:23:57.493Z"
+}

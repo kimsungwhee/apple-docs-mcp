@@ -1,0 +1,139 @@
+{
+  "id": "10290",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10290/",
+  "title": "What's new in AVKit",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video",
+    "Essentials"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Bass music playing ♪  ♪ Marty Pye: Welcome to \"What’s new in AVKit\".\n\nMy name is Marty Pye and I'm an engineer on the AVKit team.\n\nToday, I'd like to talk about some of the enhancements we've made to Picture in Picture -- or short, PiP -- as well as to the full-screen experience on macOS.\n\nLet's start with Picture in Picture.\n\nWith Picture in Picture, users can continue to enjoy their video content while multitasking with their device.\n\nFor example, if you're watching a video full screen and you receive a message, you can briefly reply to that message while continuing to watch your content.\n\nThe video will automatically enter PiP, and once you've finished replying, you can quickly resume full-screen playback.\n\nThis makes for a really seamless viewing experience, and we think users will expect this behavior whenever they're watching videos.\n\nFor more information on how to integrate PiP into your own apps, I encourage you to watch this 2019 session on delivering intuitive media playback with AVKit.\n\nNew this year, if your video is playing inline, you can optionally allow it to automatically enter PiP when a user swipes back to the Home screen.\n\nEnabling this behavior is achieved via the canStartPictureInPicture AutomaticallyFromInline property.\n\nThis property is available both on AVPlayerViewController for apps using our native controls and on AVPictureInPictureController for apps implementing their own custom UI.\n\nMake sure to only set this flag to true when the playing content is intended to be the user's primary focus.\n\nIf you're using AVPlayerViewController to present video content, PiP is handled for you.\n\nThere's nothing you need to do.\n\nIf you're not using AVPlayerViewController, you can still use AVPictureInPictureController to bring the native PiP experience to your app.\n\nFirst, you need to configure your app's audio session category for playback and enable the PiP background mode.\n\nThen, all you need to do is create a pictureInPictureController, passing in a reference to the playerLayer.\n\nThen, when a user attempts to toggle Picture in Picture using the button you provide, you just need to call start or stop PiP on the controller object.\n\nUp until now, our Picture in Picture experience was built around AVPlayer-based content.\n\nToday, I'm excited to announce the same level of support for AVSampleBufferDisplayLayer.\n\nInstead of creating the Picture in Picture controller with a player layer, you first create a ContentSource, which you set up with either an AVPlayerLayer or -- as shown here -- with an AVSampleBufferDisplayLayer.\n\nFor a user, the Picture in Picture experience will be identical.\n\nFor you as a developer, there are some new responsibilities associated with supporting PiP for AVSampleBufferDisplayLayer.\n\nLet's take a look at this playback delegate.\n\nWe have to rely on playback state information provided via the new AVPictureInPictureSample BufferPlaybackDelegate in order to render the PiP UI, since media playback is not managed by an AVPlayer.\n\nWhen the user attempts to control media from the PiP UI, we forward those commands to the delegate to handle.\n\nLet's go through the five individual callbacks one by one.\n\nThe setPlaying function is called when the user presses the Play/Pause button in the PiP window.\n\nThe skipByInterval function is called when the user presses one of the skip buttons.\n\nUse these callbacks to control your media accordingly.\n\nThe timeRangeForPlayback function allows you to specify the currently playable time range.\n\nThis allows us to render the timeline and show where the playhead is currently.\n\nTime ranges with a finite duration should always contain the current time of the sample buffer display layer's timebase.\n\nUse a time range with an infinite duration to indicate live content.\n\nThe didTransitionToRenderSize function is called when the Picture in Picture window changes size, such as during pinch-to-zoom.\n\nTake this render size into account when choosing media variants in order to avoid unnecessary decoding overhead.\n\nThe isPlaybackPaused function is called periodically and informs the Picture in Picture UI whether to reflect a paused or playing state.\n\nThis is conceptually the equivalent of timeControlStatus on AVPlayer.\n\nNext, let's take a look at some of the improvements we've made to the full-screen experience on macOS.\n\nIn Big Sur, when you take a video full screen in a Mac Catalyst app, the video would fill the entire window but not the entire screen.\n\nNow in macOS Monterey, the video will take up the entire screen.\n\nYou end up with a true full-screen experience for both native macOS and Mac Catalyst apps.\n\nThe playback controls look the same for both.\n\nAll Mac Catalyst apps will get this new behavior automatically.\n\nJust like in any native macOS full-screen experience, the user can swipe back to the app window.\n\nA placeholder will be shown instead of the original video, indicating that the content is playing full screen.\n\nThis is very similar to the placeholder shown when the video is playing in Picture in Picture.\n\nIn a scenario where you present a player view controller full screen after a user selects some content, the view controller will still present in full window.\n\nHowever, new in macOS Monterey, users can detach to a true full-screen playback experience by pressing the green full screen button in the top left of the window.\n\nThe full screen life cycle can be explicitly managed to provide a better user experience based on your application's needs.\n\nLet's take a look at an example.\n\nAs we've already shown, a user should be able to take a video full screen and then swipe back to your app while playback continues.\n\nThey should be able to navigate your app freely, even if that results in the player view controller being removed from your view hierarchy.\n\nAt any point in time, they should be able to either swipe or use Mission Control to navigate back to the full-screen video.\n\nSo let's take a look at how to make that work.\n\nYou are responsible for the playerViewController's life cycle.\n\nIn order to achieve an optimal experience, you need to make sure to keep the playerViewController alive even if it's not in your app's view hierarchy.\n\nOtherwise, when the user navigates away from the page with the video, full-screen playback will end as the playerViewController is released.\n\nAll you need to do is keep a strong reference to the playerViewController when you receive the willBeginFullScreenPresentation callback.\n\nThen, once the user exits full screen, you'll receive the willEndFullScreenPresentation callback.\n\nThis is your opportunity to let go of the playerViewController you were keeping alive, assuming the user has navigated away from the original view it was presented from.\n\nThe same applies for native macOS.\n\nYou can use the new playerViewDelegate to keep the playerView alive until you receive the playerViewWillExitFullScreen callback.\n\nWhen a user exits full screen, you will also receive this restoreUserInterface callback.\n\nThis is an opportunity for your app to navigate back to the original page containing the video, assuming that's appropriate for your use case.\n\nThis is very similar to the existing callback you receive when a user stops Picture in Picture.\n\nMake sure to return from this completionHandler as quickly as possible so as not to block the transition from full screen to inline.\n\nReturning false indicates that restoration failed or isn't possible, in which case the content exits full screen without an animation.\n\nWith that, I would like to wrap up today's session.\n\nWe saw how to use the new content source API to add Picture in Picture support to your app when using AVSampleBufferDisplayLayer instead of AVPlayerLayer.\n\nFor macOS and Mac Catalyst, we went over the enhanced full screen experience, and outlined the necessary steps for your code to integrate seamlessly.\n\nI hope you enjoyed today's session and I look forward to seeing some of these features integrated into your apps.\n\nEnjoy the rest of the conference.\n\n♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:16",
+      "title": "New canStartPictureInPictureAutomaticallyFromInline property",
+      "language": "swift",
+      "code": "// New property on AVPlayerViewController / AVPictureInPictureController.\nvar canStartPictureInPictureAutomaticallyFromInline: Bool { get set }"
+    },
+    {
+      "timestamp": "1:40",
+      "title": "Setting up AVPictureInPictureController with an AVPlayerLayer",
+      "language": "swift",
+      "code": "func setupPictureInPicture() {\n    // Ensure PiP is supported by current device.\n    if AVPictureInPictureController.isPictureInPictureSupported() {\n        // Create a new controller, passing the reference to the AVPlayerLayer.\n        pictureInPictureController = AVPictureInPictureController(playerLayer: playerLayer)\n        pictureInPictureController.delegate = self\n        \n        // Observe AVPictureInPictureController.isPictureInPicturePossible to update the PiP\n        // button’s enabled state.\n    } else {\n        // PiP isn't supported by the current device. Disable the PiP button.\n        pictureInPictureButton.isEnabled = false\n    }\n}"
+    },
+    {
+      "timestamp": "2:11",
+      "title": "Starting and stopping picture in picture",
+      "language": "swift",
+      "code": "@IBAction func togglePictureInPictureMode(_ sender: UIButton) {\n    if pictureInPictureController.isPictureInPictureActive {\n        pictureInPictureController.stopPictureInPicture()\n    } else {\n        pictureInPictureController.startPictureInPicture()\n    }\n}"
+    },
+    {
+      "timestamp": "2:56",
+      "title": "AVPictureInPictureSampleBufferPlaybackDelegate",
+      "language": "swift",
+      "code": "public protocol AVPictureInPictureSampleBufferPlaybackDelegate: NSObjectProtocol{\n\n    // Delegate is responsible for:\n    //\n    // - Supplying playback state information for PiP UI.\n    // - Responding to user input from PiP UI.\n\n}"
+    },
+    {
+      "timestamp": "3:17",
+      "title": "Toggle playback of the video and seek back / ahead 15 seconds",
+      "language": "swift",
+      "code": "func pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController, setPlaying playing: Bool)\n\nfunc pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController, skipByInterval skipInterval: CMTime, completion completionHandler: @escaping () -› Void)"
+    },
+    {
+      "timestamp": "3:31",
+      "title": "Provide elapsed time information",
+      "language": "swift",
+      "code": "func pictureInPictureControllerTimeRangeForPlayback(_ pictureInPictureController: AVPictureInPictureController) -> CMTimeRange"
+    },
+    {
+      "timestamp": "3:51",
+      "title": "Choose appropriate media variant for render size",
+      "language": "swift",
+      "code": "func pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController, didTransitionToRenderSize newRenderSize: CMVideoDimensions)"
+    },
+    {
+      "timestamp": "4:06",
+      "title": "Update playback state",
+      "language": "swift",
+      "code": "func pictureInPictureControllerIsPlaybackPaused(pictureInPictureController: AVPictureInPictureController) -> Bool"
+    },
+    {
+      "timestamp": "6:05",
+      "title": "iOS / MacCatalyst - Persist full screen playback",
+      "language": "swift",
+      "code": "func playerViewController(_ playerViewController: AVPlayerViewController, willBeginFullScreenPresentationWithAnimationCoordinator coordinator: UIViewControllerTransitionCoordinator) {\n    coordinator.animate(alongsideTransition: nil) { context in\n        // Keep a strong reference to the playerViewController while in full screen.\n        self.detachedPlayerViewController = playerViewController\n    }\n}"
+    },
+    {
+      "timestamp": "6:38",
+      "title": "iOS / MacCatalyst - Release the playerViewController",
+      "language": "swift",
+      "code": "func playerViewController(_ playerViewController: AVPlayerViewController, willEndFullScreenPresentationWithAnimationCoordinator coordinator: UIViewControllerTransitionCoordinator){\n    coordinator.animate(alongsideTransition: nil) { context in\n        // Stop keeping the playerViewController alive when transition completes,\n        self.detachedPlayerViewController = nil\n    }\n}"
+    },
+    {
+      "timestamp": "6:46",
+      "title": "Persist full screen playback on macOS",
+      "language": "swift",
+      "code": "func playerViewWillEnterFullScreen(_ playerView: AVPlayerView) {\n    // Start keeping the player view alive while it is not in the view hierarchy.\n    self.detachedPlayerView = playerView\n}\n\nfunc playerViewWillExitFullScreen(_ playerView: AVPlayerView) {\n    // Stop keeping the player view alive.\n    self.detachedPlayerView = nil\n}"
+    },
+    {
+      "timestamp": "6:55",
+      "title": "Restoring UI when exiting full screen",
+      "language": "swift",
+      "code": "// Restoring UI when exiting full screen\n\n// iOS / MacCatalyst\nfunc playerViewControllerRestoreUserInterfaceForFullScreenExit(_ playerViewController: AVPlayerViewController) async -> Bool {\n\t// Custom UI restoration logic\n\treturn true\n}\n\n// macOS\nfunc playerViewRestoreUserInterfaceForFullScreenExit(_ playerView: AVPlayerView) async -> Bool {\n\t// custom UI restore logic here\t\t\n\treturn true\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "AVKit",
+        "url": "https://developer.apple.com/documentation/AVKit"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10290/7/3B2EE1D3-46DD-48DC-8B8A-FDF061067D68/downloads/wwdc2021-10290_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10290/7/3B2EE1D3-46DD-48DC-8B8A-FDF061067D68/downloads/wwdc2021-10290_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10191",
+      "year": "2021",
+      "title": "Deliver a great playback experience on tvOS",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10191"
+    },
+    {
+      "id": "10146",
+      "year": "2021",
+      "title": "What’s new in AVFoundation",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10146"
+    },
+    {
+      "id": "503",
+      "year": "2019",
+      "title": "Delivering Intuitive Media Playback with AVKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/503"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:24:07.732Z"
+}

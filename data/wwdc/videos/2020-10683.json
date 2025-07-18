@@ -1,0 +1,123 @@
+{
+  "id": "10683",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10683/",
+  "title": "Swan's Quest, Chapter 3: The notable scroll",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Swift"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello, and welcome to WWDC.\n\nHello, WWDC. This is Swan's Quest.\n\nI'm Rob, your host as we take an inside look at an exciting Swift Playgrounds challenge our crack team has built for you. Are you ready? In this episode, we're going to build upon our knowledge of Timer and ToneOutput.\n\nIn this third episode, you again start back in the lizard's hut to uncover the mystery of another scroll from the Swan. I don't want to spoil it for you, but I can tell you, to pass this challenge you need to understand tempo and how to play notes of different length.\n\nWe're going to start with a crash course on music theory. You're going to learn about the difference between quarter notes and half notes. The second challenge only used a single note length, so we'll revisit our timer, and talk about how to create variable durations. And finally, we're going to wrap up with another exciting side quest.\n\nLet's talk about rhythm. We've already discussed in prior episodes how to play notes of different pitch. But as you can see in the Swan's scroll, we need to learn how to play notes of different length.\n\nSince everyone can't read music, let's discuss three different lengths of notes as an example. Here we see the quarter note, the half note, and the dotted half note.\n\nMost tempos are defined by the quarter note, so we'll use that as our baseline. A half note is twice as long, and a dotted half note is three times as long as a quarter note.\n\nThe tempo for the song the Swan wants to hear is 120 beats per minute. That means there are 120 quarter notes in a minute. From there, we calculate the interval for our timer so we can play each length of note in the scroll.\n\nIn Music.swift, we've included protocols for you to implement. The first is Pitches, to capture the frequency for the ToneOutput. An example could look like this.\n\nYou'll want to add additional cases for each pitch in the Swan's scroll.\n\nNext, we need to represent a note as a tone of a certain length. The length should be provided as a multiple of a quarter note. For example, a half note would return 2.0 and an eighth note would return 0.5.\n\nAn example could look like this.\n\nAgain, you'll need to add cases to the enum for each length of note in the scroll. Next we need to update our timer code. So let's check in with Stephen.\n\nAs Rob mentioned, we need to update our timer code to allow for variable-length notes.\n\nBefore we get into our approach, let's update our code to use the types that Rob just showed you. First, let's update our sample to use the pitch and note types we just defined. Unfortunately, this isn't going to work out of the box because the TimeInterval for the timer does not respect our note length.\n\nRemember that the ToneOutput emits a continuous tone until it is told to stop. Our approach to updating the timer can take advantage of this.\n\nFirst, we need to set the timer's interval to the duration of the shortest note's length.\n\nTo do that, we'll update our NoteProtocol to add a property, shortestSupportedNoteLength. Then we update our note implementation.\n\nSince the quarter note is the shortest note in the Swan's scroll, we'll choose the quarter note to keep things simple.\n\nFinally, we update our timer's interval to the shortest note length multiplied by our tempo. This example assumes 120 beats per minute, which means the length of a quarter note is 500 milliseconds. Next, we need to subdivide our larger notes into a flattened array of pitches.\n\nWe need to send the ToneOutput a set of pitch instructions for each timer interval. Since our smallest supported note is the quarter note, we only send one instruction. Likewise, half notes send two instructions. Dotted half notes would send three instructions, and so on.\n\nTo subdivide your notes, you'll need to implement another method in your NoteProtocol implementation.\n\n\"Subdivide\" returns an array of pitches that can be collected and sent to the ToneOutput.\n\nNow, in our timer loop, we first create the subdivided array of pitches. Then we update our timer loop to iterate over the pitches, instead of the notes array.\n\nThis completed example demonstrates all of the API you need to complete the challenge.\n\nRob, do you have another side quest for our audience? I sure do, Stephen. But before we get to that, I need to warn you.\n\nThis side quest will contain spoilers for this chapter's challenge. If you want to complete the challenge first, hit pause on this video and come back after you've completed the challenge. Good luck! Okay, are you ready? The Swan's challenge was to play \"Ode to Joy,\" and the scroll provided all of the notes for you. Let's see if you can upgrade that code to play bass chords underneath it. I just have one hint for you.\n\nYou can layer tones on top of one another by using multiple timers.\n\nDuring this episode we gave you tips for completing the third challenge in Swan's Quest. We talked about rhythm and how tempo is defined. Then we discussed how to use a single, fixed-duration timer with subdivided pitches to play notes of different length.\n\nGood luck, have fun, and join us in the forums to share your solutions for the side quests. We'd love to hear how you did.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:03",
+      "title": "Example Pitch Implementation",
+      "language": "swift",
+      "code": "// Example Pitch implementation\n\npublic enum Pitch: Double, PitchProtocol {\n    case a4 = 440.0\n    \n    var frequency: Double {\n        return self.rawValue\n    }\n}"
+    },
+    {
+      "timestamp": "2:09",
+      "title": "NoteProtocol",
+      "language": "swift",
+      "code": "// Music.swift\n\npublic protocol NoteProtocol {\n    \n    /// Play this Note through a ToneOutput\n    var tone: Tone { get }\n    \n    /// The duration of this Note as a multiple of quarter notes,\n    /// e.g., a half note is 2.0, an eighth note is 0.5\n    var length: Float { get }\n}"
+    },
+    {
+      "timestamp": "2:24",
+      "title": "Example Note implementation",
+      "language": "swift",
+      "code": "// Example Note implementation\n\npublic enum Note: NoteProtocol {\n    case quarter(pitch: Pitch)\n    \n    var tone: Tone {\n        switch self {\n        case .quarter(let pitch):\n            return Tone(pitch: pitch.frequency, volume: 0.3)\n        }\n    }\n    \n    var length: Float {\n        switch self {\n        case .quarter(_):\n            return 1.0\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "2:51",
+      "title": "Play more than one tone redux",
+      "language": "swift",
+      "code": "// Play more than one tone redux\n\nlet toneOutput = ToneOutput()\nlet notes = [Note.quarter(pitch: .a4), .half(pitch: .c4), .quarter(pitch: .a4)]\n\nvar index = 0\nTimer.scheduledTimer(withTimeInterval: 0.4, repeats: true) { timer in\n    guard index < tones.count else {\n        timer.invalidate()\n        owner.endPerformance()\n        return\n    }\n    \n    toneOutput.play(tone: tones[toneIndex].tone)\n    index += 1\n}"
+    },
+    {
+      "timestamp": "3:18",
+      "title": "Updating NoteProtocol",
+      "language": "swift",
+      "code": "// Music.swift\n\npublic protocol NoteProtocol {\n    \n    /// Play this Note through a ToneOutput\n    var tone: Tone { get }\n    \n    /// The duration of this Note as a multiple of quarter notes,\n    /// e.g., a half note is 2.0, an eighth note is 0.5\n    var length: Float { get }\n\n    /// Length of the smallest Note supported\n    static var shortestSupportedNoteLength: Float { get }\n}"
+    },
+    {
+      "timestamp": "3:36",
+      "title": "Updating the Timer interval",
+      "language": "swift",
+      "code": "// Play more than one tone redux\n\nlet toneOutput = ToneOutput()\nlet notes = [Note.quarter(pitch: .a4), .half(pitch: .c4), .quarter(pitch: .a4)]\nvar index = 0\n\nlet interval = TimeInterval(Note.shortestSupportedNoteLength * 0.5) // 120 BPM\nTimer.scheduledTimer(withTimeInterval: interval, repeats: true) { timer in\n    guard index < tones.count else {\n        timer.invalidate()\n        owner.endPerformance()\n        return\n    }\n    \n    toneOutput.play(tone: tones[toneIndex].tone)\n    index += 1\n}"
+    },
+    {
+      "timestamp": "4:15",
+      "title": "Adding subdivide to NoteProtocol",
+      "language": "swift",
+      "code": "// Music.swift\n\npublic protocol NoteProtocol {\n    associatedtype PitchType: PitchProtocol\n \n    /// Play this Note through a ToneOutput\n    var tone: Tone { get }\n    \n    /// The duration of this Note as a multiple of quarter notes,\n    /// e.g., a half note is 2.0, an eighth note is 0.5\n    var length: Float { get }\n\n    /// Length of the smallest Note supported\n    static var shortestSupportedNoteLength: Float { get }\n\n    /// Subdivide into a series pitches, according to the shortest\n    /// supported note\n    func subdivide() -> [PitchType]\n}"
+    },
+    {
+      "timestamp": "4:30",
+      "title": "Putting it all together",
+      "language": "swift",
+      "code": "// Play more than one tone redux\n    \nlet toneOutput = ToneOutput()\nlet notes = [Note.quarter(pitch: .a4), .half(pitch: .a4), .quarter(pitch: .a4)]\nvar pitches = [Pitch]()\nfor note in notes {\n    pitches.append(contentsOf: note.subdivide())\n}\nvar index = 0\n\nlet interval = TimeInterval(Note.shortestSupportedNoteLength * 0.5)\nTimer.scheduledTimer(withTimeInterval: interval, repeats: true) { timer in\n    guard index < pitches.count else {\n        timer.invalidate()\n        owner.endPerformance()\n        return\n    }\n    toneOutput.play(tone: Tone(pitch: pitches[index].frequency, volume: 0.3))\n    index += 1\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "sampleProject": "https://developer.apple.com/sample-code/swift/swans-quest/the-notable-scroll.zip",
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10683/3/ED6FCD26-F83D-4886-B592-D8C93CF836D4/wwdc2020_10683_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10683/3/ED6FCD26-F83D-4886-B592-D8C93CF836D4/wwdc2020_10683_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10643",
+      "year": "2020",
+      "title": "Build a SwiftUI view in Swift Playgrounds",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10643"
+    },
+    {
+      "id": "10654",
+      "year": "2020",
+      "title": "Create Swift Playgrounds content for iPad and Mac",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10654"
+    },
+    {
+      "id": "10681",
+      "year": "2020",
+      "title": "Swan's Quest, Chapter 1: Voices in the dark",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10681"
+    },
+    {
+      "id": "10682",
+      "year": "2020",
+      "title": "Swan's Quest, Chapter 2: A time for tones",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10682"
+    },
+    {
+      "id": "10684",
+      "year": "2020",
+      "title": "Swan's Quest, Chapter 4: The sequence completes",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10684"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:50:03.530Z"
+}

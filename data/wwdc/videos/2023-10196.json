@@ -1,0 +1,172 @@
+{
+  "id": "10196",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10196/",
+  "title": "Dive deeper into SwiftData",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Swift"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Nick Gillett: Hi, I'm Nick Gillett, an Engineer here at Apple on the SwiftData team. In this session, I'll examine in detail how applications built with SwiftData evolve to take advantage of this rich, powerful new framework. First, I'll examine how to configure persistence in an application. Next, I'll talk about how to use the ModelContext to track and persist changes. Finally, I'll examine how to get the most out of SwiftData when working with objects in your code. I'd like to note that this session builds on the concepts and APIs introduced in \"Meet Swift Data\" and \"Model your Schema with SwiftData\". I highly recommend reviewing those sessions before continuing with this one. In this talk, I'll be referencing a new sample application, SampleTrips, that we built this year to demonstrate how easy it is to build applications with SwiftData. SampleTrips makes it easy to organize my ideas about where and when I want to travel. SwiftData also makes it easy to implement standard platform practices like undo and automatically saving when a user switches applications. SwiftData is a new way of persisting data in applications that use Swift. It's designed to work with the types you're already using in your code like Classes and Structs. At the core of this concept is the Model, described by a new macro, @Model, which tells SwiftData about the types you want to persist. This is the Trip class from the SampleTrips application. It has a few properties to capture information about a trip and some references to other objects used in SampleTrips. We designed SwiftData to provide a minimal distance between the code you would normally write without persistence, as I have here, and the code you have to write with persistence. With just a few changes, I've told SwiftData this Trip is a Model I want to persist and described how its relationships to the BucketListItem and LivingAccommodations should behave. Where possible, SwiftData automatically infers the structure you want to use from the code you write. But SwiftData also offers a powerful set of customizations to help you describe exactly how you want your data to be stored. You can learn all about the power of Model in \"Model your Schema with SwiftData\". These annotations to the Trip class enable it to play two important roles in SwiftData. The first is to describe the object graph of the application, called the Schema, and the second is that the Trip class will be an interface that I can write code against. This duality, the ability to play both parts, makes classes annotated with the @Model macro the central point of contact in applications that use SwiftData, and there is an aligned API concept to support each of these roles.\n\nThe Schema is applied to a class called the ModelContainer to describe how data should be persisted.\n\nThe ModelContainer consumes the Schema to generate a database that can hold instances of the Model classes.\n\nWhen working with instances of a Model class in code, those instances are linked to a ModelContext which tracks and manages their state in memory. This duality is at the core of SwiftData and in this section, I'll take a detailed look at the first role of the model, to describe the structure of persistence and how that works with the ModelContainer. The ModelContainer is where you describe how data is stored, or persisted, on a device. We can think of the ModelContainer as the bridge between the Schema and its persistence. It's where descriptions about how objects are stored, like whether they're in memory, or on disk, meet the operational and evolutionary semantics of that storage like versioning, migration, and graph separation. Instantiating a container with a Schema is easy. I can provide just the type I want to work with and SwiftData will figure out the rest of the Schema for me. For example, because the Trip class is related to other model types, ModelContainer actually infers this Schema, even though I only passed it a single type. ModelContainer has a number of other powerful initializers that are designed to grow with your code to enable increasingly complex configurations using a class called the ModelConfiguration.\n\nThe ModelConfiguration describes the persistence of a Schema. It controls where data is stored, like in memory for transient data or on disk for persistent data. ModelConfiguration can use a specific file URL chosen by you, or it can generate one automatically using the entitlements of your application like the group container entitlement. The configuration can also describe that a persistence file should be loaded in a read only mode, preventing writes to sensitive or template data. And finally, applications that use more than one CloudKit container can specify it as part of the ModelConfiguration for a Schema.\n\nLet's imagine I want to add some contact information to SampleTrips using new Person and Address classes. First, the total Schema is declared containing all of the types I want to use. Next, a Configuration is declared for the SampleTrips data containing the Trip, BucketListItem, and LivingAccommodations models. It declares a URL for the file I want to use to store this specific object graph's data, and a container identifier for the CloudKit container I want to use when syncing the SampleTrips data to CloudKit. Then, the models for the new Schema with Person and Address are declared in their own configuration with a unique file URL and CloudKit container identifier to keep this data separate from the Trips graph. Finally, the Schema and configurations are combined to form the ModelContainer.\n\nWith the power of ModelConfiguration, it's easy to describe the persistence requirements of your application, no matter how complicated they may be. In addition to instantiating a container by hand, SwiftUI applications can use the new modelContainer modifiers to create the container they want to work with.\n\nThe modelContainer modifier can be added to any View or Scene in an application and it supports ModelContainers from simple to powerful and everything in between. In this section, I examined how to combine the Schema with persistence using ModelContainer. It grows with your application as you build ever more powerful features and object graphs. And I demonstrated how you can use ModelConfiguration to unlock powerful persistence capabilities. As we learned in \"Meet SwiftData\", the Model and ModelContext are two of the most frequently used concepts when writing user interfaces or operating on model objects. In this section, I'll take a deep dive into how the ModelContext tracks changes and persists edits through the ModelContainer.\n\nWhen we use the modelContainer modifier in view or scene code, it prepares the application's environment in a specific way. The modifier binds the new modelContext key in the environment to the container's mainContext. The main context is a special MainActor-aligned model context intended for working with ModelObjects in scenes and views. By using the model context from the environment, view code has easy access to the context used by the Query here so that it can perform actions like delete here.\n\nSo model contexts are easy to use and access but what do they actually do? We can think of the ModelContext as a view over the data an application manages.\n\nData we want to work with is fetched into a model context as its used. In SampleTrips, when the upcoming trips view loads the data for the list, each trip object is fetched into the main context. If a trip is edited, that change is recorded by the model context as a snapshot. As other changes are made, like inserting a new Trip or deleting an existing one, the context tracks and maintains state about these changes until you call \"context.save()\". This means that even though the deleted trip is no longer visible in the list, it still exists in the ModelContext until that delete is persisted by calling save.\n\nOnce save is called, the context persists changes to the ModelContainer and clears its state.\n\nIf you're still referencing the objects in the context, like displaying them in a list, they will exist in the context until you're finished with them. At which point they will be freed and the context emptied out. The ModelContext works in coordination with the ModelContainer it is bound to. It tracks the objects you fetch in your views and then propagates any changes when save executes. ModelContext also supports features like rollback or reset for clearing its cached state when needed. This makes it the ideal place to support platform features like undo and autosave.\n\nIn SwiftUI applications, the modelContainer modifier has this isUndoEnabled argument, which binds the window's undo manager to the container's mainContext. That means that as changes are made in the main context, system gestures like three finger swipe and shake can be used to undo or redo changes with no additional code. ModelContext automatically registers undo and redo actions as changes are made to model objects. The modelContainer modifier uses the environment's undoManager which is usually provided by the system as part of the window or window group. and because of this, system gestures like three finger swipe and shake will automatically work in your applications. Another standard system feature supported by the ModelContext is Autosave. When autosave is enabled the model context will save in response to system events like an application entering the foreground or background. The main context will also periodically save as an application is used. Autosave is enabled by default in applications and can be disabled if desired using the modelContainer modifier's isAutosaveEnabled argument. Autosave is disabled for model contexts created by hand. In \"Meet SwiftData\", we learned a lot about how to work with ModelContext in an application and how well it pairs with SwiftUI. But user interfaces aren't the only places that applications need to work with model objects. In this section, I'll examine how SwiftData makes writing powerful, scalable code easier and safer than ever.\n\nTasks like working with data on a background queue, syncing with a remote server or other persistence mechanism, and batch processing all work with model objects, frequently in sets or graphs.\n\nMany of these tasks will begin by fetching a set of objects to work with via the fetch method on a ModelContext. In this example, the FetchDescriptor for the Trip model tells Swift that the trips array will be a collection of Trip objects. There's no casting or complicated result tuples to worry about.\n\nFetchDescriptor makes it easy to craft complicated queries using the new Predicate macro. For example, what are all the trips that involve staying at a specific hotel? Or what trips still have some activities that I need to make reservations for? In SwiftData, complicated queries that support subqueries and joins can all be written in pure swift. Predicate uses the Models you create and SwiftData uses the Schema generated from those models to translate these predicates into database queries. FetchDescriptor combines the power of the new Foundation Predicate macro with the Schema to bring compiler validated queries to persistence on Apple platforms for the first time. FetchDescriptor and related classes, like SortDescriptor, use generics to form the result type and tell the compiler about the properties of the model you can use. There are a number of tuning options you've come to know and love, like offset and limit, as well as parameters for faulting and prefetching.\n\nAll of this power combines in the new enumerate function on ModelContext. It's designed to help make the foiblesome pattern of batch traversal and enumeration implicitly efficient by encapsulating the platform best practices at a single call site. Enumerate works great with FetchDescriptors regardless of their complexity, from simple to powerful and everything in between. Enumerate automatically implements platform best practices for traversals like batching and mutation guards. These are customizable to meet the needs of your specific use case. For example, the batch size that enumerate uses defaults to 5,000 objects. But I could change it to 10,000 to reduce I/O operations during the traversal at the expense of memory growth. Heavier object graphs, like those that include images, movies, or other large data blobs, may choose to use a smaller batch size. Decreasing the batch size reduces memory growth but increases I/O during the enumeration. Enumerate also includes mutation guard by default. One of the most frequent causes of performance issues with large traversals is mutations that are trapped in the context during the enumeration. allowEscapingMutations tells enumerate that this is intentional, when not set, enumerate will throw if it discovers that the ModelContext performing the enumeration is dirty, preventing it from freeing objects that were already traversed.\n\nIn this session, we learned how to create powerful persistence configurations with Schema and ModelConfiguration. We also learned how easy it is to adopt standard system practices like undo and redo with the ModelContainer and ModelContext. And you can use SwiftData today to write safe, performant code in your project like never before with FetchDescriptor, predicate, and enumerate. I can't wait to see how you push the limits of what's possible with this new framework in the months and years ahead. Thanks for watching and happy coding.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:45",
+      "title": "Trip model with cascading relationships",
+      "language": "swift",
+      "code": "@Model\nfinal class Trip {\n    var destination: String?\n    var end_date: Date?\n    var name: String?\n    var start_date: Date?\n  \n    @Relationship(.cascade)\n    var bucketListItem: [BucketListItem] = [BucketListItem]()\n  \n    @Relationship(.cascade)\n    var livingAccommodation: LivingAccommodation?\n}"
+    },
+    {
+      "timestamp": "4:21",
+      "title": "Initializing a ModelContainer",
+      "language": "swift",
+      "code": "// ModelContainer initialized with just Trip\nlet container = try ModelContainer(for: Trip.self)\n\n// SwiftData infers related model classes as well\nlet container = try ModelContainer(\n    for: [\n        Trip.self, \n        BucketListItem.self, \n        LivingAccommodation.self\n    ]\n)"
+    },
+    {
+      "timestamp": "5:41",
+      "title": "Using ModelConfiguration to customize ModelContainer",
+      "language": "swift",
+      "code": "let fullSchema = Schema([\n    Trip.self,\n    BucketListItem.self,\n    LivingAccommodations.self,\n    Person.self,\n    Address.self\n])\n\nlet trips = ModelConfiguration(\n    schema: Schema([\n        Trip.self,\n        BucketListItem.self,\n        LivingAccommodations.self\n    ]),\n    url: URL(filePath: \"/path/to/trip.store\"),\n    cloudKitContainerIdentifier: \"com.example.trips\"\n)\n\nlet people = ModelConfiguration(\n    schema: Schema([Person.self, Address.self]),\n    url: URL(filePath: \"/path/to/people.store\"),\n    cloudKitContainerIdentifier: \"com.example.people\"\n) \n\nlet container = try ModelContainer(for: fullSchema, trips, people)"
+    },
+    {
+      "timestamp": "6:49",
+      "title": "Creating ModelContainer in SwiftUI",
+      "language": "swift",
+      "code": "@main\nstruct TripsApp: App {\n    let fullSchema = Schema([\n        Trip.self, \n        BucketListItem.self,\n        LivingAccommodations.self,\n        Person.self, \n        Address.self\n    ])\n  \n    let trips = ModelConfiguration(\n        schema: Schema([\n            Trip.self,\n            BucketListItem.self,\n            LivingAccommodations.self\n        ]),\n        url: URL(filePath: \"/path/to/trip.store\"),\n        cloudKitContainerIdentifier: \"com.example.trips\"\n    )\n  \n    let people = ModelConfiguration(\n        schema: Schema([\n            Person.self, \n            Address.self\n        ]),\n        url: URL(filePath: \"/path/to/people.store\"),\n        cloudKitContainerIdentifier: \"com.example.people\"\n    )\n  \n    let container = try ModelContainer(for: fullSchema, trips, people)\n    var body: some Scene {\n        WindowGroup {\n            ContentView()\n        }\n        .modelContainer(container)\n    }\n}"
+    },
+    {
+      "timestamp": "7:40",
+      "title": "Using the modelContainer modifier",
+      "language": "swift",
+      "code": "@main\nstruct TripsApp: App {\n   var body: some Scene {\n        WindowGroup {\n            ContentView()\n        }\n        .modelContainer(for: Trip.self)\n    }\n}"
+    },
+    {
+      "timestamp": "7:50",
+      "title": "Referencing a ModelContext in SwiftUI views",
+      "language": "swift",
+      "code": "struct ContentView: View {\n    @Query var trips: [Trip]\n    @Environment(\\.modelContext) var modelContext\n  \n    var body: some View {\n        NavigationStack (path: $path) {\n            List(selection: $selection) {\n                ForEach(trips) { trip in\n                    TripListItem(trip: trip)\n                        .swipeActions(edge: .trailing) {\n                            Button(role: .destructive) {\n                                modelContext.delete(trip)\n                            } label: {\n                                Label(\"Delete\", systemImage: \"trash\")\n                            }\n                        }\n                }\n                .onDelete(perform: deleteTrips(at:))\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "9:57",
+      "title": "Enabling undo on a ModelContainer",
+      "language": "swift",
+      "code": "@main\nstruct TripsApp: App {\n   @Environment(\\.undoManager) var undoManager\n   var body: some Scene {\n        WindowGroup {\n            ContentView()\n        }\n        .modelContainer(for: Trip.self, isUndoEnabled: true)\n    }\n}"
+    },
+    {
+      "timestamp": "11:05",
+      "title": "Enabling autosave on a ModelContainer",
+      "language": "swift",
+      "code": "@main\nstruct TripsApp: App {\n   var body: some Scene {\n        WindowGroup {\n            ContentView()\n        }\n        .modelContainer(for: Trip.self, isAutosaveEnabled: false)\n    }\n}"
+    },
+    {
+      "timestamp": "11:54",
+      "title": "Fetching objects with FetchDescriptor",
+      "language": "swift",
+      "code": "let context = self.newSwiftContext(from: Trip.self)\nvar trips = try context.fetch(FetchDescriptor<Trip>())"
+    },
+    {
+      "timestamp": "12:14",
+      "title": "Fetching objects with #Predicate and FetchDescriptor",
+      "language": "swift",
+      "code": "let context = self.newSwiftContext(from: Trip.self)\nlet hotelNames = [\"First\", \"Second\", \"Third\"]\n\nvar predicate = #Predicate<Trip> { trip in\n    trip.livingAccommodations.filter {\n        hotelNames.contains($0.placeName)\n    }.count > 0\n}\n\nvar descriptor = FetchDescriptor(predicate: predicate)\nvar trips = try context.fetch(descriptor)"
+    },
+    {
+      "timestamp": "12:27",
+      "title": "Fetching objects with #Predicate and FetchDescriptor",
+      "language": "swift",
+      "code": "let context = self.newSwiftContext(from: Trip.self)\n\npredicate = #Predicate<Trip> { trip in\n    trip.livingAccommodations.filter {\n        $0.hasReservation == false\n    }.count > 0\n}\n\ndescriptor = FetchDescriptor(predicate: predicate)\nvar trips = try context.fetch(descriptor)"
+    },
+    {
+      "timestamp": "13:18",
+      "title": "Enumerating objects with FetchDescriptor",
+      "language": "swift",
+      "code": "context.enumerate(FetchDescriptor<Trip>()) { trip in\n    // Operate on trip\n}"
+    },
+    {
+      "timestamp": "13:36",
+      "title": "Enumerating with FetchDescriptor and SortDescriptor",
+      "language": "swift",
+      "code": "let predicate = #Predicate<Trip> { trip in\n    trip.bucketListItem.filter {\n        $0.hasReservation == false\n    }.count > 0\n}\n\nlet descriptor = FetchDescriptor(predicate: predicate)\ndescriptor.sortBy = [SortDescriptor(\\.start_date)]\n\ncontext.enumerate(descriptor) { trip in\n    // Remind me to make reservations for trip\n}"
+    },
+    {
+      "timestamp": "14:01",
+      "title": "Fine tuning enumerate with batchSize",
+      "language": "swift",
+      "code": "let predicate = #Predicate<Trip> { trip in\n    trip.bucketListItem.filter {\n        $0.hasReservation == false\n    }.count > 0\n}\n\nlet descriptor = FetchDescriptor(predicate: predicate)\ndescriptor.sortBy = [SortDescriptor(\\.start_date)]\n\ncontext.enumerate(\n    descriptor,\n    batchSize: 10000\n) { trip in\n    // Remind me to make reservations for trip\n}"
+    },
+    {
+      "timestamp": "14:28",
+      "title": "Fine tuning enumerate with batchSize and allowEscapingMutations",
+      "language": "swift",
+      "code": "let predicate = #Predicate<Trip> { trip in\n    trip.bucketListItem.filter {\n        $0.hasReservation == false\n    }.count > 0\n}\n\nlet descriptor = FetchDescriptor(predicate: predicate)\ndescriptor.sortBy = [SortDescriptor(\\.start_date)]\n\ncontext.enumerate(\n    descriptor,\n    batchSize: 500,\n    allowEscapingMutations: true\n) { trip in\n    // Remind me to make reservations for trip\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Adopting SwiftData for a Core Data app",
+        "url": "https://developer.apple.com/documentation/CoreData/adopting-swiftdata-for-a-core-data-app"
+      },
+      {
+        "title": "SwiftData",
+        "url": "https://developer.apple.com/documentation/SwiftData"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10196/5/44001952-2ED6-45B5-9BF4-CFCE817D1CA7/downloads/wwdc2023-10196_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10196/5/44001952-2ED6-45B5-9BF4-CFCE817D1CA7/downloads/wwdc2023-10196_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10154",
+      "year": "2023",
+      "title": "Build an app with SwiftData",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10154"
+    },
+    {
+      "id": "10149",
+      "year": "2023",
+      "title": "Discover Observation in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10149"
+    },
+    {
+      "id": "10187",
+      "year": "2023",
+      "title": "Meet SwiftData",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10187"
+    },
+    {
+      "id": "10189",
+      "year": "2023",
+      "title": "Migrate to SwiftData",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10189"
+    },
+    {
+      "id": "10195",
+      "year": "2023",
+      "title": "Model your schema with SwiftData",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10195"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:47:59.361Z"
+}

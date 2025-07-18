@@ -1,0 +1,114 @@
+{
+  "id": "10132",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10132/",
+  "title": "Discover PhotoKit change history",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Photos & Camera"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Mellow instrumental hip-hop music ♪ ♪ Hi, my name is Mindy and I'm an engineer on the Photos team.\n\nToday, I'll be going over how to access Photos change history in your apps.\n\nPhotoKit provides a rich set of APIs for accessing and updating photos, videos, and albums stored in the photo library.\n\nPhotoKit is designed for apps that require a deep level of Photos access and integration for managing or editing photos, custom cameras, or apps that give people a way to browse their photo library in a unique way.\n\nThese types of applications may want to monitor how the photo library changes over time to closely mirror the Photos experience.\n\nLet's say I've created a social hiking app that allows people to share and edit photos of hiking trips with friends.\n\nWhen someone launches the app, the app gathers photos from the start and end timestamp of their latest hiking workout to generate a collage of their experience on the mountain.\n\nThe collages stay in sync with the selected photos from the photo library.\n\nIf someone receives hiking photos from a friend, for instance, the app will generate new collages using these updates.\n\nUp until now, in order for the app to discover newly inserted assets and changes to previous hiking collages, the app would need to perform a series of fetches.\n\nTo determine which assets were inserted, the app can fetch assets with a date created later than the last app launch date.\n\nDetermining asset updates and deletions is trickier.\n\nThe app would need to refetch every asset in every collage and check the modification date to determine asset updates, but this could bring up false positives, as the asset modification date can be set by internal Photos processing activities.\n\nDeletions in the photo library are more difficult to track, as all tracked assets need to be fetched and diffed for assets that were not returned with the fetch.\n\nIn total, this means that there are three separate checks that need to be done each time the app is launched, which can be especially costly if the app is displaying large quantities of assets.\n\nInstead of performing different fetches and checks for uncertain results, what if there was a way to know exactly what changed in one unified API call? Well, I'm excited to say that we've done just that! The new change history API allows for an easier way to track offline updates to the photo library.\n\nChange history consists of a timeline of changes such as insertions, updates, and deletions to the photo library.\n\nIn this example timeline, there are a variety of asset, album, and folder changes in the change history from the past three days.\n\nUsing this timeline, how can you determine which changes have happened in the last two days, or the last time you launched your app? You can now use a persistent change token that represents the state of the photo library at a given point in time.\n\nThis token can be persisted across app launches, and it can be used to fetch changes to the photo library that have occurred since that token, including third-party app changes.\n\nNote that if your app is in limited library mode, only changes for user-selected PhotoKit objects will be returned.\n\nThis change token is local to the device and is cheap to access from a persistent change or photo library instance at any time.\n\nThis new API is available on every platform that supports PhotoKit: macOS, iOS, iPadOS, and tvOS.\n\nAs your app is running and working with the photo library, you can store a persistent change token within the app.\n\nLater, you can use the token to fetch the photo library changes that have occurred since.\n\nFor each persistent change, you can grab the change details for three types of Photos objects: asset, asset collection, and collection list.\n\nSo what does this look like in code? You first use the last stored change token to fetch the persistent changes.\n\nNext, you enumerate through the persistent changes and grab the change details -- in this case, of type \"asset\" -- for each persistent change object.\n\nThese change details provide information on which local identifiers were updated, deleted, and inserted into the photo library since the change token.\n\nAfter processing these changes, you can store the last change token for future use.\n\nLet's compare and contrast the new persistent history API with the existing change observer APIs.\n\nPHChanges deal with active, in-memory fetch results and are used to record live changes to the photo library while your app is running.\n\nPersistent history, on the other hand, records long-running changes to the photo library, and can be used to report changes from when your app is not active.\n\nYou can use both or either of these APIs depending on the requirements of your app.\n\nGoing back to the hiking app example, I'd like to now use the persistent history API to track asset changes in order to create and update hiking collages.\n\nFirst, I'll use the last stored change token and fetch the persistent changes.\n\nNext, I'll iterate through the persistent changes, grab the relevant asset change details, and process the inserted, updated, and deleted identifiers.\n\nNow I need to identify library changes that affect the app from the change history, as the app doesn't need all of the information returned from fetching changes.\n\nIt's important for the app to know which assets were added to the photo library for new hiking workouts, and updated and deleted assets referenced in previous hiking collages.\n\nI've already identified the three sets of inserted, updated, and deleted asset local identifiers from enumerating through the persistent changes.\n\nHow do I now update the app to reflect this? Using the insertedIdentifiers set, I can determine which assets were added between hiking timestamps by fetching the inserted assets and checking their creation dates against each hike start and end date.\n\nThe updated assets may now have adjustments applied, so I can use the new hasAdjustments API to check if I need to redraw the asset in the UI.\n\nI can use the deleted asset local identifiers to determine which collages need to be regenerated.\n\nNow I've handled all of the offline photo library changes and my app is up to date.\n\nHere are a few things you should keep in mind when using the new change history API.\n\nFirst, determine what changes are important to you and your app, and only check for those changes.\n\nConsider performing one large fetch request of updated and inserted assets instead of multiple smaller requests to improve performance.\n\nPhoto libraries can change a lot due to processing and sync activity under the hood, so you may end up enumerating through a large amount of changes, especially if your app is not frequently launched.\n\nBecause of this, we recommend that you ask for change history on a background thread to not block the UI.\n\nThere are two types of errors that can occur when fetching persistent history.\n\nIf the change token is older than the available history of changes, the expired change token error will be returned.\n\nIn some cases, the persistent change cannot be relied upon to completely reconstruct the changes that occurred, and will return an error that change details are unavailable.\n\nIn these instances, we recommend refetching tracked objects in the photo library to ensure your app is up to date.\n\nBefore we wrap up, there are a few more new PhotoKit APIs I'd like to share with you.\n\nPhotoKit now supports accessing cinematic videos by media subtype and smart album.\n\nThere are also two new error codes.\n\nIf the photo library bundle is in a File Provider sync root directory on macOS, the library can become corrupted, and an error will be returned when trying to perform changes.\n\nIf an asset resource cannot be found due to network issues, the resource request will now return a network error.\n\nPlease check the developer documentation for all of the latest updates.\n\nLastly, be sure to check out this year's session on the Photos picker, as it is the easiest way to work with and access Photos.\n\nWe're so excited for you to use the new change history API and all of the great new features in PhotoKit.\n\nThank you! ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "0:01",
+      "title": "Tracking photo library changes",
+      "language": "swift",
+      "code": "// Discover added assets\nlet options = PHFetchOptions()\noptions.predicate = NSPredicate(format: \"creationDate > %@\", lastLaunchDate as CVarArg)\nlet insertedAssets = PHAsset.fetchAssets(with: options)"
+    },
+    {
+      "timestamp": "0:02",
+      "title": "Tracking photo library changes (2)",
+      "language": "swift",
+      "code": "let fetchResult = PHAsset.fetchAssets(with: localIdentifiers, options: nil)\n// Discover all modified and deleted assets\nfetchResult.enumerateObjects { asset, idx, stop in\n    if asset.modificationDate?.compare(lastLaunchDate) == .orderedDescending {\n        // Asset could have been modified\n    }\n    if !localIdentifiers.contains(asset.localIdentifier) {\n        // Asset could have been deleted\n    }\n}"
+    },
+    {
+      "timestamp": "0:03",
+      "title": "Fetching persistent changes using persistent change token",
+      "language": "swift",
+      "code": "let persistentChanges = try! PHPhotoLibrary.shared().fetchPersistentChanges(since: self.lastStoredToken)\n\nfor persistentChange in persistentChanges { \n   if let changeDetails = persistentChange.changeDetails(for: PHObjectType.asset) {\n        let updatedIdentifiers = changeDetails.updatedLocalIdentifiers\n        let deletedIdentifiers = changeDetails.deletedLocalIdentifiers\n        let insertedIdentifiers = changeDetails.insertedLocalIdentifiers\n    }\n}\n\n// After processing change details\nself.lastStoredToken = lastPersistentChange.changeToken"
+    },
+    {
+      "timestamp": "0:04",
+      "title": "Identifying important changes",
+      "language": "swift",
+      "code": "// Get last stored change token\nlet changeToken = self.lastStoredToken\n\n// Fetch persistent changes\nlet persistentChanges = try!   \n         library.fetchPersistentChanges(since: changeToken)\n\nfor persistentChange in persistentChanges {\n    // Grab change details and process updates\n}"
+    },
+    {
+      "timestamp": "0:05",
+      "title": "Using inserted identifiers",
+      "language": "swift",
+      "code": "let insertedAssets = PHAsset.fetchAssets(with: insertedIdentifiers, options: nil)\ninsertedAssets.enumerateObjects { asset, idx, stop in\n   for hike in hikes {\n        let dateInterval = NSDateInterval(start: hike.startDate, end: hike.endDate)\n        if dateInterval.contains(asset.creationDate) {\n            // This hike contains a new added asset\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "0:06",
+      "title": "Using updated identifiers",
+      "language": "swift",
+      "code": "let updatedAssets = PHAsset.fetchAssets(with: updatedIdentifiers, options: nil)\nupdatedAssets.enumerateObjects { asset, idx, stop in\n    if asset.hasAdjustments {\n        // This asset has edits\n    }\n}"
+    },
+    {
+      "timestamp": "0:07",
+      "title": "Using deleted identifiers",
+      "language": "swift",
+      "code": "for deletedIdentifier in deletedIdentifiers {\n    for collage in collages {\n        if collage.assetLocalIdentifiers.contains(deletedIdentifier) {\n            // This collage needs to be redrawn\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "0:08",
+      "title": "Handling errors",
+      "language": "swift",
+      "code": "do {\n    let persistentChanges = try library.fetchPersistentChanges(since: changeToken)\n} catch PHPhotosError.persistentChangeTokenExpired,\n        PHPhotosError.persistentChangeDetailsUnavailable {\n    let fetchResult = PHAsset.fetchAssets(with: trackedIdentifiers, options: options)\n    // Use fetch result\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "PhotoKit",
+        "url": "https://developer.apple.com/documentation/photokit"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10132/3/E1001357-38F4-429C-A7E2-495996D84893/downloads/wwdc2022-10132_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10132/3/E1001357-38F4-429C-A7E2-495996D84893/downloads/wwdc2022-10132_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10107",
+      "year": "2023",
+      "title": "Embed the Photos Picker in your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10107"
+    },
+    {
+      "id": "10023",
+      "year": "2022",
+      "title": "What's new in the Photos picker",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10023"
+    },
+    {
+      "id": "10046",
+      "year": "2021",
+      "title": "Improve access to Photos in your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10046"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:41:41.285Z"
+}

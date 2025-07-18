@@ -1,0 +1,96 @@
+{
+  "id": "10068",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10068/",
+  "title": "Bring your Live Activity to Apple Watch",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, I'm Anne, and I’m a Frameworks engineer working on watchOS. I’m delighted to show you how to deliver a great experience on Apple Watch for your existing iOS Live Activity.\n\nLive Activities provide a way for you to show up-to-date information about an activity or event from your app in glanceable locations like the Lock Screen, in StandBy, and in the Dynamic Island.\n\nNow, in iOS 18 and watchOS 11, your iOS Live Activity will appear in the Smart Stack on Apple Watch automatically.\n\nI’ll start by talking about how your Live Activity appears on Apple Watch after updating to watchOS 11.\n\nThen I’ll show you how you can customize your Live Activity view for the SmartStack. And I’ll fill you in on some details about Activity updates for watchOS and how to keep your Live Activity up-to-date.\n\nLet’s get started by reviewing how your existing iOS Live Activity appears on Apple Watch in watchOS 11.\n\nWhen people leave the Lock Screen on iPhone with a Dynamic Island, your Live Activity shifts to showing the compact leading and trailing views in the Dynamic Island. The views in the Dynamic Island come from the “compact leading” and “compact trailing” view builders. On Apple Watch, these same views are automatically shown in the Smart Stack, along with a title indicating that they were provided by your app. This is a great opportunity for you to consider whether your compact views are making the best use of the space available to keep people up to date. Here, my app is showing the estimated time until my delivery in the leading view, and the current status of my order in the trailing view.\n\nUpdates to your Live Activity on iOS are automatically sent to Apple Watch. On iOS, alerting updates animate to display your Dynamic Island Expanded Views. When the alerting update is received on Apple Watch, if it’s currently at the watch face, the system automatically launches the Smart Stack, displays your alert, and then shows your Live Activity.\n\nIf an app is in the foreground, a banner is displayed at the bottom of the screen with your Dynamic Island compact views.\n\nTapping a Live Activity shows a full-screen presentation with an option to open the app on iPhone.\n\nThe Dynamic Island compact views for your iOS Live Activity will appear in the Smart Stack automatically. Review your current views to ensure that you’re showing dynamically-updating information to keep people informed about the state of the activity. This will benefit people who have updated to iOS 18 and watchOS 11, and your existing iPhone customers.\n\nSo far, I’ve talked about what will happen automatically when people update to iOS 18 and watchOS 11. You also have an opportunity to provide a custom Live Activity view for Apple Watch. My app lets people order local produce to their door, and see the status of their deliveries using a Live Activity. Let’s modify it to customize the Live Activity view for Apple Watch.\n\nCurrently my Live Activity uses the default presentation in the Smart Stack and shows the compact Dynamic Island views. I can see how that will appear in Xcode using a Preview.\n\nIn the Canvas Device Settings, I can see all the View Styles in the Canvas together by selecting All Variants. Or I can go to Select mode and update the Canvas Device Settings to show the Content Smart Stack to focus on my Smart Stack view.\n\nTo customize for the watchOS Smart Stack, I’ll add the supplementalActivityFamilies modifier to the WidgetConfiguration for my Live Activity. I’ll use .small to indicate support for the Smart Stack. Now my iOS Lock Screen View from my activity content is displayed in the Smart Stack instead of the compact views. Since I designed my lock screen content for a larger view, the text is being truncated on Apple Watch. I’m going to customize this for the Smart Stack.\n\nI’ll get the activityFamily Environment value. Then provide a new layout for my content when the activityFamily is small.\n\nWhen the activity family is medium, for the iOS Lock Screen, I’ll use my original content view layout.\n\nI can preview how my view will appear in the Smart Stack using the Xcode Preview for my Live Activity.\n\nBy adding the supplementalActivityFamilies modifier, my Live Activity now provides a custom view when presented on Apple Watch.\n\nLive Activities work on Apple Watch even if you don’t have a Watch App. But if you do have a Watch App, you can also opt-in to open it from a tap on the Live Activity in the Smart Stack.\n\nIn the Build Settings for your Watch app target, add a value for the Supports Launch for Live Activity Attribute Types key in the Info.plist section. To launch your Watch app for all your Live Activities, leave the value empty. To launch for only specific Live Activities, add an item for each ActivityAttributes conforming type that should launch the Watch app.\n\nWith just a few lines of code, I’ve been able to update how my Live Activity appears, and I’ve been able to preview how this will be displayed. On Apple Watch, there are a few additional things you should know to make sure your Live Activity is showing the most up-to-date information possible and works just how you intended.\n\nI’ll cover update frequency and budgeting, handling limited connectivity, and adapting your Live Activity view for Always On Display.\n\nThere are a few differences in the update frequency and budget between iPhone and Apple Watch.\n\nLive Activity updates are synchronized automatically to Apple Watch. You don't have to manage separate push tokens or add any code. To protect battery life, update synchronization is budgeted. The budget threshold is similar to iOS. If you use push updates for your Live Activity today, they should be within the budget for Apple Watch with no extra work. Apple Watch also supports high-frequency updates when requested.\n\nIn your iOS app, consider cases where your Live Activity is updated locally with ActivityKit. Now, these updates also synchronize to Apple Watch, and count against its update budget. If an update is over budget, it may not immediately appear when someone’s wrist is down. However, when they raise their wrist, the Live Activity will show the latest information available.\n\nConnection state is another reason your activity might not receive timely updates on Apple Watch. When your Watch has a good connection to its nearby companion iPhone or is on the same Wi-Fi network, updates are generally sent to Apple Watch. With limited connectivity, Start, End, and alerting updates are prioritized for Apple Watch.\n\nThe system helps people know that they may not be seeing current information by showing a last connected message in the Smart Stack. Also consider adjustments your activity view may need for Always On Display. When the watch is in Always On mode, the system will automatically switch the Color Scheme to dark and set reduced luminance when someone puts their wrist down.\n\nIf you have brightly-colored views, use the isLuminanceReduced Environment value to remove bright elements or reduce their brightness.\n\nIn my view, I’m using a different tint for the gauge when the luminance is reduced to reduce the brightness and preserve readability.\n\nIf you want your Live Activity to have a light appearance, set the preferredColorScheme to light. It will automatically use the dark appearance in Always On Display with reduced luminance. Semantic colors, like primary, will automatically use an appropriate color for the color scheme. Now my activity will look great and show the best information possible at all times.\n\nBeginning in iOS 18 and watchOS 11, your iOS Live Activity will appear in the Smart Stack on Apple Watch automatically. Ensure your Dynamic Island Compact Views are timely, relevant, and informative.\n\nUse supplementalActivityFamilies to customize your Live Activity for Apple Watch. For more information about great Live Activity design, check out the video “Design Live Activities for Apple Watch”. For those of you who haven’t developed for watchOS before, Live Activities may be your first foray into customizing your app content for watchOS. We’re so happy to have you join us on this platform and we hope you’ll explore further to bring your apps to Apple Watch. Thank you.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:28",
+      "title": "Existing Live Activity views",
+      "language": "swift",
+      "code": "struct DeliveryLiveActivity: Widget {\n    var body: some WidgetConfiguration {\n        ActivityConfiguration(\n            for: DeliveryActivityAttributes.self\n        ) { context in\n            DeliveryActivityContent(context: context)\n        } dynamicIsland: { context in\n            DynamicIsland {\n                DynamicIslandExpandedRegion(.leading) {\n                    DeliveryExpandedLeadingView(context: context)\n                }\n                DynamicIslandExpandedRegion(.trailing) {\n                    DeliveryExpandedTrailingView(context: context)\n                }\n                DynamicIslandExpandedRegion(.bottom) {\n                    DeliveryExpandedBottomView(context: context)\n                }\n            } compactLeading: {\n                DeliveryCompactLeading(context: context)\n            } compactTrailing: {\n                DeliveryCompactTrailing(context: context)\n            } minimal: {\n                DeliveryMinimal(context: context)\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "3:43",
+      "title": "Preview Live Activities with Xcode Previews",
+      "language": "swift",
+      "code": "extension DeliveryActivityAttributes.ContentState {\n    static var shippedOrder: DeliveryActivityAttributes.ContentState {\n        .init(\n            status: .shipped,\n            courierName: \"Johnny\"\n        )\n     }\n\n     static var packedOrder: DeliveryActivityAttributes.ContentState {\n         .init(\n            status: .packed,\n            courierName: \"Contacting Courier...\")\n     }\n}\n\n#Preview(\n    \"Dynamic Island Compact\",\n    as: .dynamicIsland(.compact),\n    using: DeliveryActivityAttributes.preview\n) {\n    DeliveryLiveActivity()\n} contentStates: {\n    DeliveryActivityAttributes.ContentState.packedOrder\n    DeliveryActivityAttributes.ContentState.shippedOrder\n}"
+    },
+    {
+      "timestamp": "4:15",
+      "title": "Add .supplementalActivityFamilies to indicate support for the Smart Stack",
+      "language": "swift",
+      "code": "struct DeliveryLiveActivity: Widget {\n    var body: some WidgetConfiguration {\n        ActivityConfiguration(\n            for: DeliveryActivityAttributes.self\n        ) { context in\n            DeliveryActivityContent(context: context)\n        } dynamicIsland: { context in\n            DynamicIsland {\n                DynamicIslandExpandedRegion(.leading) {\n                    DeliveryExpandedLeadingView(context: context)\n                }\n                DynamicIslandExpandedRegion(.trailing) {\n                    DeliveryExpandedTrailingView(context: context)\n                }\n                DynamicIslandExpandedRegion(.bottom) {\n                    DeliveryExpandedBottomView(context: context)\n                }\n            } compactLeading: {\n                DeliveryCompactLeading(context: context)\n            } compactTrailing: {\n                DeliveryCompactTrailing(context: context)\n            } minimal: {\n                DeliveryMinimal(context: context)\n            }\n        }\n        .supplementalActivityFamilies([.small])\n    }\n}"
+    },
+    {
+      "timestamp": "4:49",
+      "title": "Customize view layout for the small activity family",
+      "language": "swift",
+      "code": "struct DeliveryActivityContent: View {\n    @Environment(\\.activityFamily) var activityFamily\n    var context: ActivityViewContext<DeliveryActivityAttributes>\n\n    var body: some View {\n        switch activityFamily {\n        case .small:\n            DeliverySmallContent(context: context)\n        case .medium:\n            DeliveryMediumContent(context: context)\n        @unknown default:\n            DeliveryMediumContent(context: context)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "5:06",
+      "title": "Preview customized layouts for the Smart Stack",
+      "language": "swift",
+      "code": "#Preview(\"Content\", as: .content, using: DeliveryActivityAttributes.preview) {\n   DeliveryLiveActivity()\n} contentStates: {\n    DeliveryActivityAttributes.ContentState.packedOrder\n    DeliveryActivityAttributes.ContentState.shippedOrder\n}"
+    },
+    {
+      "timestamp": "8:37",
+      "title": "Use isLuminanceReduced to remove bright elements with Always On Display",
+      "language": "swift",
+      "code": "struct DeliveryGauge: View {\n    @Environment(\\.isLuminanceReduced) private var isLuminanceReduced\n    var context: ActivityViewContext<DeliveryActivityAttributes>\n\n    var body: some View {\n        Gauge(value: context.state.progressPercent) {\n            GaugeLabel(context: context)\n        }\n        .tint(isLuminanceReduced ? .gaugeDim : .gauge)\n    }\n}"
+    },
+    {
+      "timestamp": "8:57",
+      "title": "For Live Activities with a light appearance, use a light preferredColorScheme",
+      "language": "swift",
+      "code": "struct DeliveryActivityContent: View {\n    @Environment(\\.activityFamily) var activityFamily\n    var context: ActivityViewContext<DeliveryActivityAttributes>\n\n    var body: some View {\n        switch activityFamily {\n        case .small:\n            DeliverySmallContent(context: context)\n                .preferredColorScheme(.light)\n        case .medium:\n            DeliveryMediumContent(context: context)\n        @unknown default:\n            DeliveryMediumContent(context: context)\n        }\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Displaying live data with Live Activities",
+        "url": "https://developer.apple.com/documentation/ActivityKit/displaying-live-data-with-live-activities"
+      },
+      {
+        "title": "Forum: App & System Services",
+        "url": "https://developer.apple.com/forums/topics/app-and-system-services?cid=vf-a-0010"
+      },
+      {
+        "title": "Starting and updating Live Activities with ActivityKit push notifications",
+        "url": "https://developer.apple.com/documentation/ActivityKit/starting-and-updating-live-activities-with-activitykit-push-notifications"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10068/4/C621DA91-3F64-481C-8D10-25A5C5FCD587/downloads/wwdc2024-10068_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10068/4/C621DA91-3F64-481C-8D10-25A5C5FCD587/downloads/wwdc2024-10068_sd.mp4?dl=1"
+  },
+  "extractedAt": "2025-07-18T09:11:06.027Z"
+}

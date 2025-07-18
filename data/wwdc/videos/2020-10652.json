@@ -1,0 +1,126 @@
+{
+  "id": "10652",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10652/",
+  "title": "Meet the new Photos picker",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Photos & Camera",
+    "Privacy & Security",
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nHello my name is to be Tobias Conradi and I'm an engineer on the Photos team together with my colleague Justin. I will introduce you to the new photos picker. First of all let's answer this question. What is PHPicker. PHPicker is the system provided Picker which allows you to get access to photos and videos from the users photo library. It is now built-in support for search just like the photos app. It supports fluid zooming in the grid. And a very often requested feature, multiselect for third party apps, where you can even review your selection in one up. In short. PHPicker is the best way for an app to access photo and video data from photos. It comes in an all new design you just saw, has a new easy to use API, supports multi-selection and apps can specify the selectable types. Another very important feature is the privacy aspect of it. It has privacy built in by default. It doesn't need direct access to the photos library to show the picker and the picker won't prompt for access on behalf of the app. It provides the user selected photos and videos only which is a clear users intent of sharing the assets with your app. You might wonder how do we achieve that. Well PHPicker runs out of process of the app even though it looks like PHPicker runs inside the app. It is really running in a separate process from the host app rendered on top of it. But the app can't access the picker directly and not even take screenshots of the picker content. Only what the user actually selects is passed back to the host app. Now let's have a look at the different components of this API. First there is PHPicker conjuration which is used to specify the multi-select limit or with an optional PHPicker filter, we'd use the selectable types. The configuration is passed to PHPicker controller, doing its initialization. Set a delegate implement it in your app to get a response back. Once a user confirms the selection the picker creates an area of PHPicker result objects which is then passed back to the delegate. Let's have a look how it works in code. As I already mentioned you can use a configuration to specify the selection limit and filter down the visible item types. First we initialize the configuration.\n\nYou can specify a selection limit for the picker. The default limit is one and to allow unlimited selection, set the selection limit to zero. You can then specify a filter to restrict the types of selected items. For example if you only want to show images including live photos use the images filter. You can even combine photos. In this example the picker will only show videos and live photos but no images. The PHPickerViewController is initialized with the configuration. First let's create a configuration and then pass the configuration to the picker ViewController during initialization. Assign a delegate to the picker and present the picker. Please note that your app is responsible for presentation and dismissal of the picker. The picker doesn't manage presentation itself. Once the user confirms this selection the delegate method will be called. So first let's dismiss the picker. Then you can ask result object for an NSItemProvider. The itemProvider presents multiple different representations of the selected item. First ask the provider if it can load the type you want to load and then actually load it. Then your app can do something with the image. Remember that the item provider API is async and you should handle any errors occurring here. Let me now hand over to my colleague Justin to show it to you in Xcode. Thanks Tobias. Hello everyone. My name is Justin. I'm an engineer on the Photos team. I'm here to show you how you can integrate PHPicker into your iOS application. We will build a simple photo preview app that can display users likely photos on screen. Before we start let's spin it around to see what we have currently. We have a UIImageView displaying a placeholder image. There's also a plus button. but tapping it doesn't do anything right now. So what does it take to complete this app? We're going to do it in two steps. First we'll support previewing a single image. We'll present the picker when plus is tapped and display the selected image in the image view. Then we will add multi image support in addition to highlighting single selection. If more than one image is selected a user can display the next selected image by simply tapping on the screen. OK, now let's understand what features we want to add and start building. The first thing I need to do is to present the picker. I already set up the UI so presentPicker method will be called when plus is tapped. We just need to implement this method. To actually present the picker, we'll create the picker of configuration object first.\n\nSince we're only interested in images we want to specify the images filter.\n\nWe don't need to set a selection limit because the default selection limit is one. We will add multi-selection support later. Then we can utilize PHPickers ViewController using the configuration object I just created. We want the presenting ViewController to receive user selections so we need to set delegate to self.\n\nThere seen just compiler error because our ViewController doesn't conform to the delegate protocol yet. Let's add this conformance to fix the error. We only need to implement a single method Picker didFinishPicking. It will give us an array of PHPicker objects. If a user cancels the picker that array will be empty. We should always dismiss the picker first.\n\nThen we can check if we received any results. And if the itemProvider can load images we'll retrieve the image and display on screen. You should also handle the error when the image can't be retrieved. All right. That's all we need to implement single selection. Let's spin around to see what we have so far. Now if I tap the plus button the picker will be presented and if I select an image, it will be displayed on screen. It worked. It's that easy to use PHPicker API.\n\nGreat let's complete the app by adding multiple selection support. The first thing I need to do is to set selection limit to zero, to enable unlimited selection. The greatest thing about the new CIImage API is that we don't need to load all images upfront. We just need to keep a reference to all return item providers and load images when necessary. So let's do that.\n\nNow we have a way to store all picker returned item providers. We also create iterator so can note which selected image is currently displayed. We can create a method to display the next image. You may notice that this is very similar to our previous single selection implementation. The only difference is we use the iterator to get the current item provider. Like I mentioned earlier whenever the screen is tapped we want to display the next image. So we just need to override touchHasEnded and call display next image. And lastly we can update our delegate method.\n\nSo we can delete single selection first.\n\nWe just need to save all item providers. Create an iterator and cut display next image to display the first image. That's all we need to implement Multi-image preview. Let's run the app to see what we've built.\n\nI can tap the plus button.\n\nYou may notice that the picker now has a slightly different UI. That's because the picker knows we're in multi-selection mode. We'll also show the staging area and also the Add button on the top right corner.\n\nI can select a couple images and tap Add.\n\nThe first image is quickly displayed on screen. Is it is as fast as single selection mode. Because we don't need to load other images at all.\n\nAnd if I tap the screen the next image will be displayed. Tap it again and again and again until I reach the end.\n\nThat's it for a demo. Now back to Slides. I've seen the demo. You don't need to prep for photos library access to use PHPicker. Actually for most apps that only want photo and video data you don't need to use PhotoKit at all.\n\nBut at the same time, we know that some PhotoKit based apps want to get users PHAssets from the picture. So let's talk about how you can do that before without the API. Let's consider what types of apps can benefit from using PhotoKit. For example if your app supports Non-destructive image editing or has Photos Library organization features you need to use PhotoKit. But please make sure you only request photos library access when necessary and handle the case where photos library access is denied by the user. Let's look at some code now. Using PHPicker with PhotoKit is very simple. You just need to initialized PHPicker configuration with a PHPhotoLibrary object. Then you can get asset identifiers with a delegate callback and can fetch PHAssets using assetIdentifiers through standard PhotoKit API. In iOS 14 we also introduce a new feature called Limited Photos Library. If your app doesn't use PhotoKit you don't need to worry about that. For apps asking for photos library access we will show a third select photos option in the user prompt in addition to the existing allow access and no access options. The new option will only allow your app to access a portion of PHAssets in a users photo library. We believe it can enable users to better control their privacy. If a user places your app and your Limited Photos Library there's a couple things you need to keep in mind. First the picker will still show the entire photos library and all photos and videos can be selected by the user. Second no matter what user selects in the picker, PHAssets you can access will not change. If you want to request access to additional PHAssets there is a separate API for you to do that. For more information please refer to Handle the Limited Photos Library in Your App session. Now back to Tobias to wrap up this session. Thank you Justin. Let's talk about some best practices and summarize what you've just learned. First let's start with the deprecations reminder. AssetsLibrary has been deprecated years ago and is still deprecated. If your app needs access to the first library please switch over to PhotoKit. AssetsLibrary will eventually go away. The other deprecation announcement today is about the photos library portion of UIImagePickerController. It is being deprecated and we encourage you to adopt PHPickerViewController instead. If your app and its access to images or videos would really encourage you to adopt the new PHPicker instead of writing your own custom picker UI. It supports multi select search and has a consistent UI with the main Photos app. So your users already know how to get to the images and videos. Also please don't prompt for photo library access before showing the picker and don't require the user to grant you access before showing the picker. There's no need to do any of this. And it doesn't help with the users trust into your app. If your app leverages PhotoKit to access the photos library please reconsider if it really needs to have access to the library or if you can use PHPicker instead. We really hope you like the new picker and API. We're looking forward to you adopting\nit in your apps. Thank you.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:27",
+      "title": "PHPickerConfiguration",
+      "language": "swift",
+      "code": "import PhotosUI\n\nvar configuration = PHPickerConfiguration()\n\n// “unlimited” selection by specifying 0, default is 1\nconfiguration.selectionLimit = 0\n\n// Only show images (including Live Photos)\nconfiguration.filter = .images\n// Uncomment next line for other example: Only show videos or Live Photos (for their video complement), but no images\n// configuration.filter = .any(of: [.videos, .livePhotos])"
+    },
+    {
+      "timestamp": "3:07",
+      "title": "PHPickerViewController",
+      "language": "swift",
+      "code": "import UIKit\nimport PhotosUI\n\nclass SingleSelectionPickerViewController: UIViewController, PHPickerViewControllerDelegate {\n    @IBAction func presentPicker(_ sender: Any) {\n        var configuration = PHPickerConfiguration()\n        // Only wants images\n        configuration.filter = .images\n        \n        let picker = PHPickerViewController(configuration: configuration)\n        picker.delegate = self\n        \n        // The client is responsible for presentation and dismissal\n        present(picker, animated: true)\n    }\n    \n    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {\n        // The client is responsible for presentation and dismissal\n        picker.dismiss(animated: true)\n        \n        // Get the first item provider from the results, the configuration only allowed one image to be selected\n        let itemProvider = results.first?.itemProvider\n        \n        if let itemProvider = itemProvider, itemProvider.canLoadObject(ofClass: UIImage.self) {\n            itemProvider.loadObject(ofClass: UIImage.self) { (image, error) in\n                // TODO: Do something with the image or handle the error\n            }\n        } else {\n            // TODO: Handle empty results or item provider not being able load UIImage\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "5:19",
+      "title": "Demo - Single Selection",
+      "language": "swift",
+      "code": "import UIKit\nimport PhotosUI\n\nclass ViewController: UIViewController {\n    \n    @IBOutlet weak var imageView: UIImageView!\n    \n    @IBAction func presentPicker(_ sender: Any) {\n        var configuration = PHPickerConfiguration()\n        configuration.filter = .images\n        \n        let picker = PHPickerViewController(configuration: configuration)\n        picker.delegate = self\n        present(picker, animated: true)\n    }\n    \n}\n\nextension ViewController: PHPickerViewControllerDelegate {\n    \n    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {\n        dismiss(animated: true)\n        \n        if let itemProvider = results.first?.itemProvider, itemProvider.canLoadObject(ofClass: UIImage.self) {\n            let previousImage = imageView.image\n            itemProvider.loadObject(ofClass: UIImage.self) { [weak self] image, error in\n                DispatchQueue.main.async {\n                    guard let self = self, let image = image as? UIImage, self.imageView.image == previousImage else { return }\n                    self.imageView.image = image\n                }\n            }\n        }\n    }\n    \n}"
+    },
+    {
+      "timestamp": "7:34",
+      "title": "Demo - Multiple Selection",
+      "language": "swift",
+      "code": "import UIKit\nimport PhotosUI\n\nclass ViewController: UIViewController {\n    \n    @IBOutlet weak var imageView: UIImageView!\n    \n    var itemProviders: [NSItemProvider] = []\n    var iterator: IndexingIterator<[NSItemProvider]>?\n    \n    @IBAction func presentPicker(_ sender: Any) {\n        var configuration = PHPickerConfiguration()\n        configuration.filter = .images\n        configuration.selectionLimit = 0\n        \n        let picker = PHPickerViewController(configuration: configuration)\n        picker.delegate = self\n        present(picker, animated: true)\n    }\n    \n    func displayNextImage() {\n        if let itemProvider = iterator?.next(), itemProvider.canLoadObject(ofClass: UIImage.self) {\n            let previousImage = imageView.image\n            itemProvider.loadObject(ofClass: UIImage.self) { [weak self] image, error in\n                DispatchQueue.main.async {\n                    guard let self = self, let image = image as? UIImage, self.imageView.image == previousImage else { return }\n                    self.imageView.image = image\n                }\n            }\n        }\n    }\n    \n    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {\n        displayNextImage()\n    }\n    \n}\n\nextension ViewController: PHPickerViewControllerDelegate {\n    \n    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {\n        dismiss(animated: true)\n        \n        itemProviders = results.map(\\.itemProvider)\n        iterator = itemProviders.makeIterator()\n        displayNextImage()\n    }\n    \n}"
+    },
+    {
+      "timestamp": "11:13",
+      "title": "Using PHPicker with PhotoKit",
+      "language": "swift",
+      "code": "import UIKit\nimport PhotosUI\n\nclass PhotoKitPickerViewController: UIViewController, PHPickerViewControllerDelegate {\n    @IBAction func presentPicker(_ sender: Any) {\n        let photoLibrary = PHPhotoLibrary.shared()\n        let configuration = PHPickerConfiguration(photoLibrary: photoLibrary)\n        let picker = PHPickerViewController(configuration: configuration)\n        picker.delegate = self\n        present(picker, animated: true)\n    }\n    \n    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {\n        picker.dismiss(animated: true)\n        \n        let identifiers = results.compactMap(\\.assetIdentifier)\n        let fetchResult = PHAsset.fetchAssets(withLocalIdentifiers: identifiers, options: nil)\n        \n        // TODO: Do something with the fetch result if you have Photos Library access\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "PhotoKit",
+        "url": "https://developer.apple.com/documentation/photokit"
+      },
+      {
+        "title": "Selecting Photos and Videos in iOS",
+        "url": "https://developer.apple.com/documentation/PhotoKit/selecting-photos-and-videos-in-ios"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10652/3/8660B6AC-4DDE-46E6-830D-1449B090978C/wwdc2020_10652_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10652/3/8660B6AC-4DDE-46E6-830D-1449B090978C/wwdc2020_10652_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10107",
+      "year": "2023",
+      "title": "Embed the Photos Picker in your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10107"
+    },
+    {
+      "id": "10023",
+      "year": "2022",
+      "title": "What's new in the Photos picker",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10023"
+    },
+    {
+      "id": "10160",
+      "year": "2021",
+      "title": "Capture and process ProRAW images",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10160"
+    },
+    {
+      "id": "10046",
+      "year": "2021",
+      "title": "Improve access to Photos in your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10046"
+    },
+    {
+      "id": "10676",
+      "year": "2020",
+      "title": "Build trust through better privacy",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10676"
+    },
+    {
+      "id": "10052",
+      "year": "2020",
+      "title": "Build with iOS pickers, menus and actions",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10052"
+    },
+    {
+      "id": "10641",
+      "year": "2020",
+      "title": "Handle the Limited Photos Library in your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10641"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:41:59.037Z"
+}

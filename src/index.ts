@@ -18,7 +18,7 @@ import { handleGetTechnologyOverviews } from './tools/get-technology-overviews.j
 import { handleGetSampleCode } from './tools/get-sample-code.js';
 import { APPLE_URLS } from './utils/constants.js';
 import { isValidAppleDeveloperUrl } from './utils/url-converter.js';
-import { validateInput, createErrorResponse, ErrorType, createStandardErrorResponse } from './utils/error-handler.js';
+import { validateInput, ErrorType, createStandardErrorResponse, createToolErrorResponse } from './utils/error-handler.js';
 import { httpClient } from './utils/http-client.js';
 import { preloadPopularFrameworks } from './utils/preloader.js';
 import { warmUpCaches, schedulePeriodicCacheRefresh } from './utils/cache-warmer.js';
@@ -46,6 +46,10 @@ export default class AppleDeveloperDocsMCPServer {
         ],
       };
     } catch (error) {
+      // If error is already an AppError, use tool-specific suggestions
+      if (error && typeof error === 'object' && 'type' in error) {
+        return createToolErrorResponse(error as any, operationName);
+      }
       return createStandardErrorResponse(error, operationName);
     }
   }
@@ -108,7 +112,7 @@ export default class AppleDeveloperDocsMCPServer {
       // 输入验证
       const queryValidation = validateInput(query, 'Search query');
       if (queryValidation) {
-        return createErrorResponse(queryValidation);
+        return createToolErrorResponse(queryValidation, 'search_apple_docs');
       }
 
       // 创建 Apple Developer Documentation 搜索 URL
@@ -122,7 +126,10 @@ export default class AppleDeveloperDocsMCPServer {
       // 解析并返回搜索结果，传递type参数进行过滤
       return parseSearchResults(html, query, searchUrl, type);
     } catch (error) {
-      return createStandardErrorResponse(error, 'searchAppleDocs');
+      if (error && typeof error === 'object' && 'type' in error) {
+        return createToolErrorResponse(error as any, 'search_apple_docs');
+      }
+      return createStandardErrorResponse(error, 'search_apple_docs');
     }
   }
 
@@ -137,19 +144,15 @@ export default class AppleDeveloperDocsMCPServer {
       // 输入验证
       const urlValidation = validateInput(url, 'URL');
       if (urlValidation) {
-        return createErrorResponse(urlValidation);
+        return createToolErrorResponse(urlValidation, 'get_apple_doc_content');
       }
 
       // 验证是否为有效的Apple Developer URL
       if (!isValidAppleDeveloperUrl(url)) {
-        return createErrorResponse({
+        return createToolErrorResponse({
           type: ErrorType.INVALID_INPUT,
           message: 'URL must be from developer.apple.com',
-          suggestions: [
-            'Ensure the URL starts with https://developer.apple.com',
-            'Check that the URL is a valid Apple Developer Documentation link',
-          ],
-        });
+        }, 'get_apple_doc_content');
       }
 
       // fetchAppleDocJson 已经返回正确的MCP响应格式，直接返回
@@ -160,11 +163,19 @@ export default class AppleDeveloperDocsMCPServer {
         includePlatformAnalysis,
       });
     } catch (error) {
-      return createStandardErrorResponse(error, 'getAppleDocContent');
+      if (error && typeof error === 'object' && 'type' in error) {
+        return createToolErrorResponse(error as any, 'get_apple_doc_content');
+      }
+      return createStandardErrorResponse(error, 'get_apple_doc_content');
     }
   }
 
-  public async listTechnologies(category?: string, language?: string, includeBeta: boolean = true, limit: number = API_LIMITS.DEFAULT_TECHNOLOGIES_LIMIT) {
+  public async listTechnologies(
+    category?: string,
+    language?: string,
+    includeBeta: boolean = true,
+    limit: number = API_LIMITS.DEFAULT_TECHNOLOGIES_LIMIT,
+  ) {
     return this.handleAsyncOperation(
       () => handleListTechnologies(category, language, includeBeta, limit),
       'listTechnologies',

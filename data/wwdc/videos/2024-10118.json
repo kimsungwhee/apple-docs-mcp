@@ -1,0 +1,150 @@
+{
+  "id": "10118",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10118/",
+  "title": "What’s new in UIKit",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to “What’s new in UIKit”! I’m Dima, a manager on the UI Frameworks team.\n\nUIKit has many enhancements in iOS 18. In this video, I will guide you through: New key features and UI improvements, More integrations between UIKit and SwiftUI in the same app, As well as numerous general enhancements and API additions.\n\nUIKit has major improvements that streamline the user interface, and make it more delightful to use.\n\nI’ll guide you through 3 key features. I’ll go over document launch experience improvements, major updates to tabs and sidebar, as well as support for new, fluid transitions across the system.\n\nFirst, there is a redesigned launch experience for document-based apps, enabling them to showcase their distinctive identity.\n\nWith full control over the launch view’s design, and first-class support for template document creation, you can gracefully guide people in creating their first document, all while maintaining a great browsing experience. To learn more about it, be sure to check out the video “Evolve your document launch experience”. Next, tab bars have visual updates, and have a new, combined sidebar experience and customization features. On iPadOS 18, tab bars have been refreshed with a new compact look that reduces the amount of empty vertical and horizontal space, bringing app content to the forefront.\n\nExisting sidebar apps can adopt new UITabBarController APIs to get a combined tab and sidebar experience. When minimized, the sidebar animates back into the tab bar.\n\nThis keeps your app's content prominently displayed.\n\nThe new bars allow for quick navigation using the tab bar, while providing access to deeper sections of the app through the sidebar. The new bars also include customization features to allow people to personalize the sidebar and tab bar through drag and drop.\n\nThe new UITab and UITabGroup APIs enable apps to describe their structure to build a tab bar and a sidebar.\n\nIn addition, they adapt for a native experience on both Mac Catalyst and visionOS. To learn more, check out the video, \"Elevate your tab and sidebar experience in iPadOS\". Across iOS, transitions are used to link different parts of apps visually, while navigating through them. In iOS 18, there is a new zoom transition. It works with both navigation and presentations.\n\nAnd it’s not just a new visual appearance, it is also continuously interactive, allowing you to grab and drag it around, from the beginning or during the transition.\n\nIn parts of your app where you transition from a large cell, the zoom transition increases the sense of continuity in your app, by keeping the same UI elements on screen across the transition. iOS 18 enhances the interoperability of SwiftUI and UIKit, making it easier to use them interchangeably in apps.\n\nI’ll cover updates in two areas: animations and gesture recognizers.\n\nFirst, an incredibly exciting update for animations! You can use a SwiftUI Animation type to animate UIKit views! This lets you use the full suite of SwiftUI Animation types, including SwiftUI CustomAnimations, animate UIKit views! In addition, this makes it easy to build fluid gesture-driven animations using the SwiftUI spring animation.\n\nTo use it, animate your views both when the gesture changes. and when it ends. This seamlessly maintains continuous velocity across the interactive, and non interactive parts of your animation. For an animated overview of this exciting update, check out Russell’s friendly video “Enhance your UI animations and transitions”. Animations are typically paired with gesture recognizers, and it’s now easier to coordinate gestures across UIKit and SwiftUI as well. The gesture systems have been unified in UIKit and SwiftUI, and they now adhere to consistent rules. In iOS 18, dependencies can be specified between gestures, across both frameworks. Here is an example of a SwiftUI hierarchy nested in a UIKit one, where I want the single tap gesture in UIKit to coexist with the double-tap gesture in SwiftUI.\n\nHere, the gestures are recognizing at the same time. To prevent this from happening, I set a failure requirement between these two gesture recognizers. First, I specify a name when setting up the SwiftUI gesture: “SwiftUIDoubleTap”.\n\nThen, within the UIKit delegate, I check the name of the other gesture recognizer to identify the one associated with the SwiftUI gesture. This way, the single tap gesture recognizer coming from UIKit will only fire when the double-tap SwiftUI gesture fails, achieving the desired effect.\n\nIn iOS 18, you can now add your existing UIKit gesture recognizers directly to SwiftUI hierarchies by using the new UIGestureRecognizerRepresentable protocol. See the video “What's new in SwiftUI” for more details on how to adopt UIGestureRecognizerRepresentable in your apps. Lastly, I’ll guide you through some general enhancements of UIKit.\n\nThe trait system in UIKit propagates data to the view controllers and views in your app’s hierarchy. In iOS 18, it's easier than ever to use traits and handle changes. UIKit now supports automatic trait tracking inside common view and view controller update methods, such as layoutSubviews and drawRect. When UIKit calls one of these supported methods, it records which traits you access inside that method. Then, when any of those traits change value, UIKit automatically performs the associated invalidation for that method, such as setNeedsLayout or setNeedsDisplay. In this example, I have a UIView subclass which overrides layoutSubviews, and reads the horizontalSizeClass trait from the view's traitCollection to determine which type of layout to use. Before automatic trait tracking, I would need to manually register for the horizontalSizeClass trait, and call setNeedsLayout on this view whenever it changes.\n\nWith automatic trait tracking in iOS 18, I can delete the manual trait change registration entirely! This is because when layoutSubviews is called, horizontalSizeClass trait usage is recorded.\n\nAnd when that trait changes for this view, it automatically receives setNeedsLayout to update for the new value. Automatic trait tracking delivers maximum performance by only creating trait dependencies that are needed. This new feature is always active within supported update methods.\n\nRefer to the documentation for the complete list of supported methods. Next, collection and table view APIs have been updated, making it easier to update your cells! All views in UICollectionView list sections and UITableViews now have the list environment trait set.\n\nThe list environment describes the style of the list that the view is in. Use this trait to ensure that cells are styled appropriately in any given list. UIListContentConfiguration and UIBackgroundConfiguration now take advantage of this new trait.\n\nWhen updated for a new state, they adjust their properties to match the list environment from the configuration state’s trait collection.\n\nThis removes the need to know the style of the list when configuring a cell.\n\nInstead, the cell configuration code only needs to know the style required by the content being represented, a regular cell, a header, or a footer. For example, consider the Browse tab in the Files app.\n\nIt uses a UICollectionView with compositional layout to display a list of locations, favorites, and tags in two different styles, depending on the context. In portrait, the Browse list uses the insetGrouped appearance. In landscape, the same Browse list is presented in a split view controller sidebar, and the Files app uses the sidebar appearance when configuring its UICollectionView’s compositional layout.\n\nHere’s a function from the Files app that generates content and background configurations for a location in the Browse List. This is how the function was implemented in iOS 17.\n\nIt receives a file location struct as well as the list appearance as arguments. First, it checks whether the list appearance is the sidebar style and stores the result in the isSidebar local variable.\n\nThen, it manually picks the content and background configurations based on the isSidebar variable.\n\nBecause the configurations were created manually, the cells using them needed to be manually reconfigured when the Browse list changed appearance, so this function would run again for the updated appearance.\n\nIn iOS 18, this function can be greatly simplified! The Files app uses the cell constructor for the content configuration, and the new listCell constructor for the backgroundConfiguration! When configurations are applied to a cell, they are updated for the cell’s configuration state. Since the new list environment trait is in the configuration state’s trait collection, these configurations now automatically update their properties to match the style of the list! For UIListContentConfiguration, the existing cell, subtitle cell, and value cell configurations now automatically update their appearance from the list environment trait.\n\nNew header and footer configurations do the same. For UIBackgroundConfiguration, there are 3 new constructors: listCell, listHeader, and listFooter.\n\nThese background configurations also update their appearance automatically from the list environment trait.\n\nTake advantage of all these new list additions to simplify your code! UIUpdateLink is new in iOS 18, making it even easier to implement complex animations that require periodic UI updates.\n\nIf you’ve used CADisplayLink before, UIUpdateLink will be familiar.\n\nIt has more features, such as automatic view tracking, so the link automatically adjusts to the display that the view is on, as well as the ability to put the system in a low-latency mode for drawing applications.\n\nIn addition, it allows to achieve better performance and battery efficiency by using its advanced features.\n\nHere’s an example of a view being animated up and down using a sine function: When I create a UIUpdateLink, I specify a UIView instance. UIUpdateLink activates automatically when the view is added to a visible window, and deactivates when the view is removed from it. In the update function, I use updateInfo's modelTime for update timing. In addition, I set requiresContinuousUpdates to true to ensure that the updateLink fires continuously while it’s enabled. When false, the update link fires only when something else drives updates, such as a gesture or layer changes.\n\nFor more information and more advanced use cases, go to the UIUpdateLink documentation page.\n\nSF Symbols ensure a consistent appearance for toolbar icons, navigation bars, and other UI elements.\n\nSF Symbols in UIKit are expanded with new symbol animations! There are three new animation presets in UIImageView and UIBarButtonItem. The .wiggle effect oscillates a symbol in any direction or angle to draw attention.\n\nThe .breathe effect smoothly scales a symbol up and down to indicate ongoing activity. The .rotate effect spins part of a symbol around a designated anchor point. The new .periodic behavior allows apps to specify both a repeat count, as well as a custom delay between repetitions. There’s also a new .continuous option that seamlessly animates the effect across repetitions, until the animation ends. Also, some of the existing presets have been enhanced with new features. The default .replace effect now prefers the new magic replace behavior, which smoothly animates badges and slashes. This behavior automatically falls back to a standard replace style if needed. For example, Magic Replace isn’t supported across the mic and video symbols, so the DownUp replace style is automatically used as a fallback. There is also new API to specify an explicit fallback style. In this case, the .upUp style.\n\nIf you’d like to know what else is up-up with symbols, like the updated SF Symbols app, the new annotations for variable color timing, and additional behaviors for bounce effects. Check out “What’s new in SF Symbols 6” And for a refresher on how to adopt symbol effects, check out “Animate symbols in your app”. Sensory feedback is a wonderful way to enhance iPhone apps. In iPadOS 17.5, this capability was expanded to iPad with Apple Pencil Pro and Magic Keyboard. UIFeedbackGenerator supports these new ways of providing feedback, and can be attached to a view as an interaction. When providing feedback, apps should now pass the location within that view where the feedback-triggering action occurred. There is also a new UICanvasFeedbackGenerator, ideal for iPad apps that have large drawing or art board views. I’ll go over how all of this comes together in an app. Consider a shape drawing app that provides feedback when shapes are dragged and snap to a grid.\n\nThis is a great use of UICanvasFeedbackGenerator. When the feedback generator is created, I associate it with a view.\n\nAnd when the feedback is triggered, I pass in the location.\n\nIn this case, it’s the location from the gesture recognizer that triggered the alignment of the dragged shape.\n\nNow when Apple Pencil Pro is used to drag the shape to align with a snapping guide, the pencil provides haptic feedback.\n\nKeep in mind, feedback generators are not just for haptics.\n\nDepending on the platform and settings, a generator may play haptics, audio, both, or neither.\n\nApps should always use the same generators on all platforms, regardless of the expected effect.\n\nIn iOS 18, text formatting capabilities are expanded. Take advantage of the new text formatting panel, providing a consistent, customizable experience for apps that offer text formatting options. UITextViews that allow editing text attributes have a new Edit menu action that brings up the new formatting panel, with a default set of options.\n\nWith text formatting, changing fonts and sizes, adding lists, and modifying other attributes is clear, and easy.\n\nThe formatting panel also supports a new text highlight feature.\n\nIt works by applying two new attributes. textHighlightStyle, for the range of text that should be highlighted, and textHighlightColorScheme, for the color used to render the highlight.\n\nThere are 5 predefined color schemes, in addition to the default, which uses tint color.\n\nCustomize available controls and layout of the formatting panel by setting a custom UITextFormattingViewController.Configuration, using UITextView’s new textFormattingConfiguration property. Opt out of new behavior by setting the property to nil. To tailor the presentation of the panel, use the new UITextFormattingViewController and its delegate.\n\nWriting Tools is a great new feature that provides advanced text editing experiences.\n\nUITextViews get the Writing Tools UI by default.\n\nEditable text views get the full inline-editing proofreading and composition support, while non-editable text views get the overlay panel.\n\nUITextView has additional API for tracking and modifying this user interface experience, including delegate notifications and a property for limiting the behavior. Menu actions provide all of an app’s commands in the macOS menu bar, and in the iPadOS and visionOS keyboard shortcut menus.\n\niOS 18 makes menu actions more useful for iPhone-only apps. Ready your apps with UICommand, UIKeyCommand, and UIActions to support other system invocations. UICommands, UIKeyCommands, and UIActions can be invoked by the system to control apps. For example, when your app is used through iPhone Mirroring, UIKeyCommands will be invoked from the Mac keyboard. To learn how to add commands to the main menu system, check out the video “Take your iPad apps to the next level”. Now, I’ll go over the additions to UIKit and PencilKit for integrating drawing experiences with Apple Pencil Pro, and for providing a rich tool picking experience with less code.\n\nNew in iPadOS 17.5, UIKit has support for all the great new features of Apple Pencil Pro.\n\nThe squeeze gesture is a quick way to switch tools, or show the picker when needed, right where the pencil is hovering. Updates to feedback generators work great with Apple Pencil Pro, elevating the experience of drawing and writing. UITouch and UIHoverGestureRecognizer provide barrel-roll angle, helping to make your app's drawing tools even more expressive.\n\nAnd for all apps with undo support, squeezing Apple Pencil Pro presents an undo slider, the quickest way to work through undo history.\n\nNew in iPadOS 18 and visionOS 2, PKToolPicker now lets you define the available tools. You can use the tool picker with PKCanvasView, your own drawing canvas, or a combination of both! There is a new API to build the tools from your custom drawing canvas into the tool picker. With deep support for Apple Pencil Pro, there’s never been a better time to adopt PKToolPicker. Check out the video “Squeeze the most out of Apple Pencil” to learn all about the new Apple Pencil APIs. Wow! So many improvements! UIKit has certainly acquired an array of features, enhancing its capabilities even further.\n\nWhat’s Next? Compile your app using the iOS 18 SDK. Adopt the new UIKit features Take advantage of the improvements to transitions and animations, tab bars, as well as the new document launch experience And continue to experiment with new ways to integrate both UIKit and SwiftUI in your app! Thank you!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "0:01",
+      "title": "Using SwiftUI to animate UIViews with gestures",
+      "language": "swift",
+      "code": "switch gesture.state {\ncase .changed:\n    UIView.animate(.interactiveSpring) {\n        bead.center = gesture.translation\n    }\n\ncase .ended:\n    UIView.animate(.spring) {\n        bead.center = endOfBracelet\n    }\n}"
+    },
+    {
+      "timestamp": "0:02",
+      "title": "Setting failure requirements between gestures",
+      "language": "swift",
+      "code": "// Inner SwiftUI double tap gesture\n\nCircle()\n    .gesture(doubleTap, name: \"SwiftUIDoubleTap\")\n\n\n// Outer UIKit single tap gesture\n\nfunc gestureRecognizer(\n    _ gestureRecognizer: UIGestureRecognizer, \n    shouldRequireFailureOf other: UIGestureRecognizer\n) -> Bool {\n    other.name == \"SwiftUIDoubleTap\"\n}"
+    },
+    {
+      "timestamp": "0:03",
+      "title": "Responding to horizontalSizeClass trait",
+      "language": "swift",
+      "code": "class MyView: UIView {\n    override func layoutSubviews() {\n        super.layoutSubviews()\n        \n        if traitCollection.horizontalSizeClass == .compact {\n            // apply compact layout\n        } else {\n            // apply regular layout\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "0:04",
+      "title": "Using the new automatic content and background configurations",
+      "language": "swift",
+      "code": "func configurations(for location: FileLocation) ->\n    (UIListContentConfiguration, UIBackgroundConfiguration) {\n\n    var contentConfiguration = UIListContentConfiguration.cell()\n    let backgroundConfiguration = UIBackgroundConfiguration.listCell()\n\n    contentConfiguration.text = location.title\n    contentConfiguration.image = location.thumbnailImage\n\n    return (contentConfiguration, backgroundConfiguration)\n}"
+    },
+    {
+      "timestamp": "0:05",
+      "title": "Using UIUpdateLink",
+      "language": "swift",
+      "code": "let updateLink = UIUpdateLink(\n    view: view,\n    actionTarget: self,\n    selector: #selector(update)\n)\nupdateLink.requiresContinuousUpdates = true\nupdateLink.isEnabled = true\n\n@objc func update(updateLink: UIUpdateLink,\n                  updateInfo: UIUpdateInfo) {\n    view.center.y = sin(updateInfo.modelTime)\n        * 100 + view.bounds.midY\n}"
+    },
+    {
+      "timestamp": "0:06",
+      "title": "An example of providing UICanvasFeedbackGenerator with additional context",
+      "language": "swift",
+      "code": "@ViewLoading var feedbackGenerator: UICanvasFeedbackGenerator\n\noverride func viewDidLoad() {\n    super.viewDidLoad()\n    feedbackGenerator = UICanvasFeedbackGenerator(view: view)\n}\n\nfunc dragAligned(_ sender: UIPanGestureRecognizer) {\n    feedbackGenerator.alignmentOccurred(at: sender.location(in: view))\n}"
+    },
+    {
+      "timestamp": "0:07",
+      "title": "Using new attributes for highlight",
+      "language": "swift",
+      "code": "var attributes = [NSAttributedString.Key: Any]()\n\n// Highlight style\nattributes[.textHighlightStyle] = \nNSAttributedString.TextHighlightStyle.default\n\n// Highlight color scheme\nattributes[.textHighlightColorScheme] =\nNSAttributedString.TextHighlightColorScheme.default"
+    },
+    {
+      "timestamp": "0:08",
+      "title": "Customizing formatting panel",
+      "language": "swift",
+      "code": "textView.textFormattingConfiguration = .init(groups: [\n    .group([\n        .component(.fontAttributes, .mini),\n        .component(.fontPicker, .regular),\n        .component(.textColor, .mini)\n    ]),\n    .group([\n        .component(.fontPointSize, .mini),\n        .component(.listStyles, .regular),\n        .component(.highlight, .mini)\n    ])\n])"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Automatic trait tracking",
+        "url": "https://developer.apple.com/documentation/UIKit/automatic-trait-tracking"
+      },
+      {
+        "title": "Forum: UI Frameworks",
+        "url": "https://developer.apple.com/forums/topics/ui-frameworks?cid=vf-a-0010"
+      },
+      {
+        "title": "UIKit updates",
+        "url": "https://developer.apple.com/documentation/Updates/UIKit"
+      },
+      {
+        "title": "UIUpdateLink",
+        "url": "https://developer.apple.com/documentation/UIKit/UIUpdateLink"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10118/4/16FC914B-F442-41A4-AFF4-5047A3FF7125/downloads/wwdc2024-10118_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10118/4/16FC914B-F442-41A4-AFF4-5047A3FF7125/downloads/wwdc2024-10118_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10147",
+      "year": "2024",
+      "title": "Elevate your tab and sidebar experience in iPadOS",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10147"
+    },
+    {
+      "id": "10145",
+      "year": "2024",
+      "title": "Enhance your UI animations and transitions",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10145"
+    },
+    {
+      "id": "10214",
+      "year": "2024",
+      "title": "Squeeze the most out of Apple Pencil",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10214"
+    },
+    {
+      "id": "10188",
+      "year": "2024",
+      "title": "What’s new in SF Symbols 6",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10188"
+    },
+    {
+      "id": "10144",
+      "year": "2024",
+      "title": "What’s new in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10144"
+    },
+    {
+      "id": "10258",
+      "year": "2023",
+      "title": "Animate symbols in your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10258"
+    },
+    {
+      "id": "10057",
+      "year": "2021",
+      "title": "Take your iPad apps to the next level",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10057"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:12:22.513Z"
+}

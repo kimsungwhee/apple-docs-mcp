@@ -11,18 +11,18 @@ import { searchFrameworkSymbolsTool } from './search-framework-symbols.js';
 export const toolDefinitions: Tool[] = [
   {
     name: 'search_apple_docs',
-    description: 'Search Apple Developer Documentation for APIs, frameworks, guides, samples, and videos. Best for finding specific APIs, classes, or methods. For browsing sample code projects, consider using get_sample_code instead.',
+    description: 'Search Apple Developer Documentation for APIs, frameworks, guides, and samples. Best for finding specific APIs, classes, or methods. For browsing sample code projects, use get_sample_code. For WWDC videos, use the dedicated WWDC tools (list_wwdc_videos, search_wwdc_content).',
     inputSchema: {
       type: 'object',
       properties: {
         query: {
           type: 'string',
-          description: 'Search query for Apple Developer Documentation. Tips: Use specific API names (e.g., "UIViewController"), framework names (e.g., "SwiftUI"), or technical terms. Avoid generic terms like "how to" or "tutorial".',
+          description: 'Search query for Apple Developer Documentation. Tips: Use specific API names (e.g., "UIViewController"), framework names (e.g., "SwiftUI"), or technical terms. Avoid generic terms like "how to" or "tutorial". Examples: "NSPredicate", "SwiftUI List", "Core Data migration", "URLSession authentication".',
         },
         type: {
           type: 'string',
           enum: ['all', 'documentation', 'sample'],
-          description: 'Type of content to filter (all=show all results, documentation=API references only, sample=code samples only). Note: "sample" returns individual code snippets, not full sample projects - use get_sample_code for browsing complete sample projects.',
+          description: 'Type of content to filter. Use "all" for comprehensive results, "documentation" for API references/guides, "sample" for code snippets. Note: "sample" returns individual code examples, not full projects. For complete sample projects, use get_sample_code instead. Default: "all".',
         },
       },
       required: ['query'],
@@ -30,29 +30,29 @@ export const toolDefinitions: Tool[] = [
   },
   {
     name: 'get_apple_doc_content',
-    description: 'Get detailed content from a specific Apple Developer Documentation page with optional enhanced analysis (related APIs, references, similar APIs, platform compatibility)',
+    description: 'Get detailed content from a specific Apple Developer Documentation page. Use this after search_apple_docs to get full documentation. Supports enhanced analysis options for comprehensive API understanding. Best for: reading API details, understanding usage, checking availability.',
     inputSchema: {
       type: 'object',
       properties: {
         url: {
           type: 'string',
-          description: 'URL of the Apple Developer Documentation page',
+          description: 'Full URL of the Apple Developer Documentation page. Must start with https://developer.apple.com/documentation/. Example: "https://developer.apple.com/documentation/uikit/uiviewcontroller"',
         },
         includeRelatedApis: {
           type: 'boolean',
-          description: 'Include related APIs analysis (default: false)',
+          description: 'Include inheritance hierarchy and protocol conformances. Useful for understanding API relationships. Default: false',
         },
         includeReferences: {
           type: 'boolean',
-          description: 'Include references resolution (default: false)',
+          description: 'Resolve and include all referenced types and APIs. Helps understand dependencies. Default: false',
         },
         includeSimilarApis: {
           type: 'boolean',
-          description: 'Include similar APIs discovery (default: false)',
+          description: 'Discover APIs with similar functionality. Great for finding alternatives. Default: false',
         },
         includePlatformAnalysis: {
           type: 'boolean',
-          description: 'Include platform compatibility analysis (default: false)',
+          description: 'Analyze platform availability and version requirements. Essential for cross-platform development. Default: false',
         },
       },
       required: ['url'],
@@ -60,26 +60,26 @@ export const toolDefinitions: Tool[] = [
   },
   {
     name: 'list_technologies',
-    description: 'List all available Apple Developer technologies and frameworks, organized by category. Returns structured information including framework names, identifiers, supported languages, and beta status.',
+    description: 'Browse all Apple technologies and frameworks by category. Essential for discovering available frameworks and understanding Apple\'s technology ecosystem. Use this when: exploring what\'s available, finding framework identifiers for search_framework_symbols, checking beta status.',
     inputSchema: {
       type: 'object',
       properties: {
         category: {
           type: 'string',
-          description: 'Filter by technology category. Common categories: "App frameworks" (SwiftUI, UIKit), "Graphics" (Metal, Core Graphics), "Games" (GameKit, SpriteKit), "Data and networking" (CloudKit, Network), "Machine learning" (Core ML, Create ML), "Media" (AVFoundation, Core Audio), "System" (Foundation, Combine). Case-sensitive.',
+          description: 'Filter by category (case-sensitive). Popular: "App frameworks" (SwiftUI, UIKit), "Graphics and games" (Metal, SpriteKit), "App services" (CloudKit, StoreKit), "Media" (AVFoundation), "System" (Foundation). Leave empty to see all categories.',
         },
         language: {
           type: 'string',
           enum: ['swift', 'occ'],
-          description: 'Filter by programming language (swift = Swift, occ = Objective-C). Only shows technologies that support the specified language.',
+          description: 'Filter by language support. "swift" for Swift-compatible frameworks, "occ" for Objective-C. Leave empty for all.',
         },
         includeBeta: {
           type: 'boolean',
-          description: 'Include beta technologies (default: true). Beta status is determined by the presence of "Beta" in the tags field.',
+          description: 'Include beta/preview technologies. Set to false to see only stable frameworks. Default: true',
         },
         limit: {
           type: 'number',
-          description: 'Maximum number of technologies to return (default: 200). Results are limited per category group.',
+          description: 'Max results per category. Useful for quick overviews. Default: 200',
         },
       },
       required: [],
@@ -88,25 +88,25 @@ export const toolDefinitions: Tool[] = [
   searchFrameworkSymbolsTool,
   {
     name: 'get_related_apis',
-    description: 'Get related APIs for a specific Apple Developer Documentation API. Discovers inheritance hierarchies, protocol conformances, and Apple-recommended related APIs. Useful for understanding API relationships and finding alternatives.',
+    description: 'Analyze API relationships and discover related functionality. Shows inheritance, protocol conformances, and Apple\'s recommended alternatives. Essential for understanding how APIs work together. Use when: learning API hierarchy, finding protocol requirements, discovering related functionality.',
     inputSchema: {
       type: 'object',
       properties: {
         apiUrl: {
           type: 'string',
-          description: 'The Apple Developer Documentation API URL to analyze. Must be a valid developer.apple.com documentation URL.',
+          description: 'Apple documentation URL to analyze. Example: "https://developer.apple.com/documentation/uikit/uiview"',
         },
         includeInherited: {
           type: 'boolean',
-          description: 'Include inherited APIs from parent classes/protocols (default: true). Shows methods, properties, and types inherited from superclasses.',
+          description: 'Show inherited methods/properties from superclasses. Helps understand full API surface. Default: true',
         },
         includeConformance: {
           type: 'boolean',
-          description: 'Include protocol conformance relationships (default: true). Shows which protocols the type conforms to and required implementations.',
+          description: 'Show protocol conformances and requirements. Essential for protocol-oriented programming. Default: true',
         },
         includeSeeAlso: {
           type: 'boolean',
-          description: 'Include "See Also" related APIs (default: true). These are Apple-curated related APIs, often alternatives or complementary functionality.',
+          description: 'Show Apple\'s recommended related APIs. Great for finding better alternatives or complementary APIs. Default: true',
         },
       },
       required: ['apiUrl'],
@@ -114,24 +114,24 @@ export const toolDefinitions: Tool[] = [
   },
   {
     name: 'resolve_references_batch',
-    description: 'Batch resolve all references from a specific Apple Developer Documentation page to get detailed information about related APIs and types',
+    description: 'Deep dive into all types and APIs referenced in a documentation page. Resolves all mentioned types, methods, and properties to understand dependencies. Use when: analyzing complex APIs, understanding type requirements, exploring API ecosystems.',
     inputSchema: {
       type: 'object',
       properties: {
         sourceUrl: {
           type: 'string',
-          description: 'The Apple Developer Documentation URL to extract and resolve references from',
+          description: 'Documentation URL to analyze for references. Example: "https://developer.apple.com/documentation/swiftui/view"',
         },
         maxReferences: {
           type: 'number',
-          description: 'Maximum number of references to resolve (default: 20, max: 50)',
+          description: 'Limit resolved references (default: 20, max: 50). Higher values = more comprehensive but slower.',
           minimum: 1,
           maximum: 50,
         },
         filterByType: {
           type: 'string',
           enum: ['all', 'symbol', 'collection', 'article', 'protocol', 'class', 'struct', 'enum'],
-          description: 'Filter references by type (default: all)',
+          description: 'Filter by reference type. Use "protocol" for protocol requirements, "class" for class hierarchies. Default: "all"',
         },
       },
       required: ['sourceUrl'],
@@ -139,22 +139,22 @@ export const toolDefinitions: Tool[] = [
   },
   {
     name: 'get_platform_compatibility',
-    description: 'Analyze platform compatibility for Apple Developer APIs, showing version support, beta status, and deprecation information across different platforms',
+    description: 'Check API availability across Apple platforms and OS versions. Shows minimum deployment targets, deprecations, and platform-specific features. Critical for cross-platform development. Use when: planning app requirements, checking API availability, finding platform alternatives.',
     inputSchema: {
       type: 'object',
       properties: {
         apiUrl: {
           type: 'string',
-          description: 'The Apple Developer Documentation API URL to analyze platform compatibility for',
+          description: 'API URL to check compatibility. Example: "https://developer.apple.com/documentation/swiftui/list"',
         },
         compareMode: {
           type: 'string',
           enum: ['single', 'framework'],
-          description: 'Analysis mode: single API or entire framework comparison (default: single)',
+          description: 'Check single API or entire framework. "framework" shows all APIs in the framework. Default: "single"',
         },
         includeRelated: {
           type: 'boolean',
-          description: 'Include platform compatibility of related APIs (default: false)',
+          description: 'Also check related APIs\' compatibility. Useful for finding platform-specific alternatives. Default: false',
         },
       },
       required: ['apiUrl'],
@@ -162,26 +162,26 @@ export const toolDefinitions: Tool[] = [
   },
   {
     name: 'find_similar_apis',
-    description: 'Find similar and related APIs based on Apple\'s official recommendations. Analyzes "See Also" sections, topic groupings, and related documentation to suggest alternatives and complementary APIs. Great for discovering better or newer alternatives to APIs.',
+    description: 'Discover alternative and related APIs. Finds APIs with similar functionality, modern replacements for deprecated APIs, and platform-specific alternatives. Perfect when looking for better ways to implement functionality.',
     inputSchema: {
       type: 'object',
       properties: {
         apiUrl: {
           type: 'string',
-          description: 'The Apple Developer Documentation API URL to find similar APIs for. Must be a valid developer.apple.com documentation URL.',
+          description: 'Starting API URL. Example: "https://developer.apple.com/documentation/uikit/uialertview" (finds modern alternatives)',
         },
         searchDepth: {
           type: 'string',
           enum: ['shallow', 'medium', 'deep'],
-          description: 'Search depth controls how extensively to search. "shallow" = only direct "See Also" references (fastest), "medium" = includes APIs from the same topic sections, "deep" = also analyzes related APIs\' references (most comprehensive but slower). Default: medium',
+          description: 'How thoroughly to search. "shallow" = direct recommendations only, "medium" = topic siblings, "deep" = full relationship analysis. Default: "medium"',
         },
         filterByCategory: {
           type: 'string',
-          description: 'Filter results by category/topic name. Useful to focus on specific aspects like "Animation", "Data Management", "User Interface", etc. Case-sensitive partial matching.',
+          description: 'Focus on specific functionality like "Animation", "Navigation", "Data". Case-sensitive partial match.',
         },
         includeAlternatives: {
           type: 'boolean',
-          description: 'Include alternative APIs from the same topic section (default: true). These are APIs that serve similar purposes and might be better choices for specific use cases.',
+          description: 'Include functionally similar APIs that might be better choices. Default: true',
         },
       },
       required: ['apiUrl'],
@@ -189,34 +189,34 @@ export const toolDefinitions: Tool[] = [
   },
   {
     name: 'get_documentation_updates',
-    description: 'Get the latest Apple Developer Documentation updates, organized by WWDC sessions, technology updates, and release notes. Great for tracking new features, API changes, and platform updates.',
+    description: 'Track latest Apple platform updates, new APIs, and changes. Shows WWDC announcements, framework updates, and release notes. Essential for staying current with Apple development. For detailed WWDC videos, use WWDC-specific tools.',
     inputSchema: {
       type: 'object',
       properties: {
         category: {
           type: 'string',
           enum: ['all', 'wwdc', 'technology', 'release-notes'],
-          description: 'Filter by update category. "wwdc" = WWDC session videos and content, "technology" = framework and API updates, "release-notes" = version-specific changes. Default: all',
+          description: 'Update type filter. "wwdc" = conference highlights, "technology" = API updates, "release-notes" = version changes. Default: "all"',
         },
         technology: {
           type: 'string',
-          description: 'Filter by specific technology/framework name. Use exact names like "SwiftUI", "UIKit", "Core Data", "ARKit", etc. Case-sensitive. Works best with official framework names from list_technologies.',
+          description: 'Filter by framework (case-sensitive). Examples: "SwiftUI", "UIKit", "ARKit". Get names from list_technologies.',
         },
         year: {
           type: 'string',
-          description: 'Filter WWDC content by year (e.g., "2025", "2024", "2023"). Only applies when category is "wwdc" or "all". Format: 4-digit year.',
+          description: 'WWDC year filter ("2025", "2024", etc.). Only for wwdc category.',
         },
         searchQuery: {
           type: 'string',
-          description: 'Search for specific keywords in update titles and descriptions. Examples: "async", "performance", "widgets", "machine learning". Case-insensitive partial matching.',
+          description: 'Search keywords. Examples: "async", "performance", "widgets". Case-insensitive.',
         },
         includeBeta: {
           type: 'boolean',
-          description: 'Include beta features and pre-release content (default: true). Beta content is identified by "Beta" tags in the metadata.',
+          description: 'Include beta/preview features. Default: true',
         },
         limit: {
           type: 'number',
-          description: 'Maximum number of results to return (default: 50). Results are sorted by relevance and recency.',
+          description: 'Max results (default: 50). Sorted by relevance and date.',
         },
       },
       required: [],
@@ -224,30 +224,30 @@ export const toolDefinitions: Tool[] = [
   },
   {
     name: 'get_technology_overviews',
-    description: 'Get Apple Developer Technology Overviews - comprehensive guides, tutorials, and best practices for Apple platforms and technologies. Includes getting started guides, conceptual overviews, and implementation guidance.',
+    description: 'Access comprehensive guides and tutorials for Apple technologies. Includes getting started guides, architectural overviews, best practices, and implementation patterns. Perfect for learning new frameworks or understanding Apple\'s recommended approaches.',
     inputSchema: {
       type: 'object',
       properties: {
         category: {
           type: 'string',
-          description: 'Filter by specific category. Common categories: "app-design-and-ui" (UI/UX design), "games" (game development), "ai-machine-learning" (ML/AI), "augmented-reality" (AR/VR), "health-and-fitness", "privacy-and-security", "app-store-and-distribution", "developer-tools", "system-capabilities". Use exact category names for best results.',
+          description: 'Topic category. Popular: "app-design-and-ui", "games", "ai-machine-learning", "augmented-reality", "privacy-and-security". Leave empty to browse all.',
         },
         platform: {
           type: 'string',
           enum: ['all', 'ios', 'macos', 'watchos', 'tvos', 'visionos'],
-          description: 'Filter by platform. "all" returns cross-platform content. Platform-specific content includes UI guidelines, capabilities, and frameworks unique to each platform. Default: all',
+          description: 'Target platform. "all" for cross-platform content. Default: "all"',
         },
         searchQuery: {
           type: 'string',
-          description: 'Search for specific keywords in overview titles and content. Examples: "getting started", "best practices", "performance", "accessibility", "localization". Searches in titles, descriptions, and content.',
+          description: 'Search terms. Try: "getting started", "best practices", "architecture", "performance".',
         },
         includeSubcategories: {
           type: 'boolean',
-          description: 'Include subcategories and nested content (default: true). When false, only returns top-level overviews. Useful for getting a high-level view of available topics.',
+          description: 'Include nested topics for comprehensive results. Set false for overview only. Default: true',
         },
         limit: {
           type: 'number',
-          description: 'Maximum number of results to return (default: 50). Note: With includeSubcategories=true, nested content counts toward the limit.',
+          description: 'Max results (default: 50). Includes subcategories when enabled.',
         },
       },
       required: [],
@@ -255,29 +255,202 @@ export const toolDefinitions: Tool[] = [
   },
   {
     name: 'get_sample_code',
-    description: 'Browse and search Apple Developer Sample Code Library. Note: Framework filtering may have limitations - some samples might be categorized under generic groups. For best results, try searching by keywords in addition to or instead of framework filtering.',
+    description: 'Browse complete sample projects from Apple. Full working examples demonstrating best practices and implementation patterns. Different from search_apple_docs which returns code snippets. Use for learning by example.',
     inputSchema: {
       type: 'object',
       properties: {
         framework: {
           type: 'string',
-          description: 'Filter by framework name (case-insensitive). Common frameworks: SwiftUI, UIKit, Foundation, CoreML, ARKit, RealityKit, Core Data, Combine, StoreKit, CloudKit, HealthKit, MapKit, etc. Note: Some frameworks (e.g., WidgetKit, GameKit) may not have dedicated categories and their samples might appear under broader groups like "Graphics" or "Games". Try using searchQuery for better results with these frameworks.',
+          description: 'Framework filter (case-insensitive). Examples: "SwiftUI", "ARKit", "CoreML". Note: Some samples are under generic categories - use searchQuery for better results.',
         },
         beta: {
           type: 'string',
           enum: ['include', 'exclude', 'only'],
-          description: 'Beta sample handling (include=show all, exclude=hide beta, only=beta only). Default: include',
+          description: 'Beta samples: "include" = all, "exclude" = stable only, "only" = beta only. Default: "include"',
         },
         searchQuery: {
           type: 'string',
-          description: 'Search keywords in sample titles, descriptions, or content. Can be combined with framework filter for more precise results. Examples: "animation", "widget", "game center", "machine learning". This often works better than framework filtering for finding specific types of samples.',
+          description: 'Search keywords. Most effective approach. Examples: "animation", "camera", "machine learning", "widgets".',
         },
         limit: {
           type: 'number',
-          description: 'Maximum number of results to return (default: 50)',
+          description: 'Max results (default: 50).',
         },
       },
       required: [],
+    },
+  },
+  {
+    name: 'list_wwdc_videos',
+    description: 'Browse WWDC session videos with full offline access to transcripts and code. Shows all available sessions with filtering options. Use this to discover WWDC content, find sessions by topic, or identify videos with code examples.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        year: {
+          type: 'string',
+          description: 'WWDC year ("2025", "2024", etc.) or "all". Available: 2020-2025. Example: "2025" for latest.',
+        },
+        topic: {
+          type: 'string',
+          description: 'Topic ID for exact filtering or keyword for title search. Available topic IDs: "accessibility-inclusion", "app-services", "app-store-distribution-marketing", "audio-video", "business-education", "design", "developer-tools", "essentials", "graphics-games", "health-fitness", "machine-learning-ai", "maps-location", "photos-camera", "privacy-security", "safari-web", "spatial-computing", "swift", "swiftui-ui-frameworks", "system-services". Use exact ID for topic filtering, or any keyword to search in video titles.',
+        },
+        hasCode: {
+          type: 'boolean',
+          description: 'Filter by code availability. true = sessions with code, false = without code. Leave empty for all.',
+        },
+        limit: {
+          type: 'number',
+          description: 'Max videos to show (default: 50). Videos include title, duration, and content indicators.',
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'search_wwdc_content',
+    description: 'Full-text search across all WWDC video transcripts and code examples. Find specific discussions, API mentions, or implementation examples. More powerful than list_wwdc_videos for finding specific content.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Search terms. Examples: "async await", "@Observable", "Vision Pro", "performance optimization".',
+        },
+        searchIn: {
+          type: 'string',
+          enum: ['transcript', 'code', 'both'],
+          description: 'Search scope. "transcript" = spoken content, "code" = code examples only, "both" = everything. Default: "both"',
+        },
+        year: {
+          type: 'string',
+          description: 'Limit to specific year ("2025", "2024", etc.). Leave empty for all years.',
+        },
+        language: {
+          type: 'string',
+          description: 'Code language filter ("swift", "objc", "javascript"). Only for code search.',
+        },
+        limit: {
+          type: 'number',
+          description: 'Max results (default: 20). Results include context snippets.',
+        },
+      },
+      required: ['query'],
+    },
+  },
+  {
+    name: 'get_wwdc_video',
+    description: 'Access complete WWDC session content including full transcript, code examples, and resources. Use after finding videos with list_wwdc_videos or search_wwdc_content. Provides offline access to entire session content.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        year: {
+          type: 'string',
+          description: 'WWDC year. Example: "2025"',
+        },
+        videoId: {
+          type: 'string',
+          description: 'Session ID. Example: "10101" for keynote, "238" for session 238.',
+        },
+        includeTranscript: {
+          type: 'boolean',
+          description: 'Include full session transcript with timestamps. Default: true',
+        },
+        includeCode: {
+          type: 'boolean',
+          description: 'Include all code examples from the session. Default: true',
+        },
+      },
+      required: ['year', 'videoId'],
+    },
+  },
+  {
+    name: 'get_wwdc_code_examples',
+    description: 'Browse all code examples from WWDC sessions. Perfect for finding implementation patterns, seeing new API usage, or learning by example. Each result includes the code and its session context.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        framework: {
+          type: 'string',
+          description: 'Framework to find examples for. Examples: "SwiftUI", "SwiftData", "RealityKit".',
+        },
+        topic: {
+          type: 'string',
+          description: 'Topic ID or concept keyword. Can use exact topic IDs ("swiftui-ui-frameworks", "machine-learning-ai", etc.) for precise filtering, or general keywords like "animation", "performance", "concurrency" for broader search.',
+        },
+        year: {
+          type: 'string',
+          description: 'WWDC year filter ("2025", "2024", etc.).',
+        },
+        language: {
+          type: 'string',
+          description: 'Programming language: "swift", "objc", "javascript", "metal".',
+        },
+        limit: {
+          type: 'number',
+          description: 'Max examples (default: 30). Each includes code and source video info.',
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'browse_wwdc_topics',
+    description: 'List all WWDC topic categories with their IDs. Essential first step before using list_wwdc_videos with topic filtering. Returns topic IDs like "swiftui-ui-frameworks" that can be used in other tools.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        topicId: {
+          type: 'string',
+          description: 'Topic ID to explore. Available IDs: "accessibility-inclusion", "app-services", "app-store-distribution-marketing", "audio-video", "business-education", "design", "developer-tools", "essentials", "graphics-games", "health-fitness", "machine-learning-ai", "maps-location", "photos-camera", "privacy-security", "safari-web", "spatial-computing", "swift", "swiftui-ui-frameworks", "system-services". Leave empty to see all topics with video counts.',
+        },
+        includeVideos: {
+          type: 'boolean',
+          description: 'List videos in the topic. Set false for topic structure only. Default: true',
+        },
+        year: {
+          type: 'string',
+          description: 'Filter topic videos by year. Only when browsing specific topic.',
+        },
+        limit: {
+          type: 'number',
+          description: 'Max videos per topic (default: 20).',
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'find_related_wwdc_videos',
+    description: 'Discover WWDC sessions related to a specific video. Finds prerequisite sessions, follow-up content, and thematically similar talks. Essential for creating learning paths.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        videoId: {
+          type: 'string',
+          description: 'Source video ID. Example: "10101" for keynote.',
+        },
+        year: {
+          type: 'string',
+          description: 'Source video year. Example: "2025"',
+        },
+        includeExplicitRelated: {
+          type: 'boolean',
+          description: 'Include Apple\'s recommended related videos. Usually prerequisites or follow-ups. Default: true',
+        },
+        includeTopicRelated: {
+          type: 'boolean',
+          description: 'Include videos from same topic categories. Good for comprehensive learning. Default: true',
+        },
+        includeYearRelated: {
+          type: 'boolean',
+          description: 'Include other videos from same WWDC. Default: false',
+        },
+        limit: {
+          type: 'number',
+          description: 'Max related videos (default: 15).',
+        },
+      },
+      required: ['videoId', 'year'],
     },
   },
 ];

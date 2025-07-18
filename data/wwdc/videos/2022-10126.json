@@ -1,0 +1,114 @@
+{
+  "id": "10126",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10126/",
+  "title": "Discover ARKit 6",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Essentials"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Christian: Hi, my name is Christian. I'm an engineer on the ARKit team, and I would like to welcome you to our session, Discover ARKit 6. You'll learn how to make use of the latest advancements in our Augmented Reality framework. We are delighted to see what you have been creating over the last several years with ARKit. We are seeing some amazing apps in interior design, travel, virtual exhibitions, games, and so many others. Our team here at Apple has paid close attention to your feedback, and we have incorporated a lot of it into ARKit 6. Let's have a look. We are introducing a new 4K video mode that lets you run the camera stream in the highest image resolution yet. After that, I'll talk about some additional camera enhancements we made that give you more control of the video backdrop. We also have updates on the behavior of plane anchors, additions to the Motion Capture API, and finally share new cities where location anchors will be supported.\n\nLet's start with 4K video. Over the course of the past several years, we saw a lot of demand for high resolution content, especially those apps which leverage the power of Augmented Reality for filmmaking, are ever hungry for more pixels. Let me show you how images are captured and processed for ARKit. This is the camera module of an iPhone 13 Pro. If we open it up, we can see its setup. Let us talk about the Wide and the Ultrawide camera. Both these cameras can be used for different computer vision tasks, such as world tracking, motion capture, or person segmentation. The wide camera has a special place in our heart, since it delivers the images for the rendering backdrop. It's important to understand how images are processed for rendering, so let me zoom in to the sensor level.\n\nWhen capturing images for ARKit, we use a large part of the image sensor. To be more precise, it's an area of 3840x2880 pixels on this particular model. After capture, we use a process called binning. It works as follows: Binning takes a region of 2x2 pixels, averages the pixel values, and writes back a single pixel. This has two significant advantages. First, image dimensions are reduced by a factor of two, in this case, it downscales to 1920x1440 pixels. As a result of this, each frame consumes way less memory and processing power. This allows the device to run the camera at up to 60 frames per second and frees up resources for rendering. Secondly, this process offers an advantage in low light environments, where the averaging of pixel values reduces the effects of sensor noise.\n\nWe end up with a camera stream that provides an image at HD resolution roughly every 17 milliseconds. After using the current frame for various computer vision tasks, ARKit surfaces the current frame for rendering. In case you are writing your own Metal renderer, you have access to it via ARSession's currentFrame.capturedImage.\n\nIf you are using RealityKit, the image is automatically processed further for use as a backdrop. It is scaled on-device to match the screen width of 2532 pixels and is cropped to match the display aspect ratio. RealityKit performs the task of rendering and compositing the virtual content, like this pirate ship, on top of the frame and displays the final result on screen. Now, with the power of our latest hardware, we enable full 4K video mode in ARKit. Your app can now take advantage of a higher resolution image by skipping the binning step and directly accessing it in full 4K resolution. In 4K mode, an image area of 3840x2160 pixels is used and you can capture video at 30 frames per second. Apart from these changes, your app will work the same way as before. If you use RealityKit, it performs scaling, cropping, and rendering for you.\n\nYou can enable the 4K mode using a few simple steps. Let's see how that looks in code.\n\n'ARConfiguration' has a new convenience function 'recommendedVideoFormatFor4KResolution' that returns a 4K video format if that mode is supported on your device. If the device or configuration do not support 4K, this function will return nil. You can then assign this video format to your configuration, then you run your session with that adjusted configuration.\n\nThe 4K video mode is available on iPhone 11 and up and on any iPad Pro with an M1 chip. The resolution is 3840x2160 pixels at 30 frames per second. The aspect ratio is 16:9, for iPad that means that images have to be cropped at the sides for full screen display and the final render might look zoomed in.\n\nWhen using ARKit, especially in the new 4K resolution, it's important to follow some best practices for optimal results. Do not hold on to an ARFrame for too long. This might prevent the system from freeing up memory, which might further stop ARKit from surfacing newer frames to you. This will become visible through frame drops in your rendering. Ultimately, the ARCamera's tracking state might fall back to limited. Check for console warnings to make sure you do not retain too many images at any given time. Also consider if the new 4K video format is indeed the right option for your app. Apps that benefit from high resolution video are good candidates, such as video, filmmaking, and virtual production apps. Dealing with higher resolution images takes up additional system resources, so for games and other apps that rely on a high refresh rate, we still suggest using full HD video at 60 frames per second.\n\nOn top of the new 4K mode, there are some additional enhancements that allow you to get more control over your camera. I will start by introducing the hi-res background photo API and show how to enable the new HDR mode. Further, I will demonstrate how to get access to the underlying AVCaptureDevice for more fine grained control and show you how to read EXIF tags in ARKit. Let's jump into the new hi-res background photo API.\n\nWhile running an ARSession, you still get access to the video stream as usual. In addition, ARKit lets you request the capture of single photos on demand in the background, while the video stream is running uninterrupted. Those single photo frames take full advantage of your camera sensor. On my iPhone 13 that means the full 12 megapixels of the wide camera. When preparing for WWDC, we at ARKit had a fun idea for a Photography app that highlights what this new API can help you create. In our example, we take you back in time to April 1st, 2016, when the famous pirate flag was flying over the Apple Infinite Loop Campus. I asked Tommy, the original photographer, where exactly he shot that photo six years ago.\n\nBased on this coordinate, we can create a location anchor that guides you to the exact same spot where Tommy stood in April 2016, as indicated by the big blue dot. Upon reaching that spot, it helps you frame that perfect picture by showing a focus square. Finally, the app lets your take a photo by tapping the screen. That photo can be taken in native camera resolution while the current ARKit session is running, without the need to spin up another AVCapture session. We're excited to see which ideas you have that combine the power of AR and photography. Another use case that will greatly benefit by this API is the creation of 3D models using Object Capture.\n\nObject capture takes in photos of a real world object, like this running shoe, and using our latest photogrammetry algorithms, it turns them into a 3D model ready for deployment in your AR app. With ARKit you can overlay a 3D UI on top of a physical object and provide better capture guidance. And now with the new high resolution background image API, you can take higher-resolution photos of the object and create even more realistic 3D models. I'm a big fan of photogrammetry, so I'd highly recommend that you check out this year's \"Bring your world to augmented reality\" session. Let me show you how you can enable high-resolution photo captures in code.\n\nFirst, we check for a video format that supports hiResCapture. We can use the convenience function 'recommendedVideoFormatForHighResolution FrameCapturing' for that. After we make sure that the format is supported, we can set the new video format and run the session. We further have to tell ARKit when to capture a hi-res image. In our earlier example, the capture of a photo is triggered by a tap on the screen. In your own application, you might want to react to different events that trigger high-resolution frame captures. It really depends on your use case. The ARSession has a new function called captureHighResolutionFrame. Calling this function triggers an out-of-band capture of a high-resolution image. You get access to an ARFrame containing the high-resolution image and all other frame properties asynchronously in the completion handler. You should check if the frame capture was successful before accessing its contents. In this example we store the frame to disk. Also keep in mind our best practices on image retention that I mentioned earlier, especially since these images use the full resolution of the image sensor. Next, let's talk about HDR. High Dynamic Range captures a wider range of colors and maps those to your display. This is most visible in environments with high contrast. Here's a good example from my backyard. This scene features both very dark areas– for example, on the wooden fence– and some very bright areas like the clouds in the sky. When turning on the HDR mode, as on the right, you can see that details in these regions, like the fluffiness in the clouds, are preserved much better in HDR. Let's see how HDR is turned on in code. You can query any video format if it supports HDR through its 'isVideoHDRSupported' property. Currently, only non-binned video formats support HDR. If HDR is supported, set videoHDRAllowed in the config to true and run your session with that configuration. Turning on HDR will have a performance impact, so make sure to only use it when there is a need for it. In use cases where you prefer manual control over settings such as exposure or white balance, there is now convenient way to directly access an AVCaptureDevice and change any of its settings. In our code example, call 'configurableCaptureDevice ForPrimaryCamera' of your configuration to get access to the underlying 'AVCaptureDevice'. Use this capability to create custom looks for your ARKit app, but keep in mind that the image is not only used as a rendering backdrop, but is also actively used by ARKit to analyze the scene. So any changes like strong overexposure might have a negative effect on the output quality of ARKit. You can also perform some advanced operations, like triggering focus events. For more information on how to configure AVCaptureSessions, please refer to the AVCapture documentation on developer.apple.com. Finally, ARKit exposes EXIF tags to your app. They are now available with every ARFrame. EXIF tags contain useful information about white balance, exposure, and other settings that can be valuable for post-processing. That concludes all updates on the image capture pipeline. Let's see which changes we have for Plane Anchors.\n\nPlane anchors have been a popular feature since the very first version of ARKit. Many of you expressed the need to have a cleaner separation of plane anchors and the underlying plane geometry. For that reason, we are announcing updates on the behavior of the plane anchor and the geometry of the plane. This is an example of a typical plane anchor in iOS 15. At the beginning of the AR session, it fits the plane to this well-textured notebook on the table. When running the session, the plane is gradually updated to account for new parts of the table that come into view. Every time the plane geometry is updated, the anchor rotation is updated as well to reflect the new orientation of the plane. With iOS 16, we introduce a cleaner separation between plane anchors and their plane geometry.\n\nPlane anchor and geometry updates are now fully decoupled. While the plane is extending and updating its geometry as the full table comes into view, the anchor rotation itself remains constant.\n\nWhen contrasting with the old behavior on the left hand side, you can see that the plane anchor in iOS 16 has stayed at the same orientation, aligned to the notebook, throughout the whole AR Session.\n\nAll information on plane geometry is now contained in a class called ARPlaneExtent. Rotation updates are no longer expressed through rotating the plane anchor itself. Instead, ARPlaneExtent contains a new property, rotationOnYAxis, that represents the angle of rotation. In addition to this new property, planes are fully defined by width and height, as well as the center coordinate of the PlaneAnchor. Let me show you how to create this plane visualization in code.\n\nFirst, we generate an entity based on a plane mesh according to the specified width and height. Then we set the entities transform according to the rotation on y axis and also offset it by the value of the center property. Every time the plane is updated, we have to account for the fact that width, height, and center coordinate and the new rotationOnYAxis might change. To make use of this new behavior, set your deployment target to iOS 16 in your Xcode settings. The next update is on MotionCapture, our machine learning masterminds worked hard to make further improvements. There is a whole suite of updates, both for the 2D skeleton, as well as for the 3D joints. For the 2D skeleton we are tracking two new joints: the left and the right ear. We also improved the overall pose detection. On iPhone 12 and up, as well as on the latest iPad Pro and iPad Air models with the M1 chip, the 3D skeleton, as shown in red, has been improved. You will experience less jitter and overall more temporal consistency. Tracking is also more stable if parts of the person are occluded or when walking up close to the camera. To make use of the improved MotionCapture, set your deployment target to iOS 16 in your Xcode settings. Next, I would also like to announce new cities and countries where LocationAnchors will be supported. As a small reminder, Apple Maps uses the LocationAnchor API to power its pedestrian walking instructions. In this example you can see that it can lead you through the streets of London, thanks to the power of LocationAnchors. LocationAnchors are already available in a growing number of cities in the United States and in London, UK. Starting today, they will be available in the Canadian cities of Vancouver, Toronto, and Montreal. We are also enabling them in Singapore, and in seven metropolitan areas in Japan, including Tokyo. As well as in Melbourne and Sydney, Australia. Later this year, we will make them available in Auckland, New Zealand, Tel Aviv, Israel, and Paris, France If you are interested to know if LocationAnchors are supported at a particular coordinate, just use the checkAvailability method of ARGeoTrackingConfiguration.\n\nAnd those were all the updates to ARKit 6. To summarize, I presented how to run ARKit in the new 4K video format. For advanced use cases, I demonstrated how to enable HDR or get manual control over the AVCaptureDevice. For even more pixel hungry applications, I demonstrated how to get high resolution photos from an ARKit session. We talked about the new behavior of Plane Anchors, and I presented the new ear joints and other improvements in MotionCapture. You also got to know in which countries LocationAnchors will be available later this year.\n\nThanks for tuning in. Have a great WWDC 2022!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "5:00",
+      "title": "HighRes Capturing",
+      "language": "swift",
+      "code": "if let hiResCaptureVideoFormat = ARWorldTrackingConfiguration.recommendedVideoFormatForHighResolutionFrameCapturing {\n    // Assign the video format that supports hi-res capturing.\nconfig.videoFormat = hiResCaptureVideoFormat\n}\n// Run the session.\nsession.run(config)"
+    },
+    {
+      "timestamp": "10:55",
+      "title": "highRes background photos",
+      "language": "swift",
+      "code": "session.captureHighResolutionFrame { (frame, error) in\n   if let frame = frame {\n      saveHiResImage(frame.capturedImage)\n   }\n}"
+    },
+    {
+      "timestamp": "12:00",
+      "title": "HDR support",
+      "language": "swift",
+      "code": "if (config.videoFormat.isVideoHDRSupported) {\n    config.videoHDRAllowed = true\n}\nsession.run(config)"
+    },
+    {
+      "timestamp": "12:35",
+      "title": "AVCapture Session",
+      "language": "swift",
+      "code": "if let device = ARWorldTrackingConfiguration.configurableCaptureDeviceForPrimaryCamera {\n   do {\n      try device.lockForConfiguration()\n      // configure AVCaptureDevice settings\n      …\n      device.unlockForConfiguration()\n   } catch {\n      // error handling\n      …\n   }\n}"
+    },
+    {
+      "timestamp": "16:00",
+      "title": "plane anchors",
+      "language": "swift",
+      "code": "// Create a model entity sized to the plane's extent.\nlet planeEntity = ModelEntity(\n    mesh: .generatePlane (\n        width: planeExtent.width, \n        depth: planeExtent.height),\n    materials: [material])\n\n// Orient the entity.\nplaneEntity.transform = Transform(\n    pitch: 0, \n    yaw: planeExtent.rotationOnYAxis, \n    roll: 0)\n\n// Center the entity on the plane.\nplaneEntity.transform.translation = planeAnchor.center"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "ARKit",
+        "url": "https://developer.apple.com/documentation/ARKit"
+      },
+      {
+        "title": "Explore the ARKit Developer Forums",
+        "url": "https://developer.apple.com/forums/tags/arkit"
+      },
+      {
+        "title": "Human Interface Guidelines: Augmented reality",
+        "url": "https://developer.apple.com/design/human-interface-guidelines/augmented-reality"
+      },
+      {
+        "title": "Tracking geographic locations in AR",
+        "url": "https://developer.apple.com/documentation/ARKit/tracking-geographic-locations-in-ar"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10126/4/042EC236-E96E-4969-A68A-1D379C84D647/downloads/wwdc2022-10126_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10126/4/042EC236-E96E-4969-A68A-1D379C84D647/downloads/wwdc2022-10126_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10128",
+      "year": "2022",
+      "title": "Bring your world into augmented reality",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10128"
+    },
+    {
+      "id": "10131",
+      "year": "2022",
+      "title": "Qualities of great AR experiences",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10131"
+    },
+    {
+      "id": "110931",
+      "year": "2022",
+      "title": "WWDC22 Day 3 recap",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110931"
+    },
+    {
+      "id": "10073",
+      "year": "2021",
+      "title": "Explore ARKit 5",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10073"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:23:50.713Z"
+}

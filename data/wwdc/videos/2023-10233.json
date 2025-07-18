@@ -1,0 +1,68 @@
+{
+  "id": "10233",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10233/",
+  "title": "Enhance your app’s audio experience with AirPods",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Suraj: Hello. In this session, we will explore how you can enhance your app's audio experience with AirPods. We will introduce you to some of the AirPods features we announced for iOS 17 and macOS 14. My name is Suraj. I'm part of the headphones and accessory software engineering team here at Apple. Let's get started.\n\nPeople around the world love their AirPods because they deliver the best personal audio experience throughout the day. Every day, many millions of people use AirPods to listen to music, watch movies, FaceTime family and friends, conduct their work calls, or settle in to get work done. And they use their AirPods across the Apple ecosystem, from Apple Watch all the way to the Mac. With iOS 17 and macOS 14, we are introducing some great features that makes using AirPods every day even easier and more convenient across platforms. Let's go through how these features transform one of the most common use cases with AirPods. You are enjoying music on AirPods in Personalized Spatial Audio with iPhone and receive a notification to join a work meeting. As you unlock your Mac to join the call, you are greeted by an AirPods Connected banner, letting you know that the AirPods are now ready and connected to the Mac.\n\nNext, as you join the meeting, audio will be played from Mac through your AirPods as you would expect, and the music you were listening to on iPhone pauses. In the middle of your work call, someone in office comes over to talk, or with remote work, someone rings your doorbell at home for a delivery.\n\nNow, you can press the AirPods stem to mute yourself on the call, and when you do so, you will be notified by a friendly microphone status banner and an audio chime as well.\n\nThen, as you would expect, you can press the AirPods stem again to unmute yourself and continue on with the meeting. And of course, you will see the banner and hear a chime on unmute.\n\nFinally, you are finished with your work meeting and it's time to unwind. You pick up your iPhone, press play on your favorite Apple Music playlist, and audio switches back to your AirPods from iPhone seamlessly, so you can continue on with your day without missing a beat.\n\nSo do you want to unlock the magical AirPods experience for your application and people with AirPods be able to use your app with a breeze across platforms? In this session, we will go through how you can optimize your app to take advantage of these features and deliver exactly that. I'll start off with AirPods automatic switching for macOS 14 and best practices your app can follow to get the most out it.\n\nThen, we will go through Press to Mute and Unmute support, in iOS 17 and macOS 14. Finally, we will talk about Spatial Audio and its support across various Apple platforms.\n\nLet's begin with AirPods automatic switching for macOS.\n\nmacOS 14 supports AirPods automatic switching, between devices based on the user's intended activity. Automatic switching algorithm uses indicators like \"Now Playing\" registration and input audio activity to make those decisions. The good news is that all App Store apps, as well as apps outside the App Store which uses App Sandbox or opt not to have a sandbox, do not have to do anything to adopt it. They will be able to fully participate in this feature without any change needed from the developer. Now, let's talk through best practices for an optimal AirPods experience for people with these feature. With registering for Now Playing on macOS, the automatic routing algorithm can now know when a long-form audio is playing, for example, and allows us to make the right routing decisions.\n\nIf your app is a media or streaming app, we recommend you register for Now Playing to help us prioritize your audio accordingly.\n\nIf you are a conference or a gaming app, we do not recommend registering for Now Playing.\n\nWe also recommend using Audio Services API to play notifications and app-specific chimes. This would help differentiate notifications from media contents and avoid unexpected behaviors. If you are a conferencing app, we recommend using input mic only when conference or voice session starts and keep it open only for the duration of the live meeting or voice session. For media apps, we recommend you use the default route selected by the user to play audio. Also, avoid playing silence after the user pauses audio. If you have to play silence, we would recommend to keep it less than two seconds. Now, let's talk about Press to Mute and Unmute with AirPods. With iOS 17 and macOS 14, we are adding convenience to the AirPods experience while on calls with Press to Mute and Unmute. People can now mute or unmute an application's mic during calls by simply pressing AirPods stem. Starting in iOS 17, all CallKit apps will get Press to Mute and Unmute support with absolutely no additional adoption necessary. For communications app not using CallKit, we have introduced new API that I will detail shortly. In all cases, iOS 17 will respond to the mute gesture by muting the uplink audio, playing a tone... And notifying the application that it has been muted. Then, when someone triggers the same gesture again, iOS 17 will unmute the uplink audio, play the tone... And notify the application that it has been unmuted. This features adds significant convenience for people. Let me show you how quickly you can add it on iOS17.\n\nI am pleased to introduce AVAudioApplication, a new sibling in the AVAudioSession family. AVAudioApplication is a way to configure application-wide audio behaviors for your app.\n\nLet me show you how quickly you can incorporate Press to Mute and Unmute using AVAudioApplication. First, we need to import AVFAudio. Next, get the shared instance of AVAudioApplication. Then we will need to register for mute gesture change notifications with Notification Center. This opts your application into Press to Mute and Unmute.\n\nThese notifications will inform you when your mute state has changed by a mute gesture. From there, you introspect the AVAudioApplication input muteStateKey of the user info to determine the new state.\n\nAfter receiving this notification, you can update any internal state and UI as a result of this notification firing. Additionally, it is necessary that AVAudioApplication is updated when someone takes a mute action within your application.\n\nAs you would expect, we provide both setters and getters.\n\nIt is that simple to incorporate, Press to Mute and Unmute into your app on iOS 17 Moving over to the Mac. It is important to note that in macOS 14, Press to Mute and Unmute works a little bit differently. Just like iOS, your app will be notified when the mute state changes. However, on macOS, your application is responsible for muting any uplink audio when a gesture has been performed.\n\nThere is some additional API required to opt in, which I will detail in a moment.\n\nLastly, do note, for applications looking to detect muted talkers, please refer to \"What's new in voice processing APIs\" session for details on new API to support that.\n\nLet's take a look at what adoption is needed on the Mac. Remember, on macOS 14, it is your application's responsibility to mute uplink audio as a result of a mute gesture.\n\nOn the shared instance of AVAudioApplication, you will need to set a Mute State Change handler. This handler will be called when someone performs a mute gesture. Here, you mute any uplink audio and update any internal state. It also gives you an opportunity to reject if the mute action is not appropriate for your application's current usage. It is recommended that this handler should not be used for UI updates, since you will continue to receive Input Mute State Change notification when mute state changes. In addition, we have provided a new property within the CoreAudio framework to help you quickly mute any input audio to your process.\n\nThis property, when enabled, will silence any input audio to your process while continuing to perform IO as usual.\n\nFinally, let's discuss Spatial Audio with AirPods. Spatial Audio on AirPods transformed how people around the world listen to music, so much so that over 80% of Apple Music subscribers today listen in Spatial Audio. And with the launch of iOS 16, we took this to the next level with Personalized Spatial Audio, because the way we all perceive sound is unique, based on the size and shape of our head and ears. And this push towards increased personalization has been well-received by people. With macOS 14, iOS 17 and tvOS 17, we are glad to announce continued Spatial Audio support for all three platforms.\n\nFor macOS, we support Spatial Audio for AVPlayer as well as AVSampleBufferAudioRenderer API. iOS and tvOS support Spatial Audio for AURemoteIO as well as AudioQueue API along with the above mentioned APIs.\n\nDo note that Spatial Audio for AudioQueue and AURemoteIO does not have an API interface. Instead, it is automatically enabled for apps that register for Now Playing.\n\nThis would present the user with an option to configure the feature via the Control Center.\n\nTo wrap things up, we discovered how easy it is for people and apps to benefit from AirPods automatic switching for macOS. In fact, most likely, you won't need to do anything to participate in the updates. Then, we also went through, what your app can do to have a consistent automatic switching experience with AirPods.\n\nWe introduced you to AVAudioApplication API and how it can be used to add Press to Mute and Unmute support.\n\nAnd we discussed how you can offer AirPods Spatial Audio to a global customer base across all our platforms. In our related sessions, you can also learn how to add support for Spatial Audio in your app and register for Now Playing. I hope you enjoyed this session as much as our team enjoyed bringing it to you. We are so excited to share these features with you and our customers. We can't wait to see everything in action in your application. And thank you.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "8:25",
+      "title": "Press to Mute and Unmute API",
+      "language": "swift",
+      "code": "// Adopting AVAudioApplication into your App\nimport AVFAudio\n\n// Get the started instance \nlet instance = AVAudioApplication.shared\n\n// Register for mute gesture notifications on Notification Center \nAVAudioApplication.inputMuteStateChangeNotification\n\n// Key for mute state\nAVAudioApplication.muteStateKey\n\n// Updating AVAudioApplication’s mute state\ninstance.setInputMuted(...)\n\n// Reading AVAudioApplication’s mute state\ninstance.isInputMuted"
+    },
+    {
+      "timestamp": "10:52",
+      "title": "Configure the Input Mute State Change handler (macOS only)",
+      "language": "swift",
+      "code": "// Configure the Input Mute State Change handler (macOS only)\ninstance.setInputMuteStateChangeHandler { isMuted in\n\t//...\n\treturn didSucceed\n}\n\n// Optional: let CoreAudio mute your input for you (macOS only)\n// Define the Core Audio property\nvar inputeMutePropertyAddress = AudioObjectPropertyAddress(\n\tmSelector: kAudioHardwarePropertyProcessInputMute,\n\tmScope: kAudioObjectPropertyScopeInput,\n\tmElement:kAudioObjectPropertyElementMain)\n\n// Enable this property when you want to mute your input\nUInt32 isMuted = 1; // 1 = muted, 0 = unmuted\nAudioObjectSetPropertyData(kAudioObjectSystemObject,\n\t\t\t\t\t\t   &inputeMutePropertyAddress,\n\t\t\t\t\t\t   0,\n\t\t\t\t\t\t   nil,\n\t\t\t\t\t\t   UInt32(MemoryLayout.size(ofValue: isMuted),\n\t\t\t\t\t\t   &isMuted)"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10233/4/67656F5A-221D-451B-9BD0-45BCA4922204/downloads/wwdc2023-10233_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10233/4/67656F5A-221D-451B-9BD0-45BCA4922204/downloads/wwdc2023-10233_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10235",
+      "year": "2023",
+      "title": "What’s new in voice processing",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10235"
+    },
+    {
+      "id": "10265",
+      "year": "2021",
+      "title": "Immerse your app in Spatial Audio",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10265"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:22:18.992Z"
+}

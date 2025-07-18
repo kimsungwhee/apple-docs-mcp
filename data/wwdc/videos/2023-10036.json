@@ -1,0 +1,136 @@
+{
+  "id": "10036",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10036/",
+  "title": "Build accessible apps with SwiftUI and UIKit",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Accessibility & Inclusion"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Allison: Hello, everyone. My name is Allison, and I am an accessibility engineer. Today we are going to be talking about some of the exciting new ways you can make your app more accessible. At Apple, accessibility is an essential piece of everything that we build because we believe everyone deserves access to technology. We want it to be extremely easy for you to make your apps accessible. Over the past year, we have been working on a number of enhancements to ensure that everyone has the best possible experience in your app. In this session, we will explore API that lets people interact with your app in new, exciting ways. Next, we will discuss how to improve the accessibility visuals for your content in your SwiftUI app. Finally, we will learn a better way to keep your accessibility attributes up-to-date in UIKit. Let's start by talking about accessibility enhancements. I have been working on a photo editing app. My app lets me add cool image modifications to photos from my library or camera. I can apply different filters, change the photo tint color, or create custom sounds to pair with my images using the piano keyboard in my app. Let's discuss a few accessibility enhancements that we can integrate into the app. In the filter page of my photo app, there is a custom button that has an on and off state.\n\nThe \"Filter\" switch button lets us toggle on and off the image filter. The system does not know the correct accessibility hint and title for this custom UI, and we want to make sure that we provide an accessibility experience that matches that of other system toggles. This is where the new accessibility trait, isToggle, helps out. We have a struct representing the filter button. In the body of the struct, we create a button that toggles the filter when pressed. The button's color updates based on the filter state variable. We will add the isToggle trait to the filter button in the accessibilityAddTraits modifier. isToggle provides the proper accessibility hint and \"switch button\" description. VoiceOver: Filter, switch button. Double-tap to toggle setting.\n\nAllison: The new toggle trait is also available in UIKit. In the viewDidLoad method, we set up the button view. Then, we set the accessibilityTraits property on the button to contain .toggleButton. In the photo filter app, I want to add a new announcement to the photos navigation bar button to let people know the photos view is loading. Accessibility Notifications are a new API that can help us do this. Accessibility notifications provide a unified, multi-platform way to create announcements to convey information to someone using an assistive technology in your app. Accessibility notifications can be created for apps running SwiftUI, UIKit, and AppKit. With AccessibilityNotification, you can send announcement, layout change, screen change, and page scroll notifications in a way that is native to Swift. When the photos tool bar button is pressed, I want to post an announcement. VoiceOver: Photos, button. Photos. Loading photos view. Allison: We can post the announcement in the action for the toolbar button. To create the announcement, we can use AccessibilityNotification.Announcement with \"Loading Photos View\" as the string parameter. In the app, I also want to create three announcements when the camera navigation bar button is pressed. The first announcement, \"Opening Camera,\" and third announcement, \"Camera Active,\" are the most important. Let's look at VoiceOver's current speech pattern for the announcements. Notice how the second announcement, \"Camera Loading,\" interrupts \"Opening Camera\". VoiceOver: Camera, button. Done. Open--camera--camera active. Allison: Now, in SwiftUI and UIKit, you can also set an announcement's priority, which lets you set the importance of an announcement queued to be spoken by assistive technologies. This gives you more control over which announcements people need to hear, versus announcements that can be ignored if not spoken in time. You can specify the importance of this information using one of three announcement priorities: high, default, and low. High priority announcements can interrupt other speech and cannot be interrupted once started. Default priority announcements can interrupt existing speech but are interruptible if a new speech utterance is started. Low priority announcements are queued and spoken when other speech utterances have completed, if no new announcements have started. In the photos app, we can use announcement priority to fix the interrupting strings. We have three announcements made from attributed strings. In SwiftUI, we will set the priority on the accessibilitySpeechAnnouncementPriority string property. Our second announcement, \"Camera Loading,\" is the least important, so we give it a low priority. The last announcement, \"Camera Active,\" is the most important, so we want it to have a high priority. Next, we will pass the attributed strings to the AccessibilityNotification. First, we will dispatch the default priority announcement, then the low priority, then the high priority. Now note how the low priority announcement does not interrupt the default priority announcement, while the high priority announcement does interrupt the default and low announcements. VoiceOver: Camera, button. Done. Opening camera--camera active. Allison: We can achieve the same announcement order in UIKit. We set the announcement priorities as NSAttributedString key value pairs. We use the key UIAccessibilitySpeechAttribute AnnouncementPriority and set the value to the proper UIAccessibilityPriority. Then we pass the attributes to the attributed string initializer. Back in the app, there is an image view that people can physically touch or pinch to zoom in and out. With an assistive technology turned on, this physical touch or pinch gesture can be hard to accomplish. Now, with the accessibility zoom action, people can zoom in and out on UI elements when assistive technologies are enabled. We will add the zoom action on the image. The image is in the body of the ZoomingImageView struct. We first add the accessibilityZoomAction modifier. Then, based on the direction of the zoom action, we will zoom the content in or out and post an accessibility notification announcement. Now let's explore VoiceOver's zoom capabilities with these changes. VoiceOver: Zooming image view, image. Zoom. 2x zoom. 3x zoom. 4x zoom. 3x zoom. Allison: We can also add the zoom trait and action in UIKit. We will first create a zoom view which will contain the image view. Next, we will add the supportsZoom trait to the zoom view alongside the image trait. We then implement accessibilityZoomInAtPoint and accessibilityZoomOutAtPoint, each of which return a boolean to indicate zooming success or failure. In each of these methods, we update the zoom scale and post an announcement to indicate the zoom change. In our image filter app, we can also create a short sound to add to the image by playing the small piano keys. People can create custom tones for the image using the keys.  Let's examine the current VoiceOver experience with these sounds as I try to create a tone.\n\nVoiceOver speaks the key label and plays the VoiceOver activation sound every time the element is touched, which makes it difficult to quickly press the keys in succession. Typically, VoiceOver provides a safe exploration experience, but sometimes, people need to directly interact with your app to use it properly. For our app, it would be much better if people could directly touch the piano keys without extra speech and sounds. This is a great time to adopt the direct touch trait, named allowsDirectInteraction, on our view. Accessibility direct touch areas will let you specify a region of the screen where VoiceOver gestures pass directly through to the app. In the default state, VoiceOver both speaks and activates the content of the direct touch element. For our app, though, it would be great if VoiceOver would be silent when someone touches a piano key so they can immediately hear the tone without having to activate the piano key element first. In addition to the allowsDirectInteraction trait, there are now two new direct touch options that will be supported. First, you can specify silentOnTouch to ensure VoiceOver is silent when touching the direct touch area, so that your app can make its own audio feedback. Second, you can specify requiresActivation to make the direct touch area require VoiceOver to activate the element before touch passthrough happens. This is the code snippet for the KeyboardKeyView. Each key is a rectangle that plays a specified sound. To fix the issue with VoiceOver speaking over the tone every time, we have set the direct touch option for the button to silent on touch. Now, the correct tone plays once VoiceOver reaches the key button without interference from VoiceOver's speech.  We can also add the new direct touch options in UIKit. We can create the key button as a UIButton. Next, we will add the allowsDirectInteraction accessibility trait. This trait is required when setting accessibility direct touch options in UIKit. Finally, we will add the silentOnTouch option for accessibilityDirectTouchOptions. With the accessibility toggle trait, announcement priority, zoom trait, and direct touch options, you have more control over the ways assistive technologies interact with your SwiftUI and UIKit apps. Next, let's talk about the accessibility content Shape kind in SwiftUI. This kind sets an accessibility element's path and controls the appearance of accessibility elements on the screen. Previously, the interaction content shape kind changed the accessibility shape and hit testing shape. Now there is an accessibility content shape kind which will not impact the hit testing shape and only impact the shape of accessibility content. When an element needs a custom shape, such as a circle, the computed accessibility cursor visuals may obstruct other items on the screen. In this example, the accessibility path is a square, which does not match the red circular content. When the Accessibility Content Shape kind is applied to a view, it will update the underlying accessibility geometry for the element with the shape provided by the modifier. This lets you quickly update an element's path with an existing SwiftUI Shape. I have created the circle button using a circle image. We can set the frame and the accessibility label to match the color, red. Finally, we can add the content shape modifier to my view with the accessibility type and Circle as the shape.\n\nNow the accessibility path correctly matches the circular shape of the red color button. Finally, let's discuss an addition coming to UIKit accessibility, block based attribute setters. In the photo editing app, I want the accessibility value for the image view to represent whether the photo is filtered or not filtered. Now there is an easy way to keep the underlying accessibility attributes for my views always in line with the presented UI. I can do this with accessibility block based setters. The new accessibility block API lets you provide a closure that is evaluated whenever the attribute is needed rather than storing the value directly. The closure is re-evaluated every time a view is referenced or accessed by an assistive technology. We can simplify things with a closure, created in the viewDidLoad method for my view controller. We set the accessibilityValueBlock property on the zoomView to keep the value updated based on whether or not the image is filtered. The closure must return the correct type for this attribute, which is an optional String. Notice that we are using a weak reference to self to avoid a retain cycle. Blocks are great to add at the beginning of a class life cycle, to start up a class with the proper accessibility attribute information. Now accessibility attributes are much easier to maintain. Every time someone moves the VoiceOver cursor to a new element, VoiceOver first looks for attributes set with a closure and re-evaluates the closure.  When you are building custom UI, consider integrating accessibility traits like toggle and features like direct touch interaction to increase usability for everyone.\n\nSecond, think about your views with custom shapes in SwiftUI. If the accessibility shapes do not match the UI, consider introducing a custom accessibility shape. And finally, I encourage you to evaluate how you are setting your accessibility attributes and identify if block based setters make more sense in your app. At Apple, we believe accessibility is a human right. With your help, we can create technology that enhances and empowers everyone's lives. These new API additions are a great way to increase the usability of your app for people who rely on assistive technologies, and I encourage you to use all of them to build amazing, accessible apps. Thanks for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:54",
+      "title": "Add the accessibility toggle trait",
+      "language": "swift",
+      "code": "import SwiftUI\n\nstruct FilterButton: View {\n    @State var filter: Bool = false\n\n    var body: some View {\n        Button(action: { filter.toggle() }) {\n            Text(\"Filter\")\n        }\n        .background(filter ? darkGreen : lightGreen)\n        .accessibilityAddTraits(.isToggle)\n    }\n}"
+    },
+    {
+      "timestamp": "2:31",
+      "title": "Add the accessibility toggle trait with UIKit",
+      "language": "swift",
+      "code": "import UIKit\n\nclass ViewController: UIViewController {\n    override func viewDidLoad() {\n        super.viewDidLoad()\n\n        let filterButton = UIButton(type: .custom)\n\n        setupButtonView()\n\n        filterButton.accessibilityTraits = [.toggleButton]\n\n        view.addSubview(filterButton)\n    }\n}"
+    },
+    {
+      "timestamp": "3:43",
+      "title": "Post an accessibility notification",
+      "language": "swift",
+      "code": "import SwiftUI\n\nstruct ContentView: View {\n    var body: some View {\n        NavigationView {\n            PhotoFilterView\n                .toolbar {\n                    Button(action: {\n                        AccessibilityNotification.Announcement(\"Loading Photos View\")\n                            .post()\n                    }) {\n                        Text(\"Photos\")\n                    }\n                }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "5:13",
+      "title": "Assign announcement priority",
+      "language": "swift",
+      "code": "import SwiftUI\n\nstruct ZoomingImageView: View {\n  \n    var defaultPriorityAnnouncement = AttributedString(\"Opening Camera\")\n\n    var lowPriorityAnnouncement: AttributedString {\n        var lowPriorityString = AttributedString(\"Camera Loading\")\n        lowPriorityString.accessibilitySpeechAnnouncementPriority = .low\n        return lowPriorityString\n    }\n    \n    var highPriorityAnnouncement: AttributedString {\n        var highPriorityString = AttributedString(\"Camera Active\")\n        highPriorityString.accessibilitySpeechAnnouncementPriority = .high\n        return highPriorityString\n    }\n  \n    // ...\n}"
+    },
+    {
+      "timestamp": "5:46",
+      "title": "Post announcements with priority set",
+      "language": "swift",
+      "code": "import SwiftUI\n\nstruct CameraButton: View {\n    \n    // ...\n  \n    var body: some View {\n        Button(action: {\n            // Open Camera Code\n            AccessibilityNotification.Announcement(defaultPriorityAnnouncement).post()\n            // Camera Loading Code\n            AccessibilityNotification.Announcement(lowPriorityAnnouncement).post()\n            // Camera Loaded Code\n            AccessibilityNotification.Announcement(highPriorityAnnouncement).post()\n        }) {\n            Image(\"Camera\")\n           }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "6:15",
+      "title": "Assign announcement priority with UIKit",
+      "language": "swift",
+      "code": "class ViewController: UIViewController {\n    let defaultAnnouncement = NSAttributedString(string: \"Opening Camera\", attributes: \n        [NSAttributedString.Key.UIAccessibilitySpeechAttributeAnnouncementPriority: \n        UIAccessibilityPriority.default]\n    )\n\n    let lowPriorityAnnouncement = NSAttributedString(string: \"Camera Loading\", attributes:   \n        [NSAttributedString.Key.UIAccessibilitySpeechAttributeAnnouncementPriority:\n        UIAccessibilityPriority.low]\n    )\n\n    let highPriorityAnnouncement = NSAttributedString(string: \"Camera Active\", attributes: \n        [NSAttributedString.Key.UIAccessibilitySpeechAttributeAnnouncementPriority:  \n        UIAccessibilityPriority.high]\n    )\n\n    // ...\n}"
+    },
+    {
+      "timestamp": "6:56",
+      "title": "Add the accessibility zoom action",
+      "language": "swift",
+      "code": "struct ZoomingImageView: View {\n    @State private var zoomValue = 1.0\n    @State var imageName: String?\n\n    var body: some View {\n        Image(imageName ?? \"\")\n            .scaleEffect(zoomValue)\n            .accessibilityZoomAction { action in\n                let zoomQuantity = \"\\(Int(zoomValue)) x zoom\"\n                switch action.direction {\n                case .zoomIn:\n                    zoomValue += 1.0\n                    AccessibilityNotification.Announcement(zoomQuantity).post()\n                case .zoomOut:\n                    zoomValue -= 1.0\n                    AccessibilityNotification.Announcement(zoomQuantity).post()\n                }\n            }\n    }\n}"
+    },
+    {
+      "timestamp": "7:18",
+      "title": "Add the accessibility zoom action with UIKit",
+      "language": "swift",
+      "code": "import UIKit\n\nclass ViewController: UIViewController {\n    let zoomView = ZoomingImageView(frame: .zero)\n    let imageView = UIImageView(image: UIImage(named: \"tree\"))\n\n    override func viewDidLoad() {\n        super.viewDidLoad()\n        zoomView.isAccessibilityElement = true\n        zoomView.accessibilityLabel = \"Zooming Image View\"\n        zoomView.accessibilityTraits = [.image, .supportsZoom]\n\n        zoomView.addSubview(imageView)\n        view.addSubview(zoomView)\n    }\n}"
+    },
+    {
+      "timestamp": "7:43",
+      "title": "Respond to accessibility zoom actions with UIKit",
+      "language": "swift",
+      "code": "import UIKit \n\nclass ZoomingImageView: UIScrollView {\n    override func accessibilityZoomIn(at point: CGPoint) -> Bool {\n        zoomScale += 1.0\n\n        let zoomQuantity = \"\\(Int(zoomValue)) x zoom\"  \n        UIAccessibility.post(notification: .announcement, argument: zoomQuantity)\n        return true\n    }\n\n    override func accessibilityZoomOut(at point: CGPoint) -> Bool {\n        zoomScale -= 1.0\n\n        let zoomQuantity = \"\\(Int(zoomValue)) x zoom\" \n        UIAccessibility.post(notification: .announcement, argument: zoomQuantity)             \n        return true\n    }\n}"
+    },
+    {
+      "timestamp": "10:10",
+      "title": "Use accessibility direct touch options",
+      "language": "swift",
+      "code": "import SwiftUI\n\nstruct KeyboardKeyView: View {\n    var soundFile: String\n    var body: some View {\n        Rectangle()\n            .fill(.white)\n            .frame(width: 35, height: 80)\n            .onTapGesture(count: 1) {\n                playSound(sound: soundFile, type: \"mp3\")\n            }            \n            .accessibilityDirectTouch(options: .silentOnTouch)\n    }\n}"
+    },
+    {
+      "timestamp": "10:46",
+      "title": "Use accessibility direct touch options with UIKit",
+      "language": "swift",
+      "code": "import UIKit\n\nclass ViewController: UIViewController {\n    let waveformButton = UIButton(type: .custom)\n\n    override func viewDidLoad() {\n        super.viewDidLoad()\n        \n        waveformButton.accessibilityTraits = .allowsDirectInteraction\n        waveformButton.accessibilityDirectTouchOptions = .silentOnTouch\n        waveformButton.addTarget(self, action: #selector(playTone), for: .touchUpInside)\n        \n        view.addSubview(waveformButton)\n    }\n}"
+    },
+    {
+      "timestamp": "12:21",
+      "title": "Set the accessibility content shape",
+      "language": "swift",
+      "code": "import SwiftUI\n\nstruct ImageView: View {\n    var body: some View {\n        Image(\"circle-red\")\n            .resizable()\n            .frame(width: 200, height: 200)\n            .accessibilityLabel(\"Red\")\n            .contentShape(.accessibility, Circle())\n    }\n}"
+    },
+    {
+      "timestamp": "13:35",
+      "title": "Update accessibility values using block-based setters with UIKit",
+      "language": "swift",
+      "code": "import UIKit \n\nclass ViewController: UIViewController {\n    var isFiltered = false\n\n    override func viewDidLoad() {\n        super.viewDidLoad()\n        // Set up views\n        zoomView.accessibilityValueBlock = { [weak self] in\n            guard let self else { return nil }\n            return isFiltered ? \"Filtered\" : \"Not Filtered\"\n        }\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Accessibility",
+        "url": "https://developer.apple.com/documentation/accessibility"
+      },
+      {
+        "title": "Accessibility updates",
+        "url": "https://developer.apple.com/documentation/Updates/Accessibility"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10036/4/BB960BFD-F982-4800-8060-5674B049AC5A/downloads/wwdc2023-10036_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10036/4/BB960BFD-F982-4800-8060-5674B049AC5A/downloads/wwdc2023-10036_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10148",
+      "year": "2023",
+      "title": "What’s new in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10148"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:07:50.592Z"
+}

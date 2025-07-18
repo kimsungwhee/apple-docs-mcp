@@ -1,0 +1,86 @@
+{
+  "id": "10147",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10147/",
+  "title": "Distribute binary frameworks as Swift packages",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Swift"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nHi. My name is Boris, and today I'm going to talk about distributing binary frameworks as Swift packages. In Xcode 11, we introduced support for Swift packages, offering a straightforward approach to distributing libraries as source code. We also introduced XCFrameworks, which provided a better way to distribute closed source binary frameworks and libraries. Now in Xcode 12, we're bringing the advantages of Swift packages for library distribution to closed source libraries as well, with support for binary dependencies. In this video, I'm first going to cover how to use a binary dependency in an app. Next, I'll be talking about how to distribute a binary framework as a Swift package. And finally, we're going to look at how to create a binary framework with Xcode. While many libraries are available in source code form, some developers choose to not make the source code of their library available, and instead, distribute them in binary form. Using such a binary dependency works just like adding a source-based dependency. Let's look at that in a demo.\n\nWe'll start with a simple iOS app. You select File, Swift Packages, Add Package Dependency.\n\nWe'll pick the BinaryEmoji package...\n\nuse version 1.0...\n\nand link the binary with our app.\n\nNow if we look at the project navigator, we'll see a new group, \"Referenced Binaries,\" that contains an XCFramework.\n\nLet's look at that in Finder.\n\nWe see that it has a bunch of subdirectories, each of which corresponds to a platform and target environment represented by a target triple.\n\nInside, you see a corresponding framework for that particular triple.\n\nLet's go back to Xcode.\n\nWe can now import the emoji module in our app's code.\n\nAnd if we jump to \"definition,\" we'll see which API it provides. There's an EmojiView type that I want to use in my app.\n\nIf we now refresh the preview...\n\nyou see the EmojiView being used. So, using a binary dependency really works the same as a source-based dependency.\n\nIf you're already familiar with XCFrameworks from Xcode 11, they are effectively handled the same way as if they were added directly to your app.\n\nIf you want to use that same library as a package dependency, it also works the same way you're used to. In the package manifest, you can add an entry to the dependencies array, which points to the repository the package is using and defines the version restrictions that you chose for this dependency.\n\nNow that we saw how to use a binary dependency that someone else authored, next, let's look at how we create such a package that distributes a binary framework ourselves. Xcode 12 offers the new tools-version:5.3 which brings the new package manifest API. This adds a new target type: \"binaryTarget.\" It has a name which corresponds to the module name of the XCFramework...\n\na HTTPS URL... and a checksum so that the downloaded archive can be verified.\n\nThere's also an option to point to an XCFramework by path, that's meant for development. Note that larger XCFrameworks, just as any large binary files, shouldn't be committed to your Git repository, because they will slow down checkouts.\n\nProducts can reference binary targets to vend them to clients, just like regular targets. Binary targets use XCFrameworks, as we saw earlier, are only supported on Apple platforms, can be HTTPS or path-based where the path can point to files inside your package. If HTTPS is being used, the binary artifact will be downloaded separately from the Git checkout of your package. This means that you don't pollute the history of your repository with large binaries, and that you can use the same download location for other uses, such as people downloading your framework manually.\n\nThe name corresponds to the module name. Names are unique across the graph, so don't bundle other people's binary frameworks. There should be one canonical package for each binary framework. As you evolve the binary targets of your package, you should adhere to semantic versioning, just like you would for source-based targets. For example, breaking changes to your XCFramework, such as renaming a method or type, should lead to an increase of the major version of your package. Similarly, you also want to version your framework itself using the bundle version string setting in the framework's Info.plist. More information about evolving binary frameworks were covered in the WWDC 2019 session \"Binary Frameworks in Swift\" that I would encourage you to watch. Let's see how we can create our own binary dependency in another demo.\n\nThis time we start with a new package using File, New, Swift Package.\n\nWe will call it \"Emoji.\" We delete the targets that were added by the template...\n\nand instead, insert a binary target.\n\nThe name will also be \"Emoji.\" Use a URL pointing to a local server that has my XCFramework.\n\nAnd now we need a checksum. How do we generate that? To compute the checksum of a binary framework, use the \"swift package compute-checksum\" command. This will print the checksum to the terminal, and you can copy it from there and paste it into your package manifest. When your package is being used, Xcode will compute the checksum of the downloaded file and reject it if it does not match the manifest. This ensures that your clients use the exact binary you expect. Now we can insert that checksum and build the package.\n\nAnd that's how you can bundle an XCFramework into a Swift package for distribution. Finally, let's look at how to create binary frameworks themselves. XCFrameworks were introduced in Xcode 11. They bundle up multiple variants of a framework for different platforms, they support frameworks as well as dynamic and static libraries, and each XCFramework contains a single module. To create an XCFramework, set the \"Build Libraries for Distribution\" build setting on your existing framework or library target, archive each variant using the \"xcodebuild archive\" command, and use the \"xcodebuild -create-xcframework\" command to bundle it up.\n\nThere's a lot more detail about this in the WWDC 2019 session \"Binary Frameworks in Swift,\" so I'd recommend watching this before creating binary frameworks with Xcode. Now before we wrap up, I want to talk about the trade-offs of using binary dependencies. You should always carefully consider which third-party components you bring into your projects. With binaries specifically, debugging becomes harder and making your own fixes won't be possible.\n\nYou will also be limited to whatever platforms are supported by the author, since you won't be able to rebuild a binary dependency. Keep these points in mind before adding new binary dependencies to your app. To wrap up, you can now distribute existing XCFrameworks as Swift packages. Depending on them works the same way as for source-based packages. Thanks for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:37",
+      "title": "Adding a Package Dependency to the Package Manifest",
+      "language": "swift",
+      "code": "// swift-tools-version:5.3\n\nimport PackageDescription\n\nlet package = Package(\n    name: \"package\",\n    products: [\n        .library(\n            name: \"package\",\n            targets: [\"package\"]),\n    ],\n    dependencies: [\n        .package(url: \"https://github.com/JohnnyAppleseed2020/BinaryEmoji\", from: \"1.0.0\"),\n    ],\n    targets: [\n        .target(\n            name: \"package\",\n            dependencies: [\"Emoji\"]),\n    ]\n)"
+    },
+    {
+      "timestamp": "3:04",
+      "title": "Distributing Binary Frameworks as a Swift Package",
+      "language": "swift",
+      "code": "// swift-tools-version:5.3\n\nimport PackageDescription\n\nlet package = Package(\n    name: \"Emoji\",\n    products: [\n        .library(name: \"Emoji\", targets: [\"Emoji\"])\n    ],\n    dependencies: [\n    ],\n    targets: [\n        .binaryTarget(\n            name: \"Emoji\",\n            url: \"https://example.com/Emoji/Emoji-1.0.0.xcframework.zip\",\n            checksum: \"6d988a1a27418674b4d7c31732f6d60e60734ceb11a0ce9b54d1871918d9c194\"\n        )\n    ]\n)"
+    },
+    {
+      "timestamp": "5:43",
+      "title": "Computing the Checksum",
+      "language": "swift",
+      "code": "swift package compute-checksum Emoji-1.0.0.xcframework.zip"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10147/3/9A1289F5-A542-4604-BB2E-E7A77AF2C41F/wwdc2020_10147_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10147/3/9A1289F5-A542-4604-BB2E-E7A77AF2C41F/wwdc2020_10147_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10169",
+      "year": "2020",
+      "title": "Swift packages: Resources and localization",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10169"
+    },
+    {
+      "id": "10170",
+      "year": "2020",
+      "title": "What's new in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10170"
+    },
+    {
+      "id": "416",
+      "year": "2019",
+      "title": "Binary Frameworks in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/416"
+    },
+    {
+      "id": "410",
+      "year": "2019",
+      "title": "Creating Swift Packages",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/410"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:49:53.837Z"
+}

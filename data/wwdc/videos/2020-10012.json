@@ -1,0 +1,182 @@
+{
+  "id": "10012",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10012/",
+  "title": "Discover ray tracing with Metal",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Graphics & Games"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nHi. My name is Sean James, and I'm a GPU Software Engineer. In this session, we're going to talk about the brand new ray tracing API we've added to Metal this year. This new API allows you to perform intersection testing directly from within any compute kernel. It also allows you to write intersection functions to customize the intersection process.\n\nRay tracing applications are based on tracing the paths that rays take as they interact with a scene.\n\nRay tracing has applications in a lot of domains such as audio and physics simulation, but one of the most popular applications is photo-realistic rendering. In rendering, ray tracing is used to model individual rays of light, so we can simulate effects such as reflections, soft shadows, indirect lighting, and more. Let's first review how ray tracing works, then we'll look at the new Metal ray tracing API.\n\nWe start by generating rays which are emitted from the camera into the scene. We then test those rays for intersection with the geometry in the scene. Each intersection point represents light bouncing off a surface.\n\nHow much light bounces, and in what direction, determines what objects look like.\n\nSo we'll compute a color for each intersection point and update the image. This process is called shading, and it can also generate additional rays which bounce further into the scene.\n\nWe test those rays for intersection as well and repeat this process as many times as we'd like to simulate light bouncing around the scene. For the last two years, we've talked about how you can do this using the Metal Performance Shaders framework. We start by launching a compute kernel which generates the initial set of rays and writes them into a Metal buffer. We can then use the MPSRayIntersector class to intersect those rays with the scene.\n\nThe intersector writes the intersection results into another buffer.\n\nWe can then launch a final compute kernel which reads those intersections and does the shading.\n\nAdditional rays can be written back into the ray buffer, and we can launch these two compute kernels in a loop to simulate light bouncing. This works great, but it requires us to split up our code into three separate compute kernels.\n\nIt also requires us to pass rays and intersections through memory. In contrast, in the new Metal ray tracing API, this intersector object is now available directly from the shading language.\n\nThis allows us to combine all three kernels into a single compute kernel. Since we don't need to pass ray data between kernels anymore, we can also eliminate the ray and intersection buffers.\n\nThis removes the need to read and write memory to pass rays and intersections around. This is also a much more flexible programming model. For example, instead of launching compute kernels over and over, the outer loop can be represented by a simple loop in the shading language.\n\nLet's see how a basic ray tracing kernel works.\n\nWe'll launch a two-dimensional compute kernel with one thread per pixel.\n\nWe start by generating a ray. This is just some math which produces the initial ray for the given pixel. We then create an intersector object. This object is responsible for finding intersections between rays and the geometry in the scene. We can set various properties on this object to customize its behavior. For example, we can speed up cases such as shadows and ambient occlusion by accepting the first intersection rather than exhaustively searching for the closest one. We then pass the ray to the intersector and get back an intersection result.\n\nFinally, we can use the intersection result to perform shading. Keep in mind that the intersection step needs to do a lot of work, so if you combine it with complex shading code, you may end up with a compute kernel that runs at lower occupancy. You'll need to profile your application to find the best way to divide up work between kernels for your application. That's all we need to do for basic intersection testing.\n\nThe other argument to the intersect function is an acceleration structure.\n\nAcceleration structures are data structures used to speed up the ray tracing process. These data structures recursively partition space so that we can quickly eliminate triangles which could not possibly intersect a given ray.\n\nLike MPS, Metal takes care of building this data structure for you. All you need to do is provide your geometry. Here's how that works. First, we need to create a descriptor object which describes the acceleration structure to build. Next, we need to allocate memory to store the acceleration structure. And finally, we build the acceleration structure.\n\nLet's start with the descriptor. Metal supports two types of acceleration structure: primitive and instance acceleration structures. For this example, we'll create a primitive acceleration structure. As the name implies, these contain primitives such as triangles. Primitive acceleration structures are composed of individual pieces of geometry.\n\nMetal also supports two types of geometry, but for now, we'll focus on triangles. Each piece of triangle geometry can have its own vertex buffer, index buffer, triangle count, and so on. We start by creating a primitive acceleration structure descriptor. Next, we'll create a geometry descriptor. In this example, we'll just create a single triangle geometry descriptor.\n\nThen we'll attach our vertex buffer and specify the triangle count. The triangle data will be embedded into the acceleration structure, so it's not necessary to keep the vertex buffer around once we've built the acceleration structure. We then simply add the geometry descriptor to an array on the acceleration structure descriptor. Now that we've created the descriptor, we can allocate memory for the acceleration structure. These are potentially large memory allocations. One of the improvements we've made in the new Metal ray tracing API is that Metal gives you full control over when and where acceleration structures are allocated. This means you can reuse memory or allocate it at a time that's convenient for your application.\n\nWe start by calling a method on the Metal device which returns a struct containing the sizes we need to allocate the acceleration structure.\n\nNext, we'll actually allocate the acceleration structure from the Metal device.\n\nFinally, we'll also need to allocate a scratch buffer. This buffer will be used by Metal as temporary storage while building the acceleration structure, and we can throw it away once we're done. We won't need access to the data in this buffer, so we'll use the private resource storage mode to get the best performance. We've now allocated memory for the acceleration structure, but it hasn't actually been built yet. So, the final step is to build the acceleration structure.\n\nWe've also made some improvements here.\n\nBuilding acceleration structures can take some time, so Metal now gives you full control over when they are built, including which GPU command queue and command buffer they're built on.\n\nFirst, we'll create a command buffer and, from it, one of the new AccelerationStructureCommandEncoders. Like the other Metal encoders, this object is used to schedule work on the GPU. In this case, we'll encode the actual build command, providing the descriptor, acceleration structure and scratch buffer.\n\nFinally, we end encoding and commit the command buffer. This allows the GPU to get started building the acceleration structure.\n\nAcceleration structure builds now run entirely on the GPU timeline with no CPU synchronization, so it's safe to schedule intersection work on the GPU after this command buffer.\n\nWe've actually already seen how to use an acceleration structure. We simply pass it to the intersector. As you can see, acceleration structures bind to normal Metal buffer binding points. And there's a corresponding method on the compute command encoder and argument encoder to bind acceleration structures to these binding points. So that's it for the basic building blocks of the new Metal ray tracing API.\n\nThere are a few more advanced topics we didn't have time to cover today, so I'd encourage you to check out our documentation and sample code.\n\nI'd also like to encourage you to review the previous two ray tracing talks since many of the concepts are the same.\n\nFor example, like MPS, Metal acceleration structures support two-level instancing of primitive acceleration structures, which can be used to reduce memory usage. Metal also supports refitting existing acceleration structures, which can be combined with instancing to support dynamic geometry. Finally, Metal acceleration structures also support compaction, which can be used to reclaim significant amounts of memory once an acceleration structure has been built. Next, we're going to talk about how you can customize the intersection process using intersection functions. But first, let's see a demo of everything we've covered so far.\n\nThis is an application built by our Advanced Content Team which demonstrates the new Metal ray tracing API applied to a complex scene.\n\nWhat we're looking at now is an interactive preview of the scene recorded on a Mac Pro with the new AMD Radeon Pro W5700X GPU.\n\nThe interactive preview is noisy because we're only using a single sample per pixel, but it starts to converge when the camera stops moving.\n\nThis is the way an artist would see the scene while editing it. For high-quality off-line rendering, we would give each frame plenty of time to converge to a noise-free image. To give you a sense of what the final result would look like, we've rendered out a fly-through of the scene using 400 samples per pixel.\n\nSpecial thanks to Quixel for the use of their Megascans library. This scene was assembled from Megascans assets and has over 32 million triangles.\n\nThe application works very similarly to the outline I described earlier. Using a rendering algorithm called path tracing to simulate advanced effects such as soft shadows, depth of field, and indirect lighting.\n\nWe've now seen the new Metal ray tracing API in both an interactive application and a full off-line renderer. Next, let's move on to one of the most exciting new features of the new Metal API: intersection functions. So far, our programming model has been that rays go in to the intersector and intersections come out. But the intersector has always been a black box. But there are actually a few cases where you would want to customize how the intersector works.\n\nOne example is alpha testing. This is a common technique with rasterization, where we use a texture to mask off parts of a triangle that should be transparent. This can be used to add a lot of geometric detail without increasing the actual triangle count.\n\nIn this example, the leaves get a lot more detailed when we turn on alpha testing.\n\nIt's pretty easy to implement this with rasterization, where we can simply discard the fragment from a fragment shader. But with ray tracing, it's a little more tricky to implement this efficiently.\n\nEach time we cast a ray, the intersector will return the closest intersection.\n\nHowever, in this case, the intersection point is actually transparent, so we should ignore it.\n\nSo, we now have to cast a whole new ray starting at the first intersection point. Finally, we hit an opaque surface and we can stop and move on to shading.\n\nBut each of these rays requires a whole new trip to the intersector. This is very inefficient because we are constantly restarting acceleration structure traversal from the root of the tree structure. A more efficient way to implement this is with a triangle intersection function.\n\nTo understand how this works, we'll need to look at how the intersector works internally.\n\nWe start by traversing the acceleration structure until we find an intersection between the ray and a piece of geometry. We then check if the intersection is closer than the previous closest intersection. If it is, we make it the new closest intersection. Then, we go back to traversing the acceleration structure Eventually, we will finish and return the closest intersection. Intersection functions plug directly into this process. These functions are called each time we find an intersection. The intersection function can then choose to accept or reject the intersection. If it accepts, then this becomes the new closest intersection as usual. But it can also reject the intersection, in which case we go back to traversing the acceleration structure, discarding the intersection.\n\nSo, for our alpha testing example, we can move the alpha testing logic into an intersection function. We will then only need to traverse the acceleration structure once, which is much more efficient. Here's what a basic intersection function looks like. First we declare the function. \"Triangle\" means this is a triangle intersection function and \"triangle_data\" means we want access to the barycentric coordinates of the intersection point. The function returns a Boolean indicating whether to accept or reject the intersection. We receive information from the intersector such as the primitive index, geometry index, and barycentric coordinates of the intersection point, along with other data that isn't used here. We can also bind our own resources which we'll use to access the alpha textures.\n\nFirst, we'll look up the alpha texture for this primitive. Next, we'll use the barycentric coordinates to interpolate the texture coordinates. This is exactly the same as what you would do for the shading step. Then we'll do the actual texture lookup, and finally, we'll return true or false depending on whether the intersection point is transparent or not. But intersection functions are not just limited to triangle geometry. Metal also allows you to write bounding box intersection functions. These functions are invoked when a ray intersects a bounding box that you provide, which can be used to model custom primitives. In this scene, the sphere is implemented using a bounding box intersection function. Rays are tested against the sphere mathematically rather than modeling it with triangles. This is a very simple example, but bounding box intersection functions can also be used to model more complex surfaces such as curves. In this example, we used bounding box intersection functions to render hair. Each hair strand is a custom cubic Bézier curve primitive, and we used 10,000 of them to give the hair its overall shape.\n\nAlthough intersecting each curve primitive is more expensive, using curves instead of triangles allows us to render perfectly smooth hair strands with no triangulation artifacts. We can also use less memory since each curve needs just a few control points instead of numerous triangles. This efficient use of memory is important for characters with a lot of hair. Let's say we had a scene made of sphere primitives.\n\nWe start by providing axis-aligned bounding boxes enclosing each sphere. Then, just like with triangles, Metal builds an acceleration structure over the boxes.\n\nLater, when we provide a ray, Metal searches for intersections between bounding boxes and the ray. Just like with triangles, Metal invokes the bounding box intersection function each time it finds a potential intersection.\n\nWe only need to make a couple of small changes to build this acceleration structure.\n\nWe will create a primitive acceleration structure descriptor just like before. However, this time, instead of creating a triangle geometry descriptor, we'll create a bounding box geometry descriptor.\n\nThis descriptor simply provides a place to attach a buffer containing our bounding boxes as well as the bounding box count.\n\nLike triangle intersection functions, bounding box intersection functions return true or false to indicate whether to accept or reject the intersection. But they're also responsible for computing the closest distance from the ray origin to any intersection points on the custom primitive. Metal will use this distance to compute the overall closest intersection across all the different triangle and bounding box primitives in the scene. The declaration changes slightly to show that we're now writing a bounding box intersection function.\n\nSince we need to return multiple values, we'll return a user-defined struct. In this example, we've created a struct which contains a Boolean indicating whether to accept or reject the intersection as well as a float which contains the intersection distance.\n\nLike triangle intersection functions, we receive ray data such as the ray origin and direction as well as information about the intersection such as the primitive index. Again, we can also bind our own resources, which we'll use to pass an array of spheres. We start by checking mathematically whether the ray intersected the sphere enclosed in the bounding box. If not, we can return false right away.\n\nNext, unlike triangle intersection functions, we have one more responsibility, which is to check if the intersection function is within the acceptable range.\n\nIf it is, then we can accept the intersection and return the intersection distance. But what if we want to return additional data? For example, we may want to return the surface normal at the intersection point for shading.\n\nWe can do this using the ray payload. This is a small piece of data which can be passed from an intersection function all the way back to the compute kernel that started the intersection process. We simply declare a reference to our payload type as an argument to the intersection function. Then, we can write to it to modify the payload. Keep in mind that changes to the payload will be visible whether you accept the intersection or not, so in most cases, you will only want to modify the payload if you're going to accept the intersection.\n\nTo retrieve the payload value, we simply modify our call to the intersector to pass the payload by reference. Any changes to the payload from an intersection function will be visible once the intersector returns. So far, we've talked about how to use a ray intersector from a compute kernel. We've also talked about how to write intersection functions. Next, we'll talk about how to combine the two.\n\nIn order for the intersector to actually be able to call our intersection functions, we need to link them together in a compute pipeline state.\n\nWe'll start by loading the intersection functions out of a Metal library. This is done just like any other Metal function.\n\nNext, we attach the intersection functions to the pipeline descriptor using an MTLLinkedFunctions object.\n\nFinally, we'll compile the pipeline state as usual. The compiler will link the code for the compute kernel and intersection functions together so that the intersection functions can be called from a ray intersector inside the compute kernel.\n\nNow that we've linked all the intersection functions into our compute pipeline state, we need to map these intersection functions to individual pieces of geometry.\n\nWe do this using what's called an intersection function table. This table contains pointers to the actual executable code in the pipeline state.\n\nJust like each piece of acceleration structure geometry can have its own vertex buffer, they can also each have their own intersection function. And if you're using an instance acceleration structure, each instance can have its own set of intersection functions as well.\n\nBoth acceleration structure geometry and instance descriptors have individual Intersection function table offsets. When a ray hits a piece of geometry, these two values are added together to determine which intersection function table entry to call. To create an intersection function table, we start by creating a descriptor. In this example, we create one with enough space for all of our intersection functions.\n\nNext, we allocate the intersection function table. This table points to actual executable code in a specific compute pipeline state, so it's also created from that pipeline state. Furthermore, it can only be used with this pipeline state or a pipeline state derived from it.\n\nNext, we'll get a handle for each intersection function from the compute pipeline state. This handle represents the address of the function's executable code which has been linked into the pipeline state.\n\nWe then insert this handle into the intersection function table. This is also where we bind the resources used by the intersection functions in the table.\n\nFor example, we'll bind our sphere buffer to buffer index 0. Using an intersection function table is very similar to how we use an acceleration structure.\n\nWe again simply pass it to the intersector. Intersection function tables also bind to normal Metal buffer binding points. And again, there's a corresponding API method to bind an intersection function table on the compute command encoder and argument encoder. And that's everything we need to do to set up intersection functions. intersection functions are a powerful tool which gives you much more control over the intersection process.\n\nTo summarize, we first talked about the new Metal ray tracing API, and the ray intersector object which is now available directly from within any compute kernel.\n\nThis is a much more flexible programming model which allows you to divide up work in the best way for your application.\n\nWe also talked about how the new API gives you more control over when and where acceleration structures are allocated and built.\n\nFinally, we talked about how you can write intersection functions to customize the intersection process.\n\nThere's actually a lot more we could say about intersection functions. In fact, we've also made the underlying mechanism available for use in other applications.\n\nFor example, since a ray could hit any surface at any time, the shading step needs to be able to execute code for arbitrary materials on demand.\n\nSo, I would encourage you to watch the function pointers talk, which accompanies this session, to learn about another powerful tool which will allow you to do this. We only had time to cover the basics of the new ray tracing API today, so I'd also recommend that you check out the sample code and documentation attached to this session. Thanks for watching,\nand enjoy the rest of WWDC.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:42",
+      "title": "Ray tracing with Metal",
+      "language": "swift",
+      "code": "[[kernel]]\nvoid rtKernel(primitive_acceleration_structure accelerationStructure [[buffer(0)]],\n              /* ... */)\n{\n    // Generate ray\n    ray r = generateCameraRay(tid);\n\n    // Create an intersector\n    intersector<triangle_data> intersector;\n\n    // Intersect with scene\n    intersection_result<triangle_data> intersection;\n\n    intersection = intersector.intersect(r, accelerationStructure);\n\n    // shading...\n}"
+    },
+    {
+      "timestamp": "4:48",
+      "title": "Create an acceleration structure descriptor",
+      "language": "swift",
+      "code": "let accelerationStructureDescriptor = MTLPrimitiveAccelerationStructureDescriptor()\n\n// Create geometry descriptor(s)\nlet geometryDescriptor = MTLAccelerationStructureTriangleGeometryDescriptor()\n\ngeometryDescriptor.vertexBuffer = vertexBuffer\ngeometryDescriptor.triangleCount = triangleCount\n\naccelerationStructureDescriptor.geometryDescriptors = [ geometryDescriptor ]"
+    },
+    {
+      "timestamp": "5:46",
+      "title": "Allocate acceleration  storage",
+      "language": "swift",
+      "code": "// Query for acceleration structure sizes\nlet sizes = device.accelerationStructureSizes(descriptor: accelerationStructureDescriptor)\n\n// Allocate acceleration structure\nlet accelerationStructure =\n    device.makeAccelerationStructure(size: sizes.accelerationStructureSize)!\n\n// Allocate scratch buffer\nlet scratchBuffer = device.makeBuffer(length: sizes.buildScratchBufferSize,\n                                      options: .storageModePrivate)!"
+    },
+    {
+      "timestamp": "6:24",
+      "title": "Build acceleration structure",
+      "language": "swift",
+      "code": "// Create command buffer/encoder\nlet commandBuffer = commandQueue.makeCommandBuffer()!\nlet commandEncoder = commandBuffer.makeAccelerationStructureCommandEncoder()!\n\n// Encode acceleration structure build\ncommandEncoder.build(accelerationStructure: accelerationStructure,\n                     descriptor: accelerationStructureDescriptor,\n                     scratchBuffer: scratchBuffer,\n                     scratchBufferOffset: 0)\n\n// Commit command buffer\ncommandEncoder.endEncoding()\ncommandBuffer.commit()"
+    },
+    {
+      "timestamp": "7:15",
+      "title": "Pass acceleration structure to ray intersector",
+      "language": "swift",
+      "code": "[[kernel]]\nvoid rtKernel(primitive_acceleration_structure accelerationStructure [[buffer(0)]],\n              /* ... */)\n{\n    // generate ray, create intersector...\n\n    intersection = intersector.intersect(r, accelerationStructure);\n\n    // shading...\n}"
+    },
+    {
+      "timestamp": "7:25",
+      "title": "Bind acceleration structure with compute command encoder",
+      "language": "swift",
+      "code": "computeEncoder.setAccelerationStructure(accelerationStructure, bufferIndex: 0)"
+    },
+    {
+      "timestamp": "12:16",
+      "title": "Triangle intersection functions",
+      "language": "swift",
+      "code": "[[intersection(triangle, triangle_data)]]\nbool alphaTestIntersectionFunction(uint primitiveIndex        [[primitive_id]],\n                                   uint geometryIndex         [[geometry_id]],\n                                   float2 barycentricCoords   [[barycentric_coord]],\n                                   device Material *materials [[buffer(0)]])\n{\n    texture2d<float> alphaTexture = materials[geometryIndex].alphaTexture;\n\n    float2 UV = interpolateUVs(materials[geometryIndex].UVs,\n        primitiveIndex, barycentricCoords);\n\n    float alpha = alphaTexture.sample(sampler, UV).x;\n\n    return alpha > 0.5f;\n}"
+    },
+    {
+      "timestamp": "14:38",
+      "title": "Creating a bounding box acceleration structure",
+      "language": "swift",
+      "code": "// Create a primitive acceleration structure descriptor\nlet accelerationStructureDescriptor = MTLPrimitiveAccelerationStructureDescriptor()\n\n// Create one or more bounding box geometry descriptors:\nlet geometryDescriptor = MTLAccelerationStructureBoundingBoxGeometryDescriptor()\n\ngeometryDescriptor.boundingBoxBuffer = boundingBoxBuffer\ngeometryDescriptor.boundingBoxCount = boundingBoxCount\n\naccelerationStructureDescriptor.geometryDescriptors = [ geometryDescriptor ]"
+    },
+    {
+      "timestamp": "15:29",
+      "title": "Bounding Box Result",
+      "language": "swift",
+      "code": "struct BoundingBoxResult {\n    bool accept [[accept_intersection]];\n    float distance [[distance]];\n};"
+    },
+    {
+      "timestamp": "15:38",
+      "title": "Bounding box intersection functions",
+      "language": "swift",
+      "code": "[[intersection(bounding_box)]]\nBoundingBoxResult sphereIntersectionFunction(float3 origin            [[origin]],\n                                             float3 direction         [[direction]],\n                                             float minDistance        [[min_distance]],\n                                             float maxDistance        [[max_distance]],\n                                             uint primitiveIndex      [[primitive_id]],\n                                             device Sphere *spheres   [[buffer(0)]])\n{\n    float distance;\n\n    if (!intersectRaySphere(origin, direction, spheres[primitiveIndex], &distance))\n        return { false, 0.0f };\n\n    if (distance < minDistance || distance > maxDistance)\n        return { false, 0.0f };\n\n    return { true, distance };\n}"
+    },
+    {
+      "timestamp": "16:20",
+      "title": "Ray payload",
+      "language": "swift",
+      "code": "[[intersection(bounding_box)]]\nBoundingBoxResult sphereIntersectionFunction(/* ... */,\n                                             ray_data float3 & normal [[payload]])\n{\n    // ...\n\n    if (distance < minDistance || distance > maxDistance)\n        return { false, 0.0f };\n\n    float3 intersectionPoint = origin + direction * distance;\n    normal = normalize(intersectionPoint - spheres[primitiveIndex].origin);\n\n    return { true, distance };\n}"
+    },
+    {
+      "timestamp": "16:48",
+      "title": "Ray payload 2",
+      "language": "swift",
+      "code": "[[kernel]]\nvoid rtKernel(/* ... */)\n{\n    // generate ray, create intersector...\n\n  float3 normal;\n\n    intersection = intersector.intersect(r, accelerationStructure, functionTable, normal);\n\n    // shading...\n}"
+    },
+    {
+      "timestamp": "17:18",
+      "title": "Linking intersection functions",
+      "language": "swift",
+      "code": "// Load functions from Metal library\nlet sphereIntersectionFunction = library.makeFunction(name: “sphereIntersectionFunction”)!\n// other functions...\n\n// Attach functions to ray tracing compute pipeline descriptor\nlet linkedFunctions = MTLLinkedFunctions()\n\nlinkedFunctions.functions = [ sphereIntersectionFunction, alphaTestFunction, ... ]\n\ncomputePipelineDescriptor.linkedFunctions = linkedFunctions\n\n// Compile and link ray tracing compute pipeline\nlet computePipeline = try device.makeComputePipeline(descriptor: computePipelineDescriptor,\n                                                     options: [],\n                                                     reflection: nil)"
+    },
+    {
+      "timestamp": "18:17",
+      "title": "Intersection function table offsets",
+      "language": "swift",
+      "code": "class MTLAccelerationStructureGeometryDescriptor : NSObject {\n\n    var intersectionFunctionTableOffset: Int\n\n// ...\n\n}\n\nstruct MTLAccelerationStructureInstanceDescriptor {\n    var intersectionFunctionTableOffset: UInt32\n    // ...\n};"
+    },
+    {
+      "timestamp": "18:35",
+      "title": "Creating an intersection function table",
+      "language": "swift",
+      "code": "// Allocate intersection function table\nlet descriptor = MTLIntersectionFunctionTableDescriptor()\n\ndescriptor.functionCount = intersectionFunctions.count\n\nlet functionTable = computePipeline.makeIntersectionFunctionTable(descriptor: descriptor)\n\nfor i in 0 ..< intersectionFunctions.count {\n    // Get a handle to the linked intersection function in the pipeline state\n    let functionHandle = computePipeline.functionHandle(function: intersectionFunctions[i])\n\n    // Insert the function handle into the table\n    functionTable.setFunction(functionHandle, index: i)\n}\n\n// Bind intersection function resources\nfunctionTable.setBuffer(sphereBuffer, offset: 0, index: 0)"
+    },
+    {
+      "timestamp": "19:26",
+      "title": "Pass intersection function table to ray intersector",
+      "language": "swift",
+      "code": "[[kernel]]\nvoid rtKernel(primitive_acceleration_structure accelerationStructure   [[buffer(0)]],\n              intersection_function_table<triangle_data> functionTable [[buffer(1)]],\n              /* ... */)\n{\n    // generate ray, create intersector...\n\n    intersection = intersector.intersect(r, accelerationStructure, functionTable);\n\n    // shading...\n}"
+    },
+    {
+      "timestamp": "19:33",
+      "title": "Bind intersection function table with compute command encoder",
+      "language": "swift",
+      "code": "encoder.setIntersectionFunctionTable(functionTable, bufferIndex: 1)"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Accelerating ray tracing and motion blur using Metal",
+        "url": "https://developer.apple.com/documentation/Metal/accelerating-ray-tracing-and-motion-blur-using-metal"
+      },
+      {
+        "title": "Accelerating ray tracing using Metal",
+        "url": "https://developer.apple.com/documentation/metal/metal_sample_code_library/accelerating_ray_tracing_using_metal"
+      },
+      {
+        "title": "Debugging the shaders within a draw command or compute dispatch",
+        "url": "https://developer.apple.com/documentation/Xcode/Debugging-the-shaders-within-a-draw-command-or-compute-dispatch"
+      },
+      {
+        "title": "Metal",
+        "url": "https://developer.apple.com/documentation/Metal"
+      },
+      {
+        "title": "Metal Performance Shaders",
+        "url": "https://developer.apple.com/documentation/MetalPerformanceShaders"
+      },
+      {
+        "title": "Modern Rendering with Metal",
+        "url": "https://developer.apple.com/documentation/Metal/modern-rendering-with-metal"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10012/5/C35EF7F6-AAB8-4A37-9F4D-21E5ABC1C26A/wwdc2020_10012_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10012/5/C35EF7F6-AAB8-4A37-9F4D-21E5ABC1C26A/wwdc2020_10012_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10128",
+      "year": "2023",
+      "title": "Your guide to Metal ray tracing",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10128"
+    },
+    {
+      "id": "10157",
+      "year": "2021",
+      "title": "Discover Metal debugging, profiling, and asset creation tools",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10157"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:33:26.904Z"
+}

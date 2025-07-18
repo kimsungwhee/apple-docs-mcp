@@ -1,0 +1,93 @@
+{
+  "id": "272",
+  "year": "2025",
+  "url": "https://developer.apple.com/videos/play/wwdc2025/272/",
+  "title": "Read documents using the Vision framework",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Machine Learning & AI"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, I’m Megan Williams, and I’m an engineer on the Vision Framework team. Vision offers APIs that allow you to easily bring machine learning to your apps for a wide variety of use cases, such as person and object detection, body and hand pose tracking, and trajectory analysis, to name a few. By the way, all vision APIs run entirely on-device, providing you with the most performant and secure way to run computer vision tasks in your app. Our APIs are available on iOS, macOS, iPadOS, tvOS, and visionOS. Vision has 31 APIs for different types of image analysis. And today, we're adding two more. In this video, we’ll introduce new APIs for reading documents and camera lens smudge detection. And finally, we’ll talk about an update to our hand pose detection. Let's dive in.\n\nVision currently provides the ability to detect and extract lines of text from an image using RecognizeTextRequest. This is a great feature, but some documents have a highly structured format from which we could extract even more information. For example, in this flyer, we have a title, a few paragraphs, a list, a table, and a barcode.\n\nIf I just read the lines of text from the document, I’m losing some important structural information. For example, in this table, if I just extract the lines of text, I don’t know how the rows and columns are arranged. I want to know not just what the text says, but how the text is formatted. This year, Vision is introducing a new API to do exactly that, and even more. Meet RecognizeDocumentsRequest. With the ability to recognize text in 26 languages, Developers can use this API to extract structural elements and important information from documents. The API can detect structures such as tables and lists, group lines of text into paragraphs, detect machine-readable codes such as QR codes, and identify important information like email addresses, phone numbers, or URLs. These capabilities will give you a better understanding of your document that will make it easier to parse with fewer lines of code. Let’s say we’re running a store and we want our walk-in customers to be able to sign up for our monthly newsletter. So we offer a sign-up sheet where customers can write down their name, email address, and phone number. I want to build an app to scan the sheet and create a contact for each person. Previously, I would use RecognizeTextRequest to extract text, which would return each cell of the table as a separate object. If I want to create a contact for each person,  I would have to use the location information of each text box to determine which cells belong in the same row. Instead, now I can use RecognizeDocumentsRequest, which will parse the table for you. The cells are automatically grouped into rows, which makes parsing the signup sheet a lot easier. Let's see how to use the API.\n\nRecognizeDocumentsRequest is like other requests in Vision. For an in-depth look at how to use the Vision Framework, check out Discover Swift Enhancements in the Vision Framework from WWDC 2024. But don’t worry, I’ll give a refresher here. In Vision, we process images using requests. The request determines the type of image analysis we would like to perform. We can perform the request on an image and this produces one or more observations. These observations tell us information about the image, for example, the location of the faces in the image.\n\nRecognizeDocumentsRequest will produce a DocumentObservation. DocumentObservations tell you about the contents and structure of your document. Currently, when you run RecognizeDocumentsRequest, Vision will return one document observation per image. The document observation has a hierarchical structure. Each document is a container that can hold: text, tables, lists, or barcodes.\n\nTables are composed of cells, and lists are composed of items, which are containers themselves and can hold other elements such as text. Now that we know what a document observation is, we can use it to parse our signup sheet. We first want to extract the table structure from the document. I’m going to take a photo of the document with my iPad.\n\nMy app is using RecognizeDocumentsRequest to detect a table and highlight it on the screen.\n\nLet's look at the code. I have an image that I just captured and I want to extract the table. I’ll first create a RecognizeDocumentsRequest and then perform the request on the image. I get back a DocumentObservation. I can access the tables property on the document to extract the tables in this image. In this case, I expect that my document will only contain one table, so I’ll just return the first table detected.\n\nNow that I’ve detected a table, let’s see what it contains. A table is composed of a 2D array of cells. These cells can be accessed by rows or columns.\n\nWe also define the boundary of the table as the bounding region, giving you the table coordinates with respect to the image. Each table cell has a property to indicate what row and column it belongs to.\n\nBecause a single cell can span multiple rows or columns, this value is expressed as a range.\n\nThe content of the cell is a container, which may hold any content found in a document, such as text, tables, lists, or barcodes.\n\nContainers also have their own bounding region. By extracting the data as a table, I’m now able to read my signup sheet row by row. I’ll need to look at the content of each cell to extract text. Let's look at text in more detail. There are multiple ways to view the text in a container. The transcript will provide all of the text in a container as a single string. Lines are an alternate way to view the text as an array of lines.\n\nLines can be grouped into paragraphs, giving a more natural view of how the text would be read. If a line is not part of a paragraph grouping, it’s considered to be its own paragraph. We can also get a list of individual words, but this is not supported for certain languages, such as Chinese, Japanese, Korean, and Thai. Finally, detected data are special strings detected within text that represent key information in your documents, such as email addresses, dates, or URLs. Vision is using the new DataDetection framework, which lets you scan strings for important data.\n\nPhone numbers, email addresses, and postal addresses can be detected in a wide variety of formats.\n\nURLs are detected as links, and times and dates are detected as calendar events. Measurements and their units are detected together, as well as dollar amounts and their currency.\n\nTracking numbers, payment identifiers, and flight numbers can also be identified.\n\nWith all these capabilities, let’s expand our sample app. We’ve already detected a table, and now we can extract the text within the table to build our list of contacts. We can read names from the first column, and then we can use data detection to identify contact information in the other columns.\n\nLet’s update our sample code. I’m going to parse the table that I detected earlier and generate a list of contacts.\n\nFor each contact, I want a name, an email, and optionally a phone number.\n\nI’m going to iterate over the rows of the table and create a contact from each row.\n\nMost signup sheets have the name as the first column, so let's get the first cell in the row.\n\nI can look at the text of this cell to get the contact’s name.\n\nI’ll use the transcript to get all of the text in the cell as a string.\n\nNow I’ll try to find other contact information in the row.\n\nI’ll first iterate over the remaining cells.\n\nNow I can look for detected data in each cell.\n\nLet’s iterate over the data to see what we’ve detected.\n\nI can switch on the data’s details to look for emails and phone numbers specifically.\n\nIf I find an email, I can create a contact from the detected information.\n\nNow I can easily extract a list of contacts from my signup sheet.\n\nI’m going to pass the list to my contact view, which will display the contacts  in the app. Let's view the contacts.\n\nNice.\n\nI’ve also added the ability to export the table as a tab-separated string. This allows me to copy the table and paste it into compatible apps like Notes and Numbers.\n\nTo see the code behind this feature, you can download the sample app from Apple’s developer website. To recap, RecognizeDocumentsRequest gives developers an easy way to extract important information from your documents. The API provides a simple interface for you to understand your document structure, allowing you to easily parse formatted text like tables, and identify important information like emails and phone numbers.\n\nNow let’s talk about another new feature in Vision this year: camera lens smudge detection. When I pick up my device to scan my signup sheet, I might accidentally smudge the lens with my finger. This produces poor quality photos that might be difficult to process.\n\nThankfully, Vision has a new feature this year to help. The DetectLensSmudgeRequest can identify if an image was taken with a smudged lens, allowing you to prompt users to clean their lens or provide a different photo. You can use this request to help ensure you only process high-quality images in your apps.\n\nDetectLensSmudgeRequest works like other requests in the Vision Framework. You can perform the request on an image to produce a smudge observation. The observation has a confidence score that tells you the probability that the image is smudged. The confidence is always between 0 and 1. Confidences closer to 1 indicate a high probability that the image is smudged.\n\nA confidence of zero indicates a high likelihood that the image is not smudged. Let's look at how to use this in code.\n\nI have an image and I want to know if it’s smudged. I’ll first create a detect lens smudge request.\n\nNext, we perform the request on the image. This produces a smudge observation.\n\nThe observation’s confidence tells us the probability that the image is smudged.\n\nWe can compare this confidence to a threshold to filter out poor quality images. Here I’ve chosen 0.9 We will consider images with a score higher than the threshold to be smudged, and we won’t process them.\n\nYou can choose a threshold that works best for your app. Here I have three documents with different smudge confidences. A high threshold will allow you to process more images, but the quality of those images may be lower.\n\nA lower threshold will reject more images, some of which may be false positives, resulting in you rejecting good images. Some images without a smudge lens may also have a high smudge score. For example, this image has blur caused by camera motion, which can produce images that look just like ones coming from a camera with a smudged lens. This is also true for images taken with a long exposure, or images of clouds or fog. It’s important to note that just because a photo has a low smudge score, that does not guarantee that it’s a high quality photo. For example, this image of a vent is not smudged, but it’s also not an interesting or visually appealing image that I’d like to share with friends. Vision has other APIs that can be used in combination with the DetectLensSmudgeRequest to find high-quality photos. If your image contains faces, you can use DetectFaceCaptureQualityRequest to find good face captures. This request produces a capture quality score for each face, also between 0 and 1, with 1 being higher quality captures.\n\nIf your image does not contain a face, you can use CalculateImageAestheticScoresRequest to get an overall score for the image. This request can also identify utility images, which are photos that are well taken but have non-memorable content, such as images of documents or receipts. You can learn more about CalculateImageAestheticScoresRequest from Vision’s WWDC 2024 presentation.\n\nBefore we go, we want to mention an update to our hand pose detection.\n\nSince 2020, developers have been able to use DetectHandPoseRequest to identify the locations of 21 joints in a hand. The joints are returned as a HandPoseObservation.\n\nThis technology powers ML hand pose classifiers and hand action classifiers, which allow you to identify hand poses and gestures.\n\nAs an example, you can train these models to recognize gestures that control features in your app. For details on how to train a hand pose classifier, see Classify Hand Poses and Actions with CreateML from WWDC 2021.\n\nThis year, Vision is replacing our model for hand pose detection with a smaller, modernized model. The new model will still detect 21 joints, but with improved accuracy, less memory usage, and less latency. Although the accuracy of the new model is improved, the joints are not in the same location as the previous model. Therefore, if you have already trained an ML hand pose classifier or ML hand action classifier in the past, we encourage you to retrain your classifier with the new model to improve accuracy. To recap the new features envisioned this year, we are introducing two new requests. We have RecognizeDocumentsRequest for Structured Document Understanding, and DetectCameraLensSmudgeRequest for Identifying Photos Taken with a smudged lens. We also have an updated Hand-Pose Detection Model. You can download the sample app in this video from Apple’s Developer website. And also be sure to check out Discover Swift Enhancements in the Vision Framework, from WWDC 2024 to learn about more APIs that Vision has to offer. Thanks for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "6:39",
+      "title": "Detect tables",
+      "language": "swift",
+      "code": "/// Process an image and return the first table detected\nfunc extractTable(from image: Data) async throws -> DocumentObservation.Container.Table {\n    \n    // The Vision request.\n    let request = RecognizeDocumentsRequest()\n    \n    // Perform the request on the image data and return the results.\n    let observations = try await request.perform(on: image)\n\n    // Get the first observation from the array.\n    guard let document = observations.first?.document else {\n        throw AppError.noDocument\n    }\n    \n    // Extract the first table detected.\n    guard let table = document.tables.first else {\n        throw AppError.noTable\n    }\n    \n    return table\n}"
+    },
+    {
+      "timestamp": "10:50",
+      "title": "Parse contacts",
+      "language": "swift",
+      "code": "/// Extract name, email addresses, and phone number from a table into a list of contacts.\nprivate func parseTable(_ table: DocumentObservation.Container.Table) -> [Contact] {\n    var contacts = [Contact]()\n    \n    // Iterate over each row in the table.\n    for row in table.rows {\n        // The contact name will be taken from the first column.\n        guard let firstCell = row.first else {\n            continue\n        }\n        // Extract the text content from the transcript.\n        let name = firstCell.content.text.transcript\n        \n        // Look for emails and phone numbers in the remaining cells.\n        var detectedPhone: String? = nil\n        var detectedEmail: String? = nil\n        \n        for cell in row.dropFirst() {\n            // Get all detected data in the cell, then match emails and phone numbers.\n            let allDetectedData = cell.content.text.detectedData\n            for data in allDetectedData {\n                switch data.match.details {\n                case .emailAddress(let email):\n                    detectedEmail = email.emailAddress\n                case .phoneNumber(let phoneNumber):\n                    detectedPhone = phoneNumber.phoneNumber\n                default:\n                    break\n                }\n            }\n        }\n        // Create a contact if an email was detected.\n        if let email = detectedEmail {\n            let contact = Contact(name: name, email: email, phoneNumber: detectedPhone)\n            contacts.append(contact)\n        }\n    }\n    return contacts\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Classifying Images with Vision and Core ML",
+        "url": "https://developer.apple.com/documentation/CoreML/classifying-images-with-vision-and-core-ml"
+      },
+      {
+        "title": "Recognizing tables within a document",
+        "url": "https://developer.apple.com/documentation/Vision/recognize-tables-within-a-document"
+      },
+      {
+        "title": "Vision",
+        "url": "https://developer.apple.com/documentation/Vision"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "sampleProject": "https://developer.apple.com/sample-code/wwdc/2017/ImageClassificationwithVisionandCoreML.zip",
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/272/4/4e80b3e0-9c62-4150-84e9-6b051c14dfa9/downloads/wwdc2025-272_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/272/4/4e80b3e0-9c62-4150-84e9-6b051c14dfa9/downloads/wwdc2025-272_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "360",
+      "year": "2025",
+      "title": "Discover machine learning & AI frameworks on Apple platforms",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/360"
+    },
+    {
+      "id": "10163",
+      "year": "2024",
+      "title": "Discover Swift enhancements in the Vision framework",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10163"
+    },
+    {
+      "id": "10045",
+      "year": "2023",
+      "title": "Detect animal poses in Vision",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10045"
+    },
+    {
+      "id": "111241",
+      "year": "2023",
+      "title": "Explore 3D body pose and person segmentation in Vision",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/111241"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:39:14.978Z"
+}

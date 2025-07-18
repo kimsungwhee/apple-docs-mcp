@@ -293,6 +293,14 @@ function formatUpdatesList(updates: UpdateItem[]): string {
   Object.entries(grouped).forEach(([category, items]) => {
     content += `## ${categoryTitles[category] ?? category}\n\n`;
 
+    // Add WWDC-specific suggestion
+    if (category === 'wwdc' && items.length > 0) {
+      content += '> **💡 Tip:** For comprehensive WWDC video content with full transcripts and code examples, use the dedicated WWDC tools:\n';
+      content += '> - `list_wwdc_videos` - Browse videos by year, topic, or code availability\n';
+      content += '> - `search_wwdc_content` - Search through video transcripts and code\n';
+      content += '> - `browse_wwdc_topics` - Explore videos by topic categories\n\n';
+    }
+
     items.forEach(item => {
       // Build title with badges
       let titleLine = `### [${item.title}](${item.url})`;

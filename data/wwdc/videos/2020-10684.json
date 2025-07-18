@@ -1,0 +1,123 @@
+{
+  "id": "10684",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10684/",
+  "title": "Swan's Quest, Chapter 4: The sequence completes",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Business & Education"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nHello and welcome back to Swan's Quest. I'm Rob, your host, as we go inside the final chapter of our quest. We hope you had a fun time so far. For this last chapter, we're going to move away from ToneOutputs and talk about sampled instruments. In the final chapter, you meet with the Lizard one last time. The chest from the Swan is a mystery, and I don't want to spoil it. Let's just say that sequencers are going to play a key role in solving this challenge. We're gonna start with an introduction to sequencers and some tips for constructing one in Swift. Stephen's gonna return to discuss the content SDK's API for playing sampled instrument, and a brief overview of the library of instruments provided within the SDK. He's also going to tell you how we sampled them in GarageBand. Finally, we'll wrap up with a final side quest for those who don't want the fun to end. Let's talk about step sequencers.\n\nAt the end of the third challenge, the Swan gave us a scroll with two-part harmony. Great one, Swan. Unlike our previous challenge, this will require multiple instruments playing at the same time. To play multiple parts at once, we're going to show you how to build a step sequencer. Believe it or not, you only need a single timer for this sequencer. And instead of a ToneOutput, we're going to take advantage of the sampled instruments included in our content SDK. A sequencer is a multi-track timing loop. It is divided into equal chunks, or steps, which play in sequence over a predefined duration. Each track represents an instance of a pitched instrument. Sequencers are also used with non-pitched instruments like percussion.\n\nSequencers are very versatile. They're great for creating atmospheric background loops or drum beats which can sit underneath a melody.\n\nStep sequencers allow one to layer multiple tracks on top of another. In the example shown here, there is a horn track, a guitar track, and a percussion track. Each column in this sequence is a quarter note in length. What you see are eight beats, or two bars of 4/4, or, as we call it in the music biz, common time.\n\nHere's an example of a sequencer's timing loop. The timer's interval is determined by dividing the total duration, four seconds, by the total number of beats, eight, in the sequence.\n\nWe need add our tracks and code to play the instruments inside of each track. Let's check in with Stephen. Thanks, Rob. We include a rich API and instrument library with our content SDK. We first introduced the Instruments API in Sensor Arcade, and included a template called Sensor Create, so you could write your own music. Then, last year, we released Sonic Workshop and its companion starting point: Sonic Create. These both included seven instruments, and samples for three octaves of notes.\n\nThe fundamental API is the playInstrument method.\n\nThis API requires a reference to one of the seven instruments included in Playgrounds content SDK: electric guitar, bass guitar, piano, warm bells, seven synth, bass synth, and the crystal synth.\n\nThe second item required by the playInstrument method is a MIDINoteProtocol value. These MIDI notes include an 8-bit integer which corresponds to the appropriate MIDI code. Here's an example implementation with the second octave of encoded MIDI notes. Note: we include a value, \"rest\". This allows us to represent silent gaps for instruments in the sequence.\n\nBefore we update our code, we need to discuss tracks. We've included another protocol for you in Sequencer.Swift: the TrackProtocol. This includes an instrument value, the length of the track, and a method which provides the MIDI note for a given step in the sequence.\n\nAn example implementation might look like this.\n\nRemember to check for the existence of the notes property, and ensure the indexed step does not exceed the boundaries of the sequence.\n\nWith all of the pieces now in place, we can revisit our bare-bones example.\n\nFirst we create our two tracks: bass and piano, and combine them into an array.\n\nOnce those are created, we need to assign note patterns to each track.\n\nFinally, we loop through the selected tracks and play the notes for the assigned instrument.\n\nDon't forget to call the endPerformance method after the first time through your sequence, so you get credit for your solution.\n\nLet's update the code that recycles the index after we've completed a loop of the sequence.\n\nAfter we reset the index back to zero, we can call endPerformance and the Swan will know we've finished their challenge.\n\nNext, I'd like to talk about sampling in GarageBand. One way to create your own instruments is to take your own samples from GarageBand. First, open GarageBand and select Keyboard, or another instrument you're interested in sampling. Within Keyboard, there are many instrument options. I've chosen the koto, a traditional Japanese instrument. You'll also notice that you can change many other properties of the instrument, such as the tone and the resonance.\n\nYou can also select which scale the Keyboard uses. This makes playing your desired notes even easier. Here, I'll select the major scale.\n\nOnce you've recorded your individual notes, play them to make sure they sound exactly as you want them to.\n\nIf you want, you can make modifications within the GarageBand Editor before you export.\n\nOnce you're all set, export your song. The most lossless format is an uncompressed WAV, but you can also export in compressed formats. Once you've exported, trim the individual notes and import them into your project to create your instrument. Rob, we should do a really cool side quest for our final one.\n\nI agree, Stephen.\n\nIs everyone ready? Are you ready? No spoilers this time. For this final side quest, we want you to combine everything you've done across the four chapters: Add the ToneOutput as an instrument for your step sequencer. During this episode, we gave you tips for completing the final challenge in Swan's Quest. You learned about step sequencers and how they could be used to create multipart harmony. We introduced you to the pre-sampled instruments included in Swift Playgrounds, and then gave you instructions for sampling and creating your own instruments. We hope you've enjoyed Swan's Quest, and learned more about Swift Playgrounds and everything you can accomplish with our embedded content SDK. If you need a refresher, or just want to play through the fun again, be sure to check our earlier episodes.\n\nGood luck, have fun, and join us in the forums to share your solutions for the side quests. We'd love to hear how you did.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:26",
+      "title": "Barebones example of a sequencer",
+      "language": "swift",
+      "code": "// A barebones example of a sequencer\n\nlet numberOfBeats = 8   // two bars of 4/4\nlet duration = 4.0      // seconds\n\nlet interval = duration / Double(numberOfBeats)\n\nvar index = 0\nTimer.scheduledTimer(withTimeInterval: interval, repeats: true) { timer in\n    // Play each track's Instrument\n    // ...\n    \n    index = (index + 1 < numberOfBeats) ? index + 1 : 0\n}"
+    },
+    {
+      "timestamp": "3:16",
+      "title": "Introduction to playInstrument(_:note:volume:)",
+      "language": "swift",
+      "code": "// Sequencer.swift\n\nfunc playInstrument(_ kind: Instrument.Kind, note: MIDINoteProtocol, volume: Double = 75)\n\n\n// Instrument.swift\n\npublic class Instrument {\n\n    /// The kind of included instruments\n    public enum Kind: String {\n        case electricGuitar, bassGuitar, piano, warmBells, sevenSynth, \n            bassSynth, crystalSynth\n    }\n    \n    // ...\n}"
+    },
+    {
+      "timestamp": "3:38",
+      "title": "MIDINoteProtocol",
+      "language": "swift",
+      "code": "// Sequencer.swift \n\nprotocol MIDINoteProtocol {\n    \n    /// note as an 8-bit MIDI code\n    var midiCode: UInt8 { get }\n}"
+    },
+    {
+      "timestamp": "3:48",
+      "title": "Example implementation for Notes",
+      "language": "swift",
+      "code": "// Example implementation for Notes\n\nenum MIDINotes: UInt8, MIDINoteProtocol {\n    case rest = 0\n    \n    case C2 = 36\n    case D2 = 38\n    case E2 = 40\n    case F2 = 41\n    case G2 = 43\n    case A2 = 45\n    case B2 = 47\n        \n    var midiCode: UInt8 {\n        return self.rawValue\n    }\n}"
+    },
+    {
+      "timestamp": "4:03",
+      "title": "TrackProtocol",
+      "language": "swift",
+      "code": "// Sequencer.swift\n\nprotocol TrackProtocol {\n    associatedtype NoteType : MidiNoteProtocol\n    \n    /// The kind of instrument that the track sequences\n    var instrument: Instrument.Kind { get }\n    \n    /// Number of beats contained in the sequence\n    var length: Int { get }\n    \n    /// MIDI code for the sequence frame\n    func note(for frame: Int) -> NoteType\n}"
+    },
+    {
+      "timestamp": "4:21",
+      "title": "Example implementation for Tracks",
+      "language": "swift",
+      "code": "// Example implementation for Tracks\n\nstruct Track : TrackProtocol {\n    var instrument: Instrument.Kind\n    var length: Int\n    \n    var notes: [MIDINotes]? = nil\n    \n    func note(for frame: Int) -> MIDINotes {\n        guard let n = notes, frame < n.count else {\n            return .rest\n        }\n        return n[frame]\n    }\n}"
+    },
+    {
+      "timestamp": "4:34",
+      "title": "Implementing a Sequencer",
+      "language": "swift",
+      "code": "// A barebones example of a sequencer\n\nlet numberOfBeats = 8   // two bars of 4/4\nlet duration = 4.0      // seconds\n\nvar bass = Track(instrument: .bassGuitar, length: numberOfBeats)\nvar piano = Track(instrument: .piano, length: numberOfBeats)\nlet tracks = [bass, piano]\n\nbass.notes =  [.rest, .C2, .A2, .rest, .C2, .A2, .D2, .C2 ]\npiano.notes = [.A2, .A2, .C2, .F2, .A2, .C2, .none, .F2]\n\nlet interval = duration / Double(numberOfBeats)\nvar index = 0\nTimer.scheduledTimer(withTimeInterval: interval, repeats: true, block: { timer in\n    for track in tracks {\n        playInstrument(track.instrument, note: track.note(for: index))\n    }\n    index = (index + 1 < numberOfBeats) ? index + 1 : 0\n})"
+    },
+    {
+      "timestamp": "5:00",
+      "title": "// Getting credit for our work",
+      "language": "swift",
+      "code": "// Getting credit for our work\n\nTimer.scheduledTimer(withTimeInterval: interval, repeats: true, block: { timer in\n    for track in tracks {\n        playInstrument(track.instrument, note: track.note(for: index))\n    }\n    \n    if index + 1 < numberOfBeats {\n        index = index + 1\n    }\n    \n    else {\n        index = 0\n        owner.endPerformance()\n    }\n})"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "sampleProject": "https://developer.apple.com/sample-code/swift/swans-quest/the-sequence-completes.zip",
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10684/4/A98BC348-AEAA-412A-98ED-F094D1D9FC2C/wwdc2020_10684_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10684/4/A98BC348-AEAA-412A-98ED-F094D1D9FC2C/wwdc2020_10684_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10643",
+      "year": "2020",
+      "title": "Build a SwiftUI view in Swift Playgrounds",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10643"
+    },
+    {
+      "id": "10654",
+      "year": "2020",
+      "title": "Create Swift Playgrounds content for iPad and Mac",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10654"
+    },
+    {
+      "id": "10681",
+      "year": "2020",
+      "title": "Swan's Quest, Chapter 1: Voices in the dark",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10681"
+    },
+    {
+      "id": "10682",
+      "year": "2020",
+      "title": "Swan's Quest, Chapter 2: A time for tones",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10682"
+    },
+    {
+      "id": "10683",
+      "year": "2020",
+      "title": "Swan's Quest, Chapter 3: The notable scroll",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10683"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:27:33.373Z"
+}

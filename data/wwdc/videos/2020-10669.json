@@ -1,0 +1,90 @@
+{
+  "id": "10669",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10669/",
+  "title": "Handling FHIR without getting burned",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Health & Fitness"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nHi. My name is Pascal, and I'm here to talk about handling PHIR without getting burned. As you may know, since early 2018, the Health app supports Fast Healthcare Interoperability Resources, better known as \"FHIR,\" to download clinical data to your phone.\n\nThis is possible thanks to the open standards developed by HL7 and the SMART team, which the Health app leverages.\n\nTo recap, for us it all starts with the Health app. Health establishes a secure connection directly to the health provider's API...\n\nand then downloads FHIR data directly to the iOS device.\n\nThis data is stored securely in HealthKit, which allows aggregation of data from multiple institutions. This data is then available to you via the HealthKit API.\n\nAt the end of a download, clinical data is presented neatly laid out in the Health app.\n\nNow let's see how your app can obtain and work with this FHIR data.\n\nFirst, your app will request authorization from the user.\n\nThe user is guided through the authorization process in three screens.\n\nOn the first screen, general information about what granting access entails is shown.\n\nNext, the explanation text that you provide in your app's Info.plist is presented alongside a link to your privacy policy. And, yes, we will review your privacy policy. In this simple example of a medication list app, only access to medications is requested. This follows our \"proportional to what you need\" data use principle. Finally, by default, only data already on the device will be shared with your app, so request authorization each and every time you query for FHIR data to ensure the user has a chance to authorize access to new data if applicable. The sheet won't appear if there is nothing to authorize for.\n\nMore details about this process are available in our WWDC talk from 2018.\n\nNow that your app has access to clinical health records, let's take a closer look at FHIR data. This is a simplified FHIR prescription resource. There are a variety of field types: simple strings, strings that can only be of certain values, so-called codes...\n\ndate and times that come as strings in an ISO-8601-like format, other primitive types, such as Booleans and numbers, and complex nested structures comprised of primitives.\n\nPreviously, you had to write your own Swift Codable if you wanted to work with FHIR data in a native format. This seems straightforward if you only want to look at certain data elements, and you know that the data is uniform. In this example, you only want the status, date and the medication of a prescription.\n\nSoon, however, you start to realize the depth, complexity, and even just the sheer number of FHIR resources. Just indulge in this full definition of a prescription resource. Yes, you probably don't want to model this all by yourself.\n\nSo, how can we help you work with FHIR data? Introducing FHIRModels. FHIRModels is an open-source Swift package available via GitHub allowing you to file issues, request features, and to generally provide feedback. There is support for multiple FHIR releases, and data models are provided for all the resources in a release. Resource integrity on encode and decode is enforced, preventing creation of structurally invalid resources. There is date/time parsing, enums enforcing code fields, enums enforcing value polymorphic properties, and much, much more.\n\nAnd of course we will keep the package up to date with new FHIR and Swift releases.\n\nThe package comes with libraries for the DSTU2, R4 and the latest build release. We'll add support for new releases as they emerge.\n\nIt is available via GitHub, cohosted by our friends at CareKit.\n\nNow, let's handle some FHIR.\n\nHere's how you can get a full-fledged FHIR data model from clinical data that you obtain via the HealthKit API. First, import HealthKit and the DSTU2 library from the FHIRModels package. Grab an HKClinicalRecord from HealthKit and its associated HK fhirResource. You can inspect HK fhirResource to know its type.\n\nParse the resource's JSON data to receive, in this case, a MedicationOrder instance. You could then print the note.\n\nLet's complicate things a bit by presenting dosage instructions with an associated date range from a deeply nested structure.\n\nFirst, write an extension on TimingRepeat, a type provided by FHIRModels. We want to pull out the start and end dates of the bounds period. In the real world, you would want to make this far more extensive, like check for nullability and use a good old date formatter.\n\nThen, map over all the prescription's dosage instructions.\n\nUse your new extension to prefix the instruction with a date range during which these instructions were valid.\n\nAnother fun part of FHIR is the fact that different releases are in use out there in the wild. In the fall of 2014, the first draft standard for trial use, DSTU1, was released. It was followed by three more major releases up to today.\n\nSoon, release 5 will be let out of the barn. However, as I alluded to, when a new release is published, existing APIs aren't magically updated. You'll likely want to support the more popular releases, especially DSTU2, for a few more years.\n\nSo, let's see how you can support multiple FHIR releases with FHIRModels. First, import the appropriate libraries from FHIRModels.\n\nThen, assuming you have a FHIRRelease enum with values for all FHIR releases you want to support, switch over the release and use the JSON decoder with the appropriate model types. Here, we use MedicationOrder for DSTU2 and MedicationRequest for R4. Finally, walk the properties accordingly to arrive at the values you want to extract. This, and much more, is what you can do with FHIRModels.\n\nTo wrap up, FHIRModels helps you deal with the complexity of FHIR resources and even FHIR releases. Use the package when you are working with clinical data obtained via the HealthKit API. Also, take a look at \"What's new in CareKit\" to see how you can use FHIR with CareKit to build care apps...\n\nor, of course, enhance your own independent FHIR apps with the use of this package.\n\nHere's what you can do from here. Clone the library, add it to your project and start exploring the code.\n\nFile issues, even if you just want to provide feedback or ask questions.\n\nGet our sample app which shows how you can integrate FHIRModels into an app that uses the HealthKit API.\n\nAnd finally, you can learn more about FHIR and chime in at chat.fhir.org.\n\nThank you, and happy coding.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:32",
+      "title": "Use FHIRModels with Health Records FHIR data from HealthKit",
+      "language": "swift",
+      "code": "// Use with Health Records FHIR data from HealthKit\nimport HealthKit\nimport ModelsDSTU2\n\n// Grab HKClinicalRecord from HealthKit API\nlet clinicalRecord: HKClinicalRecord\nlet resource = clinicalRecord.fhirResource!\n\n// Print the prescription note\nlet decoder = JSONDecoder()\nlet prescription = try decoder.decode(MedicationOrder.self, from: resource.data)\nprint(\"\\(prescription.note)\")"
+    },
+    {
+      "timestamp": "5:04",
+      "title": "Use FHIRModels with Health Records FHIR data from HealthKit, part 2",
+      "language": "swift",
+      "code": "// Make using \"TimingRepeat\" period dates easier by writing an extension\nextension TimingRepeat {\n    var periodDisplayString: String? {\n        if case .period(let period) = bounds {\n            return \"\\(period.start) - \\(period.end)\"\n        }\n        return nil\n    }\n}\n\n// Collect all dosage instructions on medication prescriptions\nlet instructions: [String] = prescription.dosageInstruction?.map { dosage in\n    guard let period = dosage.timing?.repeat?.periodDisplayString else {\n        return \"\\(dosage.text)\"\n    }\n    return \"\\(period): \\(dosage.text)\"\n}"
+    },
+    {
+      "timestamp": "6:20",
+      "title": "Supporting multiple FHIR releases",
+      "language": "swift",
+      "code": "// Supporting multiple releases\nimport ModelsDSTU2\nimport ModelsR4\n\nlet decoder = JSONDecoder()\nlet release: FHIRRelease\nlet data: Data\n\nlet note: String? = nil\nswitch release {\ncase .dstu2:\n    let model = try decoder.decode(ModelsDSTU2.MedicationOrder.self, from: data)\n    note = model.note?.value?.string\ncase .r4:\n    let model = try decoder.decode(ModelsR4.MedicationRequest.self, from: data)\n    note = model.note?.compactMap({ $0.text.value?.string }).joined(separator: \"\\n\")\ndefault:\n    note = \"Unsupported FHIR release \\(release)\"\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Accessing a User’s Clinical Records",
+        "url": "https://developer.apple.com/documentation/HealthKit/accessing-a-user-s-clinical-records"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10669/4/63009C98-F22F-4CFE-9037-5DCC0A37017F/wwdc2020_10669_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10669/4/63009C98-F22F-4CFE-9037-5DCC0A37017F/wwdc2020_10669_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10089",
+      "year": "2021",
+      "title": "Explore Verifiable Health Records",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10089"
+    },
+    {
+      "id": "10184",
+      "year": "2020",
+      "title": "Synchronize health data with HealthKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10184"
+    },
+    {
+      "id": "10151",
+      "year": "2020",
+      "title": "What's new in CareKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10151"
+    },
+    {
+      "id": "10182",
+      "year": "2020",
+      "title": "What's new in HealthKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10182"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:38:18.609Z"
+}

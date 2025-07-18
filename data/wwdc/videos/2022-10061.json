@@ -1,0 +1,208 @@
+{
+  "id": "10061",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10061/",
+  "title": "Bring multiple windows to your SwiftUI app",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Mellow instrumental hip-hip music ♪ ♪ Hi, everyone.\n\nI'm Jeff, an engineer on the SwiftUI team.\n\nToday, I'm excited to talk to you about bringing multiple windows to your SwiftUI app on iPadOS and macOS.\n\nIn this session, we'll open with an overview of the various scene types in the SwiftUI lifecycle, including a few new types we're introducing.\n\nFollowed by showing how these scene types can be composed together, by adding auxiliary scenes.\n\nThen we'll cover some new APIs for opening windows for a particular scene in your app.\n\nAnd we'll wrap things up with a few ways for customizing an app's scenes.\n\nLet's start with an overview of the existing scene types before digging in to some new ones.\n\nYou'll recall from previous sessions that apps in SwiftUI are composed of scenes and views.\n\nScenes commonly represent their contents with a window onscreen.\n\nFor example, here is an app I've built to keep track of the books I'm reading.\n\nIt's defined as a single window group which shows my reading list in a platform-appropriate way.\n\nOn platforms which support multiple windows, such as iPadOS and macOS, a scene can represent itself with several such windows.\n\nThe behaviors and representation of a scene vary based on the type used.\n\nFor example, a scene may only represent itself with a single instance, regardless of platform capabilities.\n\nLet's take a look at the current list of scene types in SwiftUI.\n\nWindowGroup provides a way to build data-driven applications across all of Apple's platforms.\n\nDocumentGroup lets you build document-based apps on iOS and macOS.\n\nAnd Settings defines an interface for representing in-app settings values on macOS.\n\nThese scene types can be composed together to extend your app's functionality.\n\nWe're extending the list of scenes with two new additions.\n\nThe first of which is Window, a scene which represents a single, unique window on all platforms; as well as a new scene type for macOS: MenuBarExtra, which renders as a persistent control in the system menu bar.\n\nAs with the other scene types, you can use Window and MenuBarExtra both as a standalone scene, or composed with other scenes in your app.\n\nUnlike WindowGroup, the Window scene will only ever represent its contents in a single, unique window instance.\n\nThis characteristic can be useful when the contents of your scene represents some global app state that would not necessarily fit well with WindowGroups' multi-window presentation style on macOS and iPadOS.\n\nFor example, a game may wish to only allow for a single main window to render its contents.\n\nMenuBarExtra is a new macOS-only scene type which behaves a little differently from our other scenes.\n\nRather than rendering its contents in a window, it will place its label in the menu bar and show its contents in either a menu or window which is anchored to the label.\n\nAdditionally, it will be useable as long as its associated app is running, regardless of whether that app is frontmost.\n\nMenuBarExtra is great for creating standalone utility apps that provide easy access to their functionality.\n\nOr it can be composed with other scenes to provide an alternate way to access your app's functionality.\n\nIt also supports two rendering styles: the default style, which shows the contents in a menu which pulls down from the menu bar, as well as a style that presents its contents in a chromeless window anchored to the menu bar.\n\nWith the addition of these two new scene types, SwiftUI apps can represent an even richer set of functionality across all of our platforms.\n\nLet's see how these new APIs can be used in conjunction with our existing scene types.\n\nHere's the definition of my BookClub app that I showed earlier.\n\nIt currently consists of a single window group.\n\nOn macOS, my BookClub app could benefit from an additional window to display our reading activity over time.\n\nThis is a great example of how macOS apps can make use of the additional screen real estate and flexible windowing arrangements present on that platform.\n\nWe'll add an auxiliary scene to our app for representing this interface.\n\nOur Activity window's data is derived from our overall app state, so a window scene is the ideal choice for it.\n\nOpening multiple windows with the same state would not fit well with our design.\n\nThe title provided to our scene will be used as the label for a menu item which is added to a section of the Window menu.\n\nWhen selecting this item, the scene's window will be opened if not already so.\n\nOtherwise, it will be brought to the front.\n\nNow that we've covered adding an auxiliary scene to our BookClub app, I'd like to discuss some of the new scene presentation APIs we're adding and how you can integrate them into your app to provide richer experiences.\n\nOur BookClub app has a context menu that can be invoked for any book in our Content List pane.\n\nThis context menu will include a button for triggering our window presentation.\n\nWe'll fill in the details shortly.\n\nSwiftUI provides several new callable types via the environment for presenting windows tied to the scenes your app defines.\n\nThe first of these is openWindow action, which can present windows for either a WindowGroup or window scene.\n\nThe identifier passed to the action must match an identifier for a scene defined in your app.\n\nopenWindow action can also take a presentation value, which the presented scene will use to display its contents.\n\nThis form of the action is only supported by WindowGroup, using a new initializer that we'll take a look at shortly.\n\nThe type of the value must match against the type provided to the scene's initializer.\n\nThere are also two callable types in the environment for presenting document windows: newDocument action, which supports opening new document windows for both FileDocuments and ReferenceFileDocuments.\n\nThis action requires that the corresponding DocumentGroup in your app is defined with an editor role.\n\nThe document provided to this action will be created each time the window is presented.\n\nFor presenting document windows where the contents are provided by an existing file on disk, there is the openDocument action.\n\nThis action takes a URL to the file you wish to open.\n\nYour app must define a DocumentGroup for presenting the window, and the document type for that group must allow for reading the type of the file at the provided URL.\n\nRevisiting our button, we'll add the openWindow environment property to our view.\n\nSince this type is a callable, we can just call it directly from our button's action.\n\nOur Book type conforms to identifiable, so we'll pass its identifier as the value to present.\n\nNow, before we move on, I'd like to discuss the values passed to the openWindow action.\n\nI noted that I'm passing the book's identifier, which is a value of the UUID type.\n\nIn general, you'll want to prefer to use your model's identifier like this, rather than the value itself.\n\nNote that our Book type is a value type.\n\nAs such, if we were to use it as the presented value, our new window would get a copy of the one which originated the presentation.\n\nAny edits to either one will not affect the other.\n\nUsing the book's identifier lets our model store be the source of truth for these values instead by providing multiple bindings to a single value.\n\nFor more info on value type semantics, please see the developer documentation.\n\nThe type being presented must also conform to both the Hashable and Codable protocols.\n\nHashable conformance is needed to associate the presented value with an open window; while Codable conformance is required in order to persist the presented value for state restoration.\n\nI'll discuss both of these behaviors in more detail shortly.\n\nLastly, when possible, prefer passing lightweight values.\n\nOur book's identifier is another great example of this.\n\nSince the value will be persisted by SwiftUI for state restoration, using smaller values will result in greater responsiveness of your app.\n\nNow, our button now has the necessary pieces to present our detail windows, but nothing will show when it is selected.\n\nThis is because we've told SwiftUI to present a window for a certain data type, but haven't defined a scene in our app that reflects that.\n\nLet's head back to our app and make that change now.\n\nAlongside our primary WindowGroup and auxiliary window, we'll add an additional WindowGroup for handling our book details.\n\nOur book details WindowGroup uses a new initializer.\n\nIn addition to the title, we're noting that this group presents data for the Book.ID type -- in our case, UUIDs.\n\nThis type should match the value that we are passing to the openWindow action we added earlier.\n\nWhen a given value is provided to the WindowGroup for presentation, SwiftUI will create a new child scene for that value, and the root content of that scene's window will be defined by that value, using the group's view builder.\n\nEach unique presented value will create a new scene.\n\nThe value's equality will be used to determine if a new window should be created or if an existing window can be reused.\n\nWhen openWindow presents a value for which a window already exists, the group will use that window rather than creating a new one.\n\nUsing our BookClub app as an example, selecting the context menu action for a book which has already been presented in a window will result in that window being ordered front, rather than a second window showing the same book.\n\nThe presented value will also be automatically persisted by SwiftUI for the purposes of state restoration.\n\nYour view will be given a binding to the initial presented value.\n\nThis binding can be modified at any time while the window is open.\n\nWhen the scene is recreated for state restoration, SwiftUI will pass the most recent value to the window's Content view.\n\nHere, we're giving the Book.ID binding to our detail view, which can look up the specified item in our model store for display.\n\nWith all our pieces in place, we can now select our context menu item and view our book details in its own window.\n\nLastly, I'd like to go over some of the ways in which you can customize the scenes in your app.\n\nBecause we've defined our app with two WindowGroup scenes -- one for the main viewer window and one for our detail windows -- SwiftUI by default will add a menu item for each group in the File menu.\n\nThe menu item for our detail window doesn't quite fit our use case, however.\n\nI'd prefer that the windows can only be opened via the context menu that was added earlier.\n\nA new scene modifier, commandsRemoved, allows you to modify a scene such that it will no longer provide its default commands, like the one in the File menu.\n\nAfter applying this modifier, our File menu now only contains an item for opening windows for the primary WindowGroup.\n\nI'm not quite happy with the current presentation of the auxiliary window scene for showing my reading activity, so let's focus on that next.\n\nSince I'm going to apply a few modifiers to it, I'll extract it out into a custom scene, which will keep my app definition cleaner.\n\nAbsent any previous state for a window, SwiftUI will by default place it in the center of the screen.\n\nI'd prefer it if the Reading Activity was placed in a different location by default, however.\n\nBy adding the new defaultPosition modifier, I can specify a position to be used when no previous state is available.\n\nThis position is relative to the screen size and will place the window in the appropriate location taking into account the current locale.\n\nThis new position helps differentiate my Activity window from the other viewing windows on the screen.\n\nI'd also like my Activity window to show at a certain size by default, but still be resizable.\n\nAlongside the defaultPosition, I'll add the defaultSize modifier.\n\nThe value provided to it will be given to the layout system to derive an initial size for the window.\n\nNow that I've customized the presentation of my window, let's add one more modifier to customize its behavior.\n\nThe keyboardShortcut modifier has been expanded to work on scene types as well.\n\nWhen used at the scene level, this modifier affects the command which creates a new window.\n\nHere, I've modified my Activity window so that it can be opened with the shortcut Option-Command-0.\n\nThis can be a great way to customize your app by providing shortcuts to commonly used scenes and can also be used to customize the default shortcut of Command-N, which is added to the primary WindowGroup in your app.\n\nThis closes our tour of the new scene and windowing functionality in SwiftUI.\n\nWe're really excited about the potential of these new APIs and hope you are too! For more great info on how to add functionality to your iPadOS and macOS apps, please check out these other sessions: \"SwiftUI on iPad: Organize your interface\" and \"SwiftUI on iPad: Add toolbars, titles, and more.\" Thanks for watching.\n\n♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:01",
+      "title": "Scene composition",
+      "language": "swift",
+      "code": "import SwiftUI\nimport UniformTypeIdentifiers\n\n@main\nstruct MultiSceneApp: App {\n    var body: some Scene {\n        WindowGroup {\n            ContentView()\n        }\n\n        #if os(iOS) || os(macOS)\n        DocumentGroup(viewing: CustomImageDocument.self) { file in\n            ImageViewer(file.document)\n        }\n        #endif\n\n        #if os(macOS)\n        Settings {\n            SettingsView()\n        }\n        #endif\n    }\n}\n\nstruct ContentView: View {\n    var body: some View {\n        Text(\"Content\")\n    }\n}\n\nstruct ImageViewer: View {\n    var document: CustomImageDocument\n\n    init(_ document: CustomImageDocument) {\n        self.document = document\n    }\n\n    var body: some View {\n        Text(\"Image\")\n    }\n}\n\nstruct SettingsView: View {\n    var body: some View {\n        Text(\"Settings\")\n    }\n}\n\nstruct CustomImageDocument: FileDocument {\n    var data: Data\n\n    static var readableContentTypes: [UTType] { [UTType.image] }\n\n    init(configuration: ReadConfiguration) throws {\n        guard let data = configuration.file.regularFileContents\n        else {\n            throw CocoaError(.fileReadCorruptFile)\n        }\n        self.data = data\n    }\n\n    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {\n        FileWrapper(regularFileWithContents: data)\n    }\n}"
+    },
+    {
+      "timestamp": "2:34",
+      "title": "Adding a window scene",
+      "language": "swift",
+      "code": "import SwiftUI\n\n@main\nstruct BookClub: App {\n    @StateObject private var store = ReadingListStore()\n\n    var body: some Scene {\n        WindowGroup {\n            ReadingListViewer(store: store)\n        }\n        Window(\"Activity\", id: \"activity\") {\n            ReadingActivity(store: store)\n        }\n    }\n}\n\nstruct ReadingListViewer: View {\n    @ObservedObject var store: ReadingListStore\n\n    var body: some View {\n        Text(\"Reading List\")\n    }\n}\n\nstruct ReadingActivity: View {\n    @ObservedObject var store: ReadingListStore\n\n    var body: some View {\n        Text(\"Reading Activity\")\n    }\n}\n\nclass ReadingListStore: ObservableObject {\n}"
+    },
+    {
+      "timestamp": "3:01",
+      "title": "Standalone menu bar extra app",
+      "language": "swift",
+      "code": "import SwiftUI\n\n@main\nstruct UtilityApp: App {\n    var body: some Scene {\n        MenuBarExtra(\"Utility App\", systemImage: \"hammer\") {\n            AppMenu()\n        }\n    }\n}\n\nstruct AppMenu: View {\n    var body: some View {\n        Text(\"App Menu Item\")\n    }\n}"
+    },
+    {
+      "timestamp": "3:35",
+      "title": "Windowed app with menu bar extra",
+      "language": "swift",
+      "code": "import SwiftUI\n\n@main\nstruct BookClub: App {\n    @StateObject private var store = ReadingListStore()\n\n    var body: some Scene {\n        WindowGroup {\n            ReadingListViewer(store: store)\n        }\n        #if os(macOS)\n        MenuBarExtra(\"Book Club\", systemImage: \"book\") {\n            AppMenu()\n        }\n        #endif\n    }\n}\n\nstruct ReadingListViewer: View {\n    @ObservedObject var store: ReadingListStore\n\n    var body: some View {\n        Text(\"Reading List\")\n    }\n}\n\nstruct AppMenu: View {\n    var body: some View {\n        Text(\"App Menu Item\")\n    }\n}\n\nclass ReadingListStore: ObservableObject {\n}"
+    },
+    {
+      "timestamp": "3:49",
+      "title": "Menu bar extra with window style",
+      "language": "swift",
+      "code": "import SwiftUI\n\n@main\nstruct UtilityApp: App {\n    var body: some Scene {\n        MenuBarExtra(\"Time Tracker\", systemImage: \"rectangle.stack.fill\") {\n            TimeTrackerChart()\n        }\n        .menuBarExtraStyle(.window)\n    }\n}\n\nstruct TimeTrackerChart: View {\n    var body: some View {\n        Text(\"Time Tracker Chart\")\n    }\n}"
+    },
+    {
+      "timestamp": "4:14",
+      "title": "Book Club app definition",
+      "language": "swift",
+      "code": "import SwiftUI\n\n@main\nstruct BookClubApp: App {\n    @StateObject private var store = ReadingListStore()\n\n    var body: some Scene {\n        WindowGroup {\n            ReadingListViewer(store: store)\n        }\n    }\n}\n\nstruct ReadingListViewer: View {\n    @ObservedObject var store: ReadingListStore\n\n    var body: some View {\n        Text(\"Reading List\")\n    }\n}\n\nclass ReadingListStore: ObservableObject {\n}"
+    },
+    {
+      "timestamp": "5:28",
+      "title": "Open book context menu button",
+      "language": "swift",
+      "code": "import SwiftUI\n\nstruct OpenBookButton: View {\n    var book: Book\n\n    var body: some View {\n        Button(\"Open In New Window\") {\n        }\n    }\n}\n\nstruct Book: Identifiable {\n    var id: UUID\n}"
+    },
+    {
+      "timestamp": "5:34",
+      "title": "Opening a window using an identifier",
+      "language": "swift",
+      "code": "import SwiftUI\n\n@main\nstruct BookClub: App {\n    @StateObject private var store = ReadingListStore()\n\n    var body: some Scene {\n        WindowGroup {\n            ReadingListViewer(store: store)\n        }\n        Window(\"Activity\", id: \"activity\") {\n            ReadingActivity(store: store)\n        }\n    }\n}\n\nstruct OpenWindowButton: View {\n    @Environment(\\.openWindow) private var openWindow\n\n    var body: some View {\n        Button(\"Open Activity Window\") {\n            openWindow(id: \"activity\")\n        }\n    }\n}\n\nstruct ReadingListViewer: View {\n    @ObservedObject var store: ReadingListStore\n\n    var body: some View {\n        Text(\"Reading List\")\n    }\n}\n\nstruct ReadingActivity: View {\n    @ObservedObject var store: ReadingListStore\n\n    var body: some View {\n        Text(\"Reading Activity\")\n    }\n}\n\nclass ReadingListStore: ObservableObject {\n}"
+    },
+    {
+      "timestamp": "5:57",
+      "title": "Opening a window using a presented value",
+      "language": "swift",
+      "code": "import SwiftUI\n\n@main\nstruct BookClub: App {\n    @StateObject private var store = ReadingListStore()\n\n    var body: some Scene {\n        WindowGroup {\n            ReadingListViewer(store: store)\n        }\n        Window(\"Activity\", id: \"activity\") {\n            ReadingActivity(store: store)\n        }\n        WindowGroup(\"Book Details\", for: Book.ID.self) { $bookId in\n            BookDetail(id: $bookId, store: store)\n        }\n    }\n}\n\nstruct OpenWindowButton: View {\n    var book: Book\n    @Environment(\\.openWindow) private var openWindow\n\n    var body: some View {\n        Button(\"Open In New Window\") {\n            openWindow(value: book.id)\n        }\n    }\n}\n\nstruct ReadingListViewer: View {\n    @ObservedObject var store: ReadingListStore\n\n    var body: some View {\n        Text(\"Reading List\")\n    }\n}\n\nstruct ReadingActivity: View {\n    @ObservedObject var store: ReadingListStore\n\n    var body: some View {\n        Text(\"Reading Activity\")\n    }\n}\n\nstruct BookDetail: View {\n    @Binding var id: Book.ID?\n    @ObservedObject var store: ReadingListStore\n\n    var body: some View {\n        Text(\"Book Details\")\n    }\n}\n\nstruct Book: Identifiable {\n    var id: UUID\n}\n\nclass ReadingListStore: ObservableObject {\n}"
+    },
+    {
+      "timestamp": "6:16",
+      "title": "Opening a window with a new document",
+      "language": "swift",
+      "code": "import SwiftUI\nimport UniformTypeIdentifiers\n\n@main\nstruct TextFileApp: App {\n    var body: some Scene {\n        DocumentGroup(viewing: TextFile.self) { file in\n            TextEditor(text: file.$document.text)\n        }\n    }\n}\n\nstruct NewDocumentButton: View {\n    @Environment(\\.newDocument) private var newDocument\n\n    var body: some View {\n        Button(\"Open New Document\") {\n            newDocument(TextFile())\n        }\n    }\n}\n\nstruct TextFile: FileDocument {\n    var text: String\n\n    static var readableContentTypes: [UTType] { [UTType.plainText] }\n\n    init() {\n        text = \"\"\n    }\n\n    init(configuration: ReadConfiguration) throws {\n        guard let data = configuration.file.regularFileContents,\n              let string = String(data: data, encoding: .utf8)\n        else {\n            throw CocoaError(.fileReadCorruptFile)\n        }\n        text = string\n    }\n\n    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {\n        let data = text.data(using: .utf8)!\n        return FileWrapper(regularFileWithContents: data)\n    }\n}"
+    },
+    {
+      "timestamp": "6:41",
+      "title": "Opening a window with an existing document",
+      "language": "swift",
+      "code": "import SwiftUI\nimport UniformTypeIdentifiers\n\n@main\nstruct TextFileApp: App {\n    var body: some Scene {\n        DocumentGroup(viewing: TextFile.self) { file in\n            TextEditor(text: file.$document.text)\n        }\n    }\n}\n\nstruct OpenDocumentButton: View {\n    var documentURL: URL\n    @Environment(\\.openDocument) private var openDocument\n\n    var body: some View {\n        Button(\"Open Document\") {\n            Task {\n                do {\n                    try await openDocument(at: documentURL)\n                } catch {\n                    // Handle error\n                }\n            }\n        }\n    }\n}\n\nstruct TextFile: FileDocument {\n    var text: String\n\n    static var readableContentTypes: [UTType] { [UTType.plainText] }\n\n    init() {\n        text = \"\"\n    }\n\n    init(configuration: ReadConfiguration) throws {\n        guard let data = configuration.file.regularFileContents,\n              let string = String(data: data, encoding: .utf8)\n        else {\n            throw CocoaError(.fileReadCorruptFile)\n        }\n        text = string\n    }\n\n    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {\n        let data = text.data(using: .utf8)!\n        return FileWrapper(regularFileWithContents: data)\n    }\n}"
+    },
+    {
+      "timestamp": "7:03",
+      "title": "Book details context menu button",
+      "language": "swift",
+      "code": "struct OpenWindowButton: View {\n    var book: Book\n    @Environment(\\.openWindow) private var openWindow\n\n    var body: some View {\n        Button(\"Open In New Window\") {\n            openWindow(value: book.id)\n        }\n    }\n}\n\nstruct Book: Identifiable {\n    var id: UUID\n}"
+    },
+    {
+      "timestamp": "9:06",
+      "title": "Book Club app with book details Scene",
+      "language": "swift",
+      "code": "import SwiftUI\n\n@main\nstruct BookClub: App {\n    @StateObject private var store = ReadingListStore()\n\n    var body: some Scene {\n        WindowGroup {\n            ReadingListViewer(store: store)\n        }\n        Window(\"Activity\", id: \"activity\") {\n            ReadingActivity(store: store)\n        }\n        WindowGroup(\"Book Details\", for: Book.ID.self) { $bookId in\n            BookDetail(id: $bookId, store: store)\n        }\n    }\n}\n\nstruct ReadingListViewer: View {\n    @ObservedObject var store: ReadingListStore\n\n    var body: some View {\n        Text(\"Reading List\")\n    }\n}\n\nstruct ReadingActivity: View {\n    @ObservedObject var store: ReadingListStore\n\n    var body: some View {\n        Text(\"Reading Activity\")\n    }\n}\n\nstruct BookDetail: View {\n    @Binding var id: Book.ID?\n    @ObservedObject var store: ReadingListStore\n\n    var body: some View {\n        Text(\"Book Details\")\n    }\n}\n\nstruct Book: Identifiable {\n    var id: UUID\n}\n\nclass ReadingListStore: ObservableObject {\n}"
+    },
+    {
+      "timestamp": "11:16",
+      "title": "Removing default commands for the book details scene",
+      "language": "swift",
+      "code": "import SwiftUI\n\n@main\nstruct BookClub: App {\n    @StateObject private var store = ReadingListStore()\n\n    var body: some Scene {\n        WindowGroup {\n            ReadingListViewer(store: store)\n        }\n        Window(\"Activity\", id: \"activity\") {\n            ReadingActivity(store: store)\n        }\n        WindowGroup(\"Book Details\", for: Book.ID.self) { $bookId in\n            BookDetail(id: $bookId, store: store)\n        }\n        .commandsRemoved()\n    }\n}\n\nstruct ReadingListViewer: View {\n    @ObservedObject var store: ReadingListStore\n\n    var body: some View {\n        Text(\"Reading List\")\n    }\n}\n\nstruct ReadingActivity: View {\n    @ObservedObject var store: ReadingListStore\n\n    var body: some View {\n        Text(\"Reading Activity\")\n    }\n}\n\nstruct BookDetail: View {\n    @Binding var id: Book.ID?\n    @ObservedObject var store: ReadingListStore\n\n    var body: some View {\n        Text(\"Book Details\")\n    }\n}\n\nstruct Book: Identifiable {\n    var id: UUID\n}\n\nclass ReadingListStore: ObservableObject {\n}"
+    },
+    {
+      "timestamp": "11:46",
+      "title": "Extracting reading activity into custom scene",
+      "language": "swift",
+      "code": "import SwiftUI\n\n@main\nstruct BookClub: App {\n    @StateObject private var store = ReadingListStore()\n\n    var body: some Scene {\n        WindowGroup {\n            ReadingListViewer(store: store)\n        }\n\n      \tReadingActivityScene(store: store)\n      \n        WindowGroup(\"Book Details\", for: Book.ID.self) { $bookId in\n            BookDetail(id: $bookId, store: store)\n        }\n        .commandsRemoved()\n    }\n}\n\nstruct ReadingActivityScene: Scene {\n    @ObservedObject var store: ReadingListStore\n\n    var body: some Scene {\n        Window(\"Activity\", id: \"activity\") {\n            ReadingActivity(store: store)\n        }\n    }\n}\n\nstruct ReadingListViewer: View {\n    @ObservedObject var store: ReadingListStore\n\n    var body: some View {\n        Text(\"Reading List\")\n    }\n}\n\nstruct ReadingActivity: View {\n    @ObservedObject var store: ReadingListStore\n\n    var body: some View {\n        Text(\"Reading Activity\")\n    }\n}\n\nstruct BookDetail: View {\n    @Binding var id: Book.ID?\n    @ObservedObject var store: ReadingListStore\n\n    var body: some View {\n        Text(\"Book Details\")\n    }\n}\n\nstruct Book: Identifiable {\n    var id: UUID\n}\n\nclass ReadingListStore: ObservableObject {\n}"
+    },
+    {
+      "timestamp": "12:04",
+      "title": "Applying the defaultPosition modifier",
+      "language": "swift",
+      "code": "struct ReadingActivityScene: Scene {\n    @ObservedObject var store: ReadingListStore\n\n    var body: some Scene {\n        Window(\"Activity\", id: \"activity\") {\n            ReadingActivity(store: store)\n        }\n        .defaultPosition(.topTrailing)\n    }\n}\n\nclass ReadingListStore: ObservableObject {\n}"
+    },
+    {
+      "timestamp": "12:32",
+      "title": "Applying the defaultSize modifier",
+      "language": "swift",
+      "code": "struct ReadingActivityScene: Scene {\n    @ObservedObject var store: ReadingListStore\n\n    var body: some Scene {\n        Window(\"Activity\", id: \"activity\") {\n            ReadingActivity(store: store)\n        }\n        #if os(macOS)\n        .defaultPosition(.topTrailing)\n      \t.defaultSize(width: 400, height: 800)\n        #endif\n    }\n}\n\nclass ReadingListStore: ObservableObject {\n}"
+    },
+    {
+      "timestamp": "12:50",
+      "title": "Applying the keyboardShortcut modifier",
+      "language": "swift",
+      "code": "struct ReadingActivityScene: Scene {\n    @ObservedObject var store: ReadingListStore\n\n    var body: some Scene {\n        Window(\"Activity\", id: \"activity\") {\n            ReadingActivity(store: store)\n        }\n        #if os(macOS)\n        .defaultPosition(.topTrailing)\n      \t.defaultSize(width: 400, height: 800)\n        #endif\n        #if os(macOS) || os(iOS)\n        .keyboardShortcut(\"0\", modifiers: [.option, .command])\n        #endif\n    }\n}\n\nclass ReadingListStore: ObservableObject {\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Bringing multiple windows to your SwiftUI app",
+        "url": "https://developer.apple.com/documentation/swiftui/bringing_multiple_windows_to_your_swiftui_app"
+      },
+      {
+        "title": "DocumentGroup",
+        "url": "https://developer.apple.com/documentation/SwiftUI/DocumentGroup"
+      },
+      {
+        "title": "MenuBarExtra",
+        "url": "https://developer.apple.com/documentation/SwiftUI/MenuBarExtra"
+      },
+      {
+        "title": "NewDocumentAction",
+        "url": "https://developer.apple.com/documentation/SwiftUI/NewDocumentAction"
+      },
+      {
+        "title": "OpenDocumentAction",
+        "url": "https://developer.apple.com/documentation/SwiftUI/OpenDocumentAction"
+      },
+      {
+        "title": "OpenWindowAction",
+        "url": "https://developer.apple.com/documentation/SwiftUI/OpenWindowAction"
+      },
+      {
+        "title": "Window",
+        "url": "https://developer.apple.com/documentation/SwiftUI/Window"
+      },
+      {
+        "title": "WindowGroup",
+        "url": "https://developer.apple.com/documentation/SwiftUI/WindowGroup"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10061/4/012AFD7A-B26E-4C25-9C6C-AB01D5336EA7/downloads/wwdc2022-10061_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10061/4/012AFD7A-B26E-4C25-9C6C-AB01D5336EA7/downloads/wwdc2022-10061_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "110343",
+      "year": "2022",
+      "title": "SwiftUI on iPad: Add toolbars, titles, and more",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110343"
+    },
+    {
+      "id": "10058",
+      "year": "2022",
+      "title": "SwiftUI on iPad: Organize your interface",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10058"
+    },
+    {
+      "id": "10054",
+      "year": "2022",
+      "title": "The SwiftUI cookbook for navigation",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10054"
+    },
+    {
+      "id": "10052",
+      "year": "2022",
+      "title": "What's new in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10052"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:53:25.811Z"
+}

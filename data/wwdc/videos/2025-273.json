@@ -1,0 +1,226 @@
+{
+  "id": "273",
+  "year": "2025",
+  "url": "https://developer.apple.com/videos/play/wwdc2025/273/",
+  "title": "Meet SwiftUI spatial layout",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Design"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, welcome to “Meet SwiftUI Spatial Layout”. I’m Trevor, an engineer on the SwiftUI team. And in this session, we’ll explore techniques for building delightful Spatial Experiences using SwiftUI.\n\nI’ve been putting SwiftUI’s new Spatial Layout capabilities to work, expanding an app I love called BOT-anist. The app allows you to customize fun robots from various building blocks, colors, and materials. You can then use your newly minted bots to tend your own virtual garden. I love building these little robots, and recently I’ve been working on some new views to catalog my creations. Now, not only can you customize a robot, but you can save those bots and collect a whole host of them. I’m excited to show you some new 3D scenes for browsing through robots. I created all of these experiences with SwiftUI.\n\nIf you’ve built 3D experiences on visionOS before, you may have used RealityKit. RealityKit is a great framework for building 3D apps, especially those with complex behaviors like physics simulations. If you’re coming from a SwiftUI background, you may want to build in the declarative syntax you already know. And you may not need all  that RealityKit power everywhere in your app. Now, in visionOS 26, you can use SwiftUI’s existing 2D layout tools and ideas to build 3D applications.\n\nWhen you use SwiftUI layout, you get built in support for animations, resizing, and state management, which means when I remove a bot from the carousel, SwiftUI can animate the positions and sizes of all the other robots to accommodate more or less space.\n\nand resizing the volume automatically resizes the carousel and each robot inside it. Let's dive into the new tools I used to build these Automaton Arrangements. But first, these 3D extensions of SwiftUI’s layout system build on existing 2D layout concepts. If working with SwiftUI layouts is new to you, check out “Building custom views with SwiftUI” and “Compose custom layouts with SwiftUI” before diving into this content. In this video, we’ll talk about the basics of 3D SwiftUI views on visionOS, how to customize existing layouts with depth alignments. rotation3DLayout, a new modifier for rotating views  within the layout system, and finally, SpatialContainer and spatialOverlay as a way to align views in the same 3D space.\n\nLet’s talk about views and the layout system. For each view in your app, SwiftUI calculates a width, height, X and Y position. Some views, like a non-resizable image, have a fixed frame, which matches the size of the asset.\n\nSome views, like this Color, have flexible frames and will take up all the space that’s provided to them by a parent.\n\nLayouts compose their children into a final frame. The frame of this VStack, shown in yellow, is determined by the space available to it and the children it contains. Here, its height ends up being the sum of the two image views inside it. visionOS behaves the same way, but views are 3D on visionOS. The layout system has the same behaviors, now just applied to three dimensions instead of two.\n\nMeaning for each of your views, in addition to width and height, SwiftUI also calculates a depth and a Z position. I often use the border modifier to visualize 2D frames on iOS.\n\nHere, I’ve created my own debugBorder3D modifier to visualize 3D frames on visionOS. I’ll show you how I built this modifier at the end of this video using a couple of the APIs you'll learn about in the meantime.\n\nThe debugBorder3D shows that Model3D behaves similar to an Image, but in three dimensions instead of two, taking up a fixed width, height, and depth. While all views are 3D, some have zero depth. Many of the views you use to build planar experiences like Image, Color, and Text occupy zero depth, meaning they behave just like they do on iOS. Some views have flexible depth, in the same way that Color takes up all the available width and height proposed to it by default. On visionOS, certain views, like RealityView, take up all the available depth proposed to them by default.\n\nGeometryReader3D has this same flexible sizing behavior, as well as Model3D with the resizable modifier applied, which has stretched our robot friend like a piece of taffy to fit all the width in this window. It has a bit of a long face in this aspect ratio, though. I’d like to get it back to its original proportions while still scaling it to fit the available space.\n\nI can use the new scaledToFit3D modifier in addition to resizable(), causing my robot to maintain the model’s aspect ratio while still sizing up or down to fit the available width, height, and now depth.\n\nSo where is this available depth coming from? Just like width and height, the Windows contents receive a root depth proposal. Unlike width and height, which may be resizable, this depth proposal is fixed for Windows. Outside of this depth, your content may be clipped by the system. Similarly, a volume will propose a width, height, and depth to its content, but in a volume, depth is also resizable. Check out “Designing for visionOS” in the Human Interface Guidelines for more details on when to use a volume or a window.\n\nSome views can alter these depth proposals for contained views. In the same way a VStack composes the heights of its subviews, ZStack composes depths. So the depth of this ZStack is the depth required to fit both robots stacked one in front of the other.\n\nAnd similar to the way VStack may propose different heights to its subviews based on factors like available space, the number of children, and the type of children, ZStack may propose different depths to its children based on the same factors. Here, the RealityView pushes the robot forward in the ZStack, filling all the available depth in the scene.\n\nExisting Layout types and Stacks are actually 3D on visionOS and will apply some sensible default behaviors for depth. In this example, the HStack will carry through a depth proposal from its parent and establish its own depth to tightly fit the two models inside it. The HStack also lines up the backs of these two robots by default.\n\nWe call this concept depth alignment. Depth alignments are a new tool you can use to customize existing SwiftUI Layout types to better accommodate 3D views and depth. If you’ve worked with vertical or horizontal alignments, these are going to feel familiar. I’d like to build a new volumetric window to display my favorite robots with the name and description of each. First, let’s update the code for our robot Model3D to make this more reusable.\n\nI start with a Model3D that’s scaled to fit.\n\nI refactor it to use the new Model3DAsset type, which allows me to preload the model for my robot. I encompass this all in a new ResizableRobotView, which I can use throughout the app. I also remove the debugBorder3D for now.\n\nNow I’ll create a RobotProfile using a VStack containing a ResizableRobotView, plus a RobotNameCard with some details about the bot. There's a problem, though.\n\nThis card is hard to read since it’s placed at the back of the VStack, and it’s getting a bit lost behind the robot model.\n\nJust like you can configure in HStack to align its content on the center, top, or bottom edge, you may want to configure how views are aligned in depth on visionOS.\n\nBy default, Stacks and Layout types use a depth alignment of back. Now, in visionOS 26, you can customize DepthAlignments on any Layout type.\n\nI’ll update the RobotProfile to use VStackLayout.\n\nSo I can apply the depthAlignment modifier. I ask for .front alignment here.\n\nYou can also use the center or back guides.\n\nBut I think front is the right choice to make this robot name card legible. Now, I’m never going to forget Zapper Ironheart and its encyclopedic knowledge of obscure facts. Using the standard front, back, or center depth alignments are great if you want one of those three standard configurations. But what if you need something more complex than those behaviors? I’ve been creating a volume to show my three favorite robots with three of these robot profile views in an HStack. Greg-gear Mendel is my favorite robot, and I’d like to make it a bit more prominent in this view than the other two.\n\nIn fact, I’ve been thinking about a sort of Depth Podium where the more I like one of these robots, the closer it is to me. So Robot 1 is the closest, then 2, then 3.\n\nFrom the top down, I want it to look something like this, where the back of the first robot is aligned in depth with the center of the 2nd place robot and the front of the 3rd place robot. I’ll need a Custom Depth Alignment to do this.\n\nFirst, I’ll define a new struct which conforms to the DepthAlignmentID protocol.\n\nI implement the one requirement, which is the default value for this alignment. I use the front alignment guide as the default for our DepthPodiumAlignment.\n\nThen I define a static constant on depth alignment that uses this new DepthAlignmentID type.\n\nNow I can use this depthPodium alignment guide as a depth alignment on the HStack containing each robot.\n\nThis will align all the robots on their front face given the default value we just specified for this guide.\n\nNow I’ll customize the depthPodium alignment guide on the trailing robot to align its depth center with this guide.\n\nI’ll modify the center robot to align its back with the depthPodium guide. The leading robot will continue to use its front guide as the default for this alignment.\n\nHere it is in the simulator.\n\nWith my bots staggered in depth, no one will question that Greg-gear Mendel is first in my heart. Depth Alignments are great when you want to make tweaks to depth position within an existing Layout. But what if you want to build something even more depth oriented. Rotation Layout is a great tool for more advanced 3D use cases. You may be familiar with the existing rotation3DEffect modifier, which applies a visual effect to a view to rotate it around a given axis. This modifier is great for basic rotations. But if we place our model in an HStack with a description card about it, and rotate the rocket 90 degrees along the Z-axis, it runs into the card and begins to run out of the volume.\n\nIf we apply debug wireframes before and after the rotation effect, it’s a bit easier to understand what is going on. The solid red wireframe is rotated by the effect, but the dashed blue wireframe shows me where the layout system understands the rocket’s geometry to be. The HStack sizes itself and places its content relative to this blue frame. These don’t line up. This is because visual effects don’t impact layout. Which means the HStack doesn’t know about the rocket’s rotated geometry when using rotation3DEffect.\n\nThis is true for all visual effects, including scaleEffect, and offsets. In all of these cases, the layout system won’t adjust the size or placement of views due to these modifiers. That’s great when you want to animate one view without impacting the frames of others around it. But what if you do? How can we fix this rotated rocket? Good news. In visionOS 26, we’re introducing a new rotation3DLayout modifier, which does modify the frame of a rotated view in the layout system. When I apply it to my rocket model, the HStack can adjust its sizing and placement to give the rocket and the details card plenty of room.\n\nrotation3DLayout supports rotations on any angle and axis, which means I can rotate my rocket at 45 degrees, which I think really makes it look like it’s blasting off into space.\n\nI apply a debug wireframe before and after the rotation3DLayout modifier. This shows the rotated frame of the rocket in red. The wireframe in blue shows the frame of the modified view within the layout system. Notice the blue bounding box is axis aligned to the parent and tightly fits the rotated frame in red.\n\nNow let’s see how we can use rotation3DLayout to build the robot carousel I showed you at the beginning of this video.\n\nI’ll start by borrowing the RadialLayout from “Compose custom layouts with SwiftUI”. This custom Layout type places views in a circle with the circumference defined by the available width and height.\n\nMyRadialLayout was originally written for placing 2D views on iOS, but it works great on visionOS. Even when it’s positioning 3D models of robots instead of 2D images of pets, we can use a ForEach to place our resizable Model3Ds of each robot inside this custom layout. This looks good, but it’s still a vertical experience. I want my robots to be horizontally oriented in the volume.\n\nI’ll apply a rotation3DLayout to the radial layout rotating the view 90 degrees along the X-axis. What was previously the carousel’s height will now define the rotated view’s depth in the layout system. My carousel is oriented correctly now, but my robots are laying down, sleeping on the job.\n\nWe can stand them up by counter rotating each robot inside the ForEach using a second rotation3DEffect of -90 degrees along the X axis. These drowsy droids are now standing at attention. There’s just one last thing to fix. The carousel is center aligned inside the volume’s height. I’d like the carousel to be flush with the base plate of the volume.\n\nThis is easier to notice with a debugBorder3D applied to the entire carousel.\n\nI can use the same strategy I would for a 2D layout. I want to push the carousel down inside a VStack with a Spacer above it. My robots are looking great at the bottom of the volume now. Let’s talk about one more pair of tools in your 3D layout utility belt, SpatialContainer and spatialOverlay. There’s one more feature I’d like to add to our robot carousel. Tapping on a robot should select it, showing a controls menu as well as a ring at the bottom of the model, indicating that it's selected. This ring is also represented as a Model3D. We want the ring to fill the same 3D space as our robot. We don’t want these to stack along any axis. We need a new tool that will place the models in the same 3D space.\n\nThe new SpatialContainer API allows you to place multiple views in the same 3D space like a series of Nesting Dolls.\n\nYou can apply a three dimensional alignment to all of the views. Here we line up all the children according to their bottomFront alignment guide.\n\nAnd here, according to their topTrailingBack guide.\n\nspatialOverlay is a similar tool, which allows you to overlay a single view in the same 3D space as another.\n\nSimilar to SpatialContainer, it supports 3D alignments.\n\nI only have two views to line up, the robot and the selection ring. And I really only care about the geometry of the robot. I’m happy to have my ring resized to fit my robot size. So let’s use a spatialOverlay to implement our selected robot visuals.\n\nI’ll add a spatialOverlay modifier to our robot model. And if it’s marked as selected, place the resizable ring view as its content. We'll use a bottom alignment to line the bottom of the ring up with the bottom of our robot.\n\nI think our robot carousel is looking great. And it’s easy to make even better with all the existing composable SwiftUI APIs.\n\nLet's recap everything we've learned by implementing the debugBorder3D modifier.\n\nHere’s the modifier I showed earlier applied to a Model3D.\n\nI define a debugBorder3D method as an extension on View. I apply a spatialOverlay to the modified content so we render the border in the same 3D space as the view it's applied to.\n\nI place a ZStack inside containing a 2D border, a Spacer, and another 2D border.\n\nNext, I apply a rotation3DLayout to the entire ZStack to place borders on the leading and trailing faces of the view.\n\nFinally, I place this inner ZStack inside another ZStack with 2D borders for the back and front faces. With that, we have borders on every edge. I love how I can compose these existing 2D SwiftUI modifiers with new 3D APIs to make something completely new. There are 3D analogs for many of the layout tools and modifiers you may already be familiar with from a 2D context. Check out the documentation for more of these APIs. SwiftUI is a great tool for building 3D apps, but there are many use cases where you’ll still want to reach for RealityKit, often mixing both in the same app. Now that your SwiftUI content is 3D, you may need it to interact with RealityKit code. My friends Maks and Amanda have built some amazing additions to BOTanist using both frameworks together. Check out “Better Together: SwiftUI and RealityKit” for more information. I can’t wait to see what your app looks like in 3D.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:02",
+      "title": "Robot Image Frame",
+      "language": "swift",
+      "code": "// Some views have fixed frames\n\nImage(\"RobotHead\")\n  .border(.red)"
+    },
+    {
+      "timestamp": "3:05",
+      "title": "Color Frame",
+      "language": "swift",
+      "code": "// Some views have flexible frames\n\nColor.blue\n  .border(.red)"
+    },
+    {
+      "timestamp": "3:15",
+      "title": "Layout Composed Frame",
+      "language": "swift",
+      "code": "// Layouts compose the frames of their children\n\nVStack {\n  Image(\"RobotHead\")\n    .border(.red)\n  Image(\"RobotHead\")\n    .border(.red)\n}\n.border(.yellow)"
+    },
+    {
+      "timestamp": "4:00",
+      "title": "Model3D Frame",
+      "language": "swift",
+      "code": "// Some views have fixed depth\n\nModel3D(named: \"Robot\")\n  .debugBorder3D(.red)"
+    },
+    {
+      "timestamp": "4:25",
+      "title": "Zero Depth Views",
+      "language": "swift",
+      "code": "// Many views have 0 depth\n\nHStack {\n  Image(\"RobotHead\")\n    .debugBorder3D(.red)\n  Text(\"Hello! I'm a piece of text. I have 0 depth.\")\n    .debugBorder3D(.red)\n  Color.blue\n    .debugBorder3D(.red)\n    .frame(width: 200, height: 200)\n}"
+    },
+    {
+      "timestamp": "4:41",
+      "title": "RealityView Depth",
+      "language": "swift",
+      "code": "// RealityView takes up all available space including depth\n\nRealityView { content in\n  // Setup RealityView content\n}\n.debugBorder3D(.red)"
+    },
+    {
+      "timestamp": "4:56",
+      "title": "GeometryReader3D Depth",
+      "language": "swift",
+      "code": "// GeometryReader3D uses all available depth\n\nGeometryReader3D { proxy in\n  // GeometryReader3D content\n}\n.debugBorder3D(.red)"
+    },
+    {
+      "timestamp": "5:01",
+      "title": "Model3D scaledToFit3D",
+      "language": "swift",
+      "code": "// Scaling a Model3D to fit available space\n\nModel3D(url: robotURL) {aresolved in\n  resolved.resizable()\n}aplaceholder: {\n  ProgressView()\n}\n.scaledToFit3D()\n.debugBorder3D(.red)"
+    },
+    {
+      "timestamp": "6:15",
+      "title": "ZStack depth",
+      "language": "swift",
+      "code": "// ZStack composes subview depths\n\nZStack {\n  Model3D(named: \"LargeRobot\")\n    .debugBorder3D(.red)\n  Model3D(named: \"BabyBot\")\n    .debugBorder3D(.red)\n}\n.debugBorder3D(.yellow)"
+    },
+    {
+      "timestamp": "6:33",
+      "title": "ZStack with RealityView",
+      "language": "swift",
+      "code": "// ZStack composes subview depths\n\nZStack {\n  RealityView { ... }\n    .debugBorder3D(.red)\n  Model3D(named: \"BabyBot\")\n    .debugBorder3D(.red)\n}\n.debugBorder3D(.yellow)"
+    },
+    {
+      "timestamp": "6:57",
+      "title": "Layouts are 3D",
+      "language": "swift",
+      "code": "// HStack also composes subview depths\n\nHStack {\n  Model3D(named: \"LargeRobot\")\n    .debugBorder3D(.red)\n  Model3D(named: \"BabyBot\")\n    .debugBorder3D(.red)\n}\n.debugBorder3D(.yellow)"
+    },
+    {
+      "timestamp": "7:50",
+      "title": "ResizableRobotView",
+      "language": "swift",
+      "code": "struct ResizableRobotView: View {\n  let asset: Model3DAsset\n\n  var body: some View {\n    Model3D(asset: asset) { resolved in\n      resolved\n        .resizable()\n    }\n    .scaledToFit3D()\n  }\n}"
+    },
+    {
+      "timestamp": "8:11",
+      "title": "Robot Profile 1",
+      "language": "swift",
+      "code": "//`Layout` types back align views by default\n\nstruct RobotProfile: View {\n  let robot: Robot\n\n  var body: some View {\n    VStack {\n      ResizableRobotView(asset: robot.model3DAsset)\n      RobotNameCard(robot: robot)\n    }\n    .frame(width: 300)\n  }\n}"
+    },
+    {
+      "timestamp": "8:38",
+      "title": "Customizing Vertical Alignment",
+      "language": "swift",
+      "code": "// Customizing vertical alignment\n\nHStack(alignment: .bottom) {\n  Image(\"RobotHead\")\n    .border(.red)\n  Color.blue\n    .frame(width: 100, height: 100)\n    .border(.red)\n}\n.border(.yellow)"
+    },
+    {
+      "timestamp": "8:52",
+      "title": "Customizing Depth Alignment",
+      "language": "swift",
+      "code": "// Customizing depth alignments\n\nstruct RobotProfile: View {\n  let robot: Robot\n\n  var body: some View {\n    VStackLayout().depthAlignment(.front) {\n      ResizableRobotView(asset: robot.model3DAsset)\n      RobotNameCard(robot: robot)\n    }\n    .frame(width: 300)\n  }\n}"
+    },
+    {
+      "timestamp": "9:45",
+      "title": "Robot Favorite Row",
+      "language": "swift",
+      "code": "struct FavoriteRobotsRow: View {\n  let robots: [Robot]\n\n  var body: some View {\n    HStack {\n      RobotProfile(robot: robots[2])\n      RobotProfile(robot: robots[0])\n      RobotProfile(robot: robots[1])\n    }\n  }\n}"
+    },
+    {
+      "timestamp": "10:27",
+      "title": "Custom Depth Alignment ID",
+      "language": "swift",
+      "code": "// Defining a custom depth alignment guide\n\nstruct DepthPodiumAlignment: DepthAlignmentID {\n  static func defaultValue(in context: ViewDimensions3D) -> CGFloat {\n    context[.front]\n  }\n}\n\nextension DepthAlignment {\n  static let depthPodium = DepthAlignment(DepthPodiumAlignment.self)\n}"
+    },
+    {
+      "timestamp": "10:51",
+      "title": "Customizing Depth Alignment Guides",
+      "language": "swift",
+      "code": "// Views can customize their alignment guides\n\nstruct FavoritesRow: View {\n  let robots: [Robot]\n\n  var body: some View {\n    HStackLayout().depthAlignment(.depthPodium) {\n        RobotProfile(robot: robots[2])\n        RobotProfile(robot: robots[0])\n          .alignmentGuide(.depthPodium) {\n            $0[DepthAlignment.back]\n          }\n        RobotProfile(robot: robots[1])\n      \t\t.alignmentGuide(.depthPodium) {\n            $0[DepthAlignment.center]\n          }\n    }\n  }\n}"
+    },
+    {
+      "timestamp": "12:00",
+      "title": "Rotation3DEffect",
+      "language": "swift",
+      "code": "// Rotate views using visual effects\n\nModel3D(named: \"ToyRocket\")\n  .rotation3DEffect(.degrees(45), axis: .z)"
+    },
+    {
+      "timestamp": "12:10",
+      "title": "Rotation3DLayout",
+      "language": "swift",
+      "code": "// Rotate using any axis or angle\n\nHStackLayout().depthAlignment(.front) {\n  RocketDetailsCard()\n  Model3D(named: \"ToyRocket\")\n  \t.rotation3DLayout(.degrees(isRotated ? 45 : 0), axis: .z)\n}"
+    },
+    {
+      "timestamp": "14:42",
+      "title": "Pet Radial Layout",
+      "language": "swift",
+      "code": "// Custom radial Layout\n\nstruct PetRadialLayout: View {\n  let pets: [Pet]\n\n  var body: some View {\n    MyRadialLayout {\n      ForEach(pets) { pet in\n        PetImage(pet: pet)\n      }\n    }\n  }\n}"
+    },
+    {
+      "timestamp": "14:56",
+      "title": "Rotated Robot Carousel",
+      "language": "swift",
+      "code": "struct RobotCarousel: View {\n  let robots: [Robot]\n\n  var body: some View {\n\t\tVStack {\n      Spacer()\n      MyRadialLayout {\n        ForEach(robots) { robot in\n          ResizableRobotView(asset: robot.model3DAsset)\n          \t.rotation3DLayout(.degrees(-90), axis: .x)\n        }\n      }\n      .rotation3DLayout(.degrees(90), axis: .x)\n  }\n}"
+    },
+    {
+      "timestamp": "17:00",
+      "title": "Spatial Container",
+      "language": "swift",
+      "code": "// Aligning views in 3D space\n\nSpatialContainer(alignment: .topTrailingBack) {\n  LargeBox()\n  MediumBox()\n  SmallBox()\n}"
+    },
+    {
+      "timestamp": "17:35",
+      "title": "Spatial Overlay",
+      "language": "swift",
+      "code": "// Aligning overlayed content\n\nLargeBox()\n  .spatialOverlay(alignment: .bottomLeadingFront) {\n    SmallBox()\n  }"
+    },
+    {
+      "timestamp": "17:47",
+      "title": "Selection Ring Spatial Overlay",
+      "language": "swift",
+      "code": "struct RobotCarouselItem: View {\n  let robot: Robot\n  let isSelected: Bool\n\n  var body: some View {\n    ResizableRobotView(asset: robot.model3DAsset)\n\t\t\t.spatialOverlay(alignment; .bottom) {\n        if isSelected {\n          ResizableSelectionRingModel()\n        }\n  }\n}"
+    },
+    {
+      "timestamp": "18:32",
+      "title": "DebugBorder3D",
+      "language": "swift",
+      "code": "extension View {\n  func debugBorder3D(_ color: Color) -> some View {\n    spatialOverlay {\n\t\t\tZStack {\n\t\t\t\tColor.clear.border(color, width: 4)\n        ZStack {\n          Color.clear.border(color, width: 4)\n          Spacer()\n          Color.clear.border(color, width: 4)\n        }\n        .rotation3DLayout(.degrees(90), axis: .y)\n\t\t\t\tColor.clear.border(color, width: 4)\n      }\n    }\n  }"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Canyon Crosser: Building a volumetric hike-planning app",
+        "url": "https://developer.apple.com/documentation/visionOS/canyon-crosser-building-a-volumetric-hike-planning-app"
+      },
+      {
+        "title": "Human Interface Guidelines: Designing for visionOS",
+        "url": "https://developer.apple.com/design/human-interface-guidelines/designing-for-visionos"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/273/4/f5d120d6-7302-42ff-8ced-17923f0f6aa8/downloads/wwdc2025-273_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/273/4/f5d120d6-7302-42ff-8ced-17923f0f6aa8/downloads/wwdc2025-273_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "274",
+      "year": "2025",
+      "title": "Better together: SwiftUI and RealityKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/274"
+    },
+    {
+      "id": "10056",
+      "year": "2022",
+      "title": "Compose custom layouts with SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10056"
+    },
+    {
+      "id": "237",
+      "year": "2019",
+      "title": "Building Custom Views with SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/237"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:35:16.625Z"
+}

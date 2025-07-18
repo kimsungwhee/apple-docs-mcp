@@ -1,0 +1,95 @@
+{
+  "id": "10101",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10101/",
+  "title": "Discover rolling clips with ReplayKit",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video",
+    "Graphics & Games"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello, and welcome to \"Discover rolling clips with ReplayKit.\" My name is Ernest, and I'm a software engineer on the ReplayKit team. Today, I'm really excited to show you a new way to capture your application highlights. Let me start by giving you an overview of ReplayKit.\n\nReplayKit is a framework that enables you to record your application's screen and audio. When people want to make an instructional video, or simply just wanna show off their gameplay, in-app screen recording creates a video that they can save and share with their friends. And what if you wanted more control over the video content people create? You may want to add additional filters, or overlays. You can do this with in-app screen capture. In-app screen capture will give the audio and video samples directly to your application process, so you'll have complete control over the content that is being created. And we all know the next best thing to playing a game is watching gameplay live. In-app broadcast makes it easy for people to stream your application to third-party broadcast services, to be viewed all around the world. While our current recording features cover a wide variety of use cases, there is one that we currently don't. So, imagine your players just fought all the enemies and unlocked the key to a level in your game, and now they wanna share that moment with their friends. But because it's their first time playing this level, they didn't know something exciting was gonna happen, and they weren't able to capture that moment. Currently, players will need to record their entire gameplay in order to save all their memorable highlights. This results in a large recording that will not only take up a lot of space, but will require time to trim into shorter clips. Wouldn't it be awesome if you could record all the highlights right when they happen? Or even better, what if ReplayKit does this for you, and gives you the video clip of each moment? This year, I'm excited to show you a new feature we've been working on, clips recording. Clips recording will keep a rolling buffer of audio and video samples. When clip export is called, the samples up to 15 seconds prior can be exported into a short video clip. So now, instead of needing to know when to Start Recording, you just need to know when you want to export.\n\nThere are several ways to export a video clip. You can add UI buttons or a game controller support to your application, so people can have manual control on when to capture clips. With the tap of a button, they can get the clip exactly when they want it. You can also add triggers in your application that will automatically capture clips. With this, you will always capture those exciting moments when they get a perfect combo, defeat the final boss, or beat their best speed run. And with all of these clips, you can create personalized user experiences. You could add a custom overlay that opens to a collection of recordings, or you could present a highlight reel with all the clips captured at the end of a level for your players to see and share.\n\nClips recording will be available for iOS and macOS, and is a powerful feature that will sit alongside our existing recording, capture, and broadcast APIs. Similar to our other features, clips recording will provide the same HD quality, low-performance impact, and built-in privacy safeguards. How does clips recording work under the hood? Let's take a look. Clips recording includes three APIs: start, stop, and export. To start clip buffering, your application should call into RPScreenRecorder to get the sharedRecorder singleton instance. With the shared instance, you can call the startClipBuffering API. At which point, ReplayKit will store screen and audio samples from your application in a rolling buffer. Every time ReplayKit receives new samples, any samples older than 15 seconds will be discarded. After the rolling buffer starts, ReplayKit waits for your application to tell it to export. When the application calls the export clip API, ReplayKit takes care of the rest and returns you the video clip of that moment. When you no longer need the rolling buffer, or when you want to use another ReplayKit feature, such as in-app broadcast, you can call the stop API, and ReplayKit will tear down the session.\n\nWith this information in mind, let me show you a sample project that implements the new clips APIs.\n\nYou may already be familiar with this sample project from our session last year. The updated sample project now includes code for clips. Let's take a look at this code. Just like the other recording sessions, here's the IBAction associated with the \"start clips\" button in the main storyboard. This button is used to start clip buffering if you aren't already active, and stop clip buffering if you are active. Now, let's go ahead and take a look at what happens when you start clip buffering. Here is the code to start clip buffering. You're going to get the shared recorder instance from RPScreenRecorder and call startClipBuffering with your completion handler. Here, within the completion handler, you will need to handle any error that occurred while attempting to start, including updating the UI. If there's no error, then you should also update the UI to show that the recording is currently active.\n\nSimilar to start, there's a stop clip buffering method in the sample project. This is where you're going to get the shared instance, but this time, you'll call the stopClipBuffering API. In the completion handler, you will need to handle any error that occurred while attempting to stop, and should update the UI to show that you're no longer recording.\n\nNow that I went through the code for start and stop clip buffering, let's look at the code needed to export a clip. This is the code for the IBAction associated with the \"export clip\" button. The action is triggered when a person decides they want to generate a clip. Just a reminder that you're not limited by this approach and may export clips automatically based on your own application triggers. Here, if you're actively recording and the button is enabled from the previous startClipBuffering method, the exportClip function will be called. To call the exportClip API, you will need to specify a URL and a clip duration.\n\nSimilar to the start and stop APIs, you will then handle any errors in the completionHandler. If there's no error, then you should have the clip at the specified URL. With access to the clips, you can then build and organize your own user experiences. In my sample code here, the clip is simply saved to Photos.\n\nAnd that's it! With these three APIs, you can now add clips recording in your application. You will have direct access to the clips in the specified URL, so you can build your own in-app experiences. As previously mentioned, another way to get clips is by adding game controller support. The game controller framework will now have built-in clips recording. Keep in mind, clips exported from the game controller will save directly to Photos or the Desktop. So, to make your own in-app experiences with the generated clips, you will need to implement the ReplayKit clips API. When integrating both ReplayKit and the game controller framework, it is good idea to make sure you're using key value observing for both available and recording properties on RPScreenRecorder. Also be sure to follow the protocol RPScreenRecorderDelegate so that you can update your application's state as needed. And it's that simple to integrate clips recording in your applications. With clips recording, your application will be ready to capture all of the exciting moments when they happen. I look forward to seeing all of the clips and the new user experiences you will create. Thank you so much for watching our session. I hope you have a wonderful WWDC. [percussive music]",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "5:19",
+      "title": "Start clip buffering",
+      "language": "swift",
+      "code": "// Start clip buffering API call\n\nfunc startClipBuffering() {\n    RPScreenRecorder.shared().startClipBuffering { error in\n        if error != nil {\n            print(\"Error attempting to start Clip Buffering\")\n            // Update the app recording state and UI.\n            self.setClipState(active: false)\n        } else {\n            // No error encountered attempting to start a clip session.\n            // Update the app recording state and UI.\n            self.setClipState(active: true)\n            \n            // Set up camera View.\n            self.setupCameraView()\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "5:46",
+      "title": "Stop clip buffering",
+      "language": "swift",
+      "code": "// Stop clip buffering\n\nfunc stopClipBuffering() {\n    RPScreenRecorder.shared().stopClipBuffering { error in\n        if error != nil {\n            print(\"Error attempting to stop clip buffering\")\n        }\n        // Update the app recording state and UI.\n        self.setClipState(active: false)\n        \n        // Tear down camera view.\n        self.tearDownCameraView()\n    }\n}"
+    },
+    {
+      "timestamp": "6:13",
+      "title": "Export clip button",
+      "language": "swift",
+      "code": "// Export clip button\n\n@IBAction func exportClipButtonTapped(_ sender: Any) {\n    // If clip buffering is active, export clip\n    if self.isActive && self.getClipButton.isEnabled {\n        exportClip()\n    }\n}"
+    },
+    {
+      "timestamp": "6:41",
+      "title": "Export clip",
+      "language": "swift",
+      "code": "// Export clip\n\nfunc exportClip() {\n    let clipURL = getAppTempDirectory()\n    let interval = TimeInterval(5)\n\n    print(\"Generating clip at URL: \\(clipURL)\")\n    RPScreenRecorder.shared().exportClip(to: clipURL, duration: interval) { error in\n        if error != nil {\n            print(\"Error attempting to export clip\")\n        } else {\n            // No error, so save clip at URL to photos\n            self.saveToPhotos(tempURL: clipURL)\n        }\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Recording and Streaming Your macOS App",
+        "url": "https://developer.apple.com/documentation/ReplayKit/recording-and-streaming-your-macos-app"
+      },
+      {
+        "title": "ReplayKit",
+        "url": "https://developer.apple.com/documentation/ReplayKit"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10101/7/50A5D34B-6D32-429A-B737-D3C0C9EB58B8/downloads/wwdc2021-10101_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10101/7/50A5D34B-6D32-429A-B737-D3C0C9EB58B8/downloads/wwdc2021-10101_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10081",
+      "year": "2021",
+      "title": "Tap into virtual and physical game controllers",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10081"
+    },
+    {
+      "id": "10323",
+      "year": "2021",
+      "title": "Wednesday@WWDC21",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10323"
+    },
+    {
+      "id": "10633",
+      "year": "2020",
+      "title": "Capture and stream apps on the Mac with ReplayKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10633"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:23:52.529Z"
+}

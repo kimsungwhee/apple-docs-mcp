@@ -1,0 +1,167 @@
+{
+  "id": "10140",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10140/",
+  "title": "What’s new in StoreKit 2 and StoreKit Testing in Xcode",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services",
+    "App Store, Distribution & Marketing"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Ricky: Hello, I'm Ricky, and welcome to \"What's new in StoreKit 2 and StoreKit Testing in Xcode.\" In this session, I'll talk about the new features we're bringing to StoreKit this year, as well as the enhancements to the testing experience in Xcode. StoreKit 2 was first introduced at WWDC in 2021, with new and more flexible APIs using Swift. This year, I am excited to show you the new features that make StoreKit 2 even better. First, I will review the new StoreKit framework features, then, I'll share some updates for building SwiftUI apps using StoreKit, and finally, I will cover what's new in StoreKit Testing in Xcode. I am excited to introduce a new Swift API for managing promoted in-app purchases, available starting in iOS 16.4. Promoted in-app purchases is a feature that allows you to merchandise your products on your App Store product page, each with a dedicated promotional image. Promoting your in-app purchases is a great way to increase your product's visibility, and you can easily set up promoted purchases in App Store Connect. To learn more about configuring promoted in-app purchases, check out \"What's new in App Store Connect.\" Since promoted in-app purchases are listed on the App Store, when a customer buys a promoted product, their interaction starts here by tapping the purchase button. Then, the App Store sends the purchase data to your app where you can listen for this information and prompt them to complete the purchase. To listen for promoted purchases, use the Swift async sequence which receives a new purchase intent every time a customer initiates the purchase for a promoted product in the App Store. First, create a listener to receive purchase intents using PurchaseIntent.intents. Every time the sequence receives a new object, it contains the StoreKit Product associated with the purchase. You can prompt your customers to purchase these products as usual by calling purchase(), which displays the familiar payment sheet and allows them to complete the interaction there. If your app isn't ready to complete a purchase, you can also save the intent locally and defer it. You can always process it later.\n\nAnother feature of promoting in-app purchases is being able to customize how your products are displayed locally on the current device. For example, if a customer buys one of these products, you can hide it, so the App Store doesn't show it again when they browse or search. You can also change the product order, or the subset of products featured, based on a current state in your app, for example, a level advancement in a game.\n\nTo cover all of these cases, I am excited to show you some new Swift APIs that you can use to customize the order and the visibility of your promoted in-app purchases. Let's see a quick demonstration.\n\nAfter importing StoreKit, you can check the current promotion order with Product.PromotionInfo.currentOrder. This returns a sequence of PromotionInfo objects, in the order that is currently set. If this list is empty, it means there are no local overrides set for this device, and the products people see in the App Store are in the same order that you configured in App Store Connect. Each object in this sequence contains information regarding a promoted product in your app. To set a custom order of promotions, you can use the Product.PromotionInfo.updateProductOrder API and pass a list of product identifiers in the order you want them to appear in the App Store for this device. You can also hide and show products without having to set a whole new order. This can be done by changing the visibility property associated with promoted in-app purchases.\n\nThe visibility state can be visible, hidden, or default, which follows the settings you configure in App Store Connect and applies to all devices that don't have a local override set by your app. Let's see how we can change this in code.\n\nThe visibility value can be changed in a couple of different ways. Your app can call the Product.PromotionInfo. updateProductVisibility API and change the value for a single product by passing both the new visibility state and the identifier of that in-app purchase. Alternatively, you can also change the visibility value by setting a member property on each PromotionInfo object. Then, to save the changes, call update() on that same object you just modified. And that is everything you need to start using promoted in-app purchases with StoreKit 2. Now, I would like to show you some of the enhancements we made to the core data model in StoreKit 2.\n\nThese models are useful for managing your in-app purchases and related information, for example, the purchase date and the subscription status. Let's dive into the new fields we're adding to the Transaction and RenewalInfo data models, which bring great improvements many of you requested.\n\nThe first new field is storefront, and it appears in the Transaction model along with storefrontCountryCode. The next new field is called reason. It tells you whether a customer initiated a purchase, or if the transaction is an automatic subscription renewal. In the RenewalInfo model under Product.SubscriptionInfo, there is a new member called nextRenewalDate. This tells you when this subscription renewal will be processed. All of these new fields are available for apps you build with Xcode 15, and although initially released with iOS 17, most of them also work retroactively with prior versions of iOS as well when you are using StoreKit 2. Next, I'd like to talk about StoreKit Messages and the great new feature we just added. We introduced the Message API last year at WWDC 2022 as a way for the App Store to notify your customers of important information. Messages have a Reason value that tells you the purpose of the message. Your app can choose whether to defer or suppress messages. For example, you may want to defer a message if displaying it would interrupt your customers during an interaction flow. Otherwise, StoreKit displays any active messages automatically when your app launches. This year, we added a new message reason called billingIssue. This message is available starting in iOS 16.4. The App Store sends this message when a subscription fails to renew because of a billing problem. StoreKit displays a Billing Problem sheet, and customers can resolve the issue without leaving your app. This new property is already enabled in sandbox to give you time to test it. Please check back on the Apple Developer website later this year for updates on when this will be enabled for all customers. When the App Store fails to renew a subscription, the subscription goes into a Billing Retry state. To learn about how to test this feature in sandbox, please refer to the WWDC session on testing in-app purchases. Now, let's review some security related updates. In order to keep StoreKit up-to-date with modern security practices, we're migrating our receipt signing certificate from using SHA-1 to SHA-256 for the \"original StoreKit\" receipt. Modern versions of cryptographic libraries, like OpenSSL, already support SHA-256, but if your app performs on-device receipt validation, it is important you verify that it handles the new certificate properly. The new SHA-256 signing certificate will be used to sign receipts in sandbox starting on June 20th, and you will be able to test on devices running iOS 16.6 and macOS 13.5 or later. After August 14th, the new certificate will be used to sign receipts for all new apps and app updates submitted to the App Store. For more details on this timeline, you can check the Apple Developer website. If your app uses StoreKit 2, you don't need to do anything. StoreKit 2's Signed Transaction, Renewal Info, and App Transaction already use SHA-256 today. And if you use App Store server APIs to do receipt validation, you also don't need to make any changes, since we handle the new format automatically. Next, I am excited to show you a whole new set of features for StoreKit that make it very easy and quick to merchandise in-app purchases in your app, using SwiftUI. There are new APIs to create SwiftUI views for single in-app purchases, whole stores of products, and even some custom ones specific to subscriptions. These function like normal SwiftUI views and require minimal code to implement, allowing you to get up and running with your app as quick as possible. Let's take a look at these new views. With this product view, you can represent a single in-app purchase, complete with its localized title, description, and even the optional promotional image. You can create it by passing product identifier to ProductView. And there is no need to load the StoreKit product either. You can just use the productID string. StoreKit and SwiftUI will take care of the rest. There is also a new view to display a whole collection of products, like a store right in your app. Instead of passing a single product identifier, you can use a collection of productIDs in combination with StoreView to create a list of products to merchandise, which you can then further customize using SwiftUI components. The StoreView is a great way to get your app or game started and support in-app purchases, since it requires only a few lines of code to set up, like shown here. Last but not least, there is also a new view to merchandise subscriptions with all of their available levels of service. Use SubscriptionStoreView to quickly create a custom page for a subscription group, like this one. All you need is the subscriptionGroupID, which you can normally find in App Store Connect, but it's now also available in the StoreKit configuration, right in Xcode. There are many possible customizations that can be easily added to any of these new view types. For example, check out how changing a few lines of code to create a custom background can significantly alter the look of this SubscriptionStoreView. To go along with these new subscription changes, we’re also adding an additional manage subscription sheet to provide a new experience to how people can interact and choose their subscription in a StoreKit app. Let's take a look at it.\n\nHere, you can see the familiar flow to manage subscriptions, which shows the customer a sheet with their current active tiers and provides the option to tap into each one to see a list of the other ones available in that subscription group. To make this process faster and provide more customization, there is now another view that allows you to skip a step and jump right into the subscription group you would like to show. You can pick the relevant subscription group in your app's context, if you have more than one, for example, and show what other levels of service are available for your customers to choose. This sheet can be used with the same API as the regular one: .manageSubscriptionsSheet. This time, additionally pass the subscriptionGroupID parameter.\n\nThere is so much more to show you on the topic of creating SwiftUI apps with StoreKit, with lots of other views and customization you can apply to make it fit your app's aesthetic. If you would like to learn more, Greg will tell you about it in \"Meet StoreKit for SwiftUI.\" After looking at the new features for in-app purchases in StoreKit, let's see how we can test them using the new tools in StoreKit Testing in Xcode, starting with Xcode 15. With StoreKit Testing in Xcode you can ensure your app using StoreKit provides a great experience from the time you start building it, even before you set anything up in App Store Connect. This allows you to test, manage, edit, and even create actions related to StoreKit while testing on your Mac, and it is supported on both the simulators and devices. Starting off with the transaction manager, there is new functionality for debugging and testing your apps. It now organizes all of your testing apps. In the navigator, you can see all the current connected devices and simulators that have your current StoreKit apps installed using a StoreKit configuration for testing. This allows you to test on multiple devices at the same time much more easily and quickly, and you are not required to run your app to see a history of purchases. Let's jump in and see what that looks like. I have both an iPhone connected to my Mac and a simulator running. And I'm using the new in-development game, Backyard Birds. When you open Xcode, no matter if you have a project opened or not, you can go to Debug, StoreKit, Manage Transactions, and be presented with the transaction manager view you’re already familiar with. In the navigator, you can see all the current devices connected to your Mac. In my case, this is the physical iPhone and the simulator. Notice how they both have a few apps showing in this list, including Backyard Birds. These are all apps using StoreKit Testing in Xcode that you can inspect outside of a debug session. Clicking on an app on either of these devices, you can see a list of StoreKit transactions for that app, and with the details sidebar we showed you last year, you can inspect each one individually. This also works if I open the Xcode project for Backyard Birds and run it on the simulator, for example.\n\nIn this case, I can also see which app is actively being debugged because it will have this small indicator next to the app name. This is not all that's new with the transaction manager. I am excited to show you that you now have the ability to make in-app purchases for your app right from your Mac using Xcode. Plus, when creating a new purchase, you can also customize various purchase parameters, such as the quantity for a consumable product, or you can pick offer codes for your subscriptions.\n\nLet's see how this works in practice using Backyard Birds. You first need to select the app you want to test. Then, click the plus button on the left of the filter bar to create a new purchase. The pop-up I am presented with lists all of the available in-app purchases for this app. These are the same products we configured in the StoreKit configuration. I am going to purchase a consumable first, so I can select Nutrition Pellet and click Next.\n\nNow, I have the opportunity to configure this new purchase, but the default options are also valid if I wanted to skip ahead. I am satisfied with these settings, so let's click Done to complete the purchase using these parameters.\n\nAlthough the app is not running in the simulator, StoreKit received and processed the new purchase. If I look at the transaction list, there is now a new item at the top. Clicking on it, I can inspect the details for this new transaction. Subscriptions are different, however, so let's make another purchase. I am going to again click on the plus button to create a new purchase, and this time, I will search for the name of a subscription in this app, then, pick the one I am looking for, and click next.\n\nThe options to configure the purchase have now changed, because this is a different type of in-app purchase. Some are the same, like the purchase date, but there's also some new ones, so let's go over what they do. The default properties are also valid here, by the way.\n\nI have the option to pick an offer code for this subscription, if it has any set up in the StoreKit configuration. Customers have to type in offer codes and promotions, but to make testing easier, we provide a list of available offers for this productID. I would like to change the purchase date in this case and set it to exactly one year ago, as if I had first subscribed to this service during last year's WWDC. Next, I can choose if this subscription should renew automatically or only remain subscribed for exactly one subscription period, which, in the case of this product, would be one month. I would like to keep automatic renewals enabled so I can test how my app handles active subscriptions before I even start using it. Let's click Done to complete the purchase and look at the results by filtering the transaction list.\n\nAs expected, I have one renewal for each month since last year. These are all currently marked as unfinished, because the app wasn’t running and didn’t get a chance to receive them, so I am going to run it in the simulator and see that I now have access to the Backyard Birds Pass.\n\nThe new features in the transaction manager work with all devices and platforms that already support StoreKit Testing in Xcode, beginning with iOS 17 and macOS 14. And they are also supported on other platforms, including iPadOS, watchOS, and tvOS. If you are running an older version of the operating system, nothing changes for you: the transaction manager is still compatible with all the same features as before when using an active debug session. Next, I would like to introduce a new feature in the StoreKit configuration that allows for more in-depth testing of how your StoreKit app behaves in different scenarios. To demonstrate this, I am going to open the Xcode project for Backyard Birds and go to the StoreKit configuration.\n\nThere is now a new item above the configured in-app purchases called Configuration Settings. This is a new menu we added to provide configurable options for your app's test environment, some that you might already be familiar with, and some new ones starting with Xcode 15. This first and the second sections cover all the existing options, like the default storefront and the locale your app should use for pricing and availability, and others such as the speed of subscription renewals or the ability to force ask to buy, for example. In prior versions of Xcode, you can find these in the Editor menu when your StoreKit configuration is opened, and they are still there and can be used interchangeably.\n\nWhile we are talking about StoreKit Testing options, there are new subscription renewal rates we added this year in iOS 16.4. These are designed to change the subscription expiration on a per-renewal basis, helping you generate consistent renewals quicker than the subscription's actual duration. This is really helpful for quick and reliable testing of the long-term state of your subscription. You can find these new configurable rates in both the Editor menu and in the StoreKit configuration settings in Xcode 15. The third section in the StoreKit configuration settings covers options you can use to simulate StoreKit errors in your app, which was a highly requested feature by many of you. It expands on the Fail Transactions submenu that used to be in the Editor menu, and it brings support for more StoreKit APIs and error types. Each option represents a StoreKit 2 API your app might be using and allows you to pick an error that API should throw every time when it's called by your app. Numerous APIs are supported by this feature. You can test product loading issues, purchase failures, receipt and transaction verification problems, refund requests, and so many more. Let's see what this looks like in practice.\n\nI have the Xcode project for Backyard Birds opened on the left and the app running in the simulator on the right. In the StoreKit configuration, I can enable purchase errors using the checkbox next to the Purchase API name and choose the error it should throw.\n\nI would like to test how the app handles purchases when the customer changes storefronts, so I will pick Product Unavailable.\n\nThis file automatically saves on edit, and it also syncs to your device when the app is running, so you can test the change immediately without needing to re-run your app. Let's try to purchase a product and see what happens.\n\nAs expected, it fails. It tells me I cannot purchase this product and I should contact the developer for more information.\n\nLet's now disable purchase errors and try this again to ensure it completes successfully this time.\n\nWith these steps, I have now effectively tested that this app's code can handle these kinds of errors when making a purchase, if they should ever occur. This method can be applied to any of the APIs and error options in the StoreKit configuration settings to cover multiple scenarios and ensure your app is robust. These errors are all part of StoreKit, and you might have encountered them already. Each one of them represents a clear case of a failure in your app. And that is all the new features for StoreKit Testing in Xcode. Today, I showed how to inspect and manage transactions on multiple devices outside of a debug session, how to purchase products from the transaction manager to test how your app handles existing purchases, and how to simulate StoreKit errors to cover many possible failure scenarios.\n\nAll of these new features in Xcode are also available in code using the StoreKit Test framework to write unit tests for your app, so you can write automation that performs all the same tasks. Let's have a look at the new APIs to create off-device purchases and set simulated errors in an XCTest session.\n\nTo create new in-app purchases, there is a new Swift API in StoreKitTest that works the same way as the StoreKit purchase(_:) API, with the same purchase options as well. To support the new purchase features, like changing the purchase date, we also added new purchase options only for testing. Let's look at an example. After setting up an SKTestSession, I am making an off-device purchase for a subscription and overriding the purchase date to a year ago from today. This is the same purchase I made in the transaction manager, and it behaves exactly the same way, allowing you to create repeatable results and automate the testing for your app. There are also some new APIs in StoreKitTest for simulating StoreKit errors in an SKTestSession, and they work the same way as the simulated errors in the StoreKit configuration settings. After creating your test session, you can call setSimulatedError with the error type you would like to test and the StoreKit API it should be simulated for. In this example, I am choosing to simulate a network error for the loadProducts API. Any time I call the loadProducts API in this test, it will always throw the same error. To disable the simulated failure, use the same setter API and pass nil in place of the error type. Lastly, there are also APIs for the new subscription renewal rates. These can be accessed the same way as the existing ones, via a member in SKTestSession called timeRate. In this example test to make a subscription purchase, I added an extra line of code to set a faster renewal rate and generate multiple renewals quickly. A lot of new StoreKit and StoreKit Testing in Xcode features were covered today. In StoreKit, there are new APIs to support promoting in-app purchases, the data model for Transaction and RenewalInfo got some enhancements to give you more valuable information on hand, and there is a new message type you can listen for to handle billing issues. The new StoreKit views in SwiftUI are a wonderful tool to quickly build apps that support product merchandising, and they don't require any extra code to work across all devices. And finally, you can validate all the StoreKit features in your app using great tools provided with StoreKit Testing in Xcode. StoreKit 2 is packed with many great features that allow you to build awesome apps and grow your business. We have added many tools that take full advantage of Swift, and with new APIs that are simple but powerful, you have the opportunity to focus more on the experience you're building for your customers. Any app that want to merchandise products and subscriptions can now be built using StoreKit 2. If you aren't using StoreKit 2 yet, give it a try, and if you are, let us know what you think of the new features I showed you today. Use the new in-app purchase merchandising views in your existing app to further customize the experience, or create a new one using exclusively these new APIs. And with StoreKit Testing in Xcode, you can put your code to the test and ensure everything works well and as expected to provide your customers with the best experience under all conditions. For more information about other StoreKit features, check out these sessions linked below. We look forward to seeing what you create using StoreKit 2. Thank you for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:42",
+      "title": "Create a listener for promoted in-app purchases",
+      "language": "swift",
+      "code": "// Create a listener for promoted in-app purchases\nimport StoreKit\n\nlet promotedPurchasesListener = Task {\n    for await promotion in PurchaseIntent.intents {\n        // Process promotion\n        let product = promotion.product\n\n        // Purchase promoted product\n        do {\n            let result = try await product.purchase()\n            // Process result\n        }\n        catch {\n            // Handle error\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "2:57",
+      "title": "Check promotion order",
+      "language": "swift",
+      "code": "// Check promotion order\nimport StoreKit\n\ndo {\n    let promotions = try await Product.PromotionInfo.currentOrder\n\n    if promotions.isEmpty {\n        // No local promotion order set\n    }\n\n    for promotion in promotions {\n        let productID = promotion.productID\n        let productVisibility = promotion.visibility\n        // Check promoted products\n    }\n}\ncatch {\n    // Handle error\n}"
+    },
+    {
+      "timestamp": "3:26",
+      "title": "Set a promotion order",
+      "language": "swift",
+      "code": "// Set a promotion order\nimport StoreKit\n\nlet newPromotionOrder: [String] = [\n    \"acorns.individual\",\n    \"nectar.cup\",\n    \"sunflowerseeds.pile\"\n]\n\ndo {\n    try await Product.PromotionInfo.updateProductOrder(byID: newPromotionOrder)\n}\ncatch {\n    // Handle error\n}"
+    },
+    {
+      "timestamp": "4:02",
+      "title": "Update promotion visibility",
+      "language": "swift",
+      "code": "// Update promotion visibility\nimport StoreKit\n\n// Hide “acorns.individual”\ndo {\n    try await Product.PromotionInfo.updateProductVisibility(.hidden, for: \"acorns.individual\")\n}\ncatch {\n    // Handle error\n}"
+    },
+    {
+      "timestamp": "4:17",
+      "title": "Update promotion visibility (alternative method)",
+      "language": "swift",
+      "code": "// Update promotion visibility\nimport StoreKit\n\ndo {\n  let promotions = try await Product.PromotionInfo.currentOrder\n\n  // Hide the first product\n  if var firstPromotion = promotions.first {\n    firstPromotion.visibility = .hidden\n    try await firstPromotion.update()\n  }\n}\ncatch {\n  // Handle error\n}"
+    },
+    {
+      "timestamp": "8:32",
+      "title": "Product view",
+      "language": "swift",
+      "code": "// Product view\nimport SwiftUI\nimport StoreKit\n\nstruct BirdFoodShop: View {\n    let productID: String\n    let productImage: String\n\n    var body: some View {\n        ProductView(id: productID) {\n            BirdFoodProductIcon(for: productID)\n        }\n        .productViewStyle(.large)\n    }\n}"
+    },
+    {
+      "timestamp": "8:52",
+      "title": "Store view",
+      "language": "swift",
+      "code": "// Store view\nimport SwiftUI\nimport StoreKit\n\nstruct BirdFoodShop: View {\n    let productIDs: [String]\n\n    var body: some View {\n        StoreView(ids: productIDs) { product in\n            BirdFoodIcon(productID: product.id)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "9:19",
+      "title": "Subscription view",
+      "language": "swift",
+      "code": "// Subscription view\nimport SwiftUI\nimport StoreKit\n\nstruct BackyardBirdsPassShop: View {\n    let groupID: String\n\n    var body: some View {\n        SubscriptionStoreView(groupID: groupID)\n    }\n}"
+    },
+    {
+      "timestamp": "21:09",
+      "title": "Simulated off-device purchase using StoreKitTest",
+      "language": "swift",
+      "code": "// Simulated off-device purchase using StoreKitTest\nimport StoreKit\nimport StoreKitTest\n\nfunc testSubscriptionRenewal() async throws {\n    let session = try SKTestSession(configurationFileNamed: \"Store\")\n\n    let oneYearInterval: TimeInterval = (365 * 24 * 60 * 60)\n    let transaction = try await session.buyProduct(\n        identifier: \"birdpass.individual\",\n        options: [\n            .purchaseDate(Date.now - oneYearInterval)\n        ]\n    )\n\n    // Inspect transaction\n}"
+    },
+    {
+      "timestamp": "21:48",
+      "title": "Set a simulated purchase error when loading products",
+      "language": "swift",
+      "code": "// Set a simulated purchase error when loading products\nimport StoreKit\nimport StoreKitTest\n\nfunc testLoadProducts() async throws {\n    let session = try SKTestSession(configurationFileNamed: \"Store\")\n    let productIDs = [\n        \"acorns.individual\",\n        \"nectar.cup\"\n    ]\n\n    // Set a simulated error, then load products, expecting an error\n    session.setSimulatedError(.generic(.networkError), forAPI: .loadProducts)\n    do {\n        _ = try await Product.products(for: productIDs)\n        XCTFail(\"Expected a network error\")\n    }\n    catch StoreKitError.networkError(_) {\n        // Expected error thrown, continue...\n    }\n    // Disable simulated error\n    session.setSimulatedError(nil, forAPI: .loadProducts)\n}"
+    },
+    {
+      "timestamp": "22:24",
+      "title": "Set a faster subscription renewal rate in a test session",
+      "language": "swift",
+      "code": "// Set a faster subscription renewal rate in a test session\nimport StoreKit\nimport StoreKitTest\n\nfunc testSubscriptionRenewal() async throws {\n    let session = try SKTestSession(configurationFileNamed: \"Store\")\n\n    // Set renewals to expire every minute\n    session.timeRate = .oneRenewalEveryMinute\n\n    let transaction = try await session.buyProduct(identifier: \"birdpass.individual\")\n\n    // Wait for renewals and inspect transactions\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Message",
+        "url": "https://developer.apple.com/documentation/StoreKit/Message"
+      },
+      {
+        "title": "Setting up StoreKit Testing in Xcode",
+        "url": "https://developer.apple.com/documentation/Xcode/setting-up-storekit-testing-in-xcode"
+      },
+      {
+        "title": "StoreKit",
+        "url": "https://developer.apple.com/documentation/StoreKit"
+      },
+      {
+        "title": "Supporting promoted In-App Purchases in your app",
+        "url": "https://developer.apple.com/documentation/StoreKit/supporting-promoted-in-app-purchases-in-your-app"
+      },
+      {
+        "title": "Testing failing subscription renewals and In-App Purchases",
+        "url": "https://developer.apple.com/documentation/StoreKit/testing-failing-subscription-renewals-and-in-app-purchases"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10140/4/F65F9FA7-3629-45A5-A4D6-A90BE40BE5E9/downloads/wwdc2023-10140_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10140/4/F65F9FA7-3629-45A5-A4D6-A90BE40BE5E9/downloads/wwdc2023-10140_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10142",
+      "year": "2023",
+      "title": "Explore testing in-app purchases",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10142"
+    },
+    {
+      "id": "10013",
+      "year": "2023",
+      "title": "Meet StoreKit for SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10013"
+    },
+    {
+      "id": "10117",
+      "year": "2023",
+      "title": "What’s new in App Store Connect",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10117"
+    },
+    {
+      "id": "10039",
+      "year": "2022",
+      "title": "What's new in StoreKit testing",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10039"
+    },
+    {
+      "id": "10007",
+      "year": "2022",
+      "title": "What's new with in-app purchase",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10007"
+    },
+    {
+      "id": "10114",
+      "year": "2021",
+      "title": "Meet StoreKit 2",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10114"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:12:42.123Z"
+}

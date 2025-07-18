@@ -1,0 +1,164 @@
+{
+  "id": "10091",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10091/",
+  "title": "Write tests to fail",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nHello and welcome to \"Write Tests to Fail.\" My name is Kelly Keenan and in this session, I'll be sharing some of the lessons I've learned over the years of writing user interface and integration tests for Xcode.\n\nWhile I'll focus on UI tests, many of these lessons are applicable to unit tests as well. Regardless of whether I wrote my tests before or after I wrote my code, my main motivation has always been to get our tests to green, because seeing this icon tells me that my tests are passing, which means I can ship my product. However, my new mantra for this year is write tests to fail, because great tests catch bugs, so we should plan for failure. Tests are written once, but are triaged many times. When my tests find a product bug, it fails, which is exactly what they're designed to do. In my case, my tests all run in a continuous integration system, so the tool I have for triaging the failure is the test result bundle. In this session, we'll explore ways I've found to make my tests easier to triage with just the result bundle as well as ways to make my tests more robust so that I'm spending time triaging the product failures instead of debugging my tests. The test templates follow the testing pattern of set up, test, and tear down.\n\nWithin the test section, we can break this down into actions and assertions. We'll use this as the agenda for this session. So, let's start with the set up for our tests.\n\nThis is where I explicitly state the assumptions I require and set the state of my app and environment before I run my tests.\n\nIn Xcode 11.4, we introduced a new setUp function called setUpWithError which now throws, allowing me to catch or pass on any errors that are thrown during my setup. I found it useful to modernize my existing setUp methods to take advantage of the error management. I use the setUpWithErrors method to set the initial state required for my tests before they run because previous tests may have changed the state of my app or modified data that my tests use.\n\nIn this example, I set continueAfterFailure to false so that my test fails immediately when an issue is found.\n\nThis helps me to find the first error faster instead of wading through multiple errors. I also use this as an opportunity to launch the app for each test in this class. One technique that I've incorporated is to leverage launchArguments and environment variables to set up state within my app quickly. This should not be used to set all state, but there may be cases where it's needed, like bypassing two-factor authentication during testing. In this case, I'm using it as a way to bypass the Menu tab, and instead, start from the Recipes tab. Small changes like this can improve the speed of running my tests by avoiding unnecessary work, but more importantly, it avoids me having to triage failures that might be happening in the Menu tab while I'm expecting to see results for testing my Recipes tab.\n\nTo recap, I'm using setUpWithError throws to improve error handling. I perform common setup tasks for every test in the class like launching the app.\n\nI'm using launchArguments to communicate with the app to set state. And I adopt product changes to quickly setup state and focus testing. The next step is to run our tests.\n\nTests should be focused on doing an action and then asserting that the action completed.\n\nLet's start with how I can make my actions easier to triage. The first thing I consider is that each test should have a specific goal in mind. That goal should be reflected in the title of the test. In this case, I'm testing the ingredients list for accuracy. The only action my test needs to perform is to select the Berry Blue Recipe. Minimizing the actions makes it easier to triage failures later.\n\nTapping this row brings up the recipe and I can verify the ingredient list as a result of my action. As such, in my result bundle, I can easily see what the test is validating thanks to the name of my test.\n\nSpeaking of naming, over the years, I've found that the labels of UI elements change often, so as a preventative measure, I use enums for all string values. That way, when the UI changes, I can easily update my tests to react to those changes. This not only saves me time to update my tests to UI changes, it has also minimized the number of times I've dealt with one test failing due to a spelling mistake that was hard to recognize. Just like collecting all the strings into enums, another way that I've minimized mistakes is by factoring common code into helper functions, so that multiple tests can use the same code path. In this case, multiple tests need to access the Smoothie List in the app, and to select a recipe. Pulling out this common testing path means that rather than duplicating code, I can spend my efforts hardening these paths to reduce test errors. Another technique I've employed is to model the domain of my app and design a test language around that domain. Then my test reflects the language of my app. In this example, I can ask my Fruta app for it's Smoothie List, and I can do an action on my Smoothie List like select a recipe, which returns the Recipe UI element. These are based on the FrutaUIElement class I've created to keep track of the app and the element at a lower level. In this way, I've made my shared code object-oriented-ish. While testing is treated as very functional and based on elements and queries, I can simulate an object-oriented environment for readability. Doing so, gives me the ability to make calls from my test that map to how I think of my app, as a series of subviews. The result of doing this modeling is that I'm working with a reduced hierarchy with each element and can focus my queries on just the subelements of that element.\n\nOver the years, our shared testing code has become quite large.\n\nSo, to deal with that, we treat it like our product code and have created a shared framework for our tests. You may also consider using a Swift package to share your testing code, especially if you're sharing code between multiple applications.\n\nTo recap this section, I design tests for a specific goal to focus what I'm testing. I'm using enums and factoring common code into helper functions to simplify resolving UI changes. I'm modeling objects in my tests to reflect the UI hierarchy of my app. And I'm using a framework, or you can use a Swift package, to share code between projects. Now, let's look at my favorite section: test assertions. Because this is where we are actually doing the heart of our testing.\n\nHere are some of the lessons I've learned with test assertions and error handling for making test failures easily triage-able. One small thing that has helped me immensely is to use the optional message in XCTAssert functions. Leaving out the message is fine when I'm triaging tests at my desk, but when all I have is the result bundle, there's a lot of context missing. In this case, I know that three is not equal to two, but two what? If I add a message, I can add context. Humans are reading my assertion messages most of the time, and it's often me, so I like to leave myself a clue as to why this expression failed. However, sometimes, my assertion failures are read by automation systems, in which case, I want my messages to be specific, but not too specific.\n\nSo, I leave out things like date/time stamps or unique file paths so that assertion messages can be used to recognize multiple tests that are failing for the same reason.\n\nI also try to make sure that I am using the correct assertion for what I'm trying to accomplish. Doing so ensures that the automatic message that I see when it fails is more relevant. In Xcode 12, we added XCTIssue which is a new low-level way of reporting failures. For more information, watch the related video, \"Triage Test Failures with XCTIssue.\" One of the pitfalls of asserting that I've come across is asynchronous events. I've sometimes had difficulty triaging asynchronous events. In this case, I tap the recipe button, but it may take a while to load depending on what my code is doing. If I immediately return the recipe element, it may not exist yet. In the past, I've used sleep to give my test a little built-in time. However, I wouldn't sleep on the job, so why let my tests do it? And it delays getting my results faster. XCTest has built-in retries, but depending on my app code, it might not be enough. So, I prefer to use waitForExistence with a timeout. This provides polling so that if the expectation is true earlier than the timeout, then I've saved that much time waiting. It also allows my test to pass or fail deterministically in an environment I've designed. In the result bundle, I'm able to see that my test waited five seconds to find the Ingredients View. Another recommendation is to unwrap optionals. In this example, I want to return the count of the favorites in a string array that is passed in, however, I didn't take the time to unwrap my optional. When I'm running the code locally, this results in a crash and halts my tests, which is really unfortunate if I set them to run while I went to get lunch and they didn't finish when I returned. When this happens in a continuous integration environment, I get a result bundle with a failing test that reads, \"Test crashed with signal ill.\" I can easily avoid this situation by making sure that I unwrap my optionals. I can use the Swift-provided methods of unwrapping optionals such as \"if let\", where I can then use the unwrapped value in the if-block.\n\nIf I want to use the unwrapped variable later, I can use \"guard let\". This allows me to throw an error that I provide in the guard-block if I encounter nil.\n\nThe third option is using the nil-coalescing operator, which allows me to provide a default value if I encounter nil, in this case, an empty array.\n\nThe fourth option, is to use XCTUnwrap, which is provided by the XCTest framework. It's a simplification of \"guard let\" where it throws an error if my test encounters nil.\n\nUsing XCTUnwrap shows my comment from the call in addition to the auto-generated message in my result bundle. The best part about unwrapping optionals is that by failing gracefully instead of crashing, my tearDown method will be called. Speaking of failing gracefully, let's talk about throwing errors.\n\nIn my tests, the rule is that I always throw instead of assert from shared code. The reason is because the shared code is being run from many tests, and in some of those tests, I may purposely be testing negative test cases to ensure something hidden isn't shown or to force an error dialog to appear for testing purposes. So, in a case like this, where I have a shared method to verify the ingredients, I may be testing a bug where I had extra ingredients showing previously, and I'm testing that those extra ingredients aren't showing up anymore. So, I throw an error. In my errors, I often pass in values that I want to appear in my error descriptions, which are a requirement of the CustomStringConvertible protocol. Using the description function means that I see a more contextually relevant error in the result bundle for those times I'm not triaging my results locally. If I am triaging locally, then new in Xcode 12 is the ability to see the backtrace for errors directly in my code, so I don't have to wonder anymore where the error is actually hiding in my shared code. I can also find a backtrace in the Runtime Issues Navigator as well as the result bundle. To learn more about how to leverage the testing backtraces, see the related video, \"Triage Test Failures with XCTIssue.\" Also in this result bundle, is a user-readable disclosure group that my code added to provide more context of what action I was taking at the time. I can easily see here that I was looking for Grape in my Berry Blue smoothie, which is definitely wrong. To provide myself little breadcrumbs like this, I use XCTContext.runActivity and provide a name. This is what appears in the result bundle along with any actions performed in its block. This is a great way to add some organization and context to my result bundle and make it easy to read according to the actions my test is taking. Another thing I can do with the runActivity is to add attachments with XCTAttachment. I can add attachments like files, images, and data to my XCTContext or the test case and it will show up in a result bundle. It's a great way to gather extra logging for a failed test especially when it's coming from a CI system. Earlier I said not to add file paths into assert comments because instead, I can add both the file path and the file itself as an attachment.\n\nThis makes it easier to triage the failures later.\n\nI believe that tests should be responsible for gathering all the data needed to triage the product failures because that data may not be available later. Now sometimes, a test shouldn't run at all and for that I use XCTSkip, XCTSkipUnless, and XCTSkipIf for documenting tests that aren't running by adding the optional message. The main use is to skip tests that aren't relevant to the platform my tests are running on. Some alternatives that I've used in practice are for stubbing out tests I want to write for a new feature, which allows me to see which tests are unimplemented versus what tests regressed. The third is that there are sometimes tests that just can't be fixed for now, for various reasons, and I don't want to continue triaging the failures, but I also don't want to lose track of the test by disabling it. Using XCTSkip allows me to continue to see the skipped test in the result bundle so that I don't forget that I need to write the test or fix it when the issue is resolved.\n\nTo recap this section, I like to add assertion messages and use the relevant XCTAssert functions to add context to the failures in my result bundle. I definitely unwrap my optionals to ensure that my tests don't crash while I went to lunch, but also so that my tearDown methods are called.\n\nI use the waitForExistence method for asynchronous events and timing issues instead of sleep.\n\nI throw errors from shared code instead of asserting so that other tests using that code can catch the errors for negative testing.\n\nI use XCTContext.runActivity and attachments for adding more context and content to my result bundles.\n\nAnd I use XCTSkip for tests that just aren't expected to be running in the current scenario. Lastly, let's look at tear down. Since most of my work is already done, there are only three recommendations I have for tear down. The first is that I've modernized my tests to use tearDownWithError that throws to take advantage of the new error management. I use the tearDown method as a time to collect additional logging, including some analysis of the failures. And this is when I reset the environment from the changes I made during setup. To recap this video, we looked at set up, where I change the environment and confirm my assumptions needed for my test.\n\nTest actions are where I perform the necessary actions I want to test through shared code modeled after my app.\n\nI then verify that the actions completed properly by using helper methods, errors, and test assertions.\n\nThen, I finished with the tearDown method to gather data and clean up after my test. I hope that these techniques and recommendations help you to make your tests more robust and to easily and quickly triage your product issues so that your tests turn green and you can ship a quality product. Thank you.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:58",
+      "title": "Use setUpWithError()",
+      "language": "swift",
+      "code": "class RecipesTests: XCTestCase {\n    let app = FrutaApp()\n\n    override func setUpWithError() throws {\n        continueAfterFailure = false\n        app.launchArguments.append(\"-recipes-tests\")\n        app.launch()\n    }\n}"
+    },
+    {
+      "timestamp": "3:09",
+      "title": "Use launch arguments",
+      "language": "swift",
+      "code": "class RecipesTests: XCTestCase {\n    let app = FrutaApp()\n\n    override func setUpWithError() throws {\n        continueAfterFailure = false\n        app.launchArguments.append(\"-recipes-tests\")\n        app.launch()\n    }\n}\n\n@State private var selection: Tab = \n       CommandLine.arguments.contains(\"-recipes-tests\") \n       ? .recipes : .menu"
+    },
+    {
+      "timestamp": "4:12",
+      "title": "Design tests for a specific goal",
+      "language": "swift",
+      "code": "func testIngredientsListAccuracy() throws {\n    // Select Berry Blue recipe\n    let recipe = try   \n        app.smoothieList().selectRecipe\n                           (smoothie: .berryBlue)\n\n    // Verify ingredients list\n    try recipe.verify(ingredients: \n        SmoothieType.berryBlue.ingredients)\n}"
+    },
+    {
+      "timestamp": "4:56",
+      "title": "Use enums for string values",
+      "language": "swift",
+      "code": "public enum SmoothieType : String {\n    case berryBlue = \"Berry Blue\"\n    case carrotChops = \"Carrot Chops\"\n    case berryBananas = \"That's Berry Bananas!\"\n    \n    var ingredients : [String] {\n        switch self {\n        case .berryBlue:\n            return [\"Orange\", \"Blueberry\", \"Avocado\"]\n        case .carrotChops:\n            return [\"Orange\", \"Carrot\", \"Mango\"]\n        case .berryBananas:\n            return [\"Almond Milk\", \"Banana\", \"Strawberry\"]\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "5:25",
+      "title": "Factor common code",
+      "language": "swift",
+      "code": "let recipe = try app.smoothieList().selectRecipe(smoothie: .berryBlue)\n\npublic class FrutaApp : XCUIApplication {\n   public func smoothieList() throws -> SmoothieList {\n        let element = tables[\"Smoothie List\"]\n        if !element.waitForExistence(timeout: 5) {\n            throw FrutaError.elementDoesNotExist(\"Smoothie List table\")\n        }\n        return SmoothieList(app: self, element: element)\n    }\n}  \n\npublic class SmoothieList : FrutaUIElement {\n    public func selectRecipe(smoothie: SmoothieType) throws -> Recipe {\n       element.buttons[smoothie.rawValue].tap()\n       return try app.recipe()\n   }\n}"
+    },
+    {
+      "timestamp": "5:49",
+      "title": "Model UI hierarchy in testing code",
+      "language": "swift",
+      "code": "public class FrutaApp : XCUIApplication {\n   public func smoothieList() throws -> SmoothieList { ￼ }\n} \n\npublic class SmoothieList : FrutaUIElement {\n    public func selectRecipe(smoothie: SmoothieType) throws -> Recipe { ￼ }\n}\n\nopen class FrutaUIElement {\n    let app: FrutaApp\n    let element: XCUIElement\n    init(app: FrutaApp, element: XCUIElement) {\n        self.app = app\n        self.element = element\n    }\n}"
+    },
+    {
+      "timestamp": "8:17",
+      "title": "Use assertion messages",
+      "language": "swift",
+      "code": "XCTAssertEqual(count, expectedCount, \"\\(SmoothieType.berryBlue.rawValue) smoothie is expected to have \\(expectedCount) ingredients: \\(expectedIngredients), however, there were \n\\(count) found.\")"
+    },
+    {
+      "timestamp": "9:21",
+      "title": "Asynchronous events",
+      "language": "swift",
+      "code": "public func selectRecipe(smoothie: SmoothieType) throws -> Recipe {\n    element.buttons[smoothie.rawValue].tap()\n    return try app.recipe()\n}\n\npublic func recipe() throws -> Recipe {\n    let element = scrollViews[\"Ingredients View\"]\n    if !element.waitForExistence(timeout: 5) {\n        throw FrutaError.elementDoesNotExist(\n                        \"Ingredients View scroll view\")\n    }\n    return Recipe(app: self, element: element)\n}"
+    },
+    {
+      "timestamp": "10:19",
+      "title": "Unwrapping optionals",
+      "language": "swift",
+      "code": "func countFavorites(favorites: [String]?) -> Int{\n     let favs = favorites!\n     return favs.count\n}"
+    },
+    {
+      "timestamp": "10:56",
+      "title": "Unwrapping optionals continued",
+      "language": "swift",
+      "code": "if let favs = favorites { ￼ }\nguard let favs = favorites else { /* throw an error */ }\nlet favs = favorites ?? []\nlet favs = try XCTUnwrap(favorites, \"favorites is nil, so there is nothing to count”)"
+    },
+    {
+      "timestamp": "12:19",
+      "title": "Throw errors from shared code",
+      "language": "swift",
+      "code": "public func verify(ingredients: [String]) throws {\n    try XCTContext.runActivity(named: \"Verifying \\(ingredients) exists in the Recipe screen.\")\n    { verifyingRecipe in\n        for ingredient in ingredients {\n            if !element.switches[ingredient].waitForExistence(timeout: 5) {\n                throw RecipeError.ingredientDoesNotExist(ingredient)\n            }\n        }\n    }\n}\n\npublic enum RecipeError : Error, CustomStringConvertible {\n    case ingredientDoesNotExist(String)\n\n    public var description : String {\n        switch self {\n        case .ingredientDoesNotExist(let ingredient):\n            return \"\\(ingredient) does not exist in the Ingredients View.)\"\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "13:41",
+      "title": "Use XCTContext.runActivity()",
+      "language": "swift",
+      "code": "public func verify(ingredients: [String]) throws {\n    try XCTContext.runActivity(named: \"Verifying \\(ingredients) exists in the Recipe screen.\")\n    { verifyingRecipe in\n        for ingredient in ingredients {\n            if !element.switches[ingredient].waitForExistence(timeout: 5) {\n                throw RecipeError.ingredientDoesNotExist(ingredient)\n            }\n        }\n    }"
+    },
+    {
+      "timestamp": "14:02",
+      "title": "Add attachments to the result bundle",
+      "language": "swift",
+      "code": "public func verify(ingredients: [String]) throws {\n    try XCTContext.runActivity(named: \"Verifying \\(ingredients) exists in the Recipe screen.\")\n    { verifyingRecipe in\n        for ingredient in ingredients {\n            if !element.switches[ingredient].waitForExistence(timeout: 5) {\n                let attachment = XCTAttachment(string: element.debugDescription)\n                verifyingRecipe.add(attachment)\n                 throw RecipeError.ingredientDoesNotExist(ingredient)\n            }\n        }\n    }"
+    },
+    {
+      "timestamp": "14:50",
+      "title": "Use XCTSkip",
+      "language": "swift",
+      "code": "let debuggingTests = false\n\nfunc testSelectSmoothie() throws {\n    try XCTSkipUnless(debuggingTests == true, \"This test is not yet implemented.\")\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10091/2/B1C6A6C1-C50B-41C3-826B-AE16864B2245/wwdc2020_10091_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10091/2/B1C6A6C1-C50B-41C3-826B-AE16864B2245/wwdc2020_10091_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "110361",
+      "year": "2022",
+      "title": "Author fast and reliable tests for Xcode Cloud",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110361"
+    },
+    {
+      "id": "10142",
+      "year": "2020",
+      "title": "Build scalable enterprise app suites",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10142"
+    },
+    {
+      "id": "10221",
+      "year": "2020",
+      "title": "Get your test results faster",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10221"
+    },
+    {
+      "id": "10220",
+      "year": "2020",
+      "title": "Handle interruptions and alerts in UI tests",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10220"
+    },
+    {
+      "id": "10687",
+      "year": "2020",
+      "title": "Triage test failures with XCTIssue",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10687"
+    },
+    {
+      "id": "10164",
+      "year": "2020",
+      "title": "XCTSkip your tests",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10164"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:15:37.107Z"
+}

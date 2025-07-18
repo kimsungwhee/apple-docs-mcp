@@ -1,0 +1,112 @@
+{
+  "id": "10095",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10095/",
+  "title": "The Push Notifications primer",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "System Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nHi. My name is Elliot Garner, and in this video, I'm going to be discussing push notifications. Let's begin with an overview of push notifications, what they are and why you might use them. Then, I will be discussing how you can add them to your application.\n\nPush notifications allow applications to be engaging and interactive. They provide you the ability to deliver updates to your application in real time.\n\nThis allows for a more dynamic experience when it comes to updating your application. So, what exactly are the advantages to adding push notifications to your application? First, they do not require your application to be in the foreground.\n\nPush notifications are delivered to your application regardless of the app state and, if necessary, your application will be launched.\n\nPush notifications are power-efficient and are a great way to engage with your customers. There are two types of push notifications: Alert notifications and background notifications. Alert notifications allow you to deliver visible alerts that can be interacted with in ways that your app can customize.\n\nBackground notifications allow your application to receive runtime while it is not in the foreground in order to keep your content up-to-date. Now, let's talk about alert pushes first.\n\nAlert pushes allow you to deliver a visible alert to give an update about your application. This alert should be used to inform about new information that can be interacted with. This alert does not require your application to be running and will be displayed regardless of app state. And, most importantly, it's entirely customizable. How the alert looks, and its interact-ability, is up to you.\n\nLet's look at how you would begin setting up your application for alert notifications. The first thing you need to do is register for remote notifications.\n\nThis will register the device for Apple Push Notification system, or APNs, and will return a device token to your application.\n\nThis token is used to identify the device and lets you target it for notifications.\n\nNext, you will need to declare your AppDelegate a UNUserNotificationCenterDelegate. Once you have done that, you will assign your AppDelegate as a delegate of the Notification Center. This will let your application be notified when your alert gets opened. Once you have called registerForRemoteNotifications, you will receive a callback on one of these two methods. If you failed to get a token for the device, didFailToRegisterFor RemoteNotificationsWithError will be called with the error describing why registration failed.\n\nIf you succeeded in getting a token, you need to send that token to your back end push server so you can deliver notifications to this device. Let's take a look at an example of that. The device token is delivered to your application as a data object. So, in order to send it to your server, it needs to be converted into a string.\n\nYou can do that by separating the data into its components, converting those components into a hexadecimal string, and then joining them back together into a single string.\n\nYou then append that string to your URLQuery to make your fully qualified endpoint.\n\nThen, you perform a URLSession to send that token to your server to register it in your database.\n\nLastly, before the device can receive any notifications, you need to ask for permissions for your application to display alerts. Calling requestAuthorization results in a prompt being displayed asking if your application can display alerts.\n\nThe result of that decision will be passed to the completionHandler and is set in device settings. Any successive calls to this method will return the status in device settings and will not result in a prompt. As you can see, this function is asking for permissions to display an alert, play a sound, and present a badge on the application icon.\n\nOnly request authorization in response to an action when there is context. You are much more likely to get permissions with this context. Before discussing how to handle a notification payload, let's look at an example payload.\n\nLet's say that you're building an application for a restaurant that wants to be able to alert users whenever there is a new special.\n\nAs you can see, this alert is telling us that the Avocado Bacon Burger is now on sale.\n\nLet's step through this payload piece by piece to make sure that it's understood. First is the aps dictionary. This aps dictionary tells the device how to render the notification. Inside of the aps dictionary is the alert dictionary. This tells the system what text to use for the notification.\n\nInside of that are the title and body fields. The title field is a short string describing the purpose of the notification. This needs to be short and easy to understand.\n\nThe body field is the full descriptive text of the alert message. Next is the sound field. This field is optional and should be included when you want the device to play a sound when the alert is received. If you wanna use the default sound, simply use default like this. However, you can also provide custom sounds for your application. Next is the badge field. This is an optional field which is used to modify the badge of your app icon.\n\nThis is an absolute value which will be displayed on the app icon.\n\nThis value can be modified programmatically, so once the alert has been opened, set this value to zero when handling the notification.\n\nOutside of the aps field, you have any custom data that you might wanna provide alongside the notification. Here, it's telling the application what the special is for today, and how much it costs.\n\nNow that we know what our payload looks like, let's examine how to handle receiving a notification.\n\nThis method is the UNUser NotificationCenterDelegate method that is called whenever your notification is opened. This method has a completionHandler that must be called before returning from the function. The payload that was delivered to the application can be extracted from the userInfo property of the notification's content. Once you have the payload, parse the data from the dictionary representation of the JSON.\n\nIf the data isn't there as is expected, call the completionHandler before returning. This lets the system know that you have finished handling the opening of the notification. Once you have the data, you can perform any updates necessary to your application.\n\nYou should be opening the part of your application relevant to the alert. In the example of the restaurant, when the alert is tapped, the item is added to the cart and the cart is displayed.\n\nOnce you're done, call the completionHandler to tell the system that you finished. And that's it. That's all that you need to do to set up your application to handle and receive alert notifications.\n\nNow that we've examined implementing alert pushes, let's discuss background pushes and how you can use them in your application. Background pushes are similar to alert pushes but there are some crucial differences that are important to remember.\n\nBackground notifications allow your application to fetch data from the background upon receiving push notifications.\n\nThese should be used to keep your application up-to-date even if the application isn't running. The system will launch your application and give you necessary runtime in order to perform your background update. However, there are some limitations. The system limits applications to so many background operations a day, and background updates will not be performed if the device is under certain constraints. For example, if the device is in a low battery state.\n\nSo, what do you need to do in order to set up your application to register for and handle receiving background pushes? Like with alert pushes, you need to register your application for remote notifications in order to obtain a device token for your application.\n\nHowever, unlike alert pushes, you do not need to make your application a UNUserNotificationCenterDelegate or assign it to the UNUserNotificationCenter. That's because the UNUserNotificationCenterDelegate is only used when handling alert notifications. And since background notifications are all that's being implemented here, it's unnecessary.\n\nBecause registerForRemoteNotifications was called, you still need to handle receiving a device token, and you still need to send that device to your push server for your own registration. This is exactly the same as what needs to be done for alert notifications. Now, let's examine the payload for a background notification. As you can see, background notification payloads are much more simple than alert notifications. The only field required for background notifications is the content-available field inside of the aps dictionary.\n\nThis field tells the system that this is a background notification and that your application should be launched to perform your updates. Just like alert notifications, the outside of the aps dictionary can be used for custom data. Now, let's look at how you would handle a background push.\n\nWhen the device receives any remote notification, didReceiveRemoteNotification is called.\n\nUse this method to handle your background notification.\n\nThis function also has a completionHandler. However, unlike the completionHandler when handling alert notifications, this completionHandler has one parameter.\n\nThis parameter is an enum which tells the system whether your background update failed... received no data... or received new data.\n\nThis allows the system to be smart about when to launch your application in the future.\n\nSo, in the case of the restaurant application, background notifications are being used to fetch the menu every day in order to make sure its content is up-to-date.\n\nIf the URL for the current version of the menu fails to be made, call the completionHandler and tell it the background update failed.\n\nOnce the URL is created, a URLSession needs to be created in order to fetch the data for today's menu.\n\nIf no data was received, call the completionHandler and tell it that the background update finished successfully with no data.\n\nOtherwise, now that the updated menu has been fetched, the application can use that data to update its contents. And once that has been finished, the completionHandler can be called to tell the system that the background update has succeeded and retrieved new data.\n\nAnd that's all it takes to get your application to handle background notifications.\n\nNow that you know what push notifications are, how they can be used, and how to implement them, it should be no problem to add them to your application.\n\nAll that you need to do is enable push notifications in the developer portal and follow these steps to add push notifications to your application.\n\nDownload the sample app. It has all of the codes shown in this video. Look through it, and use it as a jumping-off point for adding notifications to your apps. Once you have done these things, you are well on your way to creating an enriched experience for your applications. Thank you.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:02",
+      "title": "Registering for notifications",
+      "language": "swift",
+      "code": "class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate {\n\n    func application(_ application: UIApplication,\n                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {\n        UIApplication.shared.registerForRemoteNotifications()\n        UNUserNotificationCenter.current().delegate = self\n        return true\n    }"
+    },
+    {
+      "timestamp": "2:36",
+      "title": "UIApplicationDelegate callbacks",
+      "language": "swift",
+      "code": "func application(_ application: UIApplication,\n                   didFailToRegisterForRemoteNotificationsWithError error: Error) {\n    // The token is not currently available.\n    print(\"Remote notification is unavailable: \\(error.localizedDescription)\")\n}\n\nfunc application(_ application: UIApplication,\n                   didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {\n     // Forward the token to your provider, using a custom method.\n     self.forwardTokenToServer(token: deviceToken)\n}"
+    },
+    {
+      "timestamp": "3:05",
+      "title": "Forward token to server",
+      "language": "swift",
+      "code": "func forwardTokenToServer(token: Data) {\n    let tokenComponents = token.map { data in String(format: \"%02.2hhx\", data) }\n    let deviceTokenString = tokenComponents.joined()\n    let queryItems = [URLQueryItem(name: \"deviceToken\", value: deviceTokenString)]\n    var urlComps = URLComponents(string: \"www.example.com/register\")!\n    urlComps.queryItems = queryItems\n    guard let url = urlComps.url else {\n        return\n    }\n\n    let task = URLSession.shared.dataTask(with: url) { data, response, error in\n        // Handle data\n    }\n\n    task.resume()\n}"
+    },
+    {
+      "timestamp": "3:47",
+      "title": "Request authorization",
+      "language": "swift",
+      "code": "@IBAction func subscribeToNotifications(_ sender: Any) {\n    let userNotificationCenter = UNUserNotificationCenter.current()\n    userNotificationCenter.requestAuthorization(options: [.alert, .sound, .badge]) { (granted, error) in\n        print(\"Permission granted: \\(granted)\")\n    }\n}"
+    },
+    {
+      "timestamp": "4:43",
+      "title": "Payload JSON",
+      "language": "swift",
+      "code": "{\n    \"aps\" : {\n       \"alert\" : {\n            \"title\" : \"Check out our new special!\",\n            \"body\" : \"Avocado Bacon Burger on sale\"\n        },\n        \"sound\" : \"default\",\n        \"badge\" : 1,\n   },\n    \"special\" : \"avocado_bacon_burger\",\n    \"price\" : \"9.99\"\n}"
+    },
+    {
+      "timestamp": "6:11",
+      "title": "didReceive response",
+      "language": "swift",
+      "code": "func userNotificationCenter(_ center: UNUserNotificationCenter,\n                            didReceive response: UNNotificationResponse,\n                            withCompletionHandler completionHandler: @escaping () -> Void) {\n    let userInfo = response.notification.request.content.userInfo\n    guard let specialName = userInfo[\"special\"] as? String,\n          let specialPriceString = userInfo[\"price\"] as? String,\n          let specialPrice = Float(specialPriceString) else {\n        // Always call the completion handler when done.\n        completionHandler()\n        return\n    }\n\n    let item = Item(name: specialName, price: specialPrice)\n\t\taddItemToCart(item)\n  \tshowCartViewController()\n    completionHandler()\n }"
+    },
+    {
+      "timestamp": "8:16",
+      "title": "Register for remote notifications (Background)",
+      "language": "swift",
+      "code": "class AppDelegate: UIResponder, UIApplicationDelegate {\n\n    func application(_ application: UIApplication,\n                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {\n       UIApplication.shared.registerForRemoteNotifications()\n       return true\n    }"
+    },
+    {
+      "timestamp": "9:05",
+      "title": "Background Notification Payload",
+      "language": "swift",
+      "code": "{\n    \"aps\" : {\n       \"content-available\" : 1\n    },\n    \"myCustomKey\" : \"myCustomData\"\n}"
+    },
+    {
+      "timestamp": "9:33",
+      "title": "didReceiveRemoteNotification",
+      "language": "swift",
+      "code": "func application(_ application: UIApplication,\n                     didReceiveRemoteNotification userInfo: [AnyHashable : Any],\n                     fetchCompletionHandler completionHandler:\n                     @escaping (UIBackgroundFetchResult) -> Void) {\n    guard let url = URL(string: \"www.example.com/todays-menu\") else {\n        completionHandler(.failed)\n        return\n    }\n\n    let task = URLSession.shared.dataTask(with: url) { data, response, error in\n        guard let data = data else {\n            completionHandler(.noData)\n            return\n        }\n  \n        updateMenu(withData: data)\n        completionHandler(.newData)\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Implementing Alert Push Notifications",
+        "url": "https://developer.apple.com/documentation/UserNotifications/implementing-alert-push-notifications"
+      },
+      {
+        "title": "Implementing Background Push Notifications",
+        "url": "https://developer.apple.com/documentation/UserNotifications/implementing-background-push-notifications"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10095/3/ED74BA77-B586-4360-B7A1-ABA71109064A/wwdc2020_10095_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10095/3/ED74BA77-B586-4360-B7A1-ABA71109064A/wwdc2020_10095_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10025",
+      "year": "2023",
+      "title": "Meet Push Notifications Console",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10025"
+    }
+  ],
+  "extractedAt": "2025-07-18T11:03:37.564Z"
+}

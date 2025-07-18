@@ -324,7 +324,17 @@ export async function fetchAppleDocJson(
 
     return result;
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
+    let errorMessage: string;
+    
+    // Handle AppError objects from http-client
+    if (error && typeof error === 'object' && 'message' in error) {
+      errorMessage = (error as any).message;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    } else {
+      errorMessage = String(error);
+    }
+    
     logger.error('Error fetching Apple doc JSON:', errorMessage);
 
     return {

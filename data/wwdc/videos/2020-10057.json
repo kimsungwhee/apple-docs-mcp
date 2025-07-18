@@ -1,0 +1,117 @@
+{
+  "id": "10057",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10057/",
+  "title": "Identify trends with the Power and Performance API",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Store, Distribution & Marketing",
+    "Developer Tools"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nHello, my name is Ashish, and I'm a performance tools engineer at Apple. Yeounoh will join me later, and we are very excited to talk to you about the new App Store Connect API for obtaining power and performance data. The amazing work done by developers in building great applications is an essential part of our users' overall software experience. And two of the most important aspects of ensuring a great user experience are optimizing the power and performance impact of your applications. At Apple, we are deeply committed towards providing you actionable tools to help you easily identify the areas to focus on. Last year at WWDC 2019, we first introduced a new feature within Xcode 11 for out-of-the-box power and performance analytics. The Xcode Organizer allows you to view aggregated power, performance and I/O metrics to help identify areas for improvements in your applications. Since that release, we have received many requests to be able to access the same Xcode data programmatically. One of the common requests we heard was the ability to consume this data in your own analytics and monitoring pipelines. So, we are very excited to announce the new Power and Performance API which is part of the App Store Connect API being released later this year. We highly recommend you to check out the \"Expanding Automation with the App Store Connect API\" video to learn more about App Store Connect. The new API enables you to programmatically access the Xcode metrics and diagnostics data, allowing you to consume this data yourself. We've also provided a new built-in smart insights feature to identify your application's power and performance hotspots without any additional effort. As people use your application, we collect the power and performance data from consented devices. This data is then aggregated on our servers and made available to you through the App Store Connect API. You can use data from this new API for building highly customized analytics pipelines, as well as automated monitoring of your app's performance through dashboards. During the rest of this talk, we'll first go through a brief overview of this new API and the data types vended by it. Next, we'll walk through a few examples of accessing the same aggregated data that drives the power and performance analytics in Xcode, as well as the new smart insights. Finally, we'll present a live demo to extract aggregated metrics, insights and diagnostics for a sample application and wrap up with a brief summary.\n\nNow, let's walk through an overview of this API. There are four new REST API resources available this year. Let's take a look at each resource.\n\nThe first API resource uses your application's ID to provide aggregated metrics and insights for your app's most recent versions. The smart insights help identify your application's hotspots. We'll go into more details of this data in the next section.\n\nThe second API resource allows you to download metrics for a specific app version. To get this data, you'll need to provide the build ID provided by App Store Connect API for a specific application version.\n\nNext, you can access top diagnostic signatures for a specific app version. These signatures are used to group common problems. We also recommend you check out this year's talk on Xcode Organizer, which goes into details about accessing the same diagnostics data through Xcode. Finally, you can download logs corresponding to diagnostic signatures for your root cause analysis. This requires the diagnostic signature ID as part of the GET request. To summarize the new API, you can incorporate these four endpoints into your analytics workflows to automatically track your application's footprint using aggregated metrics, smart insights and diagnostics data. Now, let's walk through a few examples to get data and insights through these API endpoints, starting with aggregated metrics data. The power and performance metrics data for an application is aggregated by each unique metric and device type. These metrics are the same as those available in Xcode Organizer today, such as battery drain, launch and disk writes. The new API currently supports vending this data for all iPhone and iPad device groups.\n\nAs discussed earlier, you need to make the following GET request with your application ID to receive both aggregated metrics and insights for your recent app versions.\n\nThis returns a structured JSON string with two major sections: aggregated metrics, which is represented as productData, and insights. Let's take a look at the sample metrics JSON.\n\nFor each metric, such as hangRate, the JSON structure contains some metadata, such as unit. And for each unique device and metric combination, the JSON contains the 50th and 90th percentile values. Finally, the metric summary is generated for up to eight most recent versions of the application. As this example JSON indicates, you can use this data to build highly customized power and performance analytics across different metrics, devices and percentiles. But we didn't stop here. Our team went one step further to also help you quickly identify your application's power and performance hotspots without the need for custom analytics. We are very excited to bring you the new smart insights feature. These smart insights use the earlier metrics data to automatically flag major hotspots in your application. This is especially helpful if you want to track top application regressions in the field without any additional effort. Currently, these insights flag regressions and uptick in metric values. The insights JSON response contains three sections: the versions analyzed for the insight, a summary of the regression, and a list of impacted devices and percentiles.\n\nLet's walk through the details of a sample insight. The highlighted section indicates the metric type and summary of the identified regression. You can use these summary strings to track top regressions for your application. As shown here, the application's launch time is regressed only for the 90th percentile iPhone users. Such insights can help you take more focused actions to improve your app's performance. The population section contains a detailed structure list of impacted percentiles and devices. And the third part contains the metadata, such as the latest application version, and the list of previous application versions used for comparison. In the final part of this section, let's take a look at diagnostics data for root cause analysis. Over to Yeounoh now to continue the rest of the talk. Thank you, Ashish. Hi, I'm Yeounoh, a performance tools engineer at Apple. In addition to metrics and smart insights, we also provide diagnostics data to help you deep-dive into regressions. There are two parts to power and performance diagnostics. First, we use diagnostic signatures to group similar problems together. For instance, similar disk writes exceptions are aggregated to generate disk writes signatures. Using diagnostic signatures, we can do root cause analysis by problem group. The API returns most prevalent top signatures for your app version, and given a top signature and its ID, you can get related diagnostic logs with more details. To receive top signatures for your app version, you need to make following GET request with build ID from App Store Connect API. This year, you can access disk writes diagnosticSignatures from both Xcode and the API. The response contains a list of top signatures in data, and each signature contains a unique signature ID and attributes. From these attributes, you can tell that this is an example of a disk writes signature, and the signature string is the call frame that represents the call stack in Xcode UI. And weight is the normalized signature weight which indicates the relative importance of this signature. And it also comes with a URL to get diagnostic logs. As you can see, this URL already contains the signature ID. The second part of power and performance diagnostics is diagnostic log. It contains anonymized diagnostic details from individual devices. And this includes metadata information, such as platform, OS version and device type. And also, the log contains function call stack trees, which can be extremely helpful to understand what is causing the power and performance hotspots. The diagnostic call stack JSON structure is also shared with MetricKit. So check out this year's MetricKit talk to learn more about on-device power and performance diagnostics.\n\nGetting diagnostic logs requires the following GET request with a signature ID. This is the same kind of URL that we have seen from the diagnosticSignature response. The response contains a list of diagnosticLogs, and each log contains diagnosticMetadata with information like deviceType, osVersion and buildVersion. In this example, the log is generated for a disk writes exception event. The log also comes with callStacks. Each callStack frame contains rawFrame and parsed frame information, and a list of subFrames. Following the subFrames from the root frame, you can traverse the entire call stack tree structure. Now, let's jump into a demo. In this demo, you will see how to access the API yourself, as well as using a sample script that will be released with the API later this year.\n\nFor the purpose of this demo, let's assume that I'm a developer for an app called MealPlanner. This app helps me plan meals and save recipes. In the latest release, we introduced a new feature to save delicious photos with entries. And now, I can use Power and Performance API to make sure that app users don't experience any regression. To access the API, we first need to generate an API access token.\n\nI will run a script to generate the token using an App Store Connect API key.\n\nWith the token, I can access perfPowerMetrics resource with MealPlanner app ID.\n\nAs you can see in this response, we get insights, as well as productData, in the same format that we have seen during the talk.\n\nAnd productData contains a lot of aggregated metrics information.\n\nSo, let's go look at smart insights to see if we have any regression.\n\nTaking insights regression and its summary string, we see that there is a disk writes regression for the latest app version for 50th percentile users on all iPhones.\n\nTo further investigate this, let's get diagnostics logs and look at exception call stacks.\n\nFirst, I will request top diagnosticSignatures using the latest app version build ID.\n\nBy taking the top disk writes signature and its related URL...\n\nI will request diagnosticLogs for the signature.\n\nThe diagnosticLog response contains callStack information...\n\nand this call stack structure is efficient for machine processing.\n\nAnd for us to look at the original call stack, I've written a sample code to parse and pretty-print this stack information.\n\nThe sample script programmatically access the same diagnostic API resources. Hit Enter, we get the original call stack from the log.\n\nLooking at the call function frames from the bottom...\n\nI see that the new feature to add photos with the entries is causing heavy disk writes I/O.\n\nBy following the stack trace, I can go to the exact location in the source code to debug and optimize the implementation.\n\nThe sample codes to generate a token, as well as to get diagnostics data will be released with the API later this year. So, please check out the sample codes for a quick reference to API access. To summarize this demo, you can view and monitor aggregated metrics using the API, and use smart insights to identify power and performance regression.\n\nAnd finally, use diagnostics data to do root cause analysis of the problem.\n\nLet's recap what we have discussed today.\n\nWe introduced our new App Store Connect API for power and performance. With this new API, you can programmatically access the same metrics and diagnostics data as Xcode Organizer, and build customized data analytics and monitoring systems around power and performance metrics. We also introduced smart insights that can help you identify key trends and regression in metrics. We are very excited about this new API for you to continue building amazing apps. So, we kindly ask you to try it out\nand give us your feedback. Thank you.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:48",
+      "title": "Get metrics and insights for most recent app versions",
+      "language": "swift",
+      "code": "GET /v1/apps/{id}/perfPowerMetrics"
+    },
+    {
+      "timestamp": "8:19",
+      "title": "Get top diagnostic signatures for released app versions",
+      "language": "swift",
+      "code": "GET /v1/builds/{id}/diagnosticSignatures"
+    },
+    {
+      "timestamp": "9:42",
+      "title": "Get logs for a diagnostic signature",
+      "language": "swift",
+      "code": "GET /v1/diagnosticSignatures/{id}/logs"
+    },
+    {
+      "timestamp": "11:19",
+      "title": "Access perfPowerMetrics for an app",
+      "language": "swift",
+      "code": "curl -X GET -H \"Authorization: Bearer ${JWT}\" -H \"Accept: application/vnd.apple.xcode-metrics+json,application/json\" https://api.appstoreconnect.apple.com/v1/apps/${id}/perfPowerMetrics"
+    },
+    {
+      "timestamp": "12:23",
+      "title": "Access diagnosticSignatures for an app build",
+      "language": "swift",
+      "code": "curl -X GET -H \"Authorization: Bearer ${JWT}\" -H \"Accept: application/vnd.apple.xcode-metrics+json,application/json\" https://api.appstoreconnect.apple.com/v1/builds/${id}/diagnosticSignatures"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10057/3/138E68BD-E9B2-4980-8CF7-738D58F9959D/wwdc2020_10057_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10057/3/138E68BD-E9B2-4980-8CF7-738D58F9959D/wwdc2020_10057_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10082",
+      "year": "2022",
+      "title": "Track down hangs with Xcode and on-device detection",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10082"
+    },
+    {
+      "id": "10087",
+      "year": "2021",
+      "title": "Diagnose Power and Performance regressions in your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10087"
+    },
+    {
+      "id": "10181",
+      "year": "2021",
+      "title": "Ultimate application performance survival guide",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10181"
+    },
+    {
+      "id": "10076",
+      "year": "2020",
+      "title": "Diagnose performance issues with the Xcode Organizer",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10076"
+    },
+    {
+      "id": "10077",
+      "year": "2020",
+      "title": "Eliminate animation hitches with XCTest",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10077"
+    },
+    {
+      "id": "10004",
+      "year": "2020",
+      "title": "Expanding automation with the App Store Connect API",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10004"
+    },
+    {
+      "id": "10081",
+      "year": "2020",
+      "title": "What's new in MetricKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10081"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:20:40.243Z"
+}

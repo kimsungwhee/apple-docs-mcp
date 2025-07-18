@@ -1,0 +1,166 @@
+{
+  "id": "10028",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10028/",
+  "title": "Meet WidgetKit",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nHi there. My name is Nahir, and I'm a manager on our iOS System Experience team, and I'll later be joined by my colleague Neil. It's my pleasure to welcome you to \"Meet WidgetKit.\" In iOS 14, we have a dramatic, new Home Screen experience. One that is much more dynamic and personalized with a focus on widgets. Our new widgets are designed to be bold, highly glanceable and be perfectly at home, not just on the iPhone Home Screen...\n\nbut also our refreshed Today View...\n\npinned to your iPad Home Screen and, finally, in the gorgeous new Notification Center on MacOS Big Sur.\n\nNow, before I dive deep into the API, let's actually talk about what makes a great widget experience. When the team started to think about that, we quickly came to three main goals. A great widget is glanceable, it's relevant and it's personalized.\n\nWhat do we mean by that a great widget is glanceable? As we'll dive into later, our new widgets can come in many sizes. Especially at the smallest widget size, you only have the space of around four Home Screen icons, so you really want to make that space count. People only spend a few moments on their Home Screen before they springboard off to somewhere else. They shouldn't need to interact with or do anything more than take a quick peek to get the most value out of your widget.\n\nTake a look at some examples of widgets in the small sizes. You don't need to tap any buttons or even spend time trying to figure out a complicated UI. The content is the focus.\n\nThis is very important, widgets are not mini-apps. Think of this as more projecting content from your app onto the Home Screen rather than full mini-apps filled with tiny little buttons. This can sometimes be tricky to figure out. Luckily, we have a great session from our design team available to help you think through what parts of your app would make really compelling widget experiences.\n\nHaving a glanceable widget is only one part of the story. Having those widgets be relevant is just as important. For example, in the morning getting ready, I care most about the weather, but then, throughout the day, maybe Reminders so I don't forget any of my to-dos, and then, at the end of the day, music, so I can annoy my neighbors with some loud party music. I'm kidding. Especially on our mobile platforms, where space is at a premium, we really wanted a way to make sure the right widget is up and available as soon as you need.\n\nThis is where Smart Stacks comes in.\n\nSmart Stacks are a collection of widgets that will automatically rotate to show the right widget at the top. But you can also swipe through. It's super fun. We use on-device intelligence to help show the right thing at the top of the Stack. But as a developer, you can help drive this using Siri Shortcuts donations, the system that we've been building upon in previous years. There's also a specific WidgetKit API to help the system figure out when your widget will be more relevant or when something else might be.\n\nThis is a really deep topic that is broader than just widgets, and we have an entire session dedicated to this topic available that I highly recommend you go check out.\n\nA great widget should let you personalize it. Let's take a look at the Weather widget. Yes, it's in Celsius. I'm Canadian, and we use metric.\n\nRight off the bat, you can have it in three different sizes, small, medium or large.\n\nYou're not required to support all the sizes as some experiences don't make sense in all of them, but I recommend supporting as many sizes as possible.\n\nLet's customize the Weather widget further. Just tapping on a widget, while in edit mode, flips around for quick configuration. All the configuration options are built using Intents, which you may be familiar with from Shortcuts. Choosing a city is a relatively simple example, but this is a powerful system full of possibilities. Now, the awesome thing about WidgetKit is that we can generate this entire Configuration UI from your Intent completely automatically with no additional work from you. It's pretty cool. So, to recap, the goals for a great widget experience is one that is glanceable, relevant and personalized.\n\nWith these goals in mind, we designed WidgetKit. So, let's dive in.\n\nFirst of all, it was a goal from the very beginning for widgets to be multi-platform, and to make it as easy as possible for developers to have their learnings apply across iOS, iPadOS and macOS, so widget's user interface and WidgetKit are built entirely with SwiftUI. SwiftUI also makes it super easy to support features like Dynamic Type and Dark Mode nearly automatically.\n\nNext, there are some strong implications with having widgets on the main Home Screen. The average person goes to the Home Screen more than 90 times a day and only spends a few moments there.\n\nThe last thing you want to see is your Home Screen full of loading spinners. When we designed complications on watchOS, we had very similar goals of having things be ready and immediately glanceable, so we took some inspiration from how they were built.\n\nWhat that means is WidgetKit extensions are background extensions that return a series of view hierarchies in a timeline.\n\nUsing the declarative nature of SwiftUI, we can package up these views in this timeline and then send them over to the Home Screen, which will present them at the correct time according to the timeline. This avoids the entire launcher process, load and then present to view. They are ready to go and immediately glanceable.\n\nThe fact that we have your views ready beforehand means we can also reuse them in other areas of the system. For example, we can have this super-fun experience to add widgets from the Widget Gallery, where people who use your app can get a preview of exactly what your widget will look like right on the Home Screen.\n\nYou can refresh these timelines from your main app. So, for example, something changes in your app, your widget can be up-to-date.\n\nOr you can request schedule updates right from your extension.\n\nSo, as an example, Calendar's widget knows all my events for the day and when they occur. The extension can use this information to render the right views for when my next meeting is happening, when I'm in that meeting and the next one after.\n\nYou know what? I think Neil and I should skip coffee and go celebrate at my favorite steak place in the city, so I go into Calendar and update the event.\n\nCalendar will then use API to reload the timeline. What we mean by that is that the extension wakes up and returns a new timeline with all the new updates. Now that you have some idea of how WidgetKit works, let me hand it off to Neil who'll dive deeper into actually building a widget. Neil.\n\nThanks, Nahir. Hi, everyone. My name is Neil Desai, and I'm the WidgetKit engineering manager. I am so excited to talk about how to create a great widget today, and to do so, I wanna talk about four major things. We're gonna talk about how to define a widget and learning about how to create a glanceable experience. We're also gonna discuss the engine of our widget: our views, timelines and reloads, as well as the personalization and intelligence aspects of widgets. Widgets are simple yet incredibly powerful. And we're gonna talk about all of the tools at your disposal. So, first, let's learn how to define a widget.\n\nTo define a widget, I wanna talk through a few different concepts. Those are: kind, configuration, supportedFamilies and placeholder.\n\nWhen we started this project, we talked a lot about the different kinds of widgets we wished to enable. We wanted a mechanism to allow a single extension to support multiple kinds of widgets.\n\nFor example, a single Stocks extension provides an experience like the Stocks overview widget. A great widget, which provides glanceable information about a few stocks, but also, that same extension powers the Stocks detail widget, which allows a user to show a single stock on their Home Screen or on Notification Center on macOS. This is all done, like Nahir had mentioned, through the use of SwiftUI and a multi-platform extension. WidgetKit extensions can support SwiftUI, AppKit and Catalyst-based macOS apps.\n\nKinds of widgets can also express which type of configuration they support. One is a StaticConfiguration, and the other is an IntentConfiguration.\n\nThe Fitness widget doesn't really make sense for configuration. The widget doesn't need to allow the user to configure it in any way. The widget really is just, \"Hey, here's your activity for the day.\" And mine happens to not look so hot. So, I should get moving around, but I digress. Anyways... This widget has a StaticConfiguration.\n\nReminders, on the flip side, can be personalized for a particular list.\n\nThis widget uses an IntentConfiguration.\n\nA particular kind can also enable one or many supportedFamilies. By default, widgets support all family types. Weather's widget supports all families, and so I can enjoy all my temperatures in Fahrenheit with any family type, unlike Nahir's love of Celsius. And these families look great on iOS...\n\nand on macOS. The last key component of widget definition is our placeholder UI. Each kind of widget is required to provide a placeholder UI. Placeholder UI is the default content of your widget. It should be a representation of your widget kind, but nothing more than that. There should not be any user data in this UI.\n\nThe other important thing to note is this UI is retrieved only sparingly, and there are no guarantees on when that will occur.\n\nTypically we will only ask for a new placeholder UI on a device environment change. For example, if the dynamic type setting of the device changes.\n\nGreat placeholder UIs show representation of what your kind of widget is. I encourage you to think through the best possible UI for your widget.\n\nAh, code. All of those four key components boil down to this widget definition. Here we define a sample widget, which conforms to the widget protocol and we specify a kind. We return some widget configuration, which is composed of a few items and within there we specify a provider in our placeholder view.\n\nWe'll get to provider later, but, really, that's how we set up the engine of our widget.\n\nWe now know how to define our widget. Let's talk about how to create a glanceable experience. Weather is a great example of a glanceable widget. Same with Nike Run Club's widget and Calendar. All three show me useful information and invite me, as the user, to tap to launch the app and find out more information. The first aspect of creating a glanceable experience is creating StatelessUI, which SwiftUI is uniquely perfect for. These interactions on the Home Screen and on Notification Center are different. These widgets are not mini-apps. We do not support scrolling within the widget, interactive elements like switches and other system controls, nor videos or animated images. These glanceable UIs can allow your user to easily tap on the widget and deep link into your app.\n\nLet's take music as an example. Here's music in systemSmall. A user can tap on the most recently played album and deep link directly into that app. systemSmall has a single tap target. So the entire widget is a tap target meant to take the user directly into the app.\n\nMusic's widget also supports systemMedium. There's great content which shows me a bunch of different albums. Each album is an individual link, which can take you directly into that app.\n\nThe entire widget can be associated with a URL link using the widget URL API.\n\nIf you wanna create sub-links in systemMedium or systemLarge, then you can use the new link API in SwiftUI.\n\nWe've defined our widget and know how to create a glanceable experience. Let's now chat about the real guts of your widget experience: views, timelines and reloads. Really, there are three types of UI experiences you need to think about: Placeholder UI, which we discussed earlier, and then there is snapshot and timeline.\n\nSnapshot is where the system needs to quickly display a single entry, so the expectation is for your extension to quickly return a view as fast as possible, because when you do so, you'll see your real widget in the gorgeous Widget Gallery on iOS. This isn't a screenshot or image we had to provide at design time. This is your real widget experience on iOS, iPadOS and macOS.\n\nIn most cases, your timeline's first entry and snapshot can be returned as the same entry. So what you see in the Widget Gallery is what you get when the user adds it to their device.\n\nAnd if we follow that thread, if a snapshot is just a single entry, then a series of multiple views to be displayed at the right time is just the timeline. Timelines are a combination of views and dates that are returned, which allow you to say at what time a particular view should be shown.\n\nAnd by returning a timeline is how we drive the widget experience. Timeline's returns should be for both dark and light mode. And I wanna pull back the curtain a little bit. When a WidgetKit extension returns an entry, we will take that information and serialize the view hierarchy to disk.\n\nThis means we just-in-time render each individual entry. This enables the system to power numerous widgets at the same time with numerous timelines. I can't put this lightly. This is some seriously cool tech. Timelines should typically be returned for days' worth of content. There are times when your widget needs to return more up-to-date information. We do this through the concept of what we call reloads.\n\nReloads are where the system will wake up your extension and ask for a new timeline for each widget placed on the device.\n\nReloads help ensure that your content is always up-to-date for your user. I don't know about you, but I always find code to be the easiest way to learn about a new topic. So, let's dive in. Here's the TimelineProvider protocol. We have a TimelineEntry, which consists mainly of a date, a context, which provides environment information, and the context for which the system is asking you for entries.\n\nThen, in the snapshot function, the system asks for a single entry. And in the timeline function, the system asks for a series of entries.\n\nHere's an example of how I'd conform to the TimelineProvider protocol. I would create a provider. In snapshot, I would create a single entry and return it. In timeline, I would return an array of entries and attach a reload policy. Baked into each timeline is a reload policy. It's where you can tell the system when to ask for the next timeline.\n\nYou can ask for a reload at the end of the timeline you provide, after a particular date, or you can explicitly tell the system to not reload your timeline.\n\nFor example, maybe your widget needs user data first before returning a compelling timeline. The system will take into account your reload policy and determine the best time to reload your widget.\n\nWidgets viewed frequently will receive more reloads. Widgets viewed infrequently will receive fewer reloads. The system will also force reloads for whenever a device environment changes. For example, if a significant time change occurs.\n\nThe system will determine the best time to reload your widget, but there are also other events, which may need you to ask the system for a reload from your app.\n\nFor example, your app may receive a background notification. Or a user may make a change in the app itself.\n\nWhen receiving a background notification, you can use WidgetKit API via WidgetCenter to reload your timeline, which will wake your extension.\n\nAnd if your user makes a relevant change in your foreground app, you may also reload your timeline.\n\nBe judicious with your foreground app reloads. Only reload your widget when a relevant change in the app has occurred, which should be reflected in your widget.\n\nYou can use the WidgetCenter APIs from within your app process or extension to reload your timeline. You have the option to reload timelines per kind or reload all timelines, and you can retrieve the list of current configurations. There are also times when you need to query your server for more information. You can use background URLSessions to kick off a task and your payload will be delivered to your extension via the onBackgroundURLSessionEvents modifier.\n\nYou should also be cognizant of your networking usage. Make sure and batch your requests to your server and only use as much networking as you need.\n\nReloads when your app processor widget is run in the background are budgeted by the system. Be efficient with how much processing and networking your widget requires. Widgets are not in every second operation. Widgets are not about creating a live running experience on the Home Screen.\n\nThere are many ways to drive reloads to help keep your widget up to date. Think through the right experience for your kind of widget. And keep in mind how to be efficient with the different ways to reload your timeline.\n\nLastly, let's talk about how to enable your users to personalize your widget, if it makes sense, and help inform the intelligence in the Stack.\n\nPersonalization and intelligence are driven by two major concepts. Intents, which are used as a mechanism to allow a user to configure a widget, and relevance, which allows you, the developer, to inform the intelligence in the Stack. Intents are all powered by the Intents framework. Intents contain a set of parameters, which are questions to ask the user.\n\nFor example, Weather's configuration question is the location for which to return a forecast.\n\nThe Intents framework is already used for integrating with Siri and Shortcuts. And in iOS 14, it is now used to power widget configuration.\n\nLet's look at a concrete example. The Stocks single symbol widget asks someone which stock to show. When the user tries to configure the widget, Intents can help answer this question by allowing Stocks to return the same list of stocks that are presented in the Stocks app. This is really powerful and helps give your app the tools needed to provide a great configuration experience for your user.\n\nSometimes, though, that may not be enough. What if someone wanted to show a Stock that didn't already exist in the main app? Well, thanks to the power of Intents, we can drive this type of experience using the Intents dynamic options capability. So, the user can search in the configuration UI and the system will fire up the Stocks Intents Extension which can then return a series of answers in the form of stock symbols. And new in iOS 14, Intents now support in-app Intent handling where your app can answer these questions.\n\nIf you want more information about in-app Intent handling, see the \"What's New in SiriKit and Shortcuts\" talk. Now, do you remember that widget we defined earlier? Here's how we change that to support Intents.\n\nNow, we specify an IntentConfiguration instead of a StaticConfiguration, and we specify an associated Intent.\n\nAlong the same lines, here's that previous TimelineProvider which now evolves into the provider conforming to the IntentTimelineProvider.\n\nYou will be passed in an Intent object, and based on the parameters in the Intent, you can generate a specific timeline.\n\nOne of the coolest features of widgets is not just having one widget, but multiple in a Stack. The system can intelligently rotate the most relevant widget, and your app and widget can help feed this intelligence. There are two primary ways to do so. When users perform actions in your app, your app can donate Shortcuts. If your widget is backed by the same INIntent, then your widget may be rotated to in the Stack when the user would have typically performed that action. If you want to know more information, I recommend checking out the \"Enable Widget Personalization and Intelligence\" talk. Your widget extension also has the ability to annotate timeline entries with relevance values via the TimelineEntryRelevance API. When the time is appropriate, and you feel your entry is the most relevant, then you may return a score and duration to inform the system to rotate to your particular widget. Score is a float value that you provide relative to all entries you have ever provided. Duration is a time interval for when that particular entry is relevant.\n\nI want to make sure and stress this point. This relevance value is relative to all entries you have ever provided. The system will take your relative values and all other widgets' values and determine the correct widget to rotate to in the Stack.\n\nWidgets are simple yet incredibly powerful and we've only scratched the surface.\n\nWidgets are not mini-apps, so think through a glanceable experience for your user and use timelines, the concept of reloads, and intelligence to create the perfect experience on iOS, iPadOS, and macOS.\n\nOn behalf of Nahir and myself, we hope you have a great WWDC. We can't wait to see what you'll build.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "11:01",
+      "title": "StaticConfiguration Widget definition",
+      "language": "swift",
+      "code": "@main\npublic struct SampleWidget: Widget {\n    private let kind: String = \"SampleWidget\"\n\n    public var body: some WidgetConfiguration {\n        StaticConfiguration(kind: kind,\n                            provider: Provider(),\n                            placeholder: PlaceholderView()) { entry in\n                                SampleWidgetEntryView(entry: entry)\n                            }\n        .configurationDisplayName(\"My Widget\")\n        .description(\"This is an example widget.\")\n    }\n}"
+    },
+    {
+      "timestamp": "15:51",
+      "title": "TimelineProvider example",
+      "language": "swift",
+      "code": "public struct Provider: TimelineProvider {\n\n    public func snapshot(with context: Context, \n                         completion: @escaping (SimpleEntry) -> ()) {\n        let entry = SimpleEntry(date: Date())\n        completion(entry)\n    }\n\n    public func timeline(with context: Context, \n                         completion: @escaping (Timeline<Entry>) -> ()) {\n        let entry = SimpleEntry(date: Date())\n        let timeline = Timeline(entries: [entry, entry], policy: .atEnd)\n        completion(timeline)\n    }\n}"
+    },
+    {
+      "timestamp": "20:45",
+      "title": "IntentConfiguration Widget definition",
+      "language": "swift",
+      "code": "@main\npublic struct SampleWidget: Widget {\n    private let kind: String = \"SampleWidget\"\n\n    public var body: some WidgetConfiguration {\n        IntentConfiguration(kind: kind,\n                    intent: ConfigurationIntent.self\n                            provider: Provider(),\n                            placeholder: PlaceholderView()) { entry in\n                                SampleWidgetEntryView(entry: entry)\n                            }\n        .configurationDisplayName(\"My Widget\")\n        .description(\"This is an example widget.\")\n    }\n}"
+    },
+    {
+      "timestamp": "20:54",
+      "title": "IntentTimelineProvider example",
+      "language": "swift",
+      "code": "public struct Provider: IntentTimelineProvider {\n\n    public func timeline(for configuration: ConfigurationIntent, with context: Context, \n                         completion: @escaping (Timeline<Entry>) -> ()) {\n        let entry = SimpleEntry(date: Date(), configuration: configuration)\n\n        // generate a timeline based on the values of the Intent\n\n       completion(timeline)\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Building Widgets Using WidgetKit and SwiftUI",
+        "url": "https://developer.apple.com/documentation/widgetkit/building_widgets_using_widgetkit_and_swiftui"
+      },
+      {
+        "title": "Creating a widget extension",
+        "url": "https://developer.apple.com/documentation/WidgetKit/Creating-a-Widget-Extension"
+      },
+      {
+        "title": "Human Interface Guidelines: Widgets",
+        "url": "https://developer.apple.com/design/human-interface-guidelines/widgets"
+      },
+      {
+        "title": "Keeping a widget up to date",
+        "url": "https://developer.apple.com/documentation/WidgetKit/Keeping-a-Widget-Up-To-Date"
+      },
+      {
+        "title": "WidgetKit",
+        "url": "https://developer.apple.com/documentation/WidgetKit"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10028/5/0329D737-A170-472B-97B9-BFD031C7CD41/wwdc2020_10028_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10028/5/0329D737-A170-472B-97B9-BFD031C7CD41/wwdc2020_10028_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10050",
+      "year": "2022",
+      "title": "Complications and widgets: Reloaded",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10050"
+    },
+    {
+      "id": "10051",
+      "year": "2022",
+      "title": "Go further with Complications in WidgetKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10051"
+    },
+    {
+      "id": "10048",
+      "year": "2021",
+      "title": "Principles of great widgets",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10048"
+    },
+    {
+      "id": "10194",
+      "year": "2020",
+      "title": "Add configuration and intelligence to your widgets",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10194"
+    },
+    {
+      "id": "10033",
+      "year": "2020",
+      "title": "Build SwiftUI views for widgets",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10033"
+    },
+    {
+      "id": "10103",
+      "year": "2020",
+      "title": "Design great widgets",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10103"
+    },
+    {
+      "id": "10660",
+      "year": "2020",
+      "title": "What's new in location",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10660"
+    },
+    {
+      "id": "10143",
+      "year": "2020",
+      "title": "What's new in Mac Catalyst",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10143"
+    },
+    {
+      "id": "10068",
+      "year": "2020",
+      "title": "What's new in SiriKit and Shortcuts",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10068"
+    },
+    {
+      "id": "10041",
+      "year": "2020",
+      "title": "What's new in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10041"
+    },
+    {
+      "id": "10034",
+      "year": "2020",
+      "title": "Widgets Code-along, part 1: The adventure begins",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10034"
+    },
+    {
+      "id": "10035",
+      "year": "2020",
+      "title": "Widgets Code-along, part 2: Alternate timelines",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10035"
+    },
+    {
+      "id": "10036",
+      "year": "2020",
+      "title": "Widgets Code-along, part 3: Advancing timelines",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10036"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:17:20.913Z"
+}

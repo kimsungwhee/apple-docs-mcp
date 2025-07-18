@@ -61,8 +61,9 @@ describe('Tool Handlers', () => {
 
   describe('handleToolCall', () => {
     it('should throw error for unknown tool', async () => {
-      await expect(handleToolCall('unknown_tool', {}, mockServer))
-        .rejects.toThrow('Unknown tool: unknown_tool');
+      const result = await handleToolCall('unknown_tool', {}, mockServer);
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('Unknown tool: unknown_tool');
     });
 
     it('should handle search_apple_docs tool', async () => {
@@ -101,8 +102,9 @@ describe('Tool Handlers', () => {
         throw new Error('Validation failed: query is required');
       });
 
-      await expect(handleToolCall('search_apple_docs', {}, mockServer))
-        .rejects.toThrow('Validation failed: query is required');
+      const result = await handleToolCall('search_apple_docs', {}, mockServer);
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('Validation failed: query is required');
     });
   });
 

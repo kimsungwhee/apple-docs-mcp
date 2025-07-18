@@ -1,0 +1,399 @@
+{
+  "id": "10164",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10164/",
+  "title": "What’s new in Swift",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools",
+    "Essentials"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Ben: Hi, and welcome to \"What's New in Swift 5.9.\" I'm Ben, and together with my colleague Doug, we'll take you through some of the improvements to the Swift language this year. We'll talk about some ways it's easier to express what you mean using Swift's clean syntax, some powerful new features that help framework authors make their new APIs more natural to use, and we'll look at some new ways to get more control over performance and safety in low-level code.\n\nBut let's start by talking about the Swift open source project. This is a great update for Swift, and it couldn't have happened without the Swift community, the contributors and users of the language who gather at swift.org, working together to evolve the language and support new initiatives. Swift follows an open process for language evolution. New features or significant behavior changes are proposed and reviewed in the open on the Swift forums. If you want to follow along, you can find a dashboard of all the language proposals on the Swift website.\n\nA year ago, we saw a significant restructuring of the Swift Project governance. The core team announced the formation of the Language Steering Group, which took on primary responsibility for oversight of the Swift language and standard library evolution. Since then, the language group has overseen 40 new language proposals, and we're going to talk about several of them today.\n\nBut sometimes, individual language proposals come together as part of a wider theme, like the addition of Swift concurrency, which was introduced through ten separate proposals.\n\nFor cases like this, the language steering group has introduced a new way of tying together these proposals, through vision documents. These documents lay out a proposal for larger changes to the language. The first one to be accepted by the language steering group was a vision of Swift macros, a new feature in Swift 5.9 that we'll be covering later in this talk.\n\nOf course, evolution of the language is only part of the work of the Swift community. A successful language needs much more than this. It needs great tooling, robust support for multiple platforms, and rich documentation. To oversee progress in this area, the core team is creating an ecosystem steering group parallel to the language steering group. This new structure was recently laid out in a blog post on Swift.org, a look out for further announcements about the formation of this new group soon. Now let's talk about changes to the Swift language this year, starting with better ways to express yourself in your code. Swift 5.9 includes what is probably our most commonly requested language enhancement, allowing if/else and switch statements to be used as expressions, providing a nice way to clean up your code.\n\nFor example, if you wanted to initialize a let variable based on some complex condition, you had to resort to tricks, like this hard-to-read compound ternary expression.\n\nIf expressions let you instead use a much more familiar and readable chain of if statements.\n\nAnother place where this helps is if you're initializing a global variable or a stored property. Single expressions work fine here, but if you wanted a condition, you had to use the trick of wrapping it in a closure that you then immediately executed.\n\nNow that an if statement can be an expression, you can just drop that clutter, leaving you with neater code.\n\nResult builders, the declarative syntax that drives features like SwiftUI, have seen significant improvements this year, including optimized type checking performance, code completion, and improved error messages.\n\nThis improvement was particularly focused on invalid code. Previously, result builder code with errors would take a long time to fail, as the type checker explored the many possible invalid paths.\n\nAs of Swift 5.8, invalid code type checks much faster, and error messages on invalid code are now more precise. For example, previously, some invalid code could lead to misleading errors in a completely different part of the result builder. In Swift 5.7, you'd receive an error like this, when the mistake actually lies up here.\n\nIn the latest release, you now receive a more accurate compiler diagnostic identifying the real issue.\n\nNext, let's talk about how an addition to the generics system will allow for some great improvements to frameworks you use every day.\n\nAlmost all the Swift you write is using generics in some way. Type inference enables using these types without needing to understand the advanced capabilities they're built with. For example, the standard library Array type uses generics to provide an array that works with any type of data that you might want to store. When you use an array, all you need to do is provide the elements. There's no need to specify an explicit argument for the element type because it can be inferred from the element values.\n\nSwift's generics system enables natural APIs that preserve type information so that your code operates seamlessly on the concrete types that you provide.\n\nHere's an example inspired by the Swift compiler's own codebase: An API that takes a request type and evaluates it to produce a strongly typed value. So you can make a request for a Boolean value and get back a Boolean result.\n\nNow, some APIs want to abstract not only over concrete types, but also the number of arguments that you pass in. So a function might take one request and return one result or two requests and return two results, or three and return three results.\n\nTo support this, the generics system has to be used together with a mechanism to handle multiple argument lengths so that all of the types that you pass in are linked to the types that you get out.\n\nBefore Swift 5.9, the only way to accomplish this pattern was by adding an overload for each specific argument length the API supported. But this approach has limitations. It forces an artificial upper bound on the number of arguments you can pass, resulting in compiler errors if you pass too many.\n\nIn this case, there isn't an overload that can handle more than six arguments, but we've passed seven.\n\nThis overloading pattern and its limitations are pervasive across APIs that conceptually handle arbitrary argument length.\n\nIn Swift 5.9, the generics system is gaining first-class support for this API pattern by enabling generic abstraction over argument length. This is done with a new language concept that can represent multiple individual type parameters that are \"packed\" together. This new concept is called a type parameter pack.\n\nUsing parameter packs, APIs that currently have individual overloads for each fixed argument length can be collapsed down into a single function.\n\nInstead of accepting a single type parameter, Result, representing the result type of a single request, the evaluate function now accepts a separate request over each Result type.\n\nThe function returns each result instance in parenthesis, which will either be a single value or a tuple containing each value.\n\nThe evaluate function now handles all argument lengths with no artificial limit.\n\nType inference makes APIs using parameter packs natural to use without needing to know that the API is using them.\n\nCalling our new evaluate function that can now handle any number of arguments, looks just like calling the fixed-length overloads. Swift infers the type of each argument along with the total number based on how you're calling the function. To learn about how to write generic library APIs like these, check out Generalize APIs using parameter packs.\n\nCalling generic APIs in a natural way demonstrates one of Swift's fundamental design goals, clear expression through concise code.\n\nSwift's advanced language features enable beautiful APIs that make it easier to say what you mean.\n\nYou benefit from these advanced language features from the very first lines of Swift that you ever write, whether it's using generics through arrays or dictionaries or designing a UI in SwiftUI. Swift's embrace of progressive disclosure means that you can learn about the more advanced features when you're ready to.\n\nSwift 5.9 takes this design approach to the next level by providing library authors with a new toolbox for expressive API design using a new macro system. Here's Doug to tell you more. Doug: With macros, you can extend the capabilities of the language itself, eliminating boilerplate and unlocking more of Swift's expressive power. Let's consider the ever-present assert function, which checks whether a condition is true. Assert will stop the program if the condition is false, but when that happens, you get very little information about what went wrong, just the file and line number. You'll need to add some logging or trap the program in the debugger to learn more. There have been attempts to improve on this. XCTest provides an assert-equal operation that takes the two values separately, so when things fail, you can at least see the two values that aren't equal. But we still don't know which value is wrong here. Was it a, b, or the result of max? And this approach really doesn't scale for all of the kinds of checks we perform in asserts. If we go back to the original assertion, there is so much information here in the source code that we'd like to see in the log when our assertion fails. What was the code? What are the values of a, and b, and c? What did max produce? We couldn't improve this in Swift before without some custom feature, but macros make it possible.\n\nIn this example, the \"hash-assert\" syntax is expanding the macro called \"assert.\" The hash syntax might look familiar because Swift already has a few things with this same spelling, like hash-file, hash-selector, and hash-warning. The assert macro looks and feels like the function version, but because it's a macro, it can provide a richer experience when the assertion fails.\n\nNow the program is showing the code for the failing assertion, along with each of the values that contributed to the result.\n\nIn Swift, macros are APIs, just like types or functions, so you access them by importing the module that defines them. Like many other APIs, macros are distributed as packages. The assert macro here comes from the power asserts library, an open-source Swift package available on GitHub.\n\nIf you were to look into the macro package, you would find a macro declaration for assert. It is introduced with the \"macro\" keyword, but otherwise, it looks a lot like a function. There's a single unlabeled Bool parameter for the condition to be checked. If this macro produced a value, that result type would be written with the usual arrow syntax. Uses of the macro will be type checked against the parameters. That means, if you were to make a mistake in using the macro, such as forgetting to compare the maximum value against something, you'll get a useful error message immediately, before the macro is ever expanded. This allows Swift to provide a great development experience when using macros because macros operate on well-typed inputs and produce code that augments your program in predictable ways. Most macros are defined as \"external macros,\" specifying the module and type for a macro implementation via strings. The external macro types are defined in separate programs that act as compiler plugins. The Swift compiler passes the source code for the use of the macro to the plugin. The plugin produces new source code, which is then integrated back into the Swift program. Here, the macro is expanding the assertion into code that captures the individual values and where they should be displayed in the source code. You wouldn't want to write the boilerplate yourself, but the macro does it for you. Macro declarations have one additional piece of information, their role. The assert macro here is a freestanding expression macro. It is called freestanding because it uses the \"hash\" syntax and operates directly on that syntax to produce new code. It is an expression macro because it can be used anywhere that one can produce a value. The new Foundation Predicate APIs provide a great example of an expression macro. The predicate macro allows one to write predicates in a type-safe manner using closures. The resulting predicate values can then be used with a number of other APIs, including the Swift collection operations SwiftUI and SwiftData.\n\nThe macro itself is generic over the set of input types. It accepts a closure argument that's a function operating on values of those input types and produces a Boolean result, does the set of inputs match or not? And the macro returns an instance of the new Predicate type, which can be used elsewhere in the program.\n\nBut there is more to macros because a lot of the boilerplate we end up writing is because we need to augment code we have written with something else derived from it. Let's take an example. I find that I use enums a lot in my own code, like this Path enum that captures either relative or absolute paths. But I'll often find myself needing to check for a specific case, say, by filtering all absolute paths from a collection. I can write this isAbsolute check as a computed property, of course. But sooner or later, I'm going to have to write another one. This is getting a bit tedious.\n\nMacros can help here by generating the boilerplate for us.\n\nCase detection is an attached macro, written using the same custom-attribute syntax as property wrappers. Attached macros take as input the syntax of the declaration they apply to-- here it's the enum declaration itself-- and will generate new code.\n\nThis macro-expanded code is normal Swift code, which the compiler integrates into your program. You can inspect the macro-generated code in your editor, debug into it, copy it out if you want to customize it further, and so on.\n\nAttached macros are classified into five different roles based on how they augment the declaration they are attached to. The case detection macro we just discussed is a \"member\" attached macro, meaning that it creates new members in a type or extension.\n\nPeer macros add new declarations alongside the declaration they're attached to, for example, to create a completion-handler version of an async method or vice-versa.\n\nAccessor macros can turn a stored property into a computed property, which can be used to perform specific actions on property access or abstract the actual storage in a manner similar to, but more flexible than property wrappers. And attached macros can introduce attributes onto specific members of a type, as well as add new protocol conformances.\n\nSeveral attached macro roles can be composed together to achieve useful effects. One important example of this is with observation.\n\nObservation has always been a part of SwiftUI. To be able to observe changes to the properties of a class, one need only make the type conform to ObservableObject, and mark every property at-Published, and use the ObservedObject property wrapper in your view.\n\nThat's a bunch of steps, and missing a step can mean that the UI doesn't update as expected. We can do better with macro-based observation.\n\nAttaching the Observable macro to a class provides observation for all of its stored properties. There is no need to annotate each stored property or worry about what happens if you don't because the Observable macro handles it all.\n\nThe Observable macro works through composition of three macro roles. Let's dive into how these roles work together.\n\nEach macro role corresponds to a specific way in which the Person class is augmented by the Observable macro. The member role introduces new properties and methods.\n\nThe member attribute role will add the @ObservationTracked macro to the stored properties of the observed class, which in turn expands to getters and setters to trigger observation events. Finally, the conformance role introduces the conformance to the Observable protocol.\n\nThis may look like a lot of code, but it's all just normal Swift code, and it's neatly folded away behind the Observable macro.\n\nWhenever you need to see how any macro expands to better understand its effect on your program, it's right there at your fingertips in Xcode.\n\nUse the \"Expand Macro\" action to see the macro-expanded source code in your editor. Any error messages within macro-generated code will automatically show the expanded code, and you can step into and out of it with your debugger.\n\nSwift macros provide a new tool for enabling more expressive APIs and eliminating boilerplate from your Swift code, helping unlock Swift's expressive power. Macros type-check their inputs, produce normal Swift code, and integrate at defined points in your program, so their effects are easy to reason about. And any time you need to understand what a macro did, its expanded source code is right there in your editor. We've just scratched the surface of macros. \"Expand on Swift macros\" will go deep into the design of Swift macros to answer all of those questions you must have. And you can get hands-on implementing your own macros with \"Write Swift macros.\" I can't wait to see what new macros the Swift community will build.\n\nBen: From the start, Swift was designed to be a scalable language.\n\nSwift's design emphasizes expressivity with clear and concise code that is low on ceremony and easy to read and write. By leveraging Swift's powerful features, like generics and native concurrency support, frameworks like SwiftUI or SwiftData let you quickly achieve the results you want, leaving you more time to focus on what matters.\n\nDespite these high-level capabilities though, Swift is also efficient. It compiles natively, and its use of value types and of reference counting instead of garbage collection means it's able to achieve a low memory footprint.\n\nThis scalability means we're able to push Swift to more places than was previously possible with Objective-C, to low-level systems, where previously you might expect to have to use C or C++. This means bringing Swift's clearer code and critical safety guarantees to more places. We recently open sourced the start of a rewrite of the Foundation framework in Swift. This initiative will lead to a single shared implementation of Foundation on both Apple and non-Apple platforms. But it also meant rewriting large amounts of Objective-C and C code in Swift.\n\nAs of MacOS Sonoma and iOS 17, there are new Swift-backed implementations of essential types like Date and Calendar, of formatting and internationalization essentials like Locale and AttributedString, and a new Swift implementation of JSON encoding and decoding. And the performance wins have been significant.\n\nCalendar's ability to calculate important dates can take better advantage of Swift's value semantics to avoid intermediate allocations, resulting in over a 20% improvement in some benchmarks.\n\nDate formatting using FormatStyle also gained some major performance upgrades, showing a massive 150% improvement in a benchmark of formatting with a standard date and time template.\n\nEven more exciting are the improvements to JSON decoding in the new package. Foundation has a brand-new Swift implementation for JSONDecoder and JSONEncoder, eliminating costly roundtrips to and from the Objective-C collection types. The tight integration of parsing JSON in Swift for initializing Codable types improves performance too. In benchmarks parsing test data, the new implementation is between two and five times faster. These improvements came from both reducing the bridging cost from the old Objective-C implementation to Swift, but also by the new Swift-based implementations being faster.\n\nLet's look at one benchmark as an example. In Ventura, calling enumerateDates from Objective-C was slightly faster than calling it from Swift because of bridging costs. In MacOS Sonoma, calling that same functionality from Swift is 20% faster. Some of that speed up comes from eliminating bridging costs, but the new function implementation itself is also faster, as seen when calling it from Objective-C. This particular date calculation is not overly complex, so this is a great way of seeing the reduction in overhead between the two languages. Now, sometimes, when you're operating at lower levels of the system, you need more fine-grained control to achieve a necessary level of performance. Swift 5.9 introduces some new opt-in capabilities that help you achieve this level of control. These capabilities focus on the concept of ownership, that is, what part of the code \"owns\" a value as it passes around your application.\n\nTo see when you might want to use these features, let's first look at some example code.\n\nHere we have a very simple wrapper for a file descriptor that would allow us to give low-level system calls a nicer Swift interface. But there’s still some easy ways to make mistakes with this API. For example, you might try to write to the file after you’ve called close. And you have to be careful to always close it manually by calling the close method before the type goes out of scope. Otherwise, you would get a resource leak.\n\nOne solution would be to make it a class with a deinit that closes it automatically when the type goes out of scope.\n\nBut that has different downsides, like making an additional memory allocation, which is usually not a big problem, except in some very constrained systems contexts.\n\nClasses also have reference semantics. You might unintentionally end up sharing a file descriptor type across threads, leading to race conditions, or store it unintentionally.\n\nBut let's go back and look at the struct version.\n\nReally, this struct also behaves like a reference type. It holds an integer that references the true value, which is an open file. Making a copy of this type could also lead to unintentional sharing of mutable state across your app in ways that could lead to bugs. What you want is to suppress the ability to make a copy of this struct.\n\nSwift types, whether structs or classes, are copyable by default. This is the right choice most of the time. While excessive unnecessary copies can sometimes be a bottleneck in your code, it's better to spend the time finding those bottlenecks in instruments occasionally than to be constantly bothered by the compiler requiring you to be explicit about those copies.\n\nBut sometimes that implicit copy isn't what you want--in particular, when making copies of a value might lead to correctness issues, like with our file descriptor wrapper. In Swift 5.9, you can do that with this new syntax that can be applied to struct and enum declarations and that suppresses the implicit ability to copy a type. Once a type is non-copyable, you can give it a deinit, like you can a class, that will run when a value of the type goes out of scope.\n\nNon-copyable types can also be used to solve the problem of calling close, and then using other methods.\n\nThe close operation can be marked as consuming. Calling a consuming method or argument gives up ownership of a value to the method you called. Since our type is not copyable, giving up ownership means you can no longer use the value.\n\nBy default, methods in Swift borrow their arguments, including self. So you can call the write method, which borrows the file descriptor, uses it to write out to the buffer, and after that, ownership of the value returns to the caller, and you can call another method, like close.\n\nBut since close has been marked as consuming, not the default of borrowing, it must be its final use.\n\nThis means, if you close the file first and then attempt to call another method, like write, you'll get an error message at compile time, rather than a runtime failure. The compiler will also indicate where the consuming use occurred.\n\nNon-copyable types are a powerful new feature for systems level programming in Swift. They're still at an early point in their evolution. Later versions of Swift will expand on non-copyable types in generic code.\n\nIf you're interested in following along with this work, it's being actively discussed on the Swift forums. Doug: A key to Swift's success has been its interoperability with Objective-C. From the start, developers have been able to take incremental steps towards Swift adoption in their existing code bases, mixing in Swift a single file or module at a time. But we know a lot of you don't just have code written in Objective-C. Many apps also have core business logic implemented in C++, and interfacing to that has not been so easy. Often it meant adding an extra manual bridging layer, going from Swift, through Objective-C, and then into C++, and all the way back. Swift 5.9 introduces the ability to interact with C++ types and functions directly from Swift. C++ interoperability works just like Objective-C interoperability always has, mapping C++ APIs into their Swift equivalents that you can use directly from Swift code.\n\nC++ is a large language with its own notions of ideas like classes, methods, containers, and so on. The Swift compiler understands common C++ idioms, so many types can be used directly. For example, this Person type defines the five special member functions expected of a C++ value type: Copy and move constructors, assignment operators, and a destructor. The Swift compiler treats this as a value type and will automatically call the right special member function at the right time. Additionally, C++ containers like vectors and maps are accessible as Swift collections.\n\nThe result of all of this is that we can write straightforward Swift code that makes direct use of C++ functions and types. We can filter over the vector of Person instances, calling C++ member functions and accessing data members directly.\n\nIn the other direction, using Swift code from C++ is based on the same mechanism as with Objective-C. The Swift compiler will produce a \"generated header\" that contains a C++ view on the Swift APIs. However, unlike with Objective-C, you don't need to restrict yourself to only using Swift classes annotated with the objc attribute. C++ can directly use most Swift types and their full APIs, including properties, methods, and initializers, without any bridging overhead.\n\nHere we can see how C++ can make use of our Point struct. After including the generated header, C++ can call Swift initializers to create Point instances, invoke mutating methods, and access both stored and computed properties, all without any change to the Swift code itself.\n\nSwift's C++ interoperability makes it easier than ever to integrate Swift with existing C++ code bases. Many C++ idioms can be directly expressed in Swift, often automatically, but occasionally requiring some annotations to indicate the desired semantics. And Swift APIs can be directly accessed from C++, no annotation or code changes required, making it possible to incrementally adopt Swift throughout a code base using any mix of C, C++, and Objective-C.\n\nC++ interoperability is an evolving story, guided by the C++ interoperability workgroup. For more information, please see the \"Mix Swift and C++\" talk, or join us in the discussion on the Swift forums.\n\nInteroperability at the language level is really important, but you also have to be able to build your code. And having to replace your existing build system with Xcode or the Swift Package Manager to even get started with Swift can be just as big a barrier as rewriting a large amount of code.\n\nThat's why we worked with the CMake community to improve Swift support in CMake. You can integrate Swift code into your CMake build by declaring Swift as one of the languages for the project and putting Swift files into a target.\n\nMore importantly, you can mix C++ and Swift within a single target, and CMake will be sure to compile each separately and link all of the appropriate supporting libraries and runtimes for both languages. This means you can start adopting Swift in your cross-platform C++ projects today, file by file or target by target. We're also providing a sample repository with CMake projects containing Swift and mixed C++/Swift targets, including using the bridging and generated headers, to help you get started.\n\nA few years ago, we introduced a new concurrency model into Swift based on the building blocks of async/await, structured concurrency, and actors. Swift's concurrency model is an abstract model, which can be adapted to different environments and libraries. The abstract model has two main pieces: Tasks and actors. Tasks represent a sequential unit of work that can conceptually run anywhere. Tasks can be suspended whenever there's an \"await\" in the program, and then resume once the task can continue.\n\nActors are a synchronization mechanism that provide mutually-exclusive access to isolated state. Entering an actor from the outside requires an \"await\" because it may suspend the task.\n\nTasks and actors are integrated into the abstract language model, but within that model, they can be implemented in different ways to fit different environments. Tasks are executed on the global concurrent pool. How that global concurrent pool decides to schedule work is up to the environment. For Apple's platforms, the Dispatch library provides optimized scheduling for the whole operating system, and has been extensively tuned for each platform. In more restrictive environments, the overhead of a multithreaded scheduler may not be acceptable. There Swift's concurrency model is implemented with a single-threaded cooperative queue. The same Swift code works in both environments because the abstract model is flexible enough to map to diverse runtime environments.\n\nAdditionally, interoperability with callback-based libraries was built into Swift's async/await support from the beginning. The withCheckedContinuation operations allow one to suspend a task, and then resume it later in response to a callback. This enables integration with existing libraries that manage tasks themselves.\n\nThe standard implementation of actors in the Swift concurrency runtime is a lock-free queue of tasks to execute on the actor, but it's not the only possible implementation. In a more restricted environment, one might not have atomics, and instead could use another concurrency primitive such as spinlocks. If that environment were single-threaded, no synchronization is needed, but the actor model maintains the abstract concurrency model for the program regardless. You could still take that same code to another environment that is multi-threaded. With Swift 5.9, custom actor executors allow a particular actor to implement its own synchronization mechanism. This makes actors more flexible and adaptable to existing environments. Let's take an example.\n\nHere we consider an actor that manages a database connection. Swift ensures mutually-exclusive access to the storage of this actor, so there won't be any concurrent access to the database. However, what if you need more control over the specific way in which synchronization is done? For example, what if you want to use a specific dispatch queue for your database connection, perhaps because that queue is shared with other code that hasn't adopted actors? With custom actor executors, you can.\n\nHere we've added a serial dispatch queue to our actor and an implementation of the unowned executor property that produces the executor corresponding to that dispatch queue. With this change, all of the synchronization for our actor instances will happen through that queue.\n\nWhen you \"await\" on the call to pruneOldEntries from outside the actor, this will now perform a dispatch-async on the corresponding queue. This gives you more control over how individual actors provide synchronization, and even lets you synchronize an actor with other code that isn't using actors yet, perhaps because it's written in Objective-C or C++.\n\nThe synchronization of actors via dispatch queues is made possible because dispatch queue conforms to the new SerialExecutor protocol. You can provide your own synchronization mechanism to use with actors by defining a new type that conforms to this protocol which has only few core operations: Checking whether the code is already executing in the context of the executor. For example, are we running on the main thread? Extracting an unowned reference to the executor to allow access to it without excess reference-counting traffic. And the most core operation, enqueue, which takes ownership of an executor \"job.\" A job is part of an asynchronous task that needs to run synchronously on the executor. At the point where enqueue is called, it's the responsibility of the executor to run that job at some point when there's no other code running on the serial executor. For example, enqueue for a dispatch queue would call dispatch async on that queue.\n\nSwift Concurrency has been in use for a few years now, and its abstract model consisting of tasks and actors covers a large range of concurrent programming tasks. The abstract model itself is quite flexible, making it adaptable to different execution environments, from iPhones to Apple Watches, to servers and beyond. It also allowed customization at key points to enable it to interoperate with code that hasn't fully adopted Swift Concurrency yet. For more information, please see our \"Behind the Scenes\" talk, as well as \"Beyond the basics of Structured Concurrency.\" I want to wrap up with a bit of a case study of Swift operating in an environment very different from the iOS or MacOS apps where we are used to seeing it. FoundationDB is a distributed database, providing a scalable solution for very large key-value stores running on commodity hardware and supporting a variety of platforms, including MacOS, Linux, and Windows.\n\nFoundationDB is an open-source project with a large code base written in C++. The code is heavily asynchronous, with its own form of distributed actors and runtime that provides a critically important deterministic simulation environment for testing purposes. FoundationDB was looking to modernize their code base and found Swift to be a good match for its performance, safety, and code clarity. A complete rewrite would be a big, risky endeavor. Instead, we leveraged Swift's interoperability to integrate into the existing code base. For example, here's a part of the C++ implementation of FoundationDB's \"master data\" actor.\n\nThere's a lot going on here, and you don't need to understand all of this C++. However, I'd like to point out a few key aspects of the code. First, C++ doesn't have async/await, so FoundationDB has their own preprocessor-like approach to emulate it.\n\nLike many C++ code bases, they've implemented their own C++ Future type to manage asynchronous tasks.\n\nThese pair with explicit messaging to send responses to the requests. Note the careful pairing of sending a reply with returning from the function. Finally, FoundationDB has its own reference-counted smart pointers to help manage memory automatically. We can implement this whole thing much more cleanly in Swift.\n\nThat's better. This function can be directly implemented as an async function in Swift. We have a normal return type and normal return statements to provide the response to this request, so you can't ever be out of sync. We have an \"await\" to indicate the suspension point in the same manner as all other Swift async code. And this Swift code ties in with the C++ Future type adapted using continuations.\n\nWe're using a number of C++ types here. The MasterData type in C++ was using a reference-counted smart pointer. By annotating the type in C++, the Swift compiler can use this type like any other class, automatically managing reference counts for us.\n\nOther types, such as the request and reply types, are C++ value types being used directly in Swift. And the interoperability goes both ways. This asynchronous function, and indeed, all the work introduced by the Swift concurrency model, run on FoundationDB's existing deterministic runtime. So we can get the benefits of Swift where we want it, interfacing with the existing C++ to enable gradual adoption throughout.\n\nIn this session, we've covered a lot of ground. We described features like parameter packs and macros that enable more expressive APIs and can help you write better code faster. We talked about the use of Swift in performance-sensitive code and the introduction of non-copyable types to provide resource management without reference-counting overhead.\n\nThen we dove into C++ interoperability, which provides support for using C++ APIs in Swift and vice-versa, making it easier to bring the benefits of Swift to more of your code.\n\nFinally, we talked about how Swift's flexible concurrency model can adapt to myriad environments across devices and languages to make concurrency easier and safer. Parameter packs, macros, non-copyable types, and all of the other language enhancements in Swift 5.9 were designed and developed openly through the Swift Evolution process, and community feedback was crucial in shaping these features. Swift 5.9 is the culmination of countless contributions from members across the Swift community, including active design discussions, bug reports, pull requests, educational content, and more. Thank you for making Swift 5.9 the great release it is. ♪ ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:06",
+      "title": "Hard-to-read compound ternary expression",
+      "language": "swift",
+      "code": "let bullet =\n    isRoot && (count == 0 || !willExpand) ? \"\"\n        : count == 0    ? \"- \"\n        : maxDepth <= 0 ? \"▹ \" : \"▿ \""
+    },
+    {
+      "timestamp": "3:19",
+      "title": "Familiar and readable chain of if statements",
+      "language": "swift",
+      "code": "let bullet =\n    if isRoot && (count == 0 || !willExpand) { \"\" }\n    else if count == 0 { \"- \" }\n    else if maxDepth <= 0 { \"▹ \" }\n    else { \"▿ \" }"
+    },
+    {
+      "timestamp": "3:30",
+      "title": "Initializing a global variable or stored property",
+      "language": "swift",
+      "code": "let attributedName = AttributedString(markdown: displayName)"
+    },
+    {
+      "timestamp": "3:46",
+      "title": "In 5.9, if statements can be an expression",
+      "language": "swift",
+      "code": "let attributedName = \n\t\t\t\tif let displayName, !displayName.isEmpty {\n            AttributedString(markdown: displayName)\n        } else {\n            \"Untitled\"\n        }"
+    },
+    {
+      "timestamp": "4:31",
+      "title": "In Swift 5.7, errors may appear in a different place",
+      "language": "swift",
+      "code": "struct ContentView: View {\n    enum Destination { case one, two }\n\n    var body: some View {\n        List {\n            NavigationLink(value: .one) { // The issue actually occurs here\n                Text(\"one\")\n            }\n            NavigationLink(value: .two) {\n                Text(\"two\")\n            }\n        }.navigationDestination(for: Destination.self) {\n            $0.view // Error occurs here in 5.7\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "4:47",
+      "title": "In Swift 5.9, you now receive a more accurate compiler diagnostic",
+      "language": "swift",
+      "code": "struct ContentView: View {\n    enum Destination { case one, two }\n\n    var body: some View {\n        List {\n            NavigationLink(value: .one) { //In 5.9, Errors provide a more accurate diagnostic\n                Text(\"one\")\n            }\n            NavigationLink(value: .two) {\n                Text(\"two\")\n            }\n        }.navigationDestination(for: Destination.self) {\n            $0.view // Error occurs here in 5.7\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "5:47",
+      "title": "An API that takes a request type and evaluates it to produce a strongly typed value",
+      "language": "swift",
+      "code": "struct Request<Result> { ... }\n\nstruct RequestEvaluator {\n    func evaluate<Result>(_ request: Request<Result>) -> Result\n}\n\nfunc evaluate(_ request: Request<Bool>) -> Bool {\n    return RequestEvaluator().evaluate(request)\n}"
+    },
+    {
+      "timestamp": "6:03",
+      "title": "APIs that abstract over concrete types and varying number of arguments",
+      "language": "swift",
+      "code": "let value = RequestEvaluator().evaluate(request)\n\nlet (x, y) = RequestEvaluator().evaluate(r1, r2)\n\nlet (x, y, z) = RequestEvaluator().evaluate(r1, r2, r3)"
+    },
+    {
+      "timestamp": "6:35",
+      "title": "Writing multiple overloads for the evaluate function",
+      "language": "swift",
+      "code": "func evaluate<Result>(_:) -> (Result)\n\nfunc evaluate<R1, R2>(_:_:) -> (R1, R2)\n\nfunc evaluate<R1, R2, R3>(_:_:_:) -> (R1, R2, R3)\n\nfunc evaluate<R1, R2, R3, R4>(_:_:_:_:)-> (R1, R2, R3, R4)\n\nfunc evaluate<R1, R2, R3, R4, R5>(_:_:_:_:_:) -> (R1, R2, R3, R4, R5)\n\nfunc evaluate<R1, R2, R3, R4, R5, R6>(_:_:_:_:_:_:) -> (R1, R2, R3, R4, R5, R6)"
+    },
+    {
+      "timestamp": "6:47",
+      "title": "Overloads create an arbitrary upper bound for the number of arguments",
+      "language": "swift",
+      "code": "//This will cause a compiler error \"Extra argument in call\"\nlet results = evaluator.evaluate(r1, r2, r3, r4, r5, r6, r7)"
+    },
+    {
+      "timestamp": "7:12",
+      "title": "Individual type parameter",
+      "language": "swift",
+      "code": "<each Result>"
+    },
+    {
+      "timestamp": "7:36",
+      "title": "Collapsing the same set of overloads into one single evaluate function",
+      "language": "swift",
+      "code": "func evaluate<each Result>(_: repeat Request<each Result>) -> (repeat each Result)"
+    },
+    {
+      "timestamp": "8:21",
+      "title": "Calling updated evaluate function looks identical to calling an overload",
+      "language": "swift",
+      "code": "struct Request<Result> { ... }\n\nstruct RequestEvaluator {\n    func evaluate<each Result>(_: repeat Request<each Result>) -> (repeat each Result)\n}\n\nlet results = RequestEvaluator.evaluate(r1, r2, r3)"
+    },
+    {
+      "timestamp": "10:01",
+      "title": "It isn't clear why an assert function fails",
+      "language": "swift",
+      "code": "assert(max(a, b) == c)"
+    },
+    {
+      "timestamp": "10:20",
+      "title": "XCTest provides an assert-equal operation",
+      "language": "swift",
+      "code": "XCAssertEqual(max(a, b), c) //XCTAssertEqual failed: (\"10\") is not equal to (\"17\")"
+    },
+    {
+      "timestamp": "11:02",
+      "title": "Assert as a macro",
+      "language": "swift",
+      "code": "#assert(max(a, b) == c)"
+    },
+    {
+      "timestamp": "11:42",
+      "title": "Macros are distributed as packages",
+      "language": "swift",
+      "code": "import PowerAssert\n#assert(max(a, b) == c)"
+    },
+    {
+      "timestamp": "12:07",
+      "title": "Macro declaration for assert",
+      "language": "swift",
+      "code": "public macro assert(_ condition: Bool)"
+    },
+    {
+      "timestamp": "12:26",
+      "title": "Uses are type checked against the parameters",
+      "language": "swift",
+      "code": "import PowerAssert\n#assert(max(a, b)) //Type 'Int' cannot be a used as a boolean; test for '!= 0' instead"
+    },
+    {
+      "timestamp": "12:52",
+      "title": "A macro definition",
+      "language": "swift",
+      "code": "public macro assert(_ condition: Bool) = #externalMacro(\n    module: “PowerAssertPlugin”,\n    type: “PowerAssertMacro\"\n)"
+    },
+    {
+      "timestamp": "13:11",
+      "title": "Swift compiler passes the source code for the use of the macro",
+      "language": "swift",
+      "code": "#assert(a == b)"
+    },
+    {
+      "timestamp": "13:14",
+      "title": "Compiler plugin produces new source code, which is integrated back into the Swift program",
+      "language": "swift",
+      "code": "PowerAssert.Assertion(\n    \"#assert(a == b)\"\n) {\n    $0.capture(a, column: 8) == $0.capture(b, column: 13)\n}"
+    },
+    {
+      "timestamp": "13:33",
+      "title": "Macro declarations include roles",
+      "language": "swift",
+      "code": "// Freestanding macro roles\n\n@freestanding(expression)\npublic macro assert(_ condition: Bool) = #externalMacro(\n    module: “PowerAssertPlugin”,\n    type: “PowerAssertMacro\"\n)"
+    },
+    {
+      "timestamp": "13:53",
+      "title": "New Foundation Predicate APIs uses a `@freestanding(expression)` macro role",
+      "language": "swift",
+      "code": "let pred = #Predicate<Person> {\n    $0.favoriteColor == .blue\n}\n\nlet blueLovers = people.filter(pred)"
+    },
+    {
+      "timestamp": "14:14",
+      "title": "Predicate expression macro",
+      "language": "swift",
+      "code": "// Predicate expression macro\n\n@freestanding(expression) \npublic macro Predicate<each Input>(\n    _ body: (repeat each Input) -> Bool\n) -> Predicate<repeat each Input>"
+    },
+    {
+      "timestamp": "14:48",
+      "title": "Example of a commonly used enum",
+      "language": "swift",
+      "code": "enum Path {\n    case relative(String)\n    case absolute(String)\n}"
+    },
+    {
+      "timestamp": "15:01",
+      "title": "Checking a specific case, like when filtering all absolute paths",
+      "language": "swift",
+      "code": "let absPaths = paths.filter { $0.isAbsolute }"
+    },
+    {
+      "timestamp": "15:09",
+      "title": "Write an `isAbsolute` check as a computer property...",
+      "language": "swift",
+      "code": "extension Path {\n    var isAbsolute: Bool {\n        if case .absolute = self { true }\n        else { false }\n    }\n}"
+    },
+    {
+      "timestamp": "15:12",
+      "title": "...And another for `isRelative`",
+      "language": "swift",
+      "code": "extension Path {\n    var isRelative: Bool {\n        if case .relative = self { true }\n        else { false }\n    }\n}"
+    },
+    {
+      "timestamp": "15:17",
+      "title": "Augmenting the enum with an attached macro",
+      "language": "swift",
+      "code": "@CaseDetection\nenum Path {\n    case relative(String)\n    case absolute(String)\n}\n\nlet absPaths = paths.filter { $0.isAbsolute }"
+    },
+    {
+      "timestamp": "15:36",
+      "title": "Macro-expanded code is normal Swift code",
+      "language": "swift",
+      "code": "enum Path {\n    case relative(String)\n    case absolute(String)\n  \n    //Expanded @CaseDetection macro integrated into the program.\n    var isAbsolute: Bool {\n        if case .absolute = self { true }\n        else { false }\n    }\n\n    var isRelative: Bool {\n        if case .relative = self { true }\n        else { false }\n    }\n}"
+    },
+    {
+      "timestamp": "16:57",
+      "title": "Observation in SwiftUI prior to 5.9",
+      "language": "swift",
+      "code": "// Observation in SwiftUI\n\nfinal class Person: ObservableObject {\n    @Published var name: String\n    @Published var age: Int\n    @Published var isFavorite: Bool\n}\n\nstruct ContentView: View {\n    @ObservedObject var person: Person\n    \n    var body: some View {\n        Text(\"Hello, \\(person.name)\")\n    }\n}"
+    },
+    {
+      "timestamp": "17:25",
+      "title": "Observation now",
+      "language": "swift",
+      "code": "// Observation in SwiftUI\n\n@Observable final class Person {\n    var name: String\n    var age: Int\n    var isFavorite: Bool\n}\n\nstruct ContentView: View {\n    var person: Person\n    \n    var body: some View {\n        Text(\"Hello, \\(person.name)\")\n    }\n}"
+    },
+    {
+      "timestamp": "17:42",
+      "title": "Observable macro works with 3 macro roles",
+      "language": "swift",
+      "code": "@attached(member, names: ...)\n@attached(memberAttribute)\n@attached(conformance)\npublic macro Observable() = #externalMacro(...)."
+    },
+    {
+      "timestamp": "17:52",
+      "title": "Unexpanded macro",
+      "language": "swift",
+      "code": "@Observable final class Person {\n    var name: String\n    var age: Int\n    var isFavorite: Bool\n}"
+    },
+    {
+      "timestamp": "18:05",
+      "title": "Expanded member attribute role",
+      "language": "swift",
+      "code": "@Observable final class Person {\n    var name: String\n    var age: Int\n    var isFavorite: Bool\n  \n\t\tinternal let _$observationRegistrar = ObservationRegistrar<Person>()\n    internal func access<Member>(\n        keyPath: KeyPath<Person, Member>\n    ) {\n        _$observationRegistrar.access(self, keyPath: keyPath)\n    }\n    internal func withMutation<Member, T>(\n        keyPath: KeyPath<Person, Member>,\n        _ mutation: () throws -> T\n    ) rethrows -> T {\n        try _$observationRegistrar.withMutation(of: self, keyPath: keyPath, mutation)\n    }\n}"
+    },
+    {
+      "timestamp": "18:12",
+      "title": "Member attribute role adds `@ObservationTracked` to stored properties",
+      "language": "swift",
+      "code": "@Observable final class Person {\n    @ObservationTracked var name: String\n    @ObservationTracked var age: Int\n    @ObservationTracked var isFavorite: Bool\n  \n\t\tinternal let _$observationRegistrar = ObservationRegistrar<Person>()\n    internal func access<Member>(\n        keyPath: KeyPath<Person, Member>\n    ) {\n        _$observationRegistrar.access(self, keyPath: keyPath)\n    }\n    internal func withMutation<Member, T>(\n        keyPath: KeyPath<Person, Member>,\n        _ mutation: () throws -> T\n    ) rethrows -> T {\n        try _$observationRegistrar.withMutation(of: self, keyPath: keyPath, mutation)\n    }\n}"
+    },
+    {
+      "timestamp": "18:16",
+      "title": "The @ObservationTracked macro adds getters and setters to stored properties",
+      "language": "swift",
+      "code": "@Observable final class Person {\n    @ObservationTracked var name: String { get { … } set { … } }\n    @ObservationTracked var age: Int { get { … } set { … } }\n    @ObservationTracked var isFavorite: Bool { get { … } set { … } }\n  \n\t\tinternal let _$observationRegistrar = ObservationRegistrar<Person>()\n    internal func access<Member>(\n        keyPath: KeyPath<Person, Member>\n    ) {\n        _$observationRegistrar.access(self, keyPath: keyPath)\n    }\n    internal func withMutation<Member, T>(\n        keyPath: KeyPath<Person, Member>,\n        _ mutation: () throws -> T\n    ) rethrows -> T {\n        try _$observationRegistrar.withMutation(of: self, keyPath: keyPath, mutation)\n    }\n}"
+    },
+    {
+      "timestamp": "23:59",
+      "title": "A wrapper for a file descriptor",
+      "language": "swift",
+      "code": "struct FileDescriptor {\n    private var fd: CInt\n  \n    init(descriptor: CInt) { self.fd = descriptor }\n\n    func write(buffer: [UInt8]) throws {\n        let written = buffer.withUnsafeBufferPointer {\n            Darwin.write(fd, $0.baseAddress, $0.count)\n        }\n        // ...\n    }\n  \n    func close() {\n        Darwin.close(fd)\n    }\n}"
+    },
+    {
+      "timestamp": "24:30",
+      "title": "The same FileDescriptor wrapper as a class",
+      "language": "swift",
+      "code": "class FileDescriptor {\n    private var fd: CInt\n  \n    init(descriptor: CInt) { self.fd = descriptor }\n\n    func write(buffer: [UInt8]) throws {\n        let written = buffer.withUnsafeBufferPointer {\n            Darwin.write(fd, $0.baseAddress, $0.count)\n        }\n        // ...\n    }\n  \n    func close() {\n        Darwin.close(fd)\n    }\n    deinit {\n        self.close(fd)\n    }\n}"
+    },
+    {
+      "timestamp": "26:06",
+      "title": "Using Copyable in the FileDescriptor struct",
+      "language": "swift",
+      "code": "struct FileDescriptor: ~Copyable {\n    private var fd: CInt\n  \n    init(descriptor: CInt) { self.fd = descriptor }\n\n    func write(buffer: [UInt8]) throws {\n        let written = buffer.withUnsafeBufferPointer {\n            Darwin.write(fd, $0.baseAddress, $0.count)\n        }\n        // ...\n    }\n  \n    func close() {\n        Darwin.close(fd)\n    }\n  \n    deinit {\n        Darwin.close(fd)\n    }\n}"
+    },
+    {
+      "timestamp": "26:35",
+      "title": "`close()` can also be marked as consuming",
+      "language": "swift",
+      "code": "struct FileDescriptor {\n    private var fd: CInt\n  \n    init(descriptor: CInt) { self.fd = descriptor }\n\n    func write(buffer: [UInt8]) throws {\n        let written = buffer.withUnsafeBufferPointer {\n            Darwin.write(fd, $0.baseAddress, $0.count)\n        }\n        // ...\n    }\n  \n    consuming func close() {\n        Darwin.close(fd)\n    }\n  \n    deinit {\n        Darwin.close(fd)\n    }\n}"
+    },
+    {
+      "timestamp": "26:53",
+      "title": "When `close()` is called, it must be the final use",
+      "language": "swift",
+      "code": "let file = FileDescriptor(fd: descriptor)\nfile.write(buffer: data)\nfile.close()"
+    },
+    {
+      "timestamp": "27:20",
+      "title": "Compiler errors instead of runtime failures",
+      "language": "swift",
+      "code": "let file = FileDescriptor(fd: descriptor)\nfile.close() // Compiler will indicate where the consuming use is\nfile.write(buffer: data) // Compiler error: 'file' used after consuming"
+    },
+    {
+      "timestamp": "28:52",
+      "title": "Using C++ from Swift",
+      "language": "swift",
+      "code": "// Person.h\nstruct Person {\n    Person(const Person &);\n    Person(Person &&);\n    Person &operator=(const Person &);\n    Person &operator=(Person &&);\n    ~Person();\n  \n    std::string name;\n    unsigned getAge() const;\n};\nstd::vector<Person> everyone();\n\n// Client.swift\nfunc greetAdults() {\n    for person in everyone().filter { $0.getAge() >= 18 } {\n        print(\"Hello, \\(person.name)!\")\n    }\n}"
+    },
+    {
+      "timestamp": "29:51",
+      "title": "Using Swift from C++",
+      "language": "swift",
+      "code": "// Geometry.swift\nstruct LabeledPoint {\n    var x = 0.0, y = 0.0\n    var label: String = “origin”\n    mutating func moveBy(x deltaX: Double, y deltaY: Double) { … }\n    var magnitude: Double { … }\n}\n\n// C++ client\n#include <Geometry-Swift.h>\n\nvoid test() {\n    Point origin = Point()\n    Point unit = Point::init(1.0, 1.0, “unit”)\n    unit.moveBy(2, -2)\n    std::cout << unit.label << “ moved to “ << unit.magnitude() << std::endl;\n}"
+    },
+    {
+      "timestamp": "35:30",
+      "title": "An actor that manages a database connection",
+      "language": "swift",
+      "code": "// Custom actor executors\n\nactor MyConnection {\n    private var database: UnsafeMutablePointer<sqlite3>\n  \n    init(filename: String) throws { … }\n  \n    func pruneOldEntries() { … }\n    func fetchEntry<Entry>(named: String, type: Entry.Type) -> Entry? { … }\n}\n\nawait connection.pruneOldEntries()"
+    },
+    {
+      "timestamp": "35:58",
+      "title": "MyConnection with a serial dispatch queue and a custom executor",
+      "language": "swift",
+      "code": "actor MyConnection {\n  private var database: UnsafeMutablePointer<sqlite3>\n  private let queue: DispatchSerialQueue\n  \n  nonisolated var unownedExecutor: UnownedSerialExecutor { queue.asUnownedSerialExecutor() }\n\n  init(filename: String, queue: DispatchSerialQueue) throws { … }\n  \n  func pruneOldEntries() { … }\n  func fetchEntry<Entry>(named: String, type: Entry.Type) -> Entry? { … }\n}\n\nawait connection.pruneOldEntries()"
+    },
+    {
+      "timestamp": "36:44",
+      "title": "Dispatch queues conform to SerialExecutor protocol",
+      "language": "swift",
+      "code": "// Executor protocols\n\nprotocol Executor: AnyObject, Sendable {\n    func enqueue(_ job: consuming ExecutorJob)\n}\n\nprotocol SerialExecutor: Executor {\n    func asUnownedSerialExecutor() -> UnownedSerialExecutor\n    func isSameExclusiveExecutionContext(other executor: Self) -> Bool\n}\n\nextension DispatchSerialQueue: SerialExecutor { … }"
+    },
+    {
+      "timestamp": "39:22",
+      "title": "C++ implementation of FoundationDB's \"master data\" actor",
+      "language": "swift",
+      "code": "// C++ implementation of FoundationDB’s “master data” actor\n\nACTOR Future<Void> getVersion(Reference<MasterData> self, GetCommitVersionRequest req) {\n  \tstate std::map<UID, CommitProxyVersionReplies>::iterator proxyItr = self->lastCommitProxyVersionReplies.find(req.requestingProxy);\n  \t++self->getCommitVersionRequests;\n\n  \tif (proxyItr == self->lastCommitProxyVersionReplies.end()) {\n      \treq.reply.send(Never());\n    \t  return Void();\n  \t}\n  \twait(proxyItr->second.latestRequestNum.whenAtLeast(req.requestNum - 1));\n  \n  \tauto itr = proxyItr->second.replies.find(req.requestNum);\n  \tif (itr != proxyItr->second.replies.end()) {\n    \t\treq.reply.send(itr->second);\n    \t\treturn Void();\n  \t}\n\n  \t// ...\n}"
+    },
+    {
+      "timestamp": "40:18",
+      "title": "Swift implementation of FoundationDB's \"master data\" actor",
+      "language": "swift",
+      "code": "// Swift implementation of FoundationDB’s “master data” actor\nfunc getVersion(\n    myself: MasterData, req: GetCommitVersionRequest\n) async -> GetCommitVersionReply? {\n    myself.getCommitVersionRequests += 1\n\n    guard let lastVersionReplies = lastCommitProxyVersionReplies[req.requestingProxy] else {\n        return nil\n    }\n\n    // ...\n    var latestRequestNum = try await lastVersionReplies.latestRequestNum\n          .atLeast(VersionMetricHandle.ValueType(req.requestNum - UInt64(1)))\n\n    if let lastReply = lastVersionReplies.replies[req.requestNum] {\n        return lastReply\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10164/4/6A73A62C-E994-4907-B0CD-58E632F43AF6/downloads/wwdc2023-10164_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10164/4/6A73A62C-E994-4907-B0CD-58E632F43AF6/downloads/wwdc2023-10164_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10170",
+      "year": "2023",
+      "title": "Beyond the basics of structured concurrency",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10170"
+    },
+    {
+      "id": "10167",
+      "year": "2023",
+      "title": "Expand on Swift macros",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10167"
+    },
+    {
+      "id": "10168",
+      "year": "2023",
+      "title": "Generalize APIs with parameter packs",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10168"
+    },
+    {
+      "id": "10187",
+      "year": "2023",
+      "title": "Meet SwiftData",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10187"
+    },
+    {
+      "id": "10172",
+      "year": "2023",
+      "title": "Mix Swift and C++",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10172"
+    },
+    {
+      "id": "10148",
+      "year": "2023",
+      "title": "What’s new in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10148"
+    },
+    {
+      "id": "10166",
+      "year": "2023",
+      "title": "Write Swift macros",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10166"
+    },
+    {
+      "id": "10254",
+      "year": "2021",
+      "title": "Swift concurrency: Behind the scenes",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10254"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:41:34.761Z"
+}

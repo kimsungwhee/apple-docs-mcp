@@ -1,0 +1,102 @@
+{
+  "id": "10022",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10022/",
+  "title": "Create a seamless speech experience in your apps",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Accessibility & Inclusion"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nHi, I'm Dan, and today we're gonna talk about how to create a seamless speech experience in your apps.\n\nIn this talk, I'll go over when to leverage AVSpeechSynthesizer and when you might wanna consider other APIs instead. Then, I'll go over some of the API basics, before jumping into some more advanced topics, like how to route speech through an outgoing call or how to opt speech audio out of your application shared audio session.\n\nLet's start by taking a look at a couple different examples of when you might be considering using speech in your apps. If you are trying to use speech for everyone in your app, AVSpeechSynthesizer is likely a good choice. Perhaps your app is designed to be used without looking at the screen, like how the Maps app uses speech to provide spoken directions.\n\nIf you're trying to provide speech only for people using your app with a screen reader or other assistive technology, AVSpeechSynthesizer may not be the right choice.\n\nAll of our devices ship with VoiceOver, a built-in screen reader with a rich feature set. So there's no need for you to create your own screen reader that's local to your app using AVSpeechSynthesizer.\n\nInstead, make your app accessible using the UIAccessibility APIs. If you need help getting started with this, we have some great talks from past WWDCs that can help.\n\nFor the cases where you want to provide infrequent additional speech to VoiceOver, such as describing an event that has occurred, you can do so by posting an announcement notification. Use UIAccessibility.post and pass in a notification type of announcement and a string that you'd like to have spoken. This will delegate the speech request to VoiceOver so it can manage it for you. If you're building an app that has an experience centered around speech, AVSpeechSynthesizer might be able to provide you with some additional flexibility even if your app is going to be used in conjunction with an assistive technology.\n\nAugmentative Alternative Communication, or AAC, apps are one example of this kind of experience. And Proloquo2Go is an AAC app that does a great job.\n\nIt's a tool for people who are nonverbal, and it uses pictures and other visual cues to help people construct sentences that are spoken aloud via AVSpeechSynthesizer so they may communicate with others.\n\nApps designed for people who are blind or low-vision might also have experiences centered around speech.\n\nSeeing AI is an app that helps people interact with the world around them by describing objects in their environment.\n\nNotice that Seeing AI is still completely accessible to VoiceOver, and all of its UI is properly labeled.\n\nAVSpeechSynthesizer can still help by being used to describe the objects in the viewfinder and gives the app additional control over how and when those speech requests are spoken. Now that we know when it's appropriate to use AVSpeechSynthesizer, let's dive into some of the API.\n\nTo get started, it's pretty simple. All you need to do is create an AVSpeechSynthesizer object.\n\nMake sure that this object is retained until speech is concluded.\n\nNext, create an AVSpeechUtterance, passing in the string you'd like to have spoken.\n\nFinally, call the speak method on your synthesizer, passing in the utterance you've created. Getting started is that simple. If you're trying to provide basic amounts of speech for everyone using your app, this is likely all you'll need to do. By default, AVSpeechSynthesizer will configure your utterance using the settings on your device in Accessibility Spoken Content. Keep in mind that although Siri voices are available to be selected in Spoken Content Settings, they are not available through the AVSpeechSynthesizer API.\n\nIn the case that a Siri voice is the selected voice, we'll automatically configure your utterance using an appropriate fallback voice that matches the same language code as the selected Siri voice. People using your app with an assistive technology like VoiceOver likely have other speech settings configured specifically for that technology. Until now, it hasn't been possible to request that AVSpeechSynthesizer respect those settings instead of the ones on your device in Spoken Content.\n\nWell, this year we're changing that with the new prefersAssistiveTechnologySettings API.\n\nSetting this property to \"true\" on your AVSpeechUtterance will request that AVSpeechSynthesizer apply the settings from the currently running assistive technology to your utterance.\n\nThis includes speech properties such as the selected voice, speaking rate and pitch.\n\nIt's important to note that these properties will take precedence over any properties you are explicitly setting on the utterance.\n\nIf no assistive technology is running, we'll continue to use the settings from Spoken Content or whichever properties you are setting on the utterance.\n\nWe encourage you to set this on your utterances, especially if your app is likely to be used with an assistive technology like VoiceOver.\n\nHowever, this API may not be appropriate for all apps, like AAC apps, so make sure you evaluate your use case accordingly. Let's take a look at how this API affects speech. In this app, tapping on each of the buttons will speak the string \"Hello, world.\" The first button uses the default settings, whereas the second uses the prefersAssistiveTechnologySettings API. On this device, VoiceOver is running with a non-default voice and a higher speaking rate. Let's listen to how the speech sounds.\n\nSpeak \"Hello, world\" button. Hello, world. Speak \"Hello, world\" button. Hello, world.\n\nNotice how the second speech request used the same voice and speaking rate as VoiceOver so that speech fit in much more seamlessly with the VoiceOver experience. Meanwhile, the first button spoke the string quite differently, and it may not be what the person who is using this app would've expected.\n\nSometimes, you might want to customize speech within your app rather than respecting the settings on the device. For example, an AAC app might wanna provide people with a list of voices to choose from and the ability to customize other speech properties so they can create a voice that sounds more unique to them. You can set a voice on your utterance, choosing one using either a language code or an identifier. You can also get a list of voices available on the system by calling the Speech Voices method on AVSpeechSynthesisVoice. This list will be updated as new voices are downloaded in Accessibility Settings. You can further customize speech by setting additional properties on your AVSpeechUtterance, such as speaking rate, a pitch multiplier and a volume. The AVSpeechSynthesizer talk from WWDC18 covers all of these properties in more detail, so I encourage you to watch that if you'd like to learn more.\n\nAn API to consider if you're building an app centered around speech is the mixToTelephonyUplink property.\n\nSetting this property to \"true\" on your AVSpeechSynthesizer will route speech through the current active outgoing call, such as a phone call or a FaceTime call.\n\nIf no call is active, we'll continue to route speech through its default audio route. This is a really powerful API for apps like AAC apps as it can empower people who are nonverbal to communicate using more traditional methods.\n\nAnother API to consider if you're building an app that has an experience centered around speech, or if your app uses a lot of other audio, is the usesApplicationAudioSession API. By default, this is set to \"true\" on your AVSpeechSynthesizer, and speech audio will use your application shared audio session.\n\nYou can set it to \"false\" to delegate away the management of speech audio to the system.\n\nThis way, we'll take care of certain things for you, such as handling audio interruptions and setting your audio session to active or inactive.\n\nAdditionally, speech will duck and mix with the other audio coming from your app, so you don't have to worry about it interfering with things like sound effects, music or video.\n\nThat's an overview of some of the AVSpeechSynthesizer API. Remember, AVSpeechSynthesizer is not a replacement for the UIAccessibility APIs and, instead, should be used in conjunction with those APIs to create a great experience.\n\nUse the prefersAssistiveTechnologySettings API to request that AVSpeechSynthesizer apply the speech settings from the currently running assistive technology to your utterances.\n\nAnd if you're building an experience centered around speech, consider whether the mixToTelephonyUplink or usesApplicationAudioSession APIs can improve the experience for people using your app.\n\nSpeech can be a really powerful tool for people that use assistive technologies, so I really encourage you to take a look at how you can incorporate speech into your apps to empower those people to do some incredible things. Thanks for watching, and enjoy WWDC.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:25",
+      "title": "Post an Announcement to the Running Assistive Technology",
+      "language": "swift",
+      "code": "UIAccessibility.post(notification: .announcement, argument: \"Hello World\")"
+    },
+    {
+      "timestamp": "2:55",
+      "title": "Getting Started with AVSpeechSynthesizer",
+      "language": "swift",
+      "code": "self.synthesizer = AVSpeechSynthesizer()\nlet utterance = AVSpeechUtterance(string: \"Hello World\")\nself.synthesizer.speak(utterance)"
+    },
+    {
+      "timestamp": "4:08",
+      "title": "Respecting the Currently Running Assistive Technology's Speech Settings",
+      "language": "swift",
+      "code": "self.synthesizer = AVSpeechSynthesizer()\nlet utterance = AVSpeechUtterance(string: \"Hello World\")\nutterance.prefersAssistiveTechnologySettings = true\nself.synthesizer.speak(utterance)"
+    },
+    {
+      "timestamp": "5:42",
+      "title": "Customizing Speech - Choosing a Voice",
+      "language": "swift",
+      "code": "let utterance = AVSpeechUtterance(string: \"Hello World\")\n\n// Choose a voice using a language code\nutterance.voice = AVSpeechSynthesisVoice(language: \"en-US\")\n        \n// Choose a voice using an identifier\nutterance.voice = AVSpeechSynthesisVoice(identifier: AVSpeechSynthesisVoiceIdentifierAlex)\n        \n// Get a list of installed voices\nlet voices = AVSpeechSynthesisVoice.speechVoices()"
+    },
+    {
+      "timestamp": "6:16",
+      "title": "Customizing Speech - Pitch and Rate",
+      "language": "swift",
+      "code": "let utterance = AVSpeechUtterance(string: \"Hello World\")\n\n// Choose a rate between 0 and 1, 0.5 is the default rate\nutterance.rate = 0.75\n  \n// Choose a pitch multiplier between 0.5 and 2, 1 is the default multiplier\nutterance.pitchMultiplier = 1.5\n\n// Choose a volume between 0 and 1, 1 is the default value\nutterance.volume = 0.5"
+    },
+    {
+      "timestamp": "6:34",
+      "title": "Mix Speech With an Outgoing Call",
+      "language": "swift",
+      "code": "self.synthesizer = AVSpeechSynthesizer()\nself.synthesizer.mixToTelephonyUplink = true"
+    },
+    {
+      "timestamp": "7:02",
+      "title": "Opting Speech Out of Application's Audio Session",
+      "language": "swift",
+      "code": "self.synthesizer = AVSpeechSynthesizer()\nself.synthesizer.usesApplicationAudioSession = false"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Accessibility for UIKit",
+        "url": "https://developer.apple.com/documentation/UIKit/accessibility-for-uikit"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10022/3/286D1613-442C-41FD-A8D9-B7E7E0AC8758/wwdc2020_10022_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10022/3/286D1613-442C-41FD-A8D9-B7E7E0AC8758/wwdc2020_10022_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10033",
+      "year": "2023",
+      "title": "Extend Speech Synthesis with personal and custom voices",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10033"
+    },
+    {
+      "id": "248",
+      "year": "2019",
+      "title": "Creating an Accessible Reading Experience",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/248"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:09:03.149Z"
+}

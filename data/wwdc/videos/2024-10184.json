@@ -1,0 +1,213 @@
+{
+  "id": "10184",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10184/",
+  "title": "A Swift Tour: Explore Swift’s features and design",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools",
+    "Essentials"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, I’m Allan Shortlidge and I work on the Swift compiler. Today, I’m excited to give you a tour of my favorite programming language: Swift.\n\nSwift is a modern programming language. It is feature rich, has incredible performance, and doesn’t compromise on safety. Its lightweight syntax makes it a joy to program in, and its powerful features can make you super productive.\n\nSwift is best known as the premier language for writing apps that run on Apple’s devices, but it can be used for so much more.\n\nAs a cross-platform systems language, Swift is great for writing server applications, too. And with the Embedded Swift effort that began last year, Swift can scale down to the most resource constrained environments, like the chips powering smart home devices. Today we’re going to take a tour of the core features of Swift. We won’t cover every aspect of it or go deep on any one topic. Our goal is to become familiar with the language and to learn the design principles that make Swift unique.\n\nWhile I introduce you to Swift, I’m going to demonstrate its features by building infrastructure for the next great social network. The code will be organized into a Swift package that has three components: The first is a library that provides the data model for representing users in a graph.\n\nThe second component is an HTTP server that can respond to graph queries. And lastly, I’ll introduce a command line utility that can send requests to our server.\n\nTo kick off this tour of Swift, let’s start with a fundamental programming concept: Representing data.\n\nThe primary way you represent data in Swift is with value types. I’ll show you what I mean with some code. In Swift we can use the var keyword to introduce a variable, like this.\n\nLet’s declare a second variable, y and assign it the value of x. What happens noq if I change the value of x? In the output, the value of y is still one.\n\nThis probably doesn’t surprise you; this is the way that integer types work in most languages. However, it illustrates what we mean when we say a type has value semantics. Value types have a few important properties: Instances of a value type don’t share state, so changes to one value can’t effect other values of the same type.\n\nThey also don’t have identity. This means that if two values are equal then the values are interchangeable.\n\nBasic types like integers, booleans, and floating point numbers are value types in most languages. In Swift, though, value types are everywhere. Another way that we can make our code easier to reason about is by controlling the mutability of data. I introduced x and y with the var keyword, which makes them mutable. If I use let instead of var, though, Swift will guarantee that this value doesn’t change.\n\nLet’s build a more complex data type by introducing a model for Users in our graph.\n\nSwift has structs, which aggregate multiple values into a single value. I’ll create one and call it User.\n\nThis struct will need a few properties. One for a username, another controlling whether the user is visible, and finally a list of friends, which I’ve represented using an array of username strings.\n\nI’ll create a user named Alice and give her some friends.\n\nNotice that I didn’t declare Alice with a type. Swift is a typesafe language, and every variable has a type at compile time, but here the type can be inferred to User so that I don’t have to write it. Next, I’ll create a user named Bruno and give him Alice’s friends.\n\nWhat happens now if I give Alice another friend? The output shows that Alice and Bruno have different friends. That’s because arrays are value types in Swift. When I assigned Alice’s friends to Bruno’s friends, the array was copied. Since the User struct is composed of value types, it is automatically a value type itself. Most types you encounter in typical Swift code are value types. Reference types, like classes, do exist and we’ll cover them later, but their uses are more specialized. Swift emphasizes value types and immutability because controlling when a value can change makes it much easier to reason about code, especially in tricky domains like concurrent programming.\n\nNext up, it’s time to talk about errors. Errors are a part of everyday programming. Disks fill up, network connections fail, and users provide bad data. And yet, your program needs to keep working while informing the user when something goes wrong. Swift provides an error handling model that makes it easy to report errors and gracefully handle them. Swift’s philosophy for error handling can be summed up in three points: First, the parts of your code that can be the source of an error should be marked so they don’t surprise you.\n\nSecond, errors ought to contain enough context to act on. And finally, Swift differentiates between recoverable errors and programmer mistakes.\n\nWhen a network connection fails your program should keep running. On the other hand, an out-of-bounds array access probably indicates that the code is wrong. Swift will halt the program to prevent that bug from escalating into a security issue.\n\nLet’s see how we can make the User model safer by checking error conditions. Right now the friends array can be directly modified which might lead to invalid states like the user being friends with themselves, or the friends list containing duplicate values. I’ll create a method called addFriend so that I can validate additions to the array.\n\nBy default, methods on a struct can’t modify the struct’s properties. This method needs to be declared mutating so that it can change friends.\n\nNow I want to prevent direct use of the friends property so I’ll give it a private setter and switch to calling addFriend instead.\n\nNext, I’d like to report errors from addFriend, which means that I need a way to represent those errors. A Swift enum makes a great error type.\n\nAn enum represents a choice between different cases and can enumerate all of the possible causes of an error. I just need to conform the enum to the Error protocol.\n\nWe’ll cover protocols in more detail later. Next we can check whether the input to addFriend is invalid and throw an error if it is. The compiler is letting us know that the method needs to be marked throws now because it is a source of errors.\n\nI could have checked the input with if statements, but Swift’s guard statements are perfect for detecting error conditions, because they require that we return from the function if the guard condition isn’t met. Now that addFriend is throwing, there’s a diagnostic indicating that we have a source of errors that hasn’t been handled.\n\nWe need to mark the call with the try keyword to indicate that an error might occur.\n\nI want to see what the error looks like, so I’ll trigger one and observe it by wrapping the call in a do/catch block.\n\nGreat, the duplicateFriend error was thrown. One problem with this error, though, is that it doesn’t tell me which friend is a duplicate. I can add that context by giving this case an associated value.\n\nNow the username is printed with the error.\n\nNext, let’s prototype a query that finds a user given their username.\n\nI need a place to store users, so I’ve created a dictionary that maps usernames to user structs.\n\nOur query function needs a way to handle the case where a user is not found. It could throw an error, but another option would be to make the return value optional.\n\nSwift has rich, built-in support for optional values. An optional value is either nil or it’s a valid value of whatever type the optional is wrapping. To get to the value stored in an optional, you must unwrap it.\n\nBy requiring that your code handles both nil and non-nil values, Swift prevents a common mistake you can make in other languages where an unexpectedly nil value causes your program to crash. Let’s see how optionals can be used in our code.\n\nIn the findUser function I can directly return the result of a lookup into this dictionary.\n\nThere’s an error here because Dictionary’s subscript operator returns an optional User, which makes sense since there may not be a value corresponding to the key.\n\nI’ll update the function return type to be optional by adding a question mark. Let’s try calling findUser.\n\nSince it returns an optional, we need to unwrap the result to work with the User. One of the most common ways to unwrap an optional in Swift is to use the if let syntax. If there is a non-nil value it will be bound to the let in the body of this if statement. In a situation where I’m 100% sure, that there will always be a valid value at runtime, I can also use an exclamation point to force unwrap an optional.\n\nSwift will check at runtime that my assumption is correct.\n\nWhoops! There wasn’t a user named dash in the dictionary so the program was halted. I’ll be more careful next time.\n\nError handling and unwrapping optionals in Swift share something in common. Both are designed to ensure that your code is structured to handle, all of the possibilities.\n\nEach of the places in your program that may encounter an error must either catch or propagate the error, and the throws and try keywords show you exactly where that occurs. And when working with an optional value, you must verify the value exists by unwrapping it before use.\n\nThe design of errors and optionals make it easier to write correct, debuggable programs in Swift.\n\nI’ve outlined a basic data model for the social graph and now I think it’s time to start adding some structure to the code. Two units of code organization supported by Swift are modules and packages.\n\nA module in Swift is comprised of a collection of source files that are always built together. Modules can also depend on other modules. For example, the module representing an app might depend on a library module that provides core functionality needed by both the app and a server. A collection of modules can be distributed as a Package.\n\nFinally, the modules in one package can also have dependencies on modules in another package. Swift Package Manager is the tool for managing packages. You can invoke it from the command line to build, test, and run your code. You can also work on a Swift package using Xcode or VS Code.\n\nIf you’re looking for a library to accomplish a specific task, like create an HTTP server, you can probably find an open source Swift package that does it on The Swift Package Index. Later, I’m going to use a few open source packages to build my server and command line utility. Returning to the code, I’ve taken what I’ve written so far and reorganized it into a package. The first module in the package is a library module containing our social graph data model. There are also tests to accompany the library. The error enum and the User struct that we defined earlier are now in their own files. Let’s inspect the User struct. You’ll notice that I made some changes to it. It and many of its members now have the public modifier, which allows them to be used from code outside the library.\n\nPublic is one of several different access control levels available in Swift. There are also private, internal, and package levels. A declaration that is marked private can only be accessed by code in the same file. An internal declaration can only be accessed by other code in the same module. Whenever you don’t specify an access level, Swift implicitly uses internal. Package declarations are accessible from other modules in the same package. And public declarations are accessible from any other module.\n\nUp until now I’ve only talked about value types, but sometimes you need to represent shared mutable state.\n\nFor that, Swift has reference types, like classes. Later, I’m going to build an HTTP server that stores the social graph data model. It will need to respond to requests that perform actions like adding or listing friends. When a request comes in, I want the code handling it to use an abstraction to access the collection of users. That collection needs to be shared and mutated by multiple requests, which means I should use a reference type, to encapsulate it. Let’s take a deeper look at classes with a simpler example. If you’ve programmed in an object oriented language, Swift’s classes should look familiar to you. Classes support single inheritance, like in this example where the Cat class inherits from its superclass Pet. Methods on a superclass can be overridden by methods on a subclass. And type conversions going from subclass to superclass, and vice-versa, work as you would expect.\n\nSwift manages memory automatically. For reference types, Swift has a feature called Automatic Reference Counting. Behind the scenes, the compiler ensures that an object remains alive as long as there are references to it. It does this by incrementing and decrementing a reference count.\n\nWhen there are no more references, the object deallocates immediately. Automatic reference counting is predictable, which is great for performance. One challenge, though, is that cycles can form, preventing objects from deallocating. Here, I have an Owner class that has an array of pets. The Pet class has a reference back to Owner which creates a cycle. To break this cycle, I can use a weak reference to avoid increasing the reference count on Owner. Notice that when we make the owner property weak, it also becomes optional. If the Owner instance deallocates before the Pet does, this property will become nil.\n\nEarlier I said that Swift emphasizes value types, but classes have an important role too. If you need shared mutable state, an object with identity, or inheritance, then classes are the right tool for the job.\n\nIn many object oriented languages, inheritance is the main mechanism for polymorphism. In Swift, though, protocols provide a more general way to build abstractions, and they work equally well with both value and reference types.\n\nA protocol is an abstract set of requirements for a type. We can declare that a type conforms to a protocol by providing implementations of all of the requirements. In this example StringIdentifiable is a protocol with a single requirement. The User type conforms to StringIdentifiable by providing an implementation of the identifier property in an extension.\n\nExtensions are one of my favorite Swift features. You can use one to add methods, properties, protocol conformances to any type, regardless of where that type is defined. The collection types in the Swift standard library are a great example of a family of types that can be abstracted over using a protocol. You’ve already seen the Swift collection types Array and Dictionary, but there are more. A Set is another kind of collection that represents an unordered list of unique elements. Strings are also collections in Swift because they contain lists of Unicode characters.\n\nEvery type that conforms to Collection shares some features in common.\n\nFor example, you can iterate over the contents of any type that conforms to Collection using a for loop. You can also access a collection’s elements using an index.\n\nThe Swift standard library comes with implementations of many standard algorithms that can be used on any Collection. Algorithms like map, filter, and reduce will look familiar if you’ve worked with functional programming before. Swift also has a special shorthand syntax for closures that can make using these algorithms especially elegant. In a closure that does not explicitly name its parameters, dollar prefixed variables represent the parameters anonymously, making it easy to write succinct code. Let’s put Swift’s collection algorithms to work.\n\nMy server will have a feature where it finds people you might know by showing you the friends of your friends.\n\nI can use collection algorithms to compute this set of users.\n\nHere is the UserStore class, which encapsulates a dictionary of users and also has some existing methods to look up users by their usernames. I’ll add a method that queries for friendsOfFriends. To start, it needs to look up the original user. Next, I’m going to create a Set containing the usernames of the original user and their friends. This set contains the usernames that we want to exclude from our results. Now, I’ll build up the result of this method using functional programming. First, I want to map the friends’ usernames to instances of the User struct so that I can access their friends. I used compactMap to look up User structs for each friend and drop any Users that are nil. Next, we want to gather all friends of the user’s friends.\n\nflatMap concatenates these friend lists into a new array. Finally, we need to exclude the original user and their friends. filter drops the usernames that are in the excluded set.\n\nWe’re almost done, but there’s one problem with the result: it might contain duplicate usernames. There is no algorithm in the standard library that will take our result and return only the unique elements in it, but I can implement one myself pretty easily using generics. I’ll extend Collection to add a method called uniqued. The implementation of uniqued should be simple. I can first create a Set with the contents of the collection, and then convert that Set back into an Array. This doesn’t quite work because the Set type requires that the elements stored in it conform to the Hashable protocol. That makes sense, since Set relies on hashing to efficiently store values. To meet this requirement, we can constrain our extension on Collection just collections that contain elements conforming to Hashable.\n\nNow we can call uniqued and we’re done.\n\nWith just a few lines of code we built a useful algorithm that can apply to any Collection type. Because of the flexibility of Swift protocols, the set of types that now have a uniqued method is not limited to some hierarchy of classes. There’s a lot more you can do with protocols and generics, so if you’re curious I recommend watching, “Embrace Swift generics” and “Design protocol interfaces in Swift”.\n\nOkay, before we move on to building an HTTP server, there’s one more important Swift concept I want to tell you about first, which is concurrency.\n\nThe fundamental unit of concurrency in Swift is a Task, which represents an independent, concurrent execution context.\n\nTasks are light-weight, so you can create lots of them. You can wait for a task to complete to get its result, or you can cancel one if its work becomes unnecessary.\n\nTasks can execute concurrently, which will make them great for handling the HTTP requests received by my server. As a task runs it may perform asynchronous operations, like reading from the disk or messaging another service and waiting for a response. While a Task is waiting for an asynchronous operation to complete, it suspends to yield the CPU to other tasks that have work to do.\n\nTo model Task suspension in code, Swift uses the async/await syntax. A function that may suspend is marked with the async keyword. When an async function is called, the await keyword is used to indicate that a suspension can occur on that line.\n\nLet’s put Swift’s concurrency features to work in our server.\n\nI’m going to continue building out the package we were working on earlier using VSCode in a server development environment. I’ve updated the package by creating a new target for the server. It has a dependency on Hummingbird, which is an open source HTTP server framework.\n\nHummingbird handles listening for requests and sending responses so that I can concentrate on my application logic. I’ve written the minimal code to begin listening for connections, but they can’t make any requests yet.\n\nA request handler will need a reference to a UserStore. As a convenience, I’m going to extend UserStore to add a static instance to share between requests.\n\nIt looks like there’s a problem with this code. Accessing a global UserStore variable could introduce data races, because UserStore is not Sendable. Let’s dig into what that means. Suppose our server receives two simultaneous requests. The task associated with the first request needs to look up a user, while the other task is in the middle of creating a new user. Since the UserStore is shared mutable state, these tasks may access the same memory on different threads. This is a data-race, and it may lead to crashes or unpredictable behavior.\n\nAvoiding data races in your code is important. That’s why in the Swift 6 language mode, the data race safety of your program is fully verified at compile time. One of the ways that data race safety is achieved is by requiring that the values shared between concurrency domains are Sendable. A Sendable value is one that protects its state from concurrent accesses. For example, a type might qualify as Sendable, if it acquires a lock while reading and writing mutable state. When the compiler told us that the UserStore global variable was unsafe, it was because UserStore is not known to be Sendable.\n\nTo make UserStore Sendable, we could manually add synchronization to it. However, Swift has a more convenient feature for this, called actors. Actors are similar to classes because they are also reference types that can encapsulate shared mutable state. However, actors automatically protect their state by serializing accesses. Only a single Task is allowed to execute at a time on an actor. Calls to actor methods from outside the context of the actor are asynchronous.\n\nNow that we know a bit more about what this error is telling us, I can make concurrent access to UserStore safe by making it an actor.\n\nNow that accesses are synchronized, the error is gone.\n\nWe can move on to writing an HTTP request handler. I’ll add a friendsOfFriends route which will take a username as an argument and return an array of strings. The handler is a closure that Hummingbird will run on an independent Task. Since UserStore is an actor and we’re accessing it from a different concurrency domain in this closure, that access is asynchronous and we need to use the await keyword.\n\nOkay, let’s quickly test the handler by sending the server a request with curl.\n\nThere’s the response I was expecting. Thanks to Swift 6’s complete data race protection, we can be confident that the server handles concurrency correctly.\n\nWe covered the basics of writing concurrent code in Swift like Tasks, async/await, and actors but there’s much, much more to explore. As a starting point, you can check out “Explore structured concurrency in Swift”.\n\nThe final category of Swift features we’ll cover have to do with extending the language. These powerful features are often used by library authors to build expressive, type-safe APIs and eliminate boilerplate code in your applications.\n\nThe first feature is property wrappers. These wrapper types encapsulate logic for managing stored values. By intercepting the calls to read and write a property, they implement reusable logic that can be applied to a property with a simple annotation. In the example, the Argument property wrapper from the swift-argument-parser package has been applied to the username property. The Argument wrapper designates that the property stores the value of a command line argument. Let’s see this in action. I’ve created a new target in my package for a command line utility. The new target depends on the ArgumentParser package, which it uses to parse command line arguments. In the main file there’s a type conforming to AsyncParsableCommand which provides the top level configuration for the arguments accepted by my tool.\n\nLet’s see this in action.\n\nArgument parser has generated a nicely formatted help message for my tool.\n\nSo far, the only thing the tool does, though, is print this description.\n\nLet’s change that by adding the first subcommand.\n\nI can start by creating a new struct conforming to AsyncParsableCommand.\n\nThis command will request the friends of friends for a user, using the server route we built earlier.\n\nI need to register it as a sub-command.\n\nThe command takes one argument, which is a username, and I’ve annotated the property for that with the Argument property wrapper.\n\nNext, I need to fill in the implementation of the run method.\n\nI’m leveraging a Request utility that I wrote to encapsulate the HTTP requests that this tool will send. It gets initialized with a relative path for the command, the type of data expected in the response, and some arguments in the form of a dictionary.\n\nSince this is an HTTP get operation, invoking the get method executes the request.\n\nThis method is async since it sends a network request and the current Task should suspend while it waits for a response.\n\nLet’s try running it.\n\nLooks like I forgot to specify a username. Argument parser automatically produced some helpful output to explain the missing argument.\n\nLet’s run it again and see what the response is if I specify Alice.\n\nGreat, the command is working. The Argument property wrapper made building my tool’s commands really easy and it’s a great example of the kind of expressive API you can deliver in Swift. Another language tool that library developers can leverage is result builders.\n\nResult builders allow you to express complex values declaratively. A result builder API takes a closure in which a special, lightweight syntax is used to incrementally build up a resulting value. This feature has been used to build native UI frameworks, web page generators, and more. In the Swift standard library, Regex builders leverage this feature to provide an easy-to-read alternative to terse, regular expression strings. In addition to property wrappers and result builders, macros are another very flexible tool. Macros are Swift code that act as a compiler plugin, taking the syntax tree as input and returning transformed code as output.\n\nIf you want to learn more about Result Builders watch: “Write a DSL in Swift using result builders”. Or for macros, watch “Expand on Swift macros”.\n\nThat was our brief tour of Swift. Whether you’re new to the language or you’ve been using it for a while, I hope you’re excited to take what you’ve learned and build something really cool using Swift’s unique features. As you’re writing code, look for opportunities to pick the right tool for the job. It might be that you model something with a value type instead of a class, fully generalize an algorithm using generics, or fix a data race with an actor. Swift has all the tools you need to write elegant yet powerful code.\n\nThanks for joining me today and have a great WWDC!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:49",
+      "title": "Integer variables",
+      "language": "swift",
+      "code": "var x: Int = 1\nvar y: Int = x\nx = 42\ny"
+    },
+    {
+      "timestamp": "3:04",
+      "title": "User struct",
+      "language": "swift",
+      "code": "struct User {\n    let username: String\n    var isVisible: Bool = true\n    var friends: [String] = []\n}\n\nvar alice = User(username: \"alice\")\nalice.friends = [\"charlie\"]\n\nvar bruno = User(username: \"bruno\")\nbruno.friends = alice.friends\n\nalice.friends.append(\"dash\")\nbruno.friends"
+    },
+    {
+      "timestamp": "3:05",
+      "title": "User struct error handling",
+      "language": "swift",
+      "code": "struct User {\n    let username: String\n    var isVisible: Bool = true\n    var friends: [String] = []\n\n    mutating func addFriend(username: String) throws {\n        guard username != self.username else {\n            throw SocialError.befriendingSelf\n        }\n        guard !friends.contains(username) else {\n            throw SocialError.duplicateFriend(username: username)\n        }\n        friends.append(username)\n    }\n}\n\nenum SocialError: Error {\n    case befriendingSelf\n    case duplicateFriend(username: String)\n}\n\nvar alice = User(username: \"alice\")\ndo {\n    try alice.addFriend(username: \"charlie\")\n    try alice.addFriend(username: \"charlie\")\n} catch {\n    error\n}\n\nvar allUsers = [\n    \"alice\": alice\n]\n\nfunc findUser(_ username: String) -> User? {\n    allUsers[username]\n}\n\nif let charlie = findUser(\"charlie\") {\n    print(\"Found \\(charlie)\")\n} else {\n    print(\"charlie not found\")\n}\n\nlet dash = findUser(\"dash\")!"
+    },
+    {
+      "timestamp": "11:01",
+      "title": "SocialGraph package manifest",
+      "language": "swift",
+      "code": "// swift-tools-version: 6.0\n\nimport PackageDescription\n\nlet package = Package(\n    name: \"SocialGraph\",\n    products: [\n        .library(\n            name: \"SocialGraph\",\n            targets: [\"SocialGraph\"]),\n    ],\n    dependencies: [\n      .package(url: \"https://github.com/apple/swift-testing.git\", branch: \"main\"),\n    ],\n    targets: [\n        .target(\n            name: \"SocialGraph\"),\n        .testTarget(\n            name: \"SocialGraphTests\",\n            dependencies: [\n                \"SocialGraph\",\n                .product(name: \"Testing\", package: \"swift-testing\"),\n            ]),\n    ]\n)"
+    },
+    {
+      "timestamp": "11:12",
+      "title": "User struct",
+      "language": "swift",
+      "code": "/// Represents a user in the social graph.\npublic struct User: Equatable, Hashable {\n    /// The user's username, which must be unique in the service.\n    public let username: String\n\n    /// Whether or not the user should be considered visible\n    /// when performing queries.\n    public var isVisible: Bool\n\n    /// The usernames of the user's friends.\n    public private(set) var friends: [String]\n\n    public init(\n        username: String,\n        isVisible: Bool = true,\n        friends: [String] = []\n    ) {\n        self.username = username\n        self.isVisible = isVisible\n        self.friends = friends\n    }\n\n    /// Adds a username to the user's list of friends. Throws an\n    /// error if the username cannot be added.\n    public mutating func addFriend(username: String) throws {\n        guard username != self.username else {\n            throw SocialError.befriendingSelf\n        }\n        guard !friends.contains(username) else {\n            throw SocialError.alreadyFriend(username: username)\n        }\n        friends.append(username)\n    }\n}"
+    },
+    {
+      "timestamp": "12:36",
+      "title": "Classes",
+      "language": "swift",
+      "code": "class Pet {\n    func speak() {}\n}\n\nclass Cat: Pet {\n    override func speak() { print(\"meow\") }\n\n    func purr() { print(\"purr\") }\n}\n\nlet pet: Pet = Cat()\npet.speak()\n\nif let cat = pet as? Cat {\n    cat.purr()\n}"
+    },
+    {
+      "timestamp": "12:59",
+      "title": "Automatic reference counting",
+      "language": "swift",
+      "code": "class Pet {\n    var toy: Toy?\n}\n\nclass Toy {}\n\nlet toy = Toy()\nlet pets = [Pet()]\n\n// Give toy to pets\nfor pet in pets {\n    pet.toy = toy\n}\n\n// Take toy from pets\nfor pet in pets {\n    pet.toy = nil\n}"
+    },
+    {
+      "timestamp": "13:26",
+      "title": "Reference cycles",
+      "language": "swift",
+      "code": "class Pet {\n    weak var owner: Owner?\n}\n\nclass Owner {\n    var pets: [Pet]\n}"
+    },
+    {
+      "timestamp": "14:20",
+      "title": "Protocols",
+      "language": "swift",
+      "code": "protocol StringIdentifiable {\n    var identifier: String { get }\n}\n\nextension User: StringIdentifiable {\n    var identifier: String {\n        username\n    }\n}"
+    },
+    {
+      "timestamp": "15:21",
+      "title": "Common capabilities of Collections",
+      "language": "swift",
+      "code": "let string = \"🥚🐣🐥🐓\"\nfor char in string {\n    print(char)\n}\n// => \"🥚\" \"🐣\" \"🐥\" \"🐓\"\n\nprint(string[string.startIndex])\n// => \"🥚\""
+    },
+    {
+      "timestamp": "15:31",
+      "title": "Collection algorithms",
+      "language": "swift",
+      "code": "let numbers = [1, 4, 7, 10, 13]\n\nlet numberStrings = numbers.map { number in\n    String(number)\n}\n// => [\"1\", \"4\", \"7\", \"10\", \"13\"]\n\nlet primeNumbers = numbers.filter { number in\n    number.isPrime\n}\n// => [1, 7, 13]\n\nlet sum = numbers.reduce(0) { partial, number in\n    partial + number\n}\n// => 35"
+    },
+    {
+      "timestamp": "15:45",
+      "title": "Collection algorithms with anonymous parameters",
+      "language": "swift",
+      "code": "let numbers = [1, 4, 7, 10, 13]\n\nlet numberStrings = numbers.map { String($0) }\n// => [\"1\", \"4\", \"7\", \"10\", \"13\"]\n\n\n\nlet primeNumbers = numbers.filter { $0.isPrime }\n// => [1, 7, 13]\n\n\n\nlet sum = numbers.reduce(0) { $0 + $1 }\n// => 35"
+    },
+    {
+      "timestamp": "16:13",
+      "title": "Friends of friends algorithm",
+      "language": "swift",
+      "code": "/// An in-memory store for users of the service.\npublic class UserStore {\n    var allUsers: [String: User] = [:]\n}\n\nextension UserStore {\n    /// If the username maps to a User and that user is visible,\n    /// returns the User. Returns nil otherwise.\n    public func lookUpUser(_ username: String) -> User? {\n        guard let user = allUsers[username],\n              user.isVisible else {\n            return nil\n        }\n        return user\n    }\n\n    /// If the username maps to a User and that user is visible,\n    /// returns the User. Otherwise, throws an error.\n    public func user(for username: String) throws -> User {\n        guard let user = lookUpUser(username) else {\n            throw SocialError.userNotFound(username: username)\n        }\n        return user\n    }\n\n    public func friendsOfFriends(_ username: String) throws -> [String] {\n        let user = try user(for: username)\n        let excluded = Set(user.friends + [username])\n        return user.friends\n            .compactMap { lookUpUser($0) }      // [String] -> [User]\n            .flatMap { $0.friends }             // [User] -> [String]\n            .filter { !excluded.contains($0) }  // drop excluded\n            .uniqued()\n    }\n}\n\nextension Collection where Element: Hashable {\n    func uniqued() -> [Element] {\n        let unique = Set(self)\n        return Array(unique)\n    }\n}"
+    },
+    {
+      "timestamp": "19:23",
+      "title": "async/await",
+      "language": "swift",
+      "code": "/// Makes a network request to download an image.\nfunc fetchUserAvatar(for username: String) async -> Image {\n    // ...\n}\n\nlet avatar = await fetchUserAvatar(for: \"alice\")"
+    },
+    {
+      "timestamp": "19:43",
+      "title": "Server",
+      "language": "swift",
+      "code": "import Hummingbird\nimport SocialGraph\n\nlet router = Router()\n\nextension UserStore {\n    static let shared = UserStore.makeSampleStore()\n}\n\nlet app = Application(\n    router: router,\n    configuration: .init(address: .hostname(\"127.0.0.1\", port: 8080))\n)\n\nprint(\"Starting server...\")\ntry await app.runService()"
+    },
+    {
+      "timestamp": "20:20",
+      "title": "Data race example",
+      "language": "swift",
+      "code": "// Look up user\nlet user = allUsers[username]\n\n// Store new user\nallUsers[username] = user\n\n// UserStore\nvar allUsers: [String: User]"
+    },
+    {
+      "timestamp": "22:24",
+      "title": "Server with friendsOfFriends route",
+      "language": "swift",
+      "code": "import Hummingbird\nimport SocialGraph\n\nlet router = Router()\n\nextension UserStore {\n    static let shared = UserStore.makeSampleStore()\n}\n\nrouter.get(\"friendsOfFriends\") { request, context -> [String] in\n    let username = try request.queryArgument(for: \"username\")\n    return try await UserStore.shared.friendsOfFriends(username)\n}\n\nlet app = Application(\n    router: router,\n    configuration: .init(address: .hostname(\"127.0.0.1\", port: 8080))\n)\n\nprint(\"Starting server...\")\ntry await app.runService()"
+    },
+    {
+      "timestamp": "23:27",
+      "title": "Property wrappers",
+      "language": "swift",
+      "code": "struct FriendsOfFriends: AsyncParsableCommand {\n    @Argument var username: String\n\n    mutating func run() async throws {\n        // ...\n    }\n}"
+    },
+    {
+      "timestamp": "23:57",
+      "title": "SocialGraph command line client",
+      "language": "swift",
+      "code": "import ArgumentParser\nimport SocialGraph\n\n@main\nstruct SocialGraphClient: AsyncParsableCommand {\n    static let configuration = CommandConfiguration(\n        abstract: \"A utility for querying the social graph\",\n        subcommands: [\n            FriendsOfFriends.self,\n        ])\n}\n\nstruct FriendsOfFriends: AsyncParsableCommand {\n    @Argument(help: \"The username to look up friends of friends for\")\n    var username: String\n\n    func run() async throws {\n        var request = Request(command: \"friendsOfFriends\", returning: [String].self)\n        request.arguments = [\"username\" : username]\n        let result = try await request.get()\n        print(result)\n    }\n}"
+    },
+    {
+      "timestamp": "26:07",
+      "title": "Result builders",
+      "language": "swift",
+      "code": "import RegexBuilder\n\nlet dollarValueRegex = Regex {  // Equivalent to \"\\$[0-9]+\\.[0-9][0-9]\"\n    \"$\"\n    OneOrMore(.digit)\n    \".\"\n    Repeat(.digit, count: 2)\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Forum: Programming Languages",
+        "url": "https://developer.apple.com/forums/topics/programming-languages-topic?cid=vf-a-0010"
+      },
+      {
+        "title": "Value and Reference types",
+        "url": "https://www.swift.org/documentation/articles/value-and-reference-types.html"
+      },
+      {
+        "title": "Wrapping C/C++ Library in Swift",
+        "url": "https://www.swift.org/documentation/articles/wrapping-c-cpp-library-in-swift.html"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10184/4/9805A8C3-1B6A-43C6-AA4B-C8A8FBBECE62/downloads/wwdc2024-10184_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10184/4/9805A8C3-1B6A-43C6-AA4B-C8A8FBBECE62/downloads/wwdc2024-10184_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10167",
+      "year": "2023",
+      "title": "Expand on Swift macros",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10167"
+    },
+    {
+      "id": "110353",
+      "year": "2022",
+      "title": "Design protocol interfaces in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110353"
+    },
+    {
+      "id": "110352",
+      "year": "2022",
+      "title": "Embrace Swift generics",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110352"
+    },
+    {
+      "id": "110357",
+      "year": "2022",
+      "title": "Meet Swift Regex",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110357"
+    },
+    {
+      "id": "10134",
+      "year": "2021",
+      "title": "Explore structured concurrency in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10134"
+    },
+    {
+      "id": "10253",
+      "year": "2021",
+      "title": "Write a DSL in Swift using result builders",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10253"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:40:03.388Z"
+}

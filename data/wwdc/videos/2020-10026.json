@@ -1,0 +1,132 @@
+{
+  "id": "10026",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10026/",
+  "title": "Lists in UICollectionView",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nHello and welcome. My name is Michael Ochs. I'm a frameworks engineer on the UIKit team, and in this video we're going to talk about lists in UICollectionView.\n\nWhat you can see here is the architecture that we consider part of a modern Collection View setup, and this diagram is covered in detail in \"Advances in Collection View.\" There are individual videos for the different parts of this diagram, and in this video we're covering list configuration and list cell.\n\nBut let's first talk about what lists in collection views actually are. Lists in iOS 14 give you UITableView-like appearances in Collection View. We built it on top of Compositional Layout which we introduced in iOS 13. That makes it very flexible and highly customizable.\n\nWe also greatly improved the self-sizing support specifically for lists and are making self-sizing the new default behavior when using lists in UICollectionView. What that means is, you no longer need to worry about manually calculating the height of your cells, but instead, you can simply build your cells using auto layout, and Collection View will take care of the rest for you. If you do require manual sizing, though, you can still do this by overriding preferredLayoutAttributesFittingAttributes on your cell sub-classes.\n\nBut let's circle back to the customization aspect and take a look at what I mean when I say \"highly customizable.\" Here you can see an example of an app that shows all my recently used emojis in the top row, scrolling orthogonally. Below that, you see an outline that sorts all the emojis by group and has this hierarchy built into it. And then at the bottom, we have something that looks a lot more like a UITableView, and in addition you can also swipe each of the cells to mark your favorite emojis. What you see here is a single collection view using a combination of lists and Compositional Layout. Before we dig deeper into how this works, let's look at the components of a list.\n\nIn iOS 14, we're offering a new type called UICollectionLayoutListConfiguration. This is the only new type that is required on the layout side to build lists in Collection View. UICollectionLayoutListConfiguration is built on top of NSCollectionLayoutSection as well as UICollectionViewCompositionalLayout, which are both parts of the existing Compositional Layout system we introduced in iOS 13.\n\nWe're not going to cover Compositional Layout in detail in this talk, so if you're not familiar with it, I highly recommend you to check out \"Advances in Collection View Layout\" from WWDC 2019.\n\nBut now, let's take a look at list configuration.\n\nList configuration gives you the same appearances that you already know from Table View as styles: plain, grouped and inset-grouped. But we're also introducing two new styles exclusive to lists in UICollectionView which we call \"sidebar\" and \"sidebar plain.\" And you can use these new styles to build amazing multi-column apps on iPadOS 14. In addition to the general appearance, list configuration also gives you the option to show or hide separators as well as to configure the headers and footers of your list.\n\nAll this terminology on list configuration should sound familiar to you if you have used UITableView before. But we did add a couple of new bells and whistles that we're going to talk about in a minute. But first, let's take a look at how to create a list.\n\nThe easiest way to create a list is to create a UICollectionLayoutListConfiguration, give it an appearance, and then create a UICollectionViewCompositionalLayout using this configuration.\n\nIn this example, we're using the inset-grouped style, which will make this look exactly like an inset-grouped UITableView, with every section in this layout looking the same.\n\nSo it's very similar to UITableView, and I recommend you to use this approach when possible. However, there is a much more powerful way to create a list, and we call this the per-section setup.\n\nIn the per-section setup, you use the exact same configuration, but instead of creating a compositional layout with it, you create an NSCollectionLayoutSection using this configuration.\n\nThis code can then be used inside the existing section-provider initializer on Compositional Layout, which will then be called for every section in your collection view, allowing you to return an individual layout definition specific to the particular section.\n\nWhat you see here will result in the exact same design as the simple setup I showed you earlier. However, now that we have this set up, we can start customizing our layout on a per-section basis.\n\nFor example, here, for the first section, I'm returning a custom grid layout that I built using the existing Compositional Layout APIs. This is very powerful and can be used for layouts like the one you saw earlier in the video, where I showed you the orthogonally scrolling section of my recently used emojis. Now that you've seen how to create lists in UICollectionView, let's talk about how to configure your headers and footers in a list section.\n\nHeaders and footers in lists in collection views work a bit different than what you are used to from UITableView. Headers and footers in lists in UICollectionView have to be explicitly enabled, and there are two ways to do this.\n\nThe first way is to register your headers and footers as supplementary views. In this example, we're going to configure a header, but the same code also works for footers. Simply set either the header or the footer mode on the configuration to \"supplementary.\" Next, when configured that way, Collection View will ask you to provide a supplementary view when it's time to render your header or footer on-screen.\n\nThe easiest way to provide this view is through a supplementary-view provider on your diffable data source, but you can also implement the equivalent method on your UICollectionView delegate.\n\nInside of this callback, you can then check the element kind for either elementKindSectionHeader or elementKindSectionFooter and configure and return the appropriate view.\n\nIt's important to keep in mind that when using this approach, you have to provide a supplementary view when Collection View asks you to. If you return nil in the supplementary-view callback, Collection View will assert. So if some sections in your layout require a header while others don't, simply use the per-section configuration that I showed you earlier and set the mode to either \"supplementary\" or \"none,\" depending on whether this particular section should show a header or not. I mentioned there are two options. The second option is only available for headers, and is enabled by setting the header mode to firstItemInSection. This tells the collection view to configure the first cell in this particular section to look like a header.\n\nThis is the mode we're recommending when using hierarchical data structures and the new section-snapshot APIs. You can learn all about how this works in \"Advances in Diffable Data Source.\" However, keep in mind that when using this mode, your data source needs to be aware of this, because the first item in your data source no longer represents the actual content of your section but rather the header, probably just a title, of the section. Now that we have covered the layout of lists in Collection View, let's talk about the presentation side. In iOS 14, we are introducing a new UICollectionView cell subclass called UICollectionViewListCell.\n\nIt's worth mentioning that, staying true to the compositional nature of collection views, you can use a list cell anywhere a regular collection-view cell is expected, and also you can just use any UICollectionView cell with list sections. So you can just pick the bits and pieces of the API that you need in order to achieve the design that you are aiming for. Let's take a look at what the pieces are that list cell can help you with.\n\nList cell has more fine-grained support to configure the insets of separators as well as the indentation of your cell's content. In contrast to UITableView, swipe actions are now also a feature of the cell.\n\nFurthermore, we have a greatly improved accessories API, and of course you have access to the default system content and background configurations that you can learn all about in the video \"Modern Cell Configuration.\" So let's talk about separators.\n\nHere you can see an example of a cell that is rendering an image and a label and a separator beneath it. It's a pretty common layout. However, as you might have noticed, the layout you can see here is actually not correct. The separator is supposed to line up with the primary content of your cell, which in this example is not the image view but rather the label of the cell. So on the leading side, the separator is supposed to be inset to match the edge of this label.\n\nLike this.\n\nOn UITableView, this is done by providing a point-based value called a separator inset. This was pretty easy when this API was introduced, because you probably already had a method that manually calculated the x-offset of your label, so you could use the same method to also configure the separator inset with the same value. However, in the modern auto-layout world, where you have safe-area insets, layout margins, dynamic font sizes and SF symbols, it's not that easy anymore. Today we have a highly dynamic environment where all these values could change at any time. With dynamic fonts and SF symbols, even the size of your image could change depending on the preferred font size of your users, and then alter the position of the label. So it's pretty hard to know up front where the label is going to end up. In list cell, we're introducing a new concept we're calling the separator layout guide. This layout guide works a bit different than the existing layout guides in UIKit. Instead of constraining your content to this layout guide, you constrain this layout guide to your content, so it's the opposite of what you're used to when working with layout guides. The easiest way to set up the separator layout guide is to configure you cell's layout first, and once your cell looks the way you intend it to, simply add a single additional constraint. Constrain the separatorLayoutGuide's leading anchor to your label's leading anchor or to whatever the primary content is in your cell. List cell, together with list section, will then make sure to automatically keep the separator aligned with the primary content of your cell.\n\nNote that if you're using the system-provided content configurations, it will do this automatically for you, and you don't have to worry about this. But if you have custom cell layouts, this is an easy way to make sure the separator is positioned correctly.\n\nNow let's talk about swipe actions.\n\nIn contrast to UITableView, swipe actions are now a feature of list cell. You configure them together with the content of your cell. So wherever you configure the image view or the labels of your cell, you can now also set the leading or trailing swipe-actions configuration.\n\nThis requires communication between the cell and the layout, so swipe actions are only supported if your cell is rendered inside of a section that was configured using a list configuration.\n\nIf you require the dynamic nature of the swipe-action API we had on UITableView, where you only create the swipe configuration when the swipe is about to start, you can override the leading or trailing swipe-actions configuration getter and then create the configuration in there. We will make sure to only call the getter when the user actually attempts to swipe this cell.\n\nA word of caution. In the action handler of your swipe actions, make sure to never capture the index path of the cell you are configuring. The index path is not a stable identifier. The index path of this cell changes whenever you're inserting or deleting content above it, which doesn't necessarily reload this particular cell.\n\nSo if you use a stored index path to fetch the data model of the cell when the user triggers a swipe action, you might actually operate on the data of another cell. This is particularly dangerous for the delete action, as you might delete the wrong data.\n\nInstead, either capture the data model directly or a stable identifier that you can use to identify the content of this cell. Diffable data source and its stable item identifiers, as well as the new cell-registration type in iOS 14, are a perfect fit for this.\n\nNext, let's talk about accessories, On UITableView, the accessories API was fairly limited. You had access to an accessory type and an accessory view, which were mutually exclusive and were only relevant for the trailing side of your cell.\n\nList cell offers many new accessory types and also allows you to configure accessories for both the trailing and the leading side of the cell, and you can even configure multiple accessories on the same side.\n\nFurthermore, where in UITableView cell accessories were more like decoration views, in list cell they can enable functionality.\n\nFor example, if you configure a cell with the reorder accessory, we will automatically put the collection view in reordering mode when the user taps this accessory, assuming you also implement the necessary reorder callbacks.\n\nAnother example is the delete accessory, which was previously known as the delete edit control. If the user taps this accessory, list cell will automatically reveal any configured trailing swipe actions of your cell.\n\nAnd we also have a brand-new accessory: the outline-disclosure accessory. When the user taps this accessory, the cell will automatically communicate with the data source and expand or collapse the children of this cell. This requires the use of the new section-snapshot APIs, and you can learn all about that in \"Advances in Diffable Data Source.\" Now let's take a look at how the API works. In order to configure the accessories of your cell, all you have to do is to set a single accessories property on list cell to an area of UI cell accessories. For this example, I'm going to configure the cell with a disclosure indicator and a delete accessory. The system knows that the disclosure indicator is supposed to always be on the trailing side of your cell, whereas the delete accessory always shows on the leading side of your cell. So UIKit will automatically sort the accessories in the correct order and show them on the appropriate side.\n\nFurthermore, the system also knows that, while the disclosure indicator is supposed to be visible all the time, the delete accessory should only be visible when the collection view is in editing mode. So UIKit will automatically animate the delete accessory in or out when entering or exiting edit mode.\n\nWe provide a lot of these system defaults, but we allow you to customize almost all of them. For example, if you want the disclosure indicator to only be visible when not in editing mode, simply set the displayed parameter to whenNotEditing. This is a super-declarative API, where UIKit takes care of all the states for you. As you've seen, lists are a highly customizable layout that is very modular and flexible. It is super easy to adopt, so go check out the sample code and play around with it. There is a lot more to discover in there. And once you've familiarized yourself with the new APIs, think about where you could enhance the layouts in your app. Think about where you could replace an existing table view and make use of the flexibility to mix lists with any custom compositional layout. And of course, also check out all the other videos we have on UICollectionView. There are a lot more amazing features in collection views in iOS 14.\n\nThank you so much for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:47",
+      "title": "Simple Setup",
+      "language": "swift",
+      "code": "// Simple setup\n     \nlet configuration = UICollectionLayoutListConfiguration(appearance: .insetGrouped)\nlet layout = UICollectionViewCompositionalLayout.list(using: configuration)"
+    },
+    {
+      "timestamp": "4:25",
+      "title": "Per-Section Setup",
+      "language": "swift",
+      "code": "// Per section setup\n     \nlet configuration = UICollectionLayoutListConfiguration(appearance: .insetGrouped)\nlet section = NSCollectionLayoutSection.list(using: configuration, layoutEnvironment: layoutEnvironment)"
+    },
+    {
+      "timestamp": "4:40",
+      "title": "Per-Section Setup full",
+      "language": "swift",
+      "code": "// Per section setup\n\nlet layout = UICollectionViewCompositionalLayout() {\n    [weak self] sectionIndex, layoutEnvironment in\n    guard let self = self else { return nil }\n\n    // @todo: add custom layout sections for various sections\n  \n    let configuration = UICollectionLayoutListConfiguration(appearance: .insetGrouped)\n    let section = NSCollectionLayoutSection.list(using: configuration, layoutEnvironment: layoutEnvironment)\n    return section\n}"
+    },
+    {
+      "timestamp": "5:49",
+      "title": "Header Mode Supplementary",
+      "language": "swift",
+      "code": "var configuration = UICollectionLayoutListConfiguration(appearance: .insetGrouped)\nconfiguration.headerMode = .supplementary\nlet layout = UICollectionViewCompositionalLayout.list(using: configuration)\n\ndataSource.supplementaryViewProvider = { (collectionView, elementKind, indexPath) in\n    if elementKind == UICollectionView.elementKindSectionHeader {\n        return collectionView.dequeueConfiguredReusableSupplementary(using: header, for: indexPath)\n    }\n    else {\n        return nil\n    }\n}"
+    },
+    {
+      "timestamp": "6:51",
+      "title": "Header Mode Supplementary Optional Header",
+      "language": "swift",
+      "code": "let layout = UICollectionViewCompositionalLayout() {\n    [weak self] sectionIndex, layoutEnvironment in\n    guard let self = self else { return nil }\n\n    // check if this section should show a header, e.g. by implementing a shouldShowHeader(for:) method.\n    let sectionHasHeader = self.shouldShowHeader(for: sectionIndex)\n  \n    let configuration = UICollectionLayoutListConfiguration(appearance: .insetGrouped)\n    configuration.headerMode = sectionHasHeader ? .supplementary : .none\n    let section = NSCollectionLayoutSection.list(using: configuration, layoutEnvironment: layoutEnvironment)\n    return section\n}"
+    },
+    {
+      "timestamp": "7:07",
+      "title": "Header Mode First Item In Section",
+      "language": "swift",
+      "code": "var configuration = UICollectionLayoutListConfiguration(appearance: .insetGrouped)\nconfiguration.headerMode = .firstItemInSection\nlet layout = UICollectionViewCompositionalLayout.list(using: configuration)"
+    },
+    {
+      "timestamp": "11:40",
+      "title": "Swipe Actions",
+      "language": "swift",
+      "code": "let cellRegistration = UICollectionView.CellRegistration<UICollectionViewListCell, Model> { (cell, indexPath, item) in\n    // @todo configure the cell's content\n    \n    let markFavorite = UIContextualAction(style: .normal, title: \"Mark as Favorite\") {\n        [weak self] (_, _, completion) in\n        guard let self = self else { return }\n        // trigger the action with a reference to the model\n        self.markItemAsFavorite(with: item.identifier)\n        completion(true)\n    }\n    cell.leadingSwipeActionsConfiguration = UISwipeActionsConfiguration(actions: [markFavorite])\n}"
+    },
+    {
+      "timestamp": "14:55",
+      "title": "Accessories",
+      "language": "swift",
+      "code": "let cellRegistration = UICollectionView.CellRegistration<UICollectionViewListCell, String> { (cell, indexPath, item) in\n    // @todo configure the cell's content\n                                                                                            \n    cell.accessories = [\n        .disclosureIndicator(),\n        .delete()\n    ]\n}"
+    },
+    {
+      "timestamp": "15:51",
+      "title": "Accessories w/ Parameters",
+      "language": "swift",
+      "code": "let cellRegistration = UICollectionView.CellRegistration<UICollectionViewListCell, String> { (cell, indexPath, item) in\n    // @todo configure the cell's content\n                                                                                            \n    cell.accessories = [\n        .disclosureIndicator(displayed: .whenNotEditing),\n        .delete()\n    ]\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Implementing modern collection views",
+        "url": "https://developer.apple.com/documentation/UIKit/implementing-modern-collection-views"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10026/6/9DBF6E96-B0C9-4104-B03E-F016434855BD/wwdc2020_10026_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10026/6/9DBF6E96-B0C9-4104-B03E-F016434855BD/wwdc2020_10026_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10045",
+      "year": "2020",
+      "title": "Advances in diffable data sources",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10045"
+    },
+    {
+      "id": "10097",
+      "year": "2020",
+      "title": "Advances in UICollectionView",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10097"
+    },
+    {
+      "id": "10105",
+      "year": "2020",
+      "title": "Build for iPad",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10105"
+    },
+    {
+      "id": "10027",
+      "year": "2020",
+      "title": "Modern cell configuration",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10027"
+    },
+    {
+      "id": "215",
+      "year": "2019",
+      "title": "Advances in Collection View Layout",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/215"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:55:18.917Z"
+}

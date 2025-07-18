@@ -1,0 +1,182 @@
+{
+  "id": "110358",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/110358/",
+  "title": "Swift Regex: Beyond the basics",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Swift"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Hi, I'm Richard, I'm an engineer on the Swift Standard Library team. Today, let's embark on a journey beyond the basics of Swift Regex. Swift 5.7 is gaining powerful new capabilities for string processing. They start with the 'Regex' type, a new type in the Swift Standard Library. A language built-in Regex literal syntax, which makes this powerful and familiar concept even more first-class. And finally, a result builder API called RegexBuilder. It is a domain-specific language, or DSL, that takes advantage of the syntactic simplicity and composability of result builders, and pushes the readability of Regex to a whole new level.\n\nFor background as to why Swift Regex makes it easier to process strings, check out the Meet Swift Regex session by my colleague Michael. Let's look at a very simple example of Swift Regex. Let's say I have a string of data, and like to match and extract the user ID from this string. I can create a regular expression from text like I normally do with 'NSRegularExpression'. It matches \"user_id\" colon followed by zero or more whitespaces followed by one or more digits What's different this time is that we are creating a value of type Regex. This is a new type in the Swift Standard Library. I can then use string's 'firstMatch' algorithm to find the first occurrence of the pattern defined by this Regex, and print the whole match, just like that. Because my Regex string is known at compile-time, I can switch to using a Regex literal so that the compiler would check for syntax errors and Xcode can show syntax highlighting. But for ultimate readability and customizations, I can use the Regex builder DSL. With Regex builder, reading the content of a Regex is as easy as reading native Swift API. In this session I will show you how Regex works and how you can apply Regex in your workflow. A Regex is a program that is to be executed by its underlying Regex engine. When executing a Regex, the Regex engine takes an input string, and performs matching from the start to the end of the string. Let's take a look at a very simple Regex. This Regex matches a string that starts with one or more of letter \"a\" followed by one or more digits. I use one of the matching algorithms, 'wholeMatch', to match input \"aaa12\". The Regex engine will start from the first character of the input. First, it matches one or more of character a. At this point, it reaches character \"1\" and tries to match this character against character \"a\". But it doesn't match. So the Regex engine moves to the next pattern in the Regex, to match one or more digits. As we reach the end of the string, matching succeeds. In the rest of this session, I will explain a bit more about this execution model. With Regex built on its underlying Regex engine, the Regex builder DSL and Regex-powered algorithms expand the power and expressivity of Regex.\n\nRegex-powered algorithms are collection-based APIs that provide some of the most common operations such as first match, which finds the first occurrence of a Regex in a string, 'wholeMatch', which matches the entire string against a Regex, 'prefixMatch', which matches the prefix of a string against a Regex. Besides matching, the Swift standard library also added APIs for Regex-based predication, replacement, trimming, and splitting. Also, Regex can now be used in Swift's pattern matching syntax in control flow statements, making it easier than ever to switch on strings. Finally, on top of Regex builder and Regex-powered algorithms, this year, Foundation introduced its own Regex support that works seamlessly with Regex builder. The Regex support in Foundation is none other than the formatters and parsers that you are probably already using, such as those for Date and Number. If you want to learn more about these APIs, watch the What's new in Foundation session from WWDC21. This year, Foundation is adding support for formatting and parsing URLs as well. With Regex support in Foundation, you can embed the Foundation parsers directly in Regex builder. For example, to parse a bank statement like this, I can use a Foundation-provided date parser with a custom format and a currency parser with a domain-specific parse strategy. This is a really big deal because you can create Regexes out of existing battle-tested parsers that take care of corner cases and support localization, and compose them with the expressivity of the Regex builder DSL. To show you how you can apply Swift Regex to your workflow, let's work out an example together. I have been writing a script to parse the logs from running XCTest-based unit tests. A test log starts and ends with the status of a test suite. Then XCTest runs every test case and reports the status of the test case. Today let's parse the first and the last lines of the log. It's information about a test suite. First, I import RegexBuilder. RegexBuilder is a new module in the Swift Standard Library that provides the RegexBuilder DSL. Regex can be initialized with a trailing closure that represents the body of the Regex. Let's look at an example log message. There are three variable substrings that we care about in this log; the test suite's name, the status, whether it started, passed, or failed, and the timestamp. I can parse other parts of this line verbatim, while coming up with a pattern to parse the three variable substrings. The log message starts with the word \"test suite\", followed by a space and a single quote. Then we parse the test suite's name. The name is an identifier, which can contain lowercase or uppercase letters or digits, but the first character can never be a digit.\n\nSo we create a custom character class to match a letter as the first character. Then I match zero or more characters that are either a letter or a digit from zero to nine. This is very clear and readable, but it's a little cumbersome. Many of you may be familiar with the textual Regex syntax. In RegexBuilder, I can actually embed a concise Regex literal directly in the body. A Regex literal starts and ends with a slash. Swift infers the correct strong type for it. This Regex, for example, matches the substring, \"Hello, WWDC!\". So its output type is substring. But what's really cool about a first-class Regex literal is strongly typed capturing groups. For example, I can write a capturing group to capture two digits as the year. And give a name to this capturing group, \"year\". When I do this, another substring will appear in the output type. Later in this talk, I will show you how you can use captures to extract information from a string. Besides standard Regex literals, Swift also supports extended Regex literals, starting with pound slash and ending with slash pound. The extended literal allows non-semantic whitespaces. In this mode you can split your patterns into multiple lines. With a Regex literal embedded in my RegexBuilder, it's clean and yet familiar. After I parse the test name, I parse a single quote and a whitespace. Now I reach the test status. There are multiple types of test status: started, failed, and passed. To match one of these options, we use 'ChoiceOf'. 'ChoiceOf' matches one of multiple subpatterns and it's exactly what we need. Next we parse what comes immediately after the status, a space followed by \"at\" followed by a space. The rest of the string is a timestamp. We can match this as one or more of any character. But as I look at some more examples, a log message sometimes ends with a period. We still want to use 'Optionally' to match the period when it exists.\n\nTo match an input against a Regex, use one of the provided matching algorithms. Let's use 'wholeMatch', which matches the entire string against a Regex. With 'wholeMatch', I match each of these log messages, and print the matched content. It matched! But we don't just want to know whether it matches the strings. We also want to extract information that we care about, such as the test name, the status, and the timestamp. So let's go ahead and do this with one of the coolest features of Regex, Captures! A Capture saves a portion of the input during matching. It is available as \"Capture\" in RegexBuilder and as a pair of parentheses in Regex syntax. Capturing appends the matched substring to the output tuple type. An output tuple type starts with the whole substring that matched the entire Regex, followed by the first capture, the second capture, and so on. The matching algorithm returns a Regex Match, from which you can obtain the output tuple. The whole match, the first capture, and the second capture.\n\nLet me use captures in my test suite log Regex. I capture the test suite's name, the status, and the timestamp. Let's again run this Regex on some inputs, and print the three things that we captured. That looks like a successful match! It printed the name, the status, and the timestamp.\n\nBut as I look closely, something in the date is a little off. It included the period in the input as part of the capture. So let me go back and check the Regex for errors. I want to focus on the timestamp Regex and see what's wrong with it. Then I realize, the pattern \"one or more of any character\" consumes everything from the first digit of the timestamp, all the way to the end of the line. So the \"Optionally period\" pattern below it never matched.\n\nI can fix this by making this OneOrMore reluctant. \"Reluctant\" is a case of repetition behaviors. One or more, zero or more, optionally, and repeat are what Swift Regex calls repetitions. A repetition is eager by default. It matches as many occurrences as possible. Let me use the example from earlier. When the Regex engine tries to match OneOrMore of any character eagerly, it starts with the first character, and it accepts any character along the way till the end of the input. Then the Regex engine moves on to match Optionally period. There's no more period to match, but it's optional anyway, so it succeeds. Because we're running the 'wholeMatch' algorithm, and both the input and the Regex pattern reach the end, matching succeeds. Although matching succeeded, the period had already been captured unexpectedly as part of the OneOrMore.\n\nWhen we change the repetition behavior to reluctant, the Regex engine matches the repetition a little differently. It matches as few characters as possible. So when the Regex engine matches the input string this time, It carefully marches forward by always trying to match the rest of the Regex first, before consuming a repetition occurrence. When the rest of the Regex doesn't match, the engine backtracks to the repetition and consumes an additional occurrence. Let's fast forward to the last character, the period. Unlike eager behavior, the Regex engine did not consume the period initially as part of the OneOrMore, but tries to match the \"Optionally period\" pattern instead. This matches, and the Regex engine reaches the end of the pattern. So matching succeeds, and it produces the correct capture without a trailing period in it.\n\nBecause eager is the default behavior, as you create your Regex using a repetition, you should think about its implications on your intended match. You can specify the behavior at a per-repetition level, by passing an extra argument, or, you can use the 'repetitionBehavior' modifier to override it for all repetitions that did not specify a behavior. As we've modified the repetition behavior for the timestamp to be reluctant, Matching now extracts the right timestamp without including the period.\n\nLet's come back to the Regex. As I use Capture to extract the test status from the input, its type is Substring. But it would be much better if I can convert the substring into something more programming friendly, like a custom data structure. To do this, I can use a transforming capture. A transforming capture is a Capture with a transform closure. Upon matching, the Regex engine calls the transform closure on the matched substring, which produces a result of the desired type. The corresponding Regex output type becomes the closure's return type. Here, by transforming the capture with Int's initializer from String, I get an optional Int in the output tuple type. To obtain a non-optional output, TryCapture can help. TryCapture is a variant of Capture which accepts a transform that returns an optional and removes the optionality in the output type. Returning nil during matching will cause the Regex engine to backtrack and try an alternative path. TryCapture is most useful when you transform a capture with a failable initializer. A natural fit for storing the captured test status, would be an enumeration. So let's define one. I defined a TestStatus enum with three cases: started, passed, and failed. The raw string values makes this enum initializable from a string.\n\nIn the Regex, I switch to 'TryCapture' with a transform. In the transform closure, I call the TestStatus initializer to convert the matched substring to a TestStatus value. Now the corresponding output type is TestStatus. Using a custom data structure like this makes the Regex match output type safe. Back to the Regex. There is one additional improvement I'd like to make. Currently, I match the timestamp using a wildcard pattern. It's going to produce a substring. This means that if my app wants to understand the timestamp, it'd have to parse the substring again into another data structure. Earlier in the session, I mentioned that Foundation now supports Swift Regex, providing industry-strength parsers as Regexes. So instead of parsing the date as a substring, I can switch to Foundation's ISO 8601 date parser to parse the timestamp as a date. Now the inferred type shows that this Regex outputs a Date.\n\nAs I run 'wholeMatch' on the inputs, I can see that the date string was parsed into a Foundation Date value. Having access to battle-tested parsers as a Regex, like the Foundation date parser, is incredibly handy in day-to-day string processing tasks. Next, I will show you an advanced feature, re-using a pre-existing parser defined elsewhere in a Swift Regex. Let's look at an example where we want to parse the duration of a test case. Duration is a floating point number, such as, 0.001. The best way to do this is, of course, using the Foundation-provided floating point parser with full support for localization. But today, I want to show you what's under the hood and how you can hook into the Regex engine yourself to leverage an existing parser to parse the duration floating-point number. 'strtod' is a function from the C standard library. It takes a string pointer, parses the underlying string, and assigns the end position of the match to the end pointer. Let's parse the duration, the C way. To do this, I can define a parser type on my own, and make it conform to the CustomConsumingRegexComponent protocol.\n\nI define a structure named CDoubleParser. Its 'RegexOutput' is Double, because we are parsing a Double number. In the \"consuming\" method, we make a call to the double parser from the C standard library, passing the string pointers to it, and getting a number back. In the method body, I use the withCString method to obtain the start address. Then I call the 'strtod' C function, passing the start address and a pointer to receive the result end address. I then check for errors. When parsing succeeds, the end address is greater than the start address. Otherwise, it is a parse failure, so I return nil. I compute the upper bound of the match from the pointer produced by the C API. And finally, I return the upper bound of the match, and the number output. I can come back to the Regex and use my 'CDoubleParser' directly in the Regex. The output type is inferred to be Double. When I call 'wholeMatch' and print the parsed number, it outputs 0.001, like I expected. In summary, today we talked about some common and advanced use of Swift Regex, a new feature in Swift 5.7 that enables you to integrate the power of string processing in your apps. A good practice when using Swift Regex is to try to strike a good balance between concision and readability, especially when you mix the RegexBuilder DSL and Regex literals. When you encounter common patterns such as date and URL, always prefer the industry-strength parsers provided by Foundation, as parsing these patterns with custom code can be prone to errors.\n\nFor more information about Swift Regex, check out the series of declarative string processing proposals on Swift Evolution. I hope you'll enjoy processing strings with Swift. Thank you, and have a great WWDC.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "0:39",
+      "title": "Regex matching \"Hi, WWDC22!\"",
+      "language": "swift",
+      "code": "Regex {\n    \"Hi, WWDC\"\n    Repeat(.digit, count: 2)\n    \"!\"\n}"
+    },
+    {
+      "timestamp": "1:06",
+      "title": "Simple Regex from a string",
+      "language": "swift",
+      "code": "let input = \"name:  John Appleseed,  user_id:  100\"\n\nlet regex = try Regex(#\"user_id:\\s*(\\d+)\"#)\n\nif let match = input.firstMatch(of: regex) {\n    print(\"Matched: \\(match[0])\")\n    print(\"User ID: \\(match[1])\")\n}"
+    },
+    {
+      "timestamp": "1:56",
+      "title": "Simple Regex from a literal",
+      "language": "swift",
+      "code": "let input = \"name:  John Appleseed,  user_id:  100\"\n\nlet regex = /user_id:\\s*(\\d+)/\n\nif let match = input.firstMatch(of: regex) {\n    print(\"Matched: \\(match.0)\")\n    print(\"User ID: \\(match.1)\")\n}"
+    },
+    {
+      "timestamp": "2:08",
+      "title": "Simple regex builder",
+      "language": "swift",
+      "code": "import RegexBuilder\n\nlet input = \"name:  John Appleseed,  user_id:  100\"\n\nlet regex = Regex {\n    \"user_id:\"\n    OneOrMore(.whitespace)\n    Capture(.localizedInteger)\n}\n\nif let match = input.firstMatch(of: regex) {\n    print(\"Matched: \\(match.0)\")\n    print(\"User ID: \\(match.1)\")\n}"
+    },
+    {
+      "timestamp": "2:38",
+      "title": "A trivial Regex interpreted by the Regex engine",
+      "language": "swift",
+      "code": "let regex = Regex {\n    OneOrMore(\"a\")\n    OneOrMore(.digit)\n}\n\nlet match = \"aaa12\".wholeMatch(of: regex)"
+    },
+    {
+      "timestamp": "3:49",
+      "title": "Regex-powered algorithms",
+      "language": "swift",
+      "code": "let input = \"name:  John Appleseed,  user_id:  100\"\n\nlet regex = /user_id:\\s*(\\d+)/\n\ninput.firstMatch(of: regex)           // Regex.Match<(Substring, Substring)>\ninput.wholeMatch(of: regex)           // nil\ninput.prefixMatch(of: regex)          // nil\n\ninput.starts(with: regex)             // false\ninput.replacing(regex, with: \"456\")   // \"name:  John Appleseed,  456\"\ninput.trimmingPrefix(regex)           // \"name:  John Appleseed,  user_id:  100\"\ninput.split(separator: /\\s*,\\s*/)     // [\"name:  John Appleseed\", \"user_id:  100\"]\n\nswitch \"abc\" {\ncase /\\w+/:\n    print(\"It's a word!\")\n}"
+    },
+    {
+      "timestamp": "5:14",
+      "title": "Use Foundation parsers in regex builder",
+      "language": "swift",
+      "code": "let statement = \"\"\"\n    DSLIP    04/06/20 Paypal  $3,020.85\n    CREDIT   04/03/20 Payroll $69.73\n    DEBIT    04/02/20 Rent    ($38.25)\n    DEBIT    03/31/20 Grocery ($27.44)\n    DEBIT    03/24/20 IRS     ($52,249.98)\n    \"\"\"\n\nlet regex = Regex {\n    Capture(.date(format: \"\\(month: .twoDigits)/\\(day: .twoDigits)/\\(year: .twoDigits)\"))\n    OneOrMore(.whitespace)\n    OneOrMore(.word)\n    OneOrMore(.whitespace)\n    Capture(.currency(code: \"USD\").sign(strategy: .accounting))\n}"
+    },
+    {
+      "timestamp": "6:24",
+      "title": "XCTest log regex (version 1)",
+      "language": "swift",
+      "code": "import RegexBuilder\n\nlet regex = Regex {\n    \"Test Suite '\"\n    /[a-zA-Z][a-zA-Z0-9]*/\n    \"' \"\n    ChoiceOf {\n        \"started\"\n        \"passed\"\n        \"failed\"\n    }\n    \" at \"\n    OneOrMore(.any)\n    Optionally(\".\")\n}"
+    },
+    {
+      "timestamp": "6:25",
+      "title": "Test our Regex against some inputs",
+      "language": "swift",
+      "code": "let testSuiteTestInputs = [\n    \"Test Suite 'RegexDSLTests' started at 2022-06-06 09:41:00.001\",\n    \"Test Suite 'RegexDSLTests' failed at 2022-06-06 09:41:00.001.\",\n    \"Test Suite 'RegexDSLTests' passed at 2022-06-06 09:41:00.001.\"\n]\n\nfor line in testSuiteTestInputs {\n    if let match = line.wholeMatch(of: regex) {\n        print(\"Matched: \\(match.output)\")\n    }\n}"
+    },
+    {
+      "timestamp": "10:28",
+      "title": "Example of capture",
+      "language": "swift",
+      "code": "let regex = Regex {\n   \"a\"\n   Capture(\"b\")\n   \"c\"\n   /d(e)f/\n}\n\nif let match = \"abcdef\".wholeMatch(of: regex) {\n    let (wholeMatch, b, e) = match.output\n}"
+    },
+    {
+      "timestamp": "11:10",
+      "title": "XCTest log regex (version 2, with captures)",
+      "language": "swift",
+      "code": "import RegexBuilder\n\nlet regex = Regex {\n    \"Test Suite '\"\n    Capture(/[a-zA-Z][a-zA-Z0-9]*/)\n    \"' \"\n    Capture {\n        ChoiceOf {\n            \"started\"\n            \"passed\"\n            \"failed\"\n        }\n    }\n    \" at \"\n    Capture(OneOrMore(.any))\n    Optionally(\".\")\n}"
+    },
+    {
+      "timestamp": "11:21",
+      "title": "Test our Regex (version 2) against some inputs",
+      "language": "swift",
+      "code": "let testSuiteTestInputs = [\n    \"Test Suite 'RegexDSLTests' started at 2022-06-06 09:41:00.001\",\n    \"Test Suite 'RegexDSLTests' failed at 2022-06-06 09:41:00.001.\",\n    \"Test Suite 'RegexDSLTests' passed at 2022-06-06 09:41:00.001.\"\n]\n\nfor line in testSuiteTestInputs {\n    if let (whole, name, status, dateTime) = line.wholeMatch(of: regex)?.output {\n        print(\"Matched: \\\"\\(name)\\\", \\\"\\(status)\\\", \\\"\\(dateTime)\\\"\")\n    }\n}"
+    },
+    {
+      "timestamp": "11:51",
+      "title": "XCTest log regex (version 3, with reluctant repetition)",
+      "language": "swift",
+      "code": "import RegexBuilder\n\nlet regex = Regex {\n    \"Test Suite '\"\n    Capture(/[a-zA-Z][a-zA-Z0-9]*/)\n    \"' \"\n    Capture {\n        ChoiceOf {\n            \"started\"\n            \"passed\"\n            \"failed\"\n        }\n    }\n    \" at \"\n    Capture(OneOrMore(.any, .reluctant))\n    Optionally(\".\")\n}"
+    },
+    {
+      "timestamp": "15:20",
+      "title": "Example of transforming capture",
+      "language": "swift",
+      "code": "Regex {\n    Capture {\n        OneOrMore(.digit)\n    } transform: {\n        Int($0)     // Int.init?(_: some StringProtocol)\n    }\n} // Regex<(Substring, Int?)>"
+    },
+    {
+      "timestamp": "15:55",
+      "title": "Example of transforming capture and removing optionality",
+      "language": "swift",
+      "code": "Regex {\n    TryCapture {\n        OneOrMore(.digit)\n    } transform: {\n        Int($0)     // Int.init?(_: some StringProtocol)\n    }\n} // Regex<(Substring, Int)>"
+    },
+    {
+      "timestamp": "16:21",
+      "title": "XCTest log regex (version 4, with transforming capture)",
+      "language": "swift",
+      "code": "enum TestStatus: String {\n    case started = \"started\"\n    case passed = \"passed\"\n    case failed = \"failed\"\n}\n\nlet regex = Regex {\n    \"Test Suite '\"\n    Capture(/[a-zA-Z][a-zA-Z0-9]*/)\n    \"' \"\n    TryCapture {\n        ChoiceOf {\n            \"started\"\n            \"passed\"\n            \"failed\"\n        }\n    } transform: {\n        TestStatus(rawValue: String($0))\n    }\n    \" at \"\n    Capture(OneOrMore(.any, .reluctant))\n    Optionally(\".\")\n} // Regex<(Substring, Substring, TestStatus, Substring)>"
+    },
+    {
+      "timestamp": "17:23",
+      "title": "XCTest log regex (version 5, with Foundation ISO 8601 date parser)",
+      "language": "swift",
+      "code": "let regex = Regex {\n    \"Test Suite '\"\n    Capture(/[a-zA-Z][a-zA-Z0-9]*/)\n    \"' \"\n    TryCapture {\n        ChoiceOf {\n            \"started\"\n            \"passed\"\n            \"failed\"\n        }\n    } transform: {\n        TestStatus(rawValue: String($0))\n    }\n    \" at \"\n    Capture(.iso8601(\n        timeZone: .current, includingFractionalSeconds: true, dateTimeSeparator: .space))\n    Optionally(\".\")\n} // Regex<(Substring, Substring, TestStatus, Date)>"
+    },
+    {
+      "timestamp": "18:19",
+      "title": "XCTest log duration parser",
+      "language": "swift",
+      "code": "let input = \"Test Case '-[RegexDSLTests testCharacterClass]' passed (0.001 seconds).\"\n\nlet regex = Regex {\n    \"Test Case \"\n    OneOrMore(.any, .reluctant)\n    \"(\"\n    Capture {\n        .localizedDouble\n    }\n    \" seconds).\"\n}\n\nif let match = input.wholeMatch(of: regex) {\n    print(\"Time: \\(match.output)\")\n}"
+    },
+    {
+      "timestamp": "19:16",
+      "title": "CDoubleParser definition",
+      "language": "swift",
+      "code": "import Darwin\n\nstruct CDoubleParser: CustomConsumingRegexComponent {\n    typealias RegexOutput = Double\n\n    func consuming(\n        _ input: String, startingAt index: String.Index, in bounds: Range<String.Index>\n    ) throws -> (upperBound: String.Index, output: Double)? {\n        input[index...].withCString { startAddress in\n            var endAddress: UnsafeMutablePointer<CChar>!\n            let output = strtod(startAddress, &endAddress)\n            guard endAddress > startAddress else { return nil }\n            let parsedLength = startAddress.distance(to: endAddress)\n            let upperBound = input.utf8.index(index, offsetBy: parsedLength)\n            return (upperBound, output)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "20:13",
+      "title": "Use CDoubleParser in regex builder",
+      "language": "swift",
+      "code": "let input = \"Test Case '-[RegexDSLTests testCharacterClass]' passed (0.001 seconds).\"\n\nlet regex = Regex {\n    \"Test Case \"\n    OneOrMore(.any, .reluctant)\n    \"(\"\n    Capture {\n        CDoubleParser()\n    }\n    \" seconds).\"\n} // Regex<(Substring, Double)>\n\nif let match = input.wholeMatch(of: regex) {\n    print(\"Time: \\(match.1)\")\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/110358/6/CCCFE7E0-48F7-4D00-A8C1-6DB5E768F833/downloads/wwdc2022-110358_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/110358/6/CCCFE7E0-48F7-4D00-A8C1-6DB5E768F833/downloads/wwdc2022-110358_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "110357",
+      "year": "2022",
+      "title": "Meet Swift Regex",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110357"
+    },
+    {
+      "id": "110354",
+      "year": "2022",
+      "title": "What's new in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110354"
+    },
+    {
+      "id": "10109",
+      "year": "2021",
+      "title": "What's new in Foundation",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10109"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:48:17.011Z"
+}

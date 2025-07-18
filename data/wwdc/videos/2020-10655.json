@@ -1,0 +1,144 @@
+{
+  "id": "10655",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10655/",
+  "title": "Discover how to download and play HLS offline",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nMy name is Nishant and I am a Streaming Media Engineer at Apple. If you are looking to let your users download and play your HLS content while off line, you've tuned in to the right session. We introduced the ability to download HLS back in 2016. Over the years we have added new functionality and in this talk we'll cover everything you need to know. Many of you already have media content authored as HLS for streaming. You can use the same for downloads. Along with that you can use FairPlay streaming content protection. And finally offline HLS allows your users to download the content in the background. So first question first, should I use offline HLS? Yes. Use it when your user explicitly requests media downloads. They may want to download say when they're about to get on an airplane, or they may be on some expensive cellular data dataplan and they may want to download on Wi-Fi, in all these cases. It's appropriate to use offline HLS. Let's see how we can get you started. Offline HLS starts with the creation of a download task. The download task represents the entire lifecycle of a media download such as a movie. Later on, you need to monitor the download task and update any progress in your app. And finally, once a download is complete you can play it offline. So let's take a look at the download task.\n\nDownload tasks are defined on URLSession. What is a URLSession? URLSession is an object which coordinates all network related tasks such as upload and download tasks.\n\nThe download task specifically inherit certain features from it. The important ones to remember are the Download task are scheduled according to availability of system resources. So in certain cases you may see that, the download does not start immediately. For example, the network connectivity is poor, the download starts when the network improves. Another important thing to remember is that downloads are automatically retried. For example, if you hit network timeouts, AVFoundation retries the download for you. Before we dig in, let's take a look at typical HLS asset we all are a familiar with.\n\nThis particular asset has a bunch of video, audio and subtitle renditions.\n\nWe will be using this as an example going forward. Coming to download tasks, there are two variants. The first one we're going to look at is AVAssetDownloadTask. Using it, you can download one combination of video audio and subtitle renditions. To create one of these download tasks, you need to set up a URLSession specifically AVAssetDownloadURLSession. You create it with the session configuration using an identifier. And then once you have the URLSession you can call makeAssetDownloadTask. Here In this example I'm downloading a movie at 2 megabits. When you create AVAssetDownloadTask automatic media selection will be used. What does that mean? Automatic media selection chooses renditions based on device region and localization preferences. For example if the device region is set as France, French audio and French subtitle renditions will be downloaded. Moving on, after creating one of these things, the next thing you may want to do is monitor it for progress. To do this you need to use AVAssetDownloadDelegate protocol. I would like to highlight two of the interfaces we have here.\n\nThe first one can be used to monitor the progress of your download. It provides you that with the time ranges that have been downloaded rather than bytes, so as to correlate better with media interfaces. We also have didCompleteWithError, which informs you when the download is complete.\n\nYou can use these interfaces to build a progress UI in your app. Here is an example on how you can do it. I wouldn't go into detail but it's here for your reference. Some of you may be wondering what if I want to download multiple audio and subtitle renditions. We have another API called AVAggregateAssetDownloadTask. Using AVAggregateAssetDownloadTask, you choose what renditions you want to download. Going back to our earlier example using AggregateDownloadTask, You can download English audio and English subtitles followed by Spanish audio and Spanish subtitles and French subtitle renditions.\n\nThis API is appropriate when you want to let your users choose which audio and subtitle renditions they want to download. To create one of these, first you need an array of media selections which you want to download. You can create a media selection by opening a mutableMediaSelection from your asset and choosing appropriate media selection option. Once you have your media selections you create AVAssetDownloadURLSession as we did before. Later, you call aggregate AggregateAssetDownloadTask with the media selections you wanted to download. Since AggregateAssetDownloadTask involves multiple media selections, monitoring it is a bit different compared to AVAssetDownloadTask. The first thing to do is split the download progress between your various media selections. You can do this by assigning weights to each one of these media selections. The first media selection will typically involve downloading video and hence will take a longer time. We have observed that this accounts for approximately 70 percent of the download time, but this may vary depending on how your content is authored. Then you split the remaining weight between your other media selections. Keep in mind that downloading audio takes more time compared to downloading subtitle tracks.\n\nGoing back to our earlier example. You can assign 70 percent of the download time to the video rendition, 10 percent of the time to each of the audio renditions. Here I have split the time for the audio transition between studio and multi-channel representation. Finally we can assign the remaining time to the subtitle renditions. In order to get you started, let's look at some of the downloadDelegate interfaces. To monitor progress, you still use the loadedTimeRanges callback. Similarly to AVAssetDownloadTask. But here, in addition to loadedTimeRanges you will be informed about the media selection for which the time range was loaded. Another interface to look at as didCompleteForMediaSelection. You can use this as a synchronization point while estimating your download progress. In case of audio rendition, expect the calls twice: once for studio representation, followed by once far multi-channel representation. Another thing that might happen during their download is your app may get backgrounded. Download tasks still run when your app is in background. When your app is relaunched, you need to restore your existing DownloadTask. You can do this by creating a URLSession with the same configuration identifier you used previously. Then you can restore your existing task and then query the task to get the latest status of your downloads.\n\nYou can also get the original AVAsset from the downloadTkask and you use it. So now you know how to create and monitor the download task. Let's see how you can play them. First let's take a look at where your download is deposited on the disk. In case of AVAssetDownloadTask, you get the location once the download is complete. And in case of aggregateDownloadTask, you get the location via willDownloadTo delegate callback.\n\nWe may want to store this location. We'll see that reason in a bit. Now let's see how we can play your download. Here is how we created a download task earlier. For playback you to use the AVAsset to create your playback item. An advantage of using the same AVAsset is it allows AVFoundation to optimize resources between playback and download. This will be useful in cases where the playback happens before the download is complete. We call this scenario as play while download is in progress. Any media resources fetch during playback will be stored to the disk and will not be refreshed again for the download. Another scenario you may encounter is your user is trying to play along after the download is complete. In that case you may not have the original AVAsset or the downloadTask object lying around.\n\nIn such cases you can recreate an AVAsset using the file URL. This is the same URL we saved earlier. Some of you may be wondering, Alright, I have an asset here probably with a bunch of audio and subtitled renditions, How can I find out what can be played offline? We have an interface called AVAssetCache. We can obtain the AVAssetCache object from your AVAsset. It tells you what can we play it offline. And also what media selections are playable offline. Now you know how to download and play media content while offline. Let's talk about how you can protect your content using FairPlay. FairPlay streaming for offline HLS was introduced back in 2016.\n\nSome of you may already be using FairPlay Streaming for protecting your streaming content. You can do the same for offline HLS as well. If you're new to FairPlay streaming I would recommend you check out our earlier talk \"AVContentKeySession Best Practices\" from WWDC 2018. When streaming, you get your key from your key server as needed, but during offline playback. You may not be able to reach your key server. Instead you create something called as offline key during the download and store it for later use. Let's see how we can get to this offline key. You need AVContentKeySession to start with. Then, initiate key loading as you normally do for the streaming case.\n\nIf you do not know the key required for the download, don't worry. When you create the downloadTask you will also receive a key request from AVContentKeySession, If the key is already not loaded. Then you create a server playback context, SPC for short, by providing your FairPlay streaming application certificate. You call your key server and get back the key in the form of Content Key Context. CKC for short. And provide the CKC to AVContentKeySession. You can later obtain offline key from it. We store there offline key for subsequent use. During offline playback, when you receive a key request you can reply back with the offline key you created earlier. One thing to remember is FairPlay streaming lets your keyservers set an expiration date for offline keys. If the key expires during existing playback session, in order to have a good user experience. The session continues to the end rather than stop abruptly. Finally remember to create a new offline key before expiration. In some cases you may want to securely delete an offline key before it expires. For example when the user deletes the download. Since iOS 12 we can invalidate an offline key by providing it to AVContentKeySession. We can also invalidate all your offline keys by providing your FairPlay streaming application certificate.\n\nAVContentKeySession also allows you to create offline keys for movie rentals. Typical rental scenario involves having 2 expiration dates. One which starts when the user rents a movie, and the other one which starts when the user starts playback. FairPlay Streaming supports this using dual expiry offline keys. For example, you can let your user watch a rental within 30 days of purchase, but once they start watching they have to finish within 48 hours.\n\nAgain this is explained in more detail in \"AVContentKeySession Best Practices\" from WWDC 2018. There is one more thing you may find useful. Your app may be using custom protocols for URL resources when streaming. What are custom protocols for URLs? These are the URLs which begin with custom scheme.\n\nFor example URLs beginning with myscheme and URLs beginning with skd://.\n\nThese are the resources specific to your app and AVFoundation handles them using AVAssetResourceLoader for playlists, andAVContentKeySession for keys. If your app gets backgrounded immediately after the download starts, you can still answer resource requests for custom protocols. Starting from iOS 14, you have 30 seconds to answer any resource requests involving custom protocols. Moving on, let's talk a few things you can do to improve user experience. First let's talk about the download time. Users prefer downloads which complete faster but they also prefer downloads which are of higher quality. You need to find the right balance. One best practice we recommend is to allow your users an option to do fast download. This may be really helpful for those users who are downloading just before catching a flight and finally; and another option for best quality download. For either of these options. You may want to restrict the type and quality of the content you want to download. You can do this by using various option on the downloadTask.\n\nFirstly, we can restrict media rate using minimumRequiredMediaBitrateKey. For example, if we specify minimumRequiredMediaBitrateKey as five megabits, the bitrate really in just about five megabits would be chosen for downloads.\n\nStarting from iOS 14, you can also restrict based on presentation size as well. Another quality restriction you can do is to download HDR presentations are not. By default, the download task would prefer to download HDR presentations if available. Lastly, you may want to restrict based on audio type. Again, by default AVFoundation downloads both stereo and multi-channel audio renditions. Can opt out of multi-channel by setting prefersMultichannel option key to false. Some of you may be wondering, why download both studio and multi-channel representations? We believe that the stereo rendition mixed at the studio better reflects artistic intent. For example the dialogue may be given more prominence compared to other background noise. You may want to experiment with these options and choose them appropriately depending on how your media library is authored. Moving on, let's talk about storage management.\n\nAnother best practice we recommend is you let the operating system manage the storage for your offline download. By doing so it allows operating system to delete and reclaim storage when your app is not running. For example, during software updates operating system can automatically reclaim space when the storage is running low. It also allows your users to delete media content through the settings app. Asset image and title you provide when you create the download task will be displayed here. Now let's take a look at how you can opt into this. You start by getting a shared storage manager.\n\nThen you create a new policy by providing a priority and expiration date Assets would be purged, based on expiration date and then based on the priority.\n\nFinally you set the policy on your downloaded content. Remember to keep the downloaded content at the same system provided location and be prepared for the assets to be deleted by the system. So that is offline HLS and we are really excited for you to start using it. To wrap-up, we went over two different downloadTask using which you can download HLS. The first one is AVAssetDownloadTask which uses automatic media selection to select media renditions to download. And the second one is the aggregateDownloadTask which lets you specify the audio and subtitle renditions you want to download. Finally we looked at how we can use FairPlay Streaming to protect your offline content, and learn some best practices on the way. To get you started, we have a sample app which you can obtain from the resources below.\n\nThank you for joining and\nenjoy the rest of WWDC.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:52",
+      "title": "AVAssetDownloadTask",
+      "language": "swift",
+      "code": "let hlsAsset = AVURLAsset(url: assetURL)\n\nlet backgroundConfiguration = URLSessionConfiguration.background(\n    withIdentifier: \"assetDownloadConfigurationIdentifier\")\nlet assetURLSession = AVAssetDownloadURLSession(configuration: backgroundConfiguration,\n    assetDownloadDelegate: self, delegateQueue: OperationQueue.main())\n\n// Download a Movie at 2 mbps\nlet assetDownloadTask = assetURLSession.makeAssetDownloadTask(asset: hlsAsset,\n    assetTitle: \"My Movie\", assetArtworkData: myAssetArtwork,\n    options: [AVAssetDownloadTaskMinimumRequiredMediaBitrateKey: 2000000])!\nassetDownloadTask.resume()\n\n\n\n// AVAssetDownloadTask uses automatic media selection"
+    },
+    {
+      "timestamp": "3:41",
+      "title": "Monitor AVAssetDownloadTask",
+      "language": "swift",
+      "code": "// Monitor AVAssetDownloadTask\npublic protocol AVAssetDownloadDelegate: URLSessionTaskDelegate {\n\n\n\t// Use to monitor progress\n\tfunc urlSession(_ session: URLSession, assetDownloadTask: AVAssetDownloadTask,\n\t\tdidLoad timeRange: CMTimeRange, totalTimeRangesLoaded loadedTimeRanges: [NSValue],\n\t\ttimeRangeExpectedToLoad: CMTimeRange)\n\n\n\t// Listen for completion\n\tfunc urlSession(_ session: URLSession, task: URLSessionTask,\n\t\tdidCompleteWithError error: Error?)\n\n}"
+    },
+    {
+      "timestamp": "4:10",
+      "title": "Monitoring example",
+      "language": "swift",
+      "code": "// Monitoring\nMyAssetDownloadDelegate: NSObject, AVAssetDownloadDelegate {\n    func urlSession(_ session: URLSession, assetDownloadTask: AVAssetDownloadTask,\ndidLoad timeRange: CMTimeRange, totalTimeRangesLoaded loadedTimeRanges: [NSValue], timeRangeExpectedToLoad: CMTimeRange) {\n\n\t\t// Convert loadedTimeRanges to CMTimeRanges\n\t\tvar percentComplete = 0.0\n\t\tfor value in loadedTimeRanges {\n\t\t\tlet loadedTimeRange: CMTimeRange = value.timeRangeValue \n\t\t\tpercentComplete += CMTimeGetSeconds(loadedTimeRange.duration) /\n\t\t\t\tCMTimeGetSeconds(timeRangeExpectedToLoad.duration)\n\t\t}\n\t\tpercentComplete *= 100\n\t\tprint(\"percent complete: \\(percentComplete)\")\n\t}\n}"
+    },
+    {
+      "timestamp": "4:55",
+      "title": "Choose media-selections",
+      "language": "swift",
+      "code": "let hlsAsset = AVURLAsset(url: assetURL)\nlet myMediaSelections = [] // audio media-selections followed by subtitle media-selections\n\nguard hlsAsset.statusOfValue(forKey: \"availableMediaCharacteristicsWithMediaSelectionOptions\", error: nil) \n   == AVKeyValueStatus.loaded else { return }\n\nlet mediaCharacteristic = //AVMediaCharacteristic.audible or AVMediaCharacteristic.legible\nlet mediaSelectionGroup = hlsAsset.mediaSelectionGroup(forMediaCharacteristic: mediaCharacteristic)\nif let options = mediaSelectionGroup?.options {\n    for option in options {\n        // chose your media selection option\n        if /* this is my option */ {\n            let mutableMediaSelection = hlsAsset.preferredMediaSelection.mutableCopy()\n            mutableMediaSelection.select(option, in: mediaSelectionGroup)\n            myMediaSelections.append(mutableMediaSelection)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "5:11",
+      "title": "AVAggregateAssetDownloadTask",
+      "language": "swift",
+      "code": "let hlsAsset = AVURLAsset(url: assetURL)\nlet myMediaSelections = ...\n\nlet backgroundConfiguration = URLSessionConfiguration.background(\n    withIdentifier: \"assetDownloadConfigurationIdentifier\")\nlet assetURLSession = AVAssetDownloadURLSession(configuration: backgroundConfiguration,\n    assetDownloadDelegate: self, delegateQueue: OperationQueue.main())\n\n// Download a Movie at 2 mbps\nlet aggDownloadTask = assetURLSession.aggregateAssetDownloadTask(with: hlsAsset,\n    mediaSelections: myMediaSelections,\n    assetTitle: \"My Movie\",\n    assetArtworkData: myAssetArtwork,\n    options:[AVAssetDownloadTaskMinimumRequiredMediaBitrateKey: 2000000])!\naggDownloadTask.resume()"
+    },
+    {
+      "timestamp": "6:31",
+      "title": "Monitor AVAggregateAssetDownloadTask",
+      "language": "swift",
+      "code": "// Monitor AVAggregateAssetDownloadTask\npublic protocol AVAssetDownloadDelegate: URLSessionTaskDelegate {\n\n\t// Use to monitor progress\n\tfunc urlSession(_ session: URLSession, \n\t\taggregateAssetDownloadTask: AVAggregateAssetDownloadTask, \n\t\tdidLoad timeRange: CMTimeRange, totalTimeRangesLoaded loadedTimeRanges: [NSValue], \n\t\ttimeRangeExpectedToLoad: CMTimeRange, \n\t\tfor mediaSelection: AVMediaSelection\n\t)\n\n\t// Listen for completion for each media selection\n\tfunc urlSession(_ session: URLSession, \n\t\taggregateAssetDownloadTask: AVAggregateAssetDownloadTask, \n\t\tdidCompleteFor mediaSelection: AVMediaSelection)\n\n    // In case of audio rendition, expect calls once for stereo followed by once for multichannel rep.\n}"
+    },
+    {
+      "timestamp": "7:04",
+      "title": "Restore Tasks on App Launch",
+      "language": "swift",
+      "code": "// Restore Tasks on App Launch\nclass MyAppDelegate: UIResponder, UIApplicationDelegate {\n\tfunc application(_ application: UIApplication, \n\t\t\tdidFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {\n\t\tlet configuration = URLSessionConfiguration.background(withIdentifier:\n\t\t\t\"assetDownloadConfigurationIdentifier\")\n\t\tlet session = URLSession(configuration: configuration) \n\t\tsession.getAllTasks { tasks in\n\t\t\tfor task in tasks {\n\t\t\t\tif let assetDownloadTask = task as? AVAssetDownloadTask {\n\t\t\t\t\t// restore progress indicators, state, etc...\n\t\t\t\t} \n\t\t\t}\n\t\t}\n\t}\n}"
+    },
+    {
+      "timestamp": "7:44",
+      "title": "Store the download location",
+      "language": "swift",
+      "code": "// Store the download location\npublic protocol AVAssetDownloadDelegate: URLSessionTaskDelegate {\n\n\t// AVAssetDownloadTask\n\tfunc urlSession(_ session: URLSession, \n\t\tassetDownloadTask: AVAssetDownloadTask, \n\t\tdidFinishDownloadingTo location: URL)\n\n\t// AVAggregateAssetDownloadTask\n\tfunc urlSession(_ session: URLSession, \n\t\taggregateAssetDownloadTask: AVAggregateAssetDownloadTask, \n\t\twillDownloadTo location: URL)\n\n}"
+    },
+    {
+      "timestamp": "8:05",
+      "title": "Instantiating Your AVAsset for Playback",
+      "language": "swift",
+      "code": "// Instantiating Your AVAsset for Playback\n\n// 1) Create Asset for AVAssetDownloadTask\nlet networkURL = URL(string: \"http://example.com/master.m3u8\")!\nlet asset = AVURLAsset(url: networkURL)\nlet task = assetDownloadSession.makeAssetDownloadTask(asset: asset, assetTitle: \"My Movie\",\nassetArtworkData: nil, options: nil)\n\n\n// 2) Re-use Asset for Playback, Even After Task Restoration at App Launch\nlet playerItem = AVPlayerItem(asset: task.urlAsset)\n\n\n// Reusing asset, will allow AVFoundation to optimize resources between playback and download in cases where the playback happens before the download is complete."
+    },
+    {
+      "timestamp": "8:56",
+      "title": "Create using file URL",
+      "language": "swift",
+      "code": "// Create using file URL\n\nlet fileURL = URL(fileURLWithPath: self.savedAssetDownloadLocation)\nlet asset = AVURLAsset(url: fileURL)\n\nlet playerItem = AVPlayerItem(asset: task.urlAsset)"
+    },
+    {
+      "timestamp": "9:16",
+      "title": "What can I play offline?",
+      "language": "swift",
+      "code": "// What can I play offline?\n\npublic class AVURLAsset {\n\n\tpublic var assetCache: AVAssetCache? { get }\n\n}\n\npublic class AVAssetCache {\n\n\tpublic var isPlayableOffline: Bool { get }\n\n\tpublic func mediaSelectionOptions(in mediaSelectionGroup: AVMediaSelectionGroup)\n\t\t-> [AVMediaSelectionOption]\n\n}"
+    },
+    {
+      "timestamp": "11:33",
+      "title": "Invalidate Offline Key",
+      "language": "swift",
+      "code": "// Invalidate Offline Key\n\npublic class AVContentKeySession {\n\n\tfunc invalidatePersistableContentKey(_ persistableContentKeyData: Data, \n\t\toptions: [AVContentKeySessionServerPlaybackContextOption : Any]? = nil, \n\t\tcompletionHandler handler: @escaping (Data?, Error?) -> Void)\n\n\n\tfunc invalidateAllPersistableContentKeys(forApp appIdentifier: Data, \n\t\toptions: [AVContentKeySessionServerPlaybackContextOption : Any]? = nil, \n\t\tcompletionHandler handler: @escaping (Data?, Error?) -> Void)\n\n\n}"
+    },
+    {
+      "timestamp": "13:54",
+      "title": "Quality Selection",
+      "language": "swift",
+      "code": "// Quality Selection\n\npublic class AVAssetDownloadTask {\n\n\tpublic let AVAssetDownloadTaskMinimumRequiredMediaBitrateKey: String\n\n\t//Starting in iOS 14\n\n\tpublic let AVAssetDownloadTaskMinimumRequiredPresentationSizeKey: String\n\n\tpublic let AVAssetDownloadTaskPrefersHDRKey: String\n\n}"
+    },
+    {
+      "timestamp": "14:30",
+      "title": "Multichannel Audio Selection",
+      "language": "swift",
+      "code": "// Multichannel Audio Selection\n\npublic class AVAssetDownloadTask {\n\n\tpublic let AVAssetDownloadTaskPrefersMultichannelKey: String\n\n}"
+    },
+    {
+      "timestamp": "15:51",
+      "title": "AVAssetDownloadStorageManager",
+      "language": "swift",
+      "code": "// AVAssetDownloadStorageManager \n// Get the singleton \nlet storageManager = AVAssetDownloadStorageManager.shared()\n \n// Create the policy \nlet newPolicy = AVMutableAssetDownloadStorageManagementPolicy() \n\nnewPolicy.expirationDate = myExpiryDate\n\nnewPolicy.priority = .important \n\n// Set the policy\nstorageManager.setStorageManagementPolicy(newPolicy, forURL: myDownloadStorageURL)"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Using AVFoundation to play and persist HTTP Live Streams",
+        "url": "https://developer.apple.com/documentation/AVFoundation/using-avfoundation-to-play-and-persist-http-live-streams"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10655/3/45C0E27F-A3BA-416D-B037-9BEE7466C11F/wwdc2020_10655_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10655/3/45C0E27F-A3BA-416D-B037-9BEE7466C11F/wwdc2020_10655_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10143",
+      "year": "2021",
+      "title": "Explore HLS variants in AVFoundation",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10143"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:24:56.659Z"
+}

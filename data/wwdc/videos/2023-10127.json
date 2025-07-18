@@ -1,0 +1,187 @@
+{
+  "id": "10127",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10127/",
+  "title": "Optimize GPU renderers with Metal",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools",
+    "Graphics & Games"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Hi everyone, I am Gauri Jog, and I work on the Metal Ecosystem team here at Apple. I'm excited to talk to you about optimizing GPU renderers using Metal.\n\nModern digital content creation applications and game-engines empower content creators to interactively create and modify materials for their 3D assets. There are several common techniques for handling these complex and dynamic materials at runtime. Some applications compile materials into individual shaders and others use data-driven solutions such as uber shaders or shader virtual machines. These material-centric workflows have two main performance goals. Authoring of materials should be responsive for fast iteration and the best experience. Rendering performance should be as good as possible for real-time interactivity and efficient final-frame rendering.\n\nIn this demonstration of Blender 3D, material editing is responsive. When you modify a material slider in the user interface, the results are shown instantly in the viewport without any stutters due to shader re-compilation. Once the material is modified, the resulting rendering performance is fast and interactive, giving content creators the ability to efficiently view the results of their work.\n\nTo achieve a responsive and performant workflow in your application, you can leverage key Metal features and implement Metal best practices. Metal can help you maximize complex shaders' performance leverage asynchronous compilation to keep the application responsive, compile faster with dynamic linking and tune your compute shaders with new Metal compiler options. Optimizing your shaders is the key to performance.\n\nAn uber shader is an example of a long and complex shader that can be used to render any possible material. These types of shaders have lots of branches for any possible combination. When artists create material, the material parameters are stored in a Metal buffer, used by the material shader. This buffer gets updated when you change the parameters, but there is no recompilation required.\n\nThis approach provides a great responsive authoring experience. However, uber shaders are not optimal since they have to account for all the possible options.\n\nTo make the most optimal shader variant, you should use Metal specialization with function constants. Simply declare function constants in your Metal shader and set their values at runtime when they are changed. The material buffer contents simply become constants in your shader pipeline states, dynamic branching is eliminated. Specialized materials give you the most performance. This is a comparison of real-time performance data from two common test assets in Blender 3D, Wanderer and Tree Creature. First is the baseline performance in frames per second of the scenes using an uber shader. Second is the specialized shader approach with function constants that performs much faster. In order to make the fastest specialized shader variant, use function constants to disable unused features and eliminate branching.\n\nAn uber shader would query material parameters from a buffer doing conditional branches at runtime to enable and disable features. With function constants you declare one constant per material feature. Now the dynamic branch for the feature codepath is replaced with the function constant, eliminating all unused code. Here is the same uber shader now using function constants. The Metal compiler can fold these as constant booleans and remove unused code. Branch expressions that resolve to false will be optimized out, leaving only the true branches. All the unused control flow is optimized out.\n\nSpecialized shader now does not need to query material data, having a much simpler control flow. Memory loads and branches have been removed resulting in faster runtime performance.\n\nFunction specialization also helps with constants folding. Material parameters that don't change are replaced with constants. This example material uses a collection of input parameters from a Metal buffer. The parameters could be color, weight, sheen color, and many more.\n\nAt material creation time, these static parameters can be replaced with function constants. Function constants produce the most optimal code with no buffer reads required. On the host side, function constant values are provided when creating a specialized pipeline state. MaterialParameter structure can be used to represent all parameters that are constant for a material. IsGlossy is an example of a boolean material feature flag controlling glossiness. MaterialColor is an example of a vector parameter used to describe color.\n\nTo create a specialized Pipeline State Object, iterate over a MetalFunctionConstantValues set and insert the values using setConstantValue.\n\nThen just create a Render Pipeline as usual. The only difference is when creating the fragment function, you'd use the variant of newFunctionWithName with constantValues.\n\nFinally, create your Pipeline State Object. The resulting shader is the most optimal performing variant of this material.\n\nAlways use Xcode's GPU Debugger Performance section to confirm the impact of using function constants.\n\nThe original uber shader shows a high number of ALU instructions and a large amount of spill. The number of memory waits is also large.\n\nSpecialized approach gives immediate relief on the ALU and spill. This is due to dead code elimination and constants folding. Also, the number of memory waits is significantly smaller.\n\nObserving the original uber shader in runtime shader execution costs, the GPU is spending significant time on memory waits.\n\nSpecialized approach, in contrast, spends far less time on memory waits, enabling more productive ALU utilization, along with other efficiency benefits.\n\nIn the GPU Debugger timeline view, it takes 58 milliseconds to render the material pass using the uber shader. And only 12.5 milliseconds to render with specialized versions. It's a pretty dramatic improvement.\n\nMaterial specialization requires runtime shader compilation and this will often result in hitching if you block and wait for these specialized materials to be created. The Metal asynchronous compilation APIs allow you to use generic uber shaders and keep user experience interactive and responsive while generating specialized versions in the background.\n\nTo opt in to the asynchronous pipeline state creation, provide a completion handler. These calls will return immediately allowing you to keep the user experience interactive and responsive. Completion handler will be called when specialized pipeline state is ready, and you can switch to the optimal shader right away.\n\nThis is a diagram of an asynchronous material workflow. By default, when the material has not yet been specialized, you use your uber shader. At the same time, Metal compiles the specialized shader in the background.\n\nOnce this is done, you can switch out the uber shader for the fast specialized material.\n\nRuntime Metal shaders compilation is designed to provide a balanced level of parallelism. However, modern content creation applications need to provide multi-material editing workflows, resulting in many shader re-compilations. To help such heavy authoring needs, you may want to ask Metal to maximize shader compilation parallelism. Metal device has a new property in macOS13.3 called should-Maximize-Concurrent-Compilation. When you set it to Yes, Metal compiler will make the best use of your CPU cores. Maximizing concurrent compilation is really great for multi-material authoring workflows. With additional compiler jobs available, specialized material variants are available much sooner. Here is how it all works in practice. When material parameters are changed, the current specialized variants of the material are invalidated, there is a switch back to using the uber shader to keep authoring fluid. A new async job is queued and once it completes, you can observe a substantial performance improvement once the specialized material is engaged. Most modern apps have extremely complex materials, so it can take a significant amount of time for a specialized variant to be ready. Dynamic libraries in Metal can be used to pre-compile the utility functions and reduce overall material compile time. You do this by splitting up groups of functionality into separate dynamic libraries. For even faster runtime compilation, utility libraries could be precompiled offline. And you end up compiling much less code at runtime.\n\nIf I were to take the previous uber shader and split it into dylibs. one approach is to split it by common groups of functionality. In this case, one math utility library and another for lighting functions.\n\nTo make function symbols visible for linking, you assign \"default” visibility. Symbols can also be hidden from external programs by assigning visibility to \"hidden\".\n\nThere are two properties to check if your Metal device supports dynamic libraries. For render pipelines you should use the supportsRenderDynamicLibraries property of the Metal device. This is currently available on devices with Apple6 and above GPU families.\n\nFor compute pipelines you should query the supportsDynamicLibraries property. This is available on Apple6 and above and for most of the Mac2 GPU families.\n\nTo create a dynamic library from an existing Metal library, simply call newDynamicLibrary and pass it a Metal library. To create from the URL, call the newDynamicLibraryWithURL method and provide the path to the stored dynamic library.\n\nYou can precompile dynamic libraries offline using the metal compiler tool chain. When loading precompiled dynamic libraries at runtime, compilation is completely avoided. To specify dylibs in the linking phase: pass an array of Metal Dynamic Library Objects into the preloadedLibraries parameters on the pipeline descriptor. There is also the option to provide this array of dynamic libraries via Metal Compile Options when compiling other shader libraries. Moving large parts of utility code into dynamic libraries greatly shortens runtime compilation. And finally, compiler options tuning is really important for compute cases like path tracing in the final production quality renders. and there is one additional Metal feature to get the most performance out of your final rendering. Metal compiler options and occupancy hints, enable you to tune the performance of any of these compute kernels specifically when working with dynamic linking.\n\nEvery GPU workload has a performance sweet spot that needs analysis and evaluation. There is a Metal API to target desired GPU occupancy, that is also available for dynamic libraries now. This can unlock performance for an existing workload without changing original code or algorithm. It's worth noting that any tuning needs to be performed per-device as performance characteristics can vary depending on the GPU architecture.\n\nThe Metal compute pipeline descriptor property allows you to express the desired occupancy level by specifying the Max-Total-Threads-Per-Threadgroup value. The higher the value, the higher occupancy you hint the compiler to aim for. Now, using this new Metal-Compile-Options property for dynamic libraries, you can match the pipeline state object desired occupancy level. Max-Total-Threads-Per-Threadgroup is available for MetalCompileOptions in iOS 16.4 and macOS 13.3.\n\nNow you can simply match the Pipeline State Object desired occupancy while tuning Metal dynamic libraries for the optimal performance.\n\nThis graph of the Blender Cycles shading and intersection compute kernels performance shows the impact of changing Max-Total-Threads-Per-Threadgroup. That was the only variable changed for the pipeline state object and the dylibs.\n\nIn this case, there is a sweet spot where kernels perform at their best. Each workload and device is unique and the optimal value of Max-Total-Threads-Per-Threadgroup differs depending on the nature of the kernel. The optimal value is not always necessarily the maximum number of threads per threadgroup a GPU supports. Experiment with your kernels to find the optimal value you want to use and bake in the code. Here is a Blender Cycles shading kernel, The compiler statistics demonstrate that the kernel is very complex. There are several parameters that affect the actual runtime. The amount of spill, the number of registers used, and other operations like memory loads. By tuning the Max-Total-Threads-Per-Threadgroup, you can change target occupancy and find that performance sweet spot.\n\nAfter finding the sweet spot, the spill increases a little, but increased overall occupancy has led to significantly better kernel performance.\n\nThe Cycles path tracer within Blender 3D 3.5 is now well-optimized for Metal, and it uses all the best practices I covered today.\n\nRemember to maximize shader performance of large and complex shaders using function specialization, use asynchronous compilation to keep the application responsive while generating optimized shaders in the background, enable dynamic linking for faster compilation at runtime, and tune your compute kernels with new Metal compiler options to get the optimal performance. Be sure to check out previous sessions where you can learn how to scale compute workloads for Apple GPUs and discover more compilation workflows in Metal. Thank you for watching. ♪ ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:45",
+      "title": "Reduce Branch Performance Cost",
+      "language": "swift",
+      "code": "// Reduce branch performance cost\nfragment FragOut frag_material_main(device Material &material [[buffer(0)]]) {\n    if(material.is_glossy) {\n        material_glossy(material);\n    }\n\n    if(material.has_shadows) {\n        light_shadows(material);\n    }\n\n    if(material.has_reflections) {\n        trace_reflections(material);\n    }\n\n    if(material.is_volumetric) {\n        output_volume_parameters(material);\n    }\n\n    return output_material();\n}"
+    },
+    {
+      "timestamp": "3:55",
+      "title": "Function constant declaration per material feature",
+      "language": "swift",
+      "code": "constant bool IsGlossy        [[function_constant(0)]];\nconstant bool HasShadows      [[function_constant(1)]];\nconstant bool HasReflections  [[function_constant(2)]];\nconstant bool IsVolumetric    [[function_constant(3)]];"
+    },
+    {
+      "timestamp": "3:59",
+      "title": "Dynamic branch for the feature codepath is replaced with function constants",
+      "language": "swift",
+      "code": "if(material.has_reflections) {\n  trace_reflections(material);\n}"
+    },
+    {
+      "timestamp": "4:05",
+      "title": "Dynamic branch for the feature codepath is replaced with function constants",
+      "language": "swift",
+      "code": "/* replaced with function constants*/\n\nif(HasReflections) {\n\ttrace_reflections(material);\n}"
+    },
+    {
+      "timestamp": "4:13",
+      "title": "Reduce branch performance cost with function constants",
+      "language": "swift",
+      "code": "constant bool IsGlossy        [[function_constant(0)]];\nconstant bool HasShadows      [[function_constant(1)]];\nconstant bool HasReflections  [[function_constant(2)]];\nconstant bool IsVolumetric    [[function_constant(3)]];\n\n// Reduce branch performance cost\nfragment FragOut frag_material_main(device Material &material [[buffer(0)]]) {\n    if(IsGlossy) {\n        material_glossy(material);\n    }\n\n    if(HasShadows) {\n        light_shadows(material);\n    }\n\n    if(HasReflections) {\n        trace_reflections(material);\n    }\n\n    if(IsVolumetric) {\n        output_volume_parameters(material);\n    }\n\n    return output_material();\n}"
+    },
+    {
+      "timestamp": "4:58",
+      "title": "Function constants for material parameters",
+      "language": "swift",
+      "code": "// Function constants for material parameters\n\nconstant float4 MaterialColor  [[function_constant(0)]];\nconstant float4 MaterialWeight [[function_constant(1)]];\nconstant float4 SheenColor     [[function_constant(2)]];\nconstant float4 SheenFactor    [[function_constant(3)]];\n\nstruct Material {\n    float4 blend_factor;\n};\n\nvoid material_glossy(const constant Material& material) {\n    float4 light, sheen;\n    light = glossy_eval(MaterialColor, MaterialWeight);\n    sheen = sheen_eval(SheenColor, SheenFactor);\n    glossy_output_write(light, sheen, material.blend_factor);\n}"
+    },
+    {
+      "timestamp": "5:21",
+      "title": "MaterialParameter structure for constant parameters",
+      "language": "swift",
+      "code": "struct MaterialParameter {\n    NSString* name;\n    MTLDataType type;\n    void* value_ptr;\n};\n\nMaterialParameter is_glossy{@\"IsGlossy\",      MTLDataTypeBool,   &material.is_glossy};\nMaterialParameter mat_color{@\"MaterialColor\", MTLDataTypeFloat4, &material.color};"
+    },
+    {
+      "timestamp": "5:51",
+      "title": "Declare and populate MTLFunctionConstantValues",
+      "language": "swift",
+      "code": "// Declare and populate MTLFunctionConstantValues\nMTLFunctionConstantValues* values = [MTLFunctionConstantValues new];\n    \nfor(const MaterialParameter& parameter : shader_parameters) {\n    [values setConstantValue: parameter.value_ptr\n                        type: parameter.type\n                    withName: parameter.name];\n}"
+    },
+    {
+      "timestamp": "5:51",
+      "title": "Create pipeline render state object with function constant declarations",
+      "language": "swift",
+      "code": "struct Material {\n  bool is_glossy;\n  float color[4];\n};\n\nstruct MaterialParameter {\n    NSString* name;\n    MTLDataType type;\n    void* value_ptr;\n};\n\n// Declare material\nMaterial material = {true, {1.0f,0.0f,0.0f,1.0f}};\n\n// Declare function constant paramters\nMaterialParameter is_glossy{@\"IsGlossy\",      MTLDataTypeBool,   &material.is_glossy};\nMaterialParameter mat_color{@\"MaterialColor\", MTLDataTypeFloat4, &material.color};\n\nMaterialParameter shader_parameters[2] = {is_glossy, mat_color};\n\n// Declare and populate MTLFunctionConstantValues\nMTLFunctionConstantValues* values = [MTLFunctionConstantValues new];\n    \nfor(const MaterialParameter& parameter : shader_parameters) {\n    [values setConstantValue: parameter.value_ptr\n                        type: parameter.type\n                    withName: parameter.name];\n}\n\n// Create MTLRenderPipelineDescriptor and create shader function from MTLLibrary\nMTLRenderPipelineDescriptor *dsc = [MTLRenderPipelineDescriptor new];\nNSError* error = nil;\n\ndsc.fragmentFunction = [shader_library newFunctionWithName:@\"frag_material_main\"\n                                            constantValues:values\n                                                     error:&error];\n\n// Create pipeline render state object\nid<MTLRenderPipelineState> pso = [device newRenderPipelineStateWithDescriptor:dsc\n                                                                        error:&error];"
+    },
+    {
+      "timestamp": "6:14",
+      "title": "Create MTLRenderPipelineDescriptor and create shader function from MTLLibrary",
+      "language": "swift",
+      "code": "// Create MTLRenderPipelineDescriptor and create shader function from MTLLibrary\nMTLRenderPipelineDescriptor *dsc = [MTLRenderPipelineDescriptor new];\nNSError* error = nil;\n\ndsc.fragmentFunction = [shader_library newFunctionWithName:@\"frag_material_main\"\n                                            constantValues:values\n                                                     error:&error];"
+    },
+    {
+      "timestamp": "8:07",
+      "title": "Shader library creation",
+      "language": "swift",
+      "code": "- (void)newLibraryWithSource:(NSString *)source \n                     options:(MTLCompileOptions *)options\n           completionHandler:(MTLNewLibraryCompletionHandler)completionHandler;"
+    },
+    {
+      "timestamp": "8:09",
+      "title": "Render pipeline state creation",
+      "language": "swift",
+      "code": "- (void)newRenderPipelineStateWithDescriptor:(MTLRenderPipelineDescriptor *)descriptor\n              completionHandler:(MTLNewRenderPipelineStateCompletionHandler)completionHandler;"
+    },
+    {
+      "timestamp": "9:00",
+      "title": "Use as many threads as possible for concurrent compilation",
+      "language": "swift",
+      "code": "@property (atomic) BOOL shouldMaximizeConcurrentCompilation;"
+    },
+    {
+      "timestamp": "10:58",
+      "title": "Assign symbol visibility to default or hidden",
+      "language": "swift",
+      "code": "__attribute__((visibility(“default\")))\n             void matrix_mul();\n\n__attribute__((visibility(“hidden\")))\n             void matrix_mul_internal();"
+    },
+    {
+      "timestamp": "11:19",
+      "title": "Verify device support",
+      "language": "swift",
+      "code": "//For render pipelines\n@property (readonly) BOOL supportsRenderDynamicLibraries;\n\n//For compute pipelines\n@property(readonly) BOOL supportsDynamicLibraries;"
+    },
+    {
+      "timestamp": "11:46",
+      "title": "Compile dynamic libraries",
+      "language": "swift",
+      "code": "//create a dynamic library from an existing Metal library\n\n- (id<MTLDynamicLibrary>) newDynamicLibrary:(id<MTLLibrary>) library \n                                      error:(NSError **) error\n\n//create from the URL\n- (id<MTLDynamicLibrary>) newDynamicLibraryWithURL:(NSURL *) url\n                                             error:(NSError **) error"
+    },
+    {
+      "timestamp": "12:18",
+      "title": "Dynamically link shaders",
+      "language": "swift",
+      "code": "//Pipeline state\nMTLRenderPipelineDescriptor* dsc = [MTLRenderPipelineDescriptor new];\ndsc.vertexPreloadedLibraries   = @[dylib_Math, dylib_Shadows];\ndsc.fragmentPreloadedLibraries = @[dylib_Math, dylib_Shadows];\n\n//Compile options\nMTLCompileOptions* options = [MTLCompileOptions new];\noptions.libraries = @[dylib_Math, dylib_Shadows];\n[device newLibraryWithSource:programString\n                     options:options\n                       error:&error];"
+    },
+    {
+      "timestamp": "13:45",
+      "title": "Specify desired max total threads per threadgroup",
+      "language": "swift",
+      "code": "@interface MTLComputePipelineDescriptor : NSObject\n@property (readwrite, nonatomic) NSUInteger maxTotalThreadsPerThreadgroup;"
+    },
+    {
+      "timestamp": "14:12",
+      "title": "Match desired max total threads per threadgroup",
+      "language": "swift",
+      "code": "@interface MTLCompileOptions : NSObject\n@property (readwrite, nonatomic) NSUInteger maxTotalThreadsPerThreadgroup;"
+    },
+    {
+      "timestamp": "14:25",
+      "title": "Tune Metal dynamic libraries",
+      "language": "swift",
+      "code": "MTLCompileOptions* options = [MTLCompileOptions new];\noptions.libraryType = MTLLibraryTypeDynamic;\noptions.installName = @\"executable_path/dylib_Math.metallib\";\nif(@available(macOS 13.3, *)) {\n    options.maxTotalThreadsPerThreadgroup = 768;\n}\n\nid<MTLLibrary> lib = [device newLibraryWithSource:programString\n                                          options:options\n                                            error:&error];\n       \nid<MTLDynamicLibrary> dynamicLib = [device newDynamicLibrary:lib\n                                                       error:&error];"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Metal",
+        "url": "https://developer.apple.com/documentation/Metal"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10127/4/3C0D2C8A-18E1-4D60-8A77-71F7166622AE/downloads/wwdc2023-10127_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10127/4/3C0D2C8A-18E1-4D60-8A77-71F7166622AE/downloads/wwdc2023-10127_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10159",
+      "year": "2022",
+      "title": "Scale compute workloads across Apple GPUs",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10159"
+    },
+    {
+      "id": "10102",
+      "year": "2022",
+      "title": "Target and optimize GPU binaries with Metal 3",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10102"
+    },
+    {
+      "id": "10229",
+      "year": "2021",
+      "title": "Discover compilation workflows in Metal",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10229"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:41:01.689Z"
+}

@@ -1,0 +1,148 @@
+{
+  "id": "10131",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10131/",
+  "title": "Support semantic search with Core Spotlight",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, I’m Jennifer, an engineer working on the Spotlight team. We care deeply about search, and today, I’m super excited to introduce all the new APIs from Spotlight that will let you build a powerful search experience in your own app. CoreSpotlight is a framework that allows your app to donate searchable content to Spotlight, and then retrieve that content with a query. It’s a great way to enhance your app’s persistent storage solution for search. Searchable content that your app donates is stored in a private, entirely local index, that never leaves the device. Users can search for your content in Spotlight, but no other apps will be able to see the data. CoreSpotlight makes it easy to provide search results and suggestions in your app from the natural language search terms that come directly from a search bar. This year, CoreSpotlight supports query understanding with semantic search. Up until now, Spotlight searched for content in your app, but search terms had to match exactly. With semantic search, people can search for content in your app in their own way, with search terms that can be similar in meaning. And with Spotlight’s query understanding models, you can be sure to find the right results no matter how you search for it. Today, we’ll walk through how to build a full search experience in your app, starting with providing content to the search index, and following best practices for data migration and recovery. We’ll look at how to retrieve results and suggestions, and then how to boost the ranking of search results that are most relevant to the user. We’ll be building an app that lets a person search for journal entries that they’ve written. You can find the full code for this sample app at the link below.\n\nThe first step to building a great search experience is to donate searchable content to Spotlight that represents what people are going to want to search in your app. In the journaling app, people can search over all journal entries, so each journal entry will be a searchable item. With that in mind, you’ll want to index items in a way that can they can be retrieved with a query to directly populate the views of your user interface. Currently, semantic search works best on text or media assets, such as images and videos. So to get the best results, you’ll want to ensure your searchable items have the appropriate content type. And, you’ll want to use system-defined attributes, whenever possible. Create a CSSearchableItem by providing a unique identifier, an optional domain identifier, and the attribute set. The unique identifier should be stored in your app’s persistent storage solution so that the full item data can be recovered.\n\nNext, create a CSSearchableAttributeSet, and be sure to always set a valid content type Check out our documentation to see the full list of supported UT types, or learn how to create your own custom content type.\n\nWhen donating searchable items with text, make sure to set the title and textContent. These attributes will be processed in the semantic index. If your item represents images or video assets, be sure to set the contentURL with the path to the asset. This ensures the asset can be processed in the semantic index from within your app’s sandboxed container.\n\nAnd then, if your item references attachments or web content, consider donating these as separate items to the index, with their own content type and attributes. You can use the relatedUniqueIdentifier to maintain a relationship with the source item.\n\nOnce you’ve designed your searchable items, you’ll want to create an searchable index in Spotlight and donate them. We have some great new APIs to make donations more efficient with your app’s design. Including batch indexing with client state, and item updates.\n\nTo start, create a named CSSearchableIndex fetch and validate the last client state that you sent to Spotlight, and then, index your searchable items. Notice here that the indexing call is wrapped by calls to begin a batch and end a batch of items donated, where the next client state can be sent.\n\nClient state is useful for both managing a large catalog of items, as well as maintaining data integrity between your app and Spotlight. Client state is also useful in preventing over-donation of items, which can have an impact on performance in your app. And when paired with the new isUpdate flag, your app can be sure to always donate only what is needed.\n\nMigration and recovery are an important part of building a consistent search experience. Your spotlight index is completely local and private. That’s why you’ll need to take steps to ensure that your searchable content stays up-to-date in Spotlight. When Spotlight needs to migrate the index, or otherwise recover from data corruption, interruption, or other issues, it will make a request to your app to re-index all items, or a specific set of items. Your app can respond to these requests by both adopting the delegate protocol, for when your app is running live, and implementing the delegate extension, that Spotlight can call up separately from your app.\n\nAn index delegate extension allows Spotlight to schedule the requests during favorable device conditions, such as when the device is sleeping or idle, so that items can be migrated over time, with little change to your app’s existing search functionality. Setting up an index delegate extension is super simple with the new Xcode file targets. Let’s take a look at how to do this. Starting in the journaling app, which has already been configured to donate searchable content with our bundle ID: The first thing to do, is create a new target: Navigate to the File menu, and select New, Target.\n\nSelect the platform for the extension, here we're starting with macOS, and then search for the new CoreSpotlight Delegate extension template.\n\nClick Next to configure this new target, and click Finish to add this new target to our project.\n\nOnce it's added, activate the new extension.\n\nAnd we can now take a look at our stab implementation.\n\nNow, since Spotlight will be the one to launch this process on our behalf, we have a handy command line utility to help us debug. So, let's go ahead and try that out.\n\nFirst, set a breakpoint in the reindex all method, so we can try to catch this point in the code. Make sure to call the acknowledgment handler to avoid blocking the caller.\n\nNext, we'll need to rebuild our app to include this new app extension, so select the app's target, then head to the Product menu, and select Build.\n\nThen we'll switch back to our extension target, and from the Debug menu, select Attach to Process.\n\nWe're now ready to debug. At this point, we'll want to bring up the Terminal app to run the utility command.\n\nThe mdutil tool allows us to simulate these requests to our bundle ID for debugging. So we can run it.\n\nAnd then hop back to our project in Xcode to see that we've hit the break point. We're now in a good spot to complete our implementation for reindexing all items, reindexing some items, adding support for drag and drop, and responding to throttling scenarios for critical donation paths. Now that you’ve indexed your searchable items, it’s time to support the search experience in your user interface. Queries can be configured to best support your user interface needs. Semantic search is enabled by default, but queries can also be configured to return results that are ranked using the same state of the art machine learning models that Spotlight uses, and you can also configure your query to support a suggestions menu in your app.\n\nUse CSUserQueryContext to configure the query that is right for your user interface. Make sure to set the list of attributes to be fetched for each item returned from the query. These fetched attributes typically include only what is needed for display in your user interface. Ranked results can be enabled with a flag and can be restricted in number. These results are often shown in a separate Top Hits section. Results must be sorted in your app once all results are returned, which can be done using the new compareByRank comparator.\n\nSuggestions can be configured or disabled by number as well. Suggestions are returned in ranked order, but the order can also be recovered when sorting. Structured queries, using the metadata syntax, are the best way to tailor the search results to your app’s user interface. As an example, if a person selects a tab to show only images, a filter query like this could be used to specify that the result set only contain images. Filter queries are also useful for content that you want to only show up in Spotlight, such as breadcrumbs that lead to specific parts of your app. Check out our documentation on using metadata syntax to build custom filter queries.\n\nThe last step is to create a CSUserQuery with the user’s query string from the search bar, and your query context. Results and suggestions are returned in async responses. Item results are returned in async batches so if ranking is enabled, be sure to sort the items before display. Suggestions are typically returned as completions of the user’s typed string. CSSuggestion provides an attributed string that can be displayed in a suggestions menu. If the user engages on a suggestion, replace the search bar text with this string, to trigger a new search.\n\nSemantic search requires machine learning models that must be downloaded to the device, and will be run in your app’s process. These models may be loaded or unloaded at any time, to preserve your app’s memory space while running. That’s why you’ll want to call this class method just before your search interface appears, every time, to ensure that all resources are available as soon as a person starts searching. Now that search is working, you’ll want to think about improving the search experience over time, by donating signals that can improve the ranking of content that the user cares about most. Engagement and freshness are important signals in providing an adaptive ranking experience. The user might be browsing content related to a searchable item. Or they might initiate a search, then scroll through items in the result set, and finally, engage on a result to see its detail view. In each of these cases, your app can send an engagement signal to Spotlight to improve its ranking in future searches.\n\nWhen the user is browsing content related to a CSSearchableItem, set the lastUsedDate property on the item attribute set, and donate it back to the index as an update.\n\nAnd when a user engages with a result or engages with a suggestion from a query, you can mark the interaction associated with that query.\n\nAnd that’s it! People can now enjoy a full-fledged search experience that seamlessly handles diverse search content on multiple platforms and locales. We saw how to donate content to an entirely private, on-device search index. we reviewed how to retrieve results and suggestions, and how to boost the most relevant search results over time. Adopting Core Spotlight is a great way to help people find content in your app. And now with semantic search it’s more powerful than ever.\n\nFor more information on other kinds of integrations with Spotlight, take a look at the session on leveraging App Intents, and how to get CoreSpotlight donations for free with CoreData. Thanks for watching, we'll see you in Spotlight!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:14",
+      "title": "Creating CSSearchableItem",
+      "language": "swift",
+      "code": "// Creating searchable items for donation\n\n\nlet item = CSSearchableItem(uniqueIdentifier: uniqueIdentifier, domainIdentifier: domainIdentifier, attributeSet: attributeSet)"
+    },
+    {
+      "timestamp": "2:28",
+      "title": "Creating CSSearchableAttributeSet",
+      "language": "swift",
+      "code": "// Creating searchable content for donation\n\n\nlet attributeSet = CSSearchableItemAttributeSet(contentType: UTType.text)\nattributeSet.contentType = UTType.text.identifier"
+    },
+    {
+      "timestamp": "2:40",
+      "title": "Searchable items with type",
+      "language": "swift",
+      "code": "// Searchable items with text\n\n\nattributeSet.title\nattributeSet.textContent\n\n\n// Searchable items with media\n\n\nattributeSet.contentType\nattributeSet.contentURL\n\n\n// Searchable items with links\n\n\nattributeSet.contentURL\nattributeSet.relatedUniqueIdentifier"
+    },
+    {
+      "timestamp": "3:31",
+      "title": "Batch indexing with client state",
+      "language": "swift",
+      "code": "// Batch indexing with client state\n\n\nlet index = CSSearchableIndex(name: \"SpotlightSearchSample\")        \nindex.fetchLastClientState { state, error in         \n    if state == nil {\n        index.beginBatch()\n        index.indexSearchableItems(items)\n        index.endIndexBatch(expectedClientState: state, newClientState: newState) { error in\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "3:56",
+      "title": "Avoid overwriting existing attributes",
+      "language": "swift",
+      "code": "// Make it an update to avoid overwriting existing attributes\n\n\nitem.isUpdate = true"
+    },
+    {
+      "timestamp": "7:19",
+      "title": "Configure a query",
+      "language": "swift",
+      "code": "// Configure a query\n\n\nlet queryContext = CSUserQueryContext()\nqueryContext.fetchAttributes = [\"title\", \"contentDescription\"]"
+    },
+    {
+      "timestamp": "7:33",
+      "title": "Ranked results",
+      "language": "swift",
+      "code": "// Ranked results\n\n\nqueryContext.enableRankedResults = true\nqueryContext.maxRankedResultCount = 2"
+    },
+    {
+      "timestamp": "7:47",
+      "title": "Suggestions",
+      "language": "swift",
+      "code": "// Suggestions\n\n\nqueryContext.maxSuggestionCount = 4"
+    },
+    {
+      "timestamp": "7:55",
+      "title": "Filter queries",
+      "language": "swift",
+      "code": "// Filter queries\n\n\nqueryContext.filterQueries = [\"contentTypeTree=\\\"public.image\\\"\"]"
+    },
+    {
+      "timestamp": "8:23",
+      "title": "Query for searchable items and suggestions",
+      "language": "swift",
+      "code": "// Query for searchable items and suggestions\n\n\nlet query = CSUserQuery(userQueryString: \"windsurfing carmel\", userQueryContext: queryContext)\nfor try await element in query.responses {\n    switch(element) {\n        case .item(let item):\n            self.items.append(item)\n            break\n        case .suggestion(let suggestion):\n            self.suggestions.append(suggestion)\n            break\n    }\n}"
+    },
+    {
+      "timestamp": "8:40",
+      "title": "Suggestions",
+      "language": "swift",
+      "code": "// Suggestions\n\n\nsuggestion.localizedAttributedSuggestion"
+    },
+    {
+      "timestamp": "8:56",
+      "title": "Preparing for queries",
+      "language": "swift",
+      "code": "// Preparing for queries\n\n\nCSUserQuery.prepare\nCSUserQuery.prepareWithProtectionClasses"
+    },
+    {
+      "timestamp": "9:50",
+      "title": "Set the lastUsedDate",
+      "language": "swift",
+      "code": "// Set the lastUsedDate when the user interacts with the item\n\n\nitem.attributeSet.lastUsedDate = Date.now\nitem.isUpdate = true"
+    },
+    {
+      "timestamp": "10:00",
+      "title": "Interactions with items and suggestions from a query",
+      "language": "swift",
+      "code": "// Interactions with items and suggestions from a query\n\n\nquery.userEngaged(item, visibleItems: visibleItems, interaction: CSUserQuery.UserInteractionKind.select)\n\nquery.userEngaged(suggestion, visibleSuggestions: visibleSuggestions, interaction: CSUserQuery.UserInteractionKind.select)"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Core Spotlight",
+        "url": "https://developer.apple.com/documentation/CoreSpotlight"
+      },
+      {
+        "title": "Forum: UI Frameworks",
+        "url": "https://developer.apple.com/forums/topics/ui-frameworks?cid=vf-a-0010"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10131/5/537550D3-98A7-4C5B-B4BC-CD55CDAD3547/downloads/wwdc2024-10131_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10131/5/537550D3-98A7-4C5B-B4BC-CD55CDAD3547/downloads/wwdc2024-10131_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10210",
+      "year": "2024",
+      "title": "Bring your app’s core features to users with App Intents",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10210"
+    },
+    {
+      "id": "10098",
+      "year": "2021",
+      "title": "Showcase app data in Spotlight",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10098"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:11:51.462Z"
+}

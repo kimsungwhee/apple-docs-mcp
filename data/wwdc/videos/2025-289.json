@@ -1,0 +1,108 @@
+{
+  "id": "289",
+  "year": "2025",
+  "url": "https://developer.apple.com/videos/play/wwdc2025/289/",
+  "title": "Explore spatial accessory input on visionOS",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Graphics & Games"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi there! I’m Amanda Han, an engineer on the RealityKit team. In this session, I’ll take you through creating a spatial sculpting app for visionOS using new spatial accessory support. On visionOS, we have a powerful eyes and hands input first paradigm. Using just your eyes and hands, you can navigate Apple Vision Pro seamlessly. And we’re expanding the range of experiences you can build on Vision Pro with tools that will let people have finer control, button input, and haptic feedback. This year, we’re adding spatial accessory support.\n\nWe’re adding support for two spatial accessories: PlayStation VR2 Sense controller and Logitech Muse.\n\nPS VR 2 Sense controller is great for gaming. It has buttons, a joystick, and a trigger. It can even navigate the system using standard gestures, such as tap.\n\nPS VR 2 Sense controller can be tracked in space so well you can even play sports, like in Pickle Pro by Resolution Games! Another new accessory is Logitech Muse. Logitech Muse has force sensors that allow for variable input on the tip and side button, as well as powerful haptic feedback.\n\nThe precision is great for both productivity and creativity apps. Here’s an example with a sculpting app I’ll build in this session with the Photos app open next to it. You can use these accessories in full space and shared space apps. We track the position and rotation of these spatial accessories using a combination of Apple Vision Pro’s cameras and the spatial accessory’s sensors.\n\nYou can make use of tactile haptic feedback in your apps to increase levels of immersion.\n\nYou connect to spatial accessories using the Game Controller framework and access anchor data using RealityKit or ARKit. In this session, I’ll take you through using spatial accessory input in your apps. I’ll build a sculpting app using a combination of GameController, RealityKit, and ARKit.\n\nI’ll look at directly using ARKit for tracking spatial accessories.\n\nAnd lastly, I’ll cover some design considerations.\n\nNow, let’s start building the sculpting app! Start by setting up the Xcode project.\n\nConnect to a spatial accessory via the Game controller framework. Display the sculpting tool virtually. Start interacting with the app by carving into virtual clay.\n\nAnd, display a reactive toolbar based on tracking interaction data.\n\nLet’s get started with setup in Xcode.\n\nI’m using the Game Controller framework to manage connections with my accessories.\n\nSo, I’ll add in spatial game controller support to the plist via the Xcode capabilities editor.\n\nAnd I’ll indicate that I’m supporting game controllers with spatial accessory tracking by ticking the box Spatial Gamepad.\n\nI’ll describe the way I’ll use the accessory in the description field for Accessory Tracking Usage in the app’s plist.\n\nFor the sculpting app, I’ll say I’m “Tracking accessory movements to carve into virtual clay”. People will see this as a pop up to allow accessory tracking.\n\nNow, let’s track one of the accessories. Spatial accessories require active connections to transmit inertial sensor data, so I need to discover the connection in order to make the sculpting tool.\n\nI’ll use the GameController framework to discover the connections with spatial accessories. Listen to connection and disconnection events or iterate over current connections. For more on game controllers, watch “Tap into virtual and physical game controllers”.\n\nTwo of the classes in Game Controller can support spatial accessory tracking, GCController and GCStylus. They represent game controllers and styli respectively. Both conform to the GCDevice protocol.\n\nNot every game controller or stylus may support spatial accessory tracking. I’ll show you how to check that either does in our sculpting app.\n\nMy digital sculptor might not have their accessories connected when the app opens. So, I’ll need to listen for when they connect their accessories. For styli, I’ll listen for the GCStylusDidConnect notification and grab the GCStylus. To check that the GCStylus supports spatial accessory tracking, I’ll make sure that its product category is Spatial Stylus.\n\nThe accessory might also disconnect during the app’s lifetime. Disconnect events are implemented similarly. And to use the GCController API, I can swap out GCStylus for GCController, checking that the GCController has the product category of Spatial Controller.\n\nI’ve set up a connection, but I don’t see anything on my accessory yet! Let’s display a virtual tip on the end of it. On visionOS, the technique to track an object’s position and orientation in space is called anchoring. Regardless of whether you’re using RealityKit, ARKit, or a combination of the two, anchoring to accessories is available in full space and shared space apps. The sculpting app will use the shared space, as I know that pulling up reference images in other apps like Safari or Photos for sculpting is super useful. To protect privacy, only the currently focused and authorized app can track accessory movements.\n\nEvery accessory labels its own set of locations for anchoring. PS VR 2 Sense controller labels the aim, grip, and grip surface. While Logitech Muse doesn’t label where your grip goes, instead only labeling the aim location.\n\nThe sculpting app anchors to each spatial accessory’s Aim. I’ll use a RealityKit AnchorEntity to anchor virtual content to my accessory. An AnchorEntity is an Entity that attaches virtual content to the physical world. It can interact with other elements of my RealityKit scene.\n\nLet’s take a look at anchoring here in code. Create an AccessoryAnchoringSource from a spatial accessory.\n\nI’ll target the “aim” location of my accessory. If my accessory doesn’t support that location, I won’t anchor.\n\nAnd I’ll create the AnchorEntity with an `accessory` target, that “aim” location, and the predicted tracking mode.\n\nI’ve created the AnchorEntity on the left. The predicted tracking mode uses a sophisticated model to predict where your accessory will be at the time content renders. But if you make jerky movements, the movement might overshoot. You can see that on frame 4, where the purple predicted frame does not match the actual position in gray. Use it for rendering and low latency interactions.\n\nUse the continuous tracking mode for when you need more accuracy. This has a higher latency, but provides higher accuracy poses and does not overshoot. For our accessory, I’ll chose to maximize responsiveness with the predicted tracking mode. In a sculpting app, I don’t expect my sculptors to perform jerky hand movements. Now I have a virtual tip anchored on to my accessory! It might look great, but my sculpting tool can’t interact with anything else in the app. I’d like to carve into the clay based on my accessory’s position, and provide haptic feedback.\n\nTo carve into virtual clay, I’ll need to get the sculpting tool’s transform.\n\nLast year, we added the SpatialTrackingSession, which allows you to get the transforms of configured target AnchorEntity types.\n\nNew this year, we’ve added .accessory to the list of supported SpatialTrackingSession configurations. Once I add .accessory to the Spatial Tracking Configuration, I can run the session to get the transforms of any accessory AnchorEntity.\n\nFor more on SpatialTrackingSession, watch Adrian’s talk, “Build a Spatial Drawing App with RealityKit”.\n\nLet’s add a tactile feel to the sculpting. A spatial accessory can have haptics, which is a great feedback mechanism. I’ll add it in our sculpting app to really feel the clay.\n\nGet the haptics from the accessory, create a haptics engine, and start it.\n\nFor more on haptics, like setting up haptic patterns, watch Advancements in Game Controllers. Let’s look at carving into the clay using my sculpting tool. Whenever the accessory moves into the clay, I remove some material and play haptics, for an immersive experience. But I might remove too much material from some parts of my creation, just like that. So, let me add an additive sculpting mode. I’ll show a toolbar to swap between sculpting modes that appears based on the user’s interactions with their accessories. I’ll show it on the left or the right of the accessory depending on which hand is holding it. For this, I can use the ARKit AccessoryAnchor. The ARKit AccessoryAnchor provides four properties: the handedness, telling me which hand is holding the accessory, the relative motion of the accessory in space, the relative rotational movement in space, and the tracking state. Tracking quality declines when sensors or cameras have reduced coverage.\n\nFor specific use cases, such as taking real-world measurements with the help of spatial accessories, ARKit also exposes an API that allows you to receive metric anchor transforms. For more details on this, check out the “Coordinate spaces” API in the documentation.\n\nBack to my example. I need to access the ARKit AccessoryAnchor, but I only have the RealityKit AnchorEntity. This year, RealityKit allows you to get ARKit anchors from any RealityKit AnchorEntity if you have a SpatialTrackingSession running and configured. Let’s set up a function to get the ARKit AccessoryAnchor from a RealityKit AnchorEntity.\n\nSimply access the ARKitAnchorComponent on an AnchorEntity, grab its ARKitAnchor, then conditionally cast it to an AccessoryAnchor.\n\nFor more on ARKitAnchorComponent, listen to Laurence’s talk, What’s new in RealityKit.\n\nLet’s get to displaying that toolbar. I’ll grab the accessory Anchor from my AnchorEntity using that helper function I just made. And I’ll use the handedness to determine the position of the toolbar. That property is stored in the accessory anchor’s held chirality.\n\nIf the handedness is left, I’ll display the toolbar in positive x, and vice versa for right handedness. Otherwise, the accessory is not held in either hand, so I won’t offset it.\n\nLet’s see that reactive toolbar in my app. When I press the button while held in my right hand, it shows up to the left of my accesory. I can swap to the additive mode and cover up that mistake that I made earlier.\n\nEh... good enough! Let’s recap. I created an immersive sculpting app using the new spatial accessories APIs. I used GameController to connect to accessories.\n\nThen, I used RealityKit APIs to create our sculpting tool. And, I displayed a reactive toolbar using the combined capabilities of RealityKit and ARKit. The finished app looks and feels great. But if you have a preference for working directly with ARKit, or if you’re building an app with custom rendering, there are APIs to help you achieve equivalent functionality for tracking spatial accessories. Let’s take a look. I’ll outline the key points to ARKit for accessory tracking with the accessory tracking provider and accessory anchor updates. Use a GCStylus or a GCController to create an Accessory.\n\nUse an Accessory tracking provider to track Accessory objects.\n\nAnd when an accessory connects, or disconnects from your app, you need to gracefully handle it. This means you will need to re-run the ARKit session with the changed configuration of Accessories.\n\nFor a look at the implementation, check out the ARKit sample app “Tracking accessories in volumetric windows”. Accessory anchors are similar to hand anchors in their update patterns.\n\nYou can choose to receive accurate updates in a stream or use on demand prediction for interactive user feedback. For more on ARKit prediction, watch “Create enhanced spatial computing experiences with ARKit”.\n\nI’ve covered a lot of great spatial accessory APIs. Next, I’ll share some design considerations when building your apps.\n\nLet’s start with using gestures to interact with UI. You can already tell a view to receive game controller input like buttons or triggers as the input method instead of gestures.\n\nAnd now, you can handle both standard hand gestures and game controllers as input in your views.\n\nHere is how this works in code. Tell your SwiftUI view to receive game controller events. Then, tell it to receive gesture events as well by setting the modifier .receivesEventsInView.\n\nIf the game controller has spatial accessory tracking, your spatial event gesture will have the chirality, also known as the handedness, of the game controller populated.\n\nFor apps running in a full space, consider using the .persistentSystemOverlays API to hide the home indicator and .upperLimbVisibility API to hide upper limbs and accessories. This can further enhance the immersion of apps and games.\n\nSpatial accessories enable powerful new ways to interact with apps and games. And to make sure your app supports as many users as possible, you can offer adaptive support for both spatial accessories and hands.\n\nARKit natively tracks hands even faster this year, so hands and eyes are even better as input.\n\nWhen you want to display that you support game controllers with spatial accessory tracking, add the \"Spatial game controller support\" badge on the app store. And if your app absolutely needs game controllers with spatial accessory tracking, you can display the “Spatial game controller required” badge. Check the documentation for the corresponding keys to add to your app’s plist to display either badge. Let’s wrap up this session. You can adopt spatial accessories for finer input control and haptic feedback. And integrate accessories using GameController, RealityKit, and ARKit.\n\nAnd when designing your apps, make sure to design for adaptive support for hands and accessories. This is just a glimpse of the apps and games you can build using spatial accessories. I can’t wait to see what you create. Have a great WWDC25!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "0:09",
+      "title": "Get in-app transforms",
+      "language": "swift",
+      "code": "// Get in-app transforms\n\nlet session = SpatialTrackingSession()\n\nlet configuration = SpatialTrackingSession.Configuration(tracking: [.accessory])\n\nawait session.run(configuration)"
+    },
+    {
+      "timestamp": "4:57",
+      "title": "Check for accessory support",
+      "language": "swift",
+      "code": "// Check spatial accessory support\n\nNotificationCenter.default.addObserver(forName: NSNotification.Name.GCControllerDidConnect, object: nil, queue: nil) {\n  notification in\n    if let controller = notification.object as? GCController,\n       controller.productCategory == GCProductCategorySpatialController {\n             \n    }\n}"
+    },
+    {
+      "timestamp": "7:20",
+      "title": "Anchor virtual content to an accessory",
+      "language": "swift",
+      "code": "// Anchor virtual content to an accessory\n\nfunc setupSpatialAccessory(device: GCDevice) async throws {\n\n    let source = try await AnchoringComponent.AccessoryAnchoringSource(device: device)\n\n    guard let location = source.locationName(named: \"aim\") else {\n        return\n    }\n  \n    let sculptingEntity = AnchorEntity(.accessory(from: source, location: location),\n                                       trackingMode: .predicted)\n\n}"
+    },
+    {
+      "timestamp": "9:45",
+      "title": "Add haptics to an accessory",
+      "language": "swift",
+      "code": "// Add haptics to an accessory\n\nlet stylus: GCStylus = ...\n\nguard let haptics = stylus.haptics else {\n    return\n}\n\nguard let hapticsEngine: CHHapticEngine = haptics.createEngine(withLocality: .default) else {\n    return\n}\n\ntry? hapticsEngine.start()"
+    },
+    {
+      "timestamp": "11:25",
+      "title": "Access ARKit anchors from AnchorEntity",
+      "language": "swift",
+      "code": "// Access ARKit anchors from AnchorEntity\n\nfunc getAccessoryAnchor(entity: AnchorEntity) -> AccessoryAnchor? {\n    if let component = entity.components[ARKitAnchorComponent.self],\n       let accessoryAnchor = component.anchor as? AccessoryAnchor {\n        return accessoryAnchor\n    }\n    return nil\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Tracking a handheld accessory as a virtual sculpting tool",
+        "url": "https://developer.apple.com/documentation/RealityKit/tracking-a-handheld-accessory-as-a-virtual-sculpting-tool"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/289/4/7934a0e5-f8a8-4530-b614-5ed367076da5/downloads/wwdc2025-289_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/289/4/7934a0e5-f8a8-4530-b614-5ed367076da5/downloads/wwdc2025-289_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "287",
+      "year": "2025",
+      "title": "What’s new in RealityKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/287"
+    },
+    {
+      "id": "10104",
+      "year": "2024",
+      "title": "Build a spatial drawing app with RealityKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10104"
+    },
+    {
+      "id": "10100",
+      "year": "2024",
+      "title": "Create enhanced spatial computing experiences with ARKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10100"
+    },
+    {
+      "id": "10081",
+      "year": "2021",
+      "title": "Tap into virtual and physical game controllers",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10081"
+    },
+    {
+      "id": "10614",
+      "year": "2020",
+      "title": "Advancements in Game Controllers",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10614"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:29:10.065Z"
+}

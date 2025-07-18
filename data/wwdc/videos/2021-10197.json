@@ -1,0 +1,110 @@
+{
+  "id": "10197",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10197/",
+  "title": "Discover and curate Swift Packages using Collections",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Welcome to the session \"Discover and curate Swift Packages using collections.\" In Xcode 11, we introduced support for Swift packages, offering a straightforward approach to distributing libraries as source code. As more and more packages are being published, we want to make the discovery of packages that fit particular use cases more accessible. When adding packages to their project, developers would also like to see more information, such as their license. To do that, we want a standardized way of accessing metadata. This is why, in Xcode 13, we are introducing Package collections, curated lists of packages that can be shared with others and which drive a whole new and improved experience for adding packages to your projects. Educators and community influencers can publish package collections to go along with course materials or blog posts, removing the barriers when using packages for the first time, and the burden of deciding which packages are useful for a particular task. Enterprises can use collections to narrow down the decision space for their internal engineering teams, focusing them on a trusted set of vetted packages. First, a quick overview of the talk. We start with a demo, then see how to use collections in more detail. We'll dive into creating our own collections, and finish off with another demo. I found a blog post on Swift Numerics, and I'm eager to try it out in Xcode.\n\nI'm just going to copy the first example from the post and switch over to Xcode to paste in the code. We're getting a build failure because the Numerics module isn't present in my project. Previously, I would have needed to go back to the post to figure out how to add the Numerics package to my project, but in Xcode 13, because we are providing a default collection of open-source packages, get a fix-it right here in the editor.\n\nNow, if I click “Search,\" I will be taken to the new \"Add Package\" workflow, with Numerics preselected. We have a lot of information about the package right here in Xcode, such as the latest version, authors, the license, as well as the README. We can also switch to the Release History tab to see release notes of all available versions.\n\nFor adding the dependency, we can pick the version requirements and the project to add to. I'll accept the defaults for both and click \"Add Package.\" Now, the package will be checked out, and Xcode offers a selection of products from the given version. I will pick the Numerics product and add it to my one target. To finish, I'll click \"Add Package\" once again.\n\nIf we take a look at the project navigator, we'll see the new dependency there. And if we perform a build, we see that the project builds successfully now. Let's take a quick look at the exact changes the \"Add Package\" workflow made to the project. For that, we'll open up the project editor, select the project, and open the Swift Packages tab. Here, we can see our dependency and the version rule.\n\nNow, if we open the target editor to take a look at the Frameworks, Libraries, and Embedded Content phase, we can see the Numerics product being linked here. This is the new \"Add Package\" workflow in Xcode. Now, how did Xcode know about the Numerics package? Xcode ships with a pre-configured default collection, which contains a set of open-source packages published by Apple, such as Swift Argument Parser and Swift NIO. This makes the use of these projects in Xcode much more seamless by offering auto completion of module names and fix-its for adding packages using the information from the collection. This default collection is being updated regularly, so the exact list of packages can change. Now, I'll let my colleague, Francesco, tell you more about using collections.\n\nThank you, Boris. Importing that package directly through an import statement was effortless. Let's take a closer look at what a collection is. Collections are a JSON file, typically fetched via HTTPS. A collection contains a list of package URLs and their metadata, including a summary, versions, and vended products. This allows for rich information to be displayed in Xcode. This is a snippet of the JSON of a collection. You usually won't look at this in detail, but let's take a look at a few important fields. We can see a package's URL, the URL of its README, a summary, as well as more detailed information about the versions of a package. The Swift Package Manager, which we often abbreviate today as \"SwiftPM,\" manages a database for caching collections on your Mac. This means that you can access your configured collections from any tool that uses libSwiftPM, not just Xcode, including SwiftPM on the command line. SwiftPM is part of the larger Swift open source project. The swift.org website is a great place, where you can learn about the community and the process to contribute.\n\nSwiftPM offers its functionality as a library, including the support for collections. We call the library libSwiftPM, and it powers packages in Xcode, as well. Boris and I are putting together a blog post for our website. We're going to create a collection with the packages we are using in the post, so that our readers can follow along. Thanks, Francesco.\n\nWe like to use Alamofire to make network requests, so we add it to the collection. Additionally, we also want to keep the formatting of our project consistent, so we will also use swift-format. Now that we know which packages we want to have in the collection, let's continue and create it.\n\nFor creating a collection, we have published a tool on GitHub. You can clone and build this locally if you want to publish your own collections. The generator simplifies the process of creating collections by collecting information automatically and always producing output according to the latest version of the format. The tool takes an input JSON file, which is a list of package URLs with optional metadata, and produces an output file which will be shared with others.\n\nThere is also a separate tool for signing collections that is part of the same GitHub project. Signing your collection is optional, but allows verifying the author and protects the integrity of the collection. This is how the input JSON format looks like. There's a bit of metadata for the collection as a whole, such as an overview, keywords, and author information. This will be displayed when adding a collection in Xcode. And most importantly, a list of package URLs.\n\nThe tool will fetch information about each package automatically, but it is also possible to provide additional metadata per package when authoring the collection. This includes metadata that can improve search results, such as a custom summary or keywords, restricting the versions that the collection will represent, excluded products, which can be useful to guide users to the most relevant product a package vends, and specifying a README URL. Distributing a collection based on the input JSON file is a three-step process. First, we use the generator to create an output JSON file. Then, we take the output and a signing key plus certificate to create a signed collection with the sign tool. And finally, we can distribute the signed collection, either by sharing it directly or by putting it on a web server. You can sign collections with any valid, non-expired, non-revoked code signing certificate. For more information about the requirements, check out the SwiftPM documentation. If you do not want to sign your collection, then proceed to distribution after using the generate tool. But for this collection that Francesco and I are working on, we're going to go ahead and sign it.\n\nI have already prepared the files for signing, as well as the input JSON that we saw on the slides earlier. I also downloaded and built the generator and signing tool. We start by running `package-collection-generate` with the input JSON, as well as an output path.\n\nWe are passing `--verbose` to get more informational output, and we are passing a GitHub auth-token to query the GitHub API for more metadata.\n\nWe see that the command checks out different versions of the packages to collect information. This should take a few seconds. And then, it is done and has generated an output file. Next, we'd like to sign the collection. We run the `package-collection-sign` command, pass in the JSON file that we just generated, specify the output path.\n\nWe also pass in the key and certificate we exported earlier.\n\nI've already uploaded the generated collection to a server. Let's see how to interact with it using the command line. SwiftPM brings a subcommand called `package-collection` to do so. To start, we add the collection to our list of configured collections, which will also make it available in Xcode.\n\nThis fetches the collection and adds it. Of course, you can also do this in Xcode's UI, which Francesco will show you later. Next, let's take a look at the contents, using `swift package-collection describe`.\n\nFirst, there is the metadata that we specified earlier. We get the list of packages in the collection, and finally, information about the signature. This shows who has signed the collection, as well as that the signature has been verified by SwiftPM. This can be used to determine whether the given collection was created by who you expect and also protects the integrity of the collection from modification. Next, let's take a look at an individual package, like swift-format. For this, we use the describe command again, this time with a package URL.\n\nIn the output of this command we see the information about the entire package, such as available versions, authors, stars, and the README URL, and also details about the latest version, including the Swift tools version being used, as well as the modules and products. Now that we verified that our new collection looks good, I'm going to send it to my colleague, Francesco, who will show you a bit more of the Xcode experience by putting together our demo app. Thank you, Boris. I just created a new project for our demo app. I can add our new collection to Xcode by navigating to File > Add Packages and clicking the + button to add the collection. Now, I can paste the URL of the collection, and after clicking \"Load,\" Xcode tells me how many packages it contains and when it was last updated. After adding the collection, we can see its packages: Alamofire and swift-format.\n\nI want to use a networking API from Alamofire, so I'll add the package to my project.\n\nI'll select the Alamofire product and add it to my only target by clicking \"Add Package.\" We see that Xcode added the dependency, so we can now go back into our source file and start writing some code.\n\nNow that I've downloaded the README using Alamofire, I wanna parse the Markdown using the swift-cmark package. Let's go back to the \"Add Packages\" panel. New in Xcode 13, we added quick access to package options through a context menu on the project navigator. From here, I can re-open the panel by selecting \"Add Packages.\" I don't have swift-cmark in any of my collections, and I can still add it by pasting its URL directly into the search bar. I'm going to select the main branch of swift-cmark and add the package to my project.\n\nNow that I've added swift-cmark, we can finish our app for our blog post. It's now this easy to use packages from all over the internet and focus on what matters most to us: writing our apps.\n\nSwift Package collections in Xcode 13 help with the discovery of new packages. Creating your own collection allows sharing curated lists of packages, which streamlines adding them to your projects.\n\nTo learn more about packages in general, I would recommend the WWDC19 sessions, \"Adopting Swift Packages in Xcode\" and \"Creating Swift Packages.\" Thank you for watching. [upbeat music]",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "7:00",
+      "title": "Simple collection",
+      "language": "swift",
+      "code": "{\n  \"name\": \"WWDC21 Demo Collection\",\n  \"overview\": \"Packages to be used in our demo app\",\n  \"keywords\": [\"wwdc21\"],\n  \"author\": {\n    \"name\": \"Boris Buegling\"\n  }\n  \"packages\": [\n    { \"url\": \"https://github.com/apple/swift-format\" },\n    { \"url\": \"https://github.com/Alamofire/Alamofire\" }\n  ],\n}"
+    },
+    {
+      "timestamp": "7:17",
+      "title": "Complex collection",
+      "language": "swift",
+      "code": "{\n  \"name\": \"WWDC21 Demo Collection\",\n  \"overview\": \"Packages to be used in our demo app\",\n  \"keywords\": [\"wwdc21\"],\n  \"packages\": [\n    {\n      \"url\": \"https://github.com/apple/swift-format\",\n      \"summary\": \"Formatting technology for Swift source code.\",\n      \"keywords\": [“formatting”, \"swift\"],\n      \"versions\": [\"0.50400.0\", \"0.50300.0\"],\n      \"excludedProducts\": [\"SwiftFormatConfiguration\"],\n      \"readmeURL\": \"https://github.com/apple/swift-format/blob/main/README.md\"\n    },\n    { \"url\": \"https://github.com/Alamofire/Alamofire\" }\n  ],\n  \"author\": {\n    \"name\": \"Boris Buegling\"\n  }\n}"
+    },
+    {
+      "timestamp": "8:46",
+      "title": "Generating a collection",
+      "language": "swift",
+      "code": "package-collection-generate --verbose input.json collection.json --auth-token"
+    },
+    {
+      "timestamp": "9:30",
+      "title": "Signing a collection",
+      "language": "swift",
+      "code": "package-collection-sign collection.json collection-signed.json developer-key.pem developer-cert.cer"
+    },
+    {
+      "timestamp": "10:15",
+      "title": "Adding a collection",
+      "language": "swift",
+      "code": "swift package-collection add"
+    },
+    {
+      "timestamp": "10:34",
+      "title": "Inspecting an entire collection",
+      "language": "swift",
+      "code": "swift package-collection describe"
+    },
+    {
+      "timestamp": "11:11",
+      "title": "Viewing metadata of the swift-format package",
+      "language": "swift",
+      "code": "swift package-collection describe https://github.com/apple/swift-format"
+    },
+    {
+      "timestamp": "13:07",
+      "title": "ReadMe Request",
+      "language": "swift",
+      "code": "import Alamofire\n\nstruct ContentView: View {\n  let readMeURL = \"https://raw.githubusercontent.com/apple/swift/main/README.md\"\n  \n  var body: some View {\n    Button(\"Click me!\") {\n      AF.request(readMeURL).response { response in\n        debugPrint(response)\n      }\n    }\n  }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10197/5/4B9FBC81-D676-431E-934C-6DD3EE985C64/downloads/wwdc2021-10197_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10197/5/4B9FBC81-D676-431E-934C-6DD3EE985C64/downloads/wwdc2021-10197_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10192",
+      "year": "2021",
+      "title": "What‘s new in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10192"
+    },
+    {
+      "id": "408",
+      "year": "2019",
+      "title": "Adopting Swift Packages in Xcode",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/408"
+    },
+    {
+      "id": "410",
+      "year": "2019",
+      "title": "Creating Swift Packages",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/410"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:42:58.022Z"
+}

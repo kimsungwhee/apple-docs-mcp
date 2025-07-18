@@ -1,0 +1,88 @@
+{
+  "id": "110374",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/110374/",
+  "title": "Get the most out of Xcode Cloud",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools"
+  ],
+  "hasTranscript": true,
+  "hasCode": false,
+  "transcript": {
+    "fullText": "♪ instrumental hip hop music ♪ Hi, my name is Adam, and I'm a Manager with the Developer Experience Team. And I'm Sasan, an Engineer with the Xcode Cloud Team. In this session, we're gonna show you how to get the most out of Xcode Cloud by reviewing an existing workflow and highlighting the brand-new Xcode Cloud Usage dashboard. Then, we'll take a look at how we can use what we've learned from viewing our existing projects usage, to optimize it further, and begin developing a new Watch OS App version of our project Before we get to that, let's do a quick overview of Xcode Cloud. At WWDC 2021, we announced Xcode Cloud, a continuous integration and delivery service built into Xcode and designed expressly for Apple developers. Xcode Cloud lets you adopt continuous integration and delivery, a standard software development practice that helps you develop and maintain your code, and deliver apps to testers and users. Xcode Cloud accelerates the development and delivery of high-quality apps by bringing together cloud-based tools that help you build apps, run automated tests in parallel, deliver apps to testers, and view. and manage user feedback, all while protecting user privacy. If you'd like to learn more about setting up Xcode Cloud for the first time, check out \"Meet Xcode Cloud\" from WWDC 2021, where Holly and Geoff go into more detail in setting up your first workflow. Now, let's take a look at an existing workflow and build for our Food Truck app in Xcode Cloud. This is the Xcode Cloud dashboard in App Store Connect, it gives us an overview of a recent build of our Food Truck project. We recently made the decision to add a companion watchOS app, so a food truck operator can accept incoming orders from their watch quickly, without having to reach for their phone every time a new order comes in. Before we get started building the new watchOS app in Xcode Cloud, we'd like to make sure our current workflows and project are fully optimized, getting us the build and test results we want, as quickly as possible. We think there may be some ways in which we can save some time and resources here.\n\nTo better understand where we might be able to start making some of these optimizations, let's take a closer look at the build details overview. First, we notice that we started the build at 9:15 a.m. and that it took 14 minutes to complete and present us with results. We also see there is a time associated with usage, which in this case is 32 minutes. This is the total time it took for all the actions in our 14 minute build to complete. Next to the usage, you'll see an option to view the distribution of actions for this build.\n\nEach action is broken out, along with its respective usage, with the 32-minute total indicated at the bottom. This Usage distribution gives us an idea of some places we could possibly make some optimizations. But before we get to that, let's take a moment to look more closely at how Xcode Cloud performs these actions, and the difference between a build duration and usage.\n\nEach build is broken out into a series of actions depending on the setup of your workflow. You'll see how Xcode Cloud breaks each action out into multiple parallel actions like Analyze, Archive, Build, and Test. Because these actions are performed in parallel, the duration of the build is equal to the longest running action; in this case, the tests we've configured in our workflow that took 14 minutes to complete. Now, when calculating usage, each one of these actions, when observed in sequence, give us the total compute usage of the build–in this case, 32 minutes. And that's how Xcode Cloud calculates the build duration, and usage for a given build.\n\nNow, let's take a look at the Xcode Cloud Usage dashboard in App Store Connect! At the top is the usage overview, since the beginning of our monthly cycle for the Truck to Table Team, including a total percentage used. Additionally, we see total usage expressed in minutes, along with the remaining compute available on our team's current cycle.\n\nBeneath this, we see an area dedicated to usage trends for our team, broken out by builds created and overall usage, along with percentage increases or decreases during the last 30 days. If we'd like to see the usage over a different time period, we can do so by changing the time period in the top, right-hand corner of the trends section.\n\nA little further down the page, we see the total usage of each one of our products currently using Xcode Cloud, again, during the time period that we selected above. All right, let's select Food Truck so we can see its total usage breakdown.\n\nHere we start by seeing the same trends from our team view, but now specific to our Food Truck project. A little further down the page, we see the usage stats for each one of our workflows. At a quick glance, I can see from the Release workflow this is going to be an excellent place to start making a couple of optimizations. Now, I'm gonna hand it over to Sasan who, after observing some of the build details and compute usage, is gonna show us a couple of ways we can optimize our project. Show them how it's done, Sasan. Sasan: Thanks, Adam. Let's use the Food Truck project to cover some of the best practices when using Xcode Cloud. This should allow us to start iterating quickly on our new watchOS app. Workflows define when to start a build through the use of Start Conditions. It is important to configure your Start Conditions so that builds only start for changes that are intended for the Workflow. Let's see how we can apply this practice to the Release workflow of the Food Truck project. But first, I recommend checking out \"Explore Xcode Cloud Workflows\" for more detailed information.\n\nI have the same build that Adam showed us earlier open in Xcode. To start, let me open the Release workflow in the editor window.\n\nI right-click on the Workflow in the Navigation Panel and select Edit Workflow.\n\nIn the editor window, I can see all of the configurable sections that make up a Workflow, including a section for Start Conditions. We've discovered that sometimes the scheduled build doesn't contain any new changes. To address that, let's add a new start condition for branch changes to replace the existing scheduled start condition. This will ensure that we don't build duplicate commits. I on the Plus button and select Branch Changes.\n\nNow to delete the scheduled start condition, I will select it and click on the trash icon.\n\nThe Branch Changes Start Condition will run whenever a new commit is pushed to a remote branch. By default, the Source Branch is configured to be Any Branch. This means that any change made to any branch of your repo will cause this workflow to start a build. Since our release workflow is configured to be thorough, I want to restrict this to ensure we only start builds for our release branches.\n\nI click on Custom Branches, and I can immediately see that I need to specify the custom branch.\n\nI click on the Plus button and enter the branch name.\n\nThe editor will allow me to choose from either the exact branch name or a prefix. In this case, we know we have multiple release branches so I'll select branches beginning with \"release\".\n\nNext, I want to specify which files and folders from the release branch can start a build. My goal is to not start builds when the docs folder is modified. This folder contains only our development documentation so it's safe to skip. For the Files and Folders option, I select Custom Conditions.\n\nI select the Start a Build dropdown and select Don't start a build.\n\nI click on the Plus button to add a new condition.\n\nI will specify which folder to exclude by selecting Any Folder and selecting Choose.\n\nFinally, this will open a file picker. Now I can select the docs folder and click Open.\n\nTo finish up, I'll click Save to persist my changes.\n\nI have now configured the Start Condition to be more selective when starting by restricting to only branches with the release prefix and to ignore changes to the docs folder. Workflows also define how to run your builds through the use of pre-defined Actions. Actions allow you to analyze, archive, build, and test your changes. One important component of the test action is the selection of test destinations. To make sure that results are delivered fast, each destination will run in parallel once the test products are built.\n\nI want to make sure that I'm selecting a concise set of simulator destinations for my tests. In addition to speeding up my builds, this also helps reduce noise from the tests that might fail on similar devices.\n\nXcode Cloud provides an alias for recommended destinations. These are curated lists of simulators that represent a cross section of screen sizes.\n\nLet's visit the Release workflow again to see how we can select a reasonable set of simulator destinations for the iOS test action. After selecting the Test iOS action, we can see there are a wide range of selected test destinations. To remove test destinations, I'll select each one and click the Minus button. Then I'll click on the dropdown menu of the last item and select Recommended iPhones.\n\nAgain, I'll click Save to persist my changes.\n\nI now have a set of test destinations that will help provide a clear signal if we introduce a regression.\n\nAs we discussed earlier, Xcode Cloud will run your workflow when you push new changes to your repository. Sometimes, you may want to skip building in CI depending on the type of change being committed. We've added in the ability to do just that. Let's take a look in Xcode.\n\nTo skip your commit in Xcode Cloud, simply append \"ci skip\" to the end of the commit message. Now, when you push to remote, Xcode Cloud will know to ignore this event.\n\nMake sure you're using the exact format of the ci skip tag shown here.\n\nFor each action, custom scripts are executed at multiple points. Tidying up unused dependencies and resiliently retrying API requests that are known to be unreliable will ensure builds complete fast and consistently. For more information on custom scripts and other advanced customizations, check out \"Customize your advanced Xcode Cloud workflows\".\n\nFor testing, you should ensure that flakey and unreliable tests are corrected quickly. When a flakey test fails, the instinct is to immediately retry the build. Depending on the reliability of your test suite, this can result in many retried builds. Make sure to spend more time writing reliable tests.\n\nFor more information on how to do that effectively, check out our other session \"Author fast and reliable tests for Xcode Cloud\". So far we've discussed some best practices and applied them to the Food Truck project. Let's see what sort of impact those changes had by comparing the build from earlier with one from our updated workflow. This is a build that was started after applying the best practices. Compared to the previous build that Adam showed us, the duration decreased by a minute but the usage reduced by four minutes. It looks like we've made some good improvements overall.\n\nLet's return to the usage dashboard to better understand the impact.\n\nSince it might be difficult to see the impact from a single build right away, we've applied the best practices to another one of our workflows, the Integration Workflow. We've been running builds for a while with best practices applied. We can tell that our changes were effective because usage is trending downward.\n\nThis means we're now capable of adding more workflows and starting more builds to start development of the watchOS app.\n\nUsing the usage dashboard, you can continue to apply the same best practices to your existing projects and workflows to get the most out of Xcode Cloud. For more information on how to manage Xcode Cloud for large teams, check out Deep Dive into Xcode Cloud for teams. We hope you enjoyed our session. Adam: Thank you for watching.\n\n♪ instrumental hip hop music ♪",
+    "segments": []
+  },
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "About continuous integration and delivery with Xcode Cloud",
+        "url": "https://developer.apple.com/documentation/Xcode/About-Continuous-Integration-and-Delivery-with-Xcode-Cloud"
+      },
+      {
+        "title": "Configuring start conditions",
+        "url": "https://developer.apple.com/documentation/Xcode/Configuring-Start-Conditions"
+      },
+      {
+        "title": "Configuring your first Xcode Cloud workflow",
+        "url": "https://developer.apple.com/documentation/Xcode/Configuring-Your-First-Xcode-Cloud-Workflow"
+      },
+      {
+        "title": "Configuring your Xcode Cloud workflow’s actions",
+        "url": "https://developer.apple.com/documentation/Xcode/Configuring-Your-Xcode-Cloud-Workflow-s-Actions"
+      },
+      {
+        "title": "Developing a workflow strategy for Xcode Cloud",
+        "url": "https://developer.apple.com/documentation/Xcode/Developing-a-Workflow-Strategy-for-Xcode-Cloud"
+      },
+      {
+        "title": "Xcode Cloud",
+        "url": "https://developer.apple.com/documentation/Xcode/Xcode-Cloud"
+      },
+      {
+        "title": "Xcode Cloud workflow reference",
+        "url": "https://developer.apple.com/documentation/Xcode/Xcode-Cloud-Workflow-Reference"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/110374/5/69623440-5AFC-4AFB-9641-DBC4EEF46379/downloads/wwdc2022-110374_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/110374/5/69623440-5AFC-4AFB-9641-DBC4EEF46379/downloads/wwdc2022-110374_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "110361",
+      "year": "2022",
+      "title": "Author fast and reliable tests for Xcode Cloud",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110361"
+    },
+    {
+      "id": "110375",
+      "year": "2022",
+      "title": "Deep dive into Xcode Cloud for teams",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110375"
+    },
+    {
+      "id": "110929",
+      "year": "2022",
+      "title": "WWDC22 Day 1 recap",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110929"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:42:13.077Z"
+}

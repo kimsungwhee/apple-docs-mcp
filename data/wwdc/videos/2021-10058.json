@@ -1,0 +1,174 @@
+{
+  "id": "10058",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10058/",
+  "title": "Meet AsyncSequence",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Swift"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Bass music playing ♪  ♪ Philippe Hausler: Hi, my name is Philippe, and I am really excited to introduce you to a cool new feature in Swift, AsyncSequence.\n\nToday we'll go over what async sequences are and the fundamentals behind them.\n\nThen we'll talk about how you can use them in your code and go over a few of the new AsyncSequence APIs.\n\nAnd finally, we'll explore how you can build your own async sequences.\n\nSo let's dive right in.\n\nThis is a really simple tool I wrote to illustrate some of the cool new stuff you can do with AsyncSequence.\n\nIn this tool, we start off with a URL to an endpoint.\n\nIt lists recent earthquakes.\n\nNow, normally downloading stuff is really an asynchronous task that can take some time.\n\nBut in this case, we don't want to wait for all the things to download; instead, we want to show things as they are received.\n\nSo I decided to shake things up a bit and use the new async/await features to get the lines responded from this endpoint.\n\nThe data that we're fetching is formatted as comma-separated text, so each line is a complete row of data.\n\nSince the async sequence of lines is emitting each line as it's received, that means we can potentially have a really large download ahead of us.\n\nBut by emitting them as we get them, the snippet feels really responsive, and the most awesome part about it is that you can use the same things that you're familiar with using from regular sequences in this new async context.\n\nThat means that you can use the new for-await-in syntax to iterate, and functions like map, filter, and reduce; or -- like in this sample -- the dropFirst function to manipulate those values.\n\nSo how does this work? Well, a lot of things that I'm going to talk about today have their groundwork based in the async/await talk.\n\nBut let's recap a few key points.\n\nAsync functions let you write concurrent code without the need for callbacks, by using the await keyword.\n\nCalling an async function will suspend and then be resumed whenever a value or error is produced.\n\nAsyncSequence, on the other hand, will suspend on each element and resume when the underlying iterator produces a value or throws.\n\nBasically, as the name implies, they're just like regular sequences but with a few key differences.\n\nNamely, each element is delivered asynchronously.\n\nBut because they are an asynchronous delivery, that means that failure is definitely a possibility.\n\nSome async sequences throw, but if failure is not an option, others do not.\n\nJust like functions that throw, the compiler will help make sure that errors are handled when iterating or composing.\n\nGenerally speaking, asynchronous sequences are a description of how to produce values over time.\n\nSo an async sequence may be zero or more values and then signify completion with returning a nil from its iterator, just like sequences.\n\nWhen an error occurs, that's also a point at which the async sequence is at a terminal state, and after an error happens, they'll return nil for any subsequent calls to next on their iterator.\n\nSo let's take a dive into how that definition works by first starting off with regular iteration.\n\nHere we have a pretty familiar pattern.\n\nThis is a for-in loop.\n\nIn this case, it's iterating quakes from a sequence and then calling a function when the magnitude is above a certain value.\n\nThe compiler has knowledge of how this iteration should work, but what it does isn't magic.\n\nThe compilation step really just does some straightforward transformations.\n\nLet's examine those transformations so you can understand what the asynchronous form of this is.\n\nThis is roughly what the compiler does when building the previous code.\n\nIt first starts off by creating an iterator variable and then uses a while loop to get every quake produced by the iterator when next is invoked.\n\nTo use the new async/await functionality, there is one slight alteration that can be made.\n\nIt's as simple as changing that next function to be an asynchronous one.\n\nWe can now have the iteration participate in Swift concurrency by awaiting the next quake.\n\nLet's rewind back to uncover what this would have been like if the loop was on an async sequence.\n\nAs previously mentioned, we need to await each item out of the async sequence.\n\nThis is reflected in the new for-await-in syntax.\n\nThis all means that if you know how to use Sequence, you already have a good idea on how to use AsyncSequence.\n\nThere are a few ways you can utilize async sequences.\n\nAs we just covered, you can use the new for-await-in syntax; or if the async sequence throws, you can use the new for-try-await-in syntax.\n\nThis lets you easily iterate the values produced asynchronously -- without having to muck about with closures -- and use the syntax you are already familiar with to iterate through them.\n\nEven things like break and continue just work.\n\nNow you have now had a good introduction to the theory of async sequences.\n\nLet's explore that iteration just a bit further.\n\nGiven a source that is an async sequence, you can await each value by using the for-await-in syntax.\n\nThis means that it will await each item produced by the iterator, and when it would hit a terminal, it completes the loop.\n\nWhen iterating async sequences, breaking is obviously a good way to terminate iteration early from inside the loop.\n\nThis works just like regular sequences.\n\nHere we're breaking when the location data is not present for the quake.\n\nOr if we have some of value we want to skip, we can use continue.\n\nIn this case, if the depth is greater than some value, we're skipping those and continuing on to await the next quake.\n\nThis next iteration from the download works just like before, but in this case, the source that we have can throw an error.\n\nJust like throwing functions, try is required to process each element when the AsyncSequence being iterated can throw.\n\nAnd also just like throwing functions, the compiler will detect when you're missing a try and offer you a Fix-it to correct the mistake.\n\nThis means that when an async sequence can produce errors, you're always safe, because the language forces you to either throw that error or catch it.\n\nThis second iteration runs sequentially after the iteration of the first loop.\n\nRunning code sequentially isn't always what's desired.\n\nIf it's useful to run the iteration concurrent to other things going on, you can create a new async task that encapsulates the iteration.\n\nThis can be useful when you know the async sequences you're using might run indefinitely.\n\nNow, even though that sequence could potentially be indefinite, it's considerably less common to occur.\n\nBut in the world of asynchronous behavior, it is something much more common and something that you need to consider when using them.\n\nThankfully, the facilities for concurrency in Swift make this really easy and safe to do.\n\nThis can be also really helpful when you want to potentially cancel the iteration externally.\n\nHere we can run the two iterations concurrently and terminate the iteration later on.\n\nIt's pretty easy with tasks to scope the work of an iteration that might be indefinite to the lifetime of some container.\n\nLet's next take a tour of some of the AsyncSequence APIs that are available as of macOS Monterey, iOS 15, tvOS 15, and watchOS 8.\n\nThere are a lot of them, but I'll show you some of the highlights.\n\nReading from files is often a prime use case for asynchronous behavior.\n\nFileHandle now has a new bytes property that gives access to an asynchronous sequence of bytes from that FileHandle.\n\nThis can be used in conjunction with the new extension on AsyncSequence that converts asynchronous sequences of bytes into lines.\n\nBut dealing with files is so common that we decided that URL should have accessors for both bytes and lines.\n\nThis is that same API that I used in the initial example.\n\nIt's a convenience property on URL to return an AsyncSequence of lines from the contents, either from a file or from the network.\n\nI'm certain this will make a number of previously really complicated tasks easy and safe.\n\nSometimes getting things from the network requires a bit more control over the responses and authentication.\n\nSo URLSession now has a bytes function to fetch an async sequence of bytes given a URL or URLRequest.\n\nIf you want to know more, you should definitely check out the session \"Use async/ await with URLSession\" for some more details on this and a whole lot more new asynchronous capabilities with URLSession.\n\nBut files and networks are not the only thing that makes sense for AsyncSequence.\n\nNotifications can be now awaited with the new notifications API.\n\nAnd iteration is not the only way to interact with an AsyncSequence.\n\nIn this example, we're awaiting the first notification for remote changes that has a store UUID that matches.\n\nUsing methods like firstWhere, along with the notifications async sequence, allows for some really neat new design patterns that can make code that was previously expressing complicated logic now compact and easier to read.\n\nAnd if all of those weren't cool enough, there are a whole lot of new APIs for asynchronously manipulating values from async sequences.\n\nThese should be pretty familiar, because they're some of the same functions that are available on Sequence.\n\nWe've already covered a few so far, like dropFirst and firstWhere, but there are a whole lot more than just those.\n\nPretty much anything you can think of for using on Sequence now has an asynchronous counterpart for working with AsyncSequence.\n\nNow that was a lot to take in, and you might be thinking, \"Hey, those new APIs are really cool, and that syntax is super neat, but how can I make my own async sequences?\" Well, let's do exactly that! There are a few ways of implementing an async sequence, but I'm going to focus in on how to adapt your existing code.\n\nParticularly, there are a few design patterns that work really well with AsyncSequence, and we have some fantastic facilities for making what you already have interact with this new concept.\n\nSome of those design patterns are like closures that are called multiple times, but also some delegates can work nicely too.\n\nPretty much anything that does not need a response back and is just informing of a new value that occurs can be a prime candidate for making an async sequence.\n\nThese design patterns are really common and you likely already have a few in your apps today.\n\nThis is an example of a common handler pattern.\n\nIt's a class that has a handler property and a start and stop method.\n\nIt seems like a perfect candidate for AsyncSequence.\n\nExisting usage might be something like this where a monitor is created, and a handler to get values is assigned, and then the monitor is started so that quakes can be sent to the handler.\n\nLater on, the monitor might be stopped to cancel the events being produced.\n\nWe can use the same interface to adapt the usage to the new AsyncStream type.\n\nIt takes only a small bit of code to use it and allows you to build an async sequence.\n\nWhen constructing an async stream, an element type and construction closure is specified.\n\nThe closure has a continuation that can yield values more than once, finish, or handle termination.\n\nSo this means, in this case, the monitor can be created inside the construction closure.\n\nAnd then the handler can be assigned to yield quakes to the continuation.\n\nAnd then the onTermination can handle the cancellation and cleanup.\n\nAnd then we can start monitoring.\n\nThe same monitor code that we had before can easily be encapsulated within the async stream's construction.\n\nThis reduces the need to replicate the same logic in every use site.\n\nAnd this is how the usage of this async stream would work.\n\nYou can use the powerful transformation functions -- like filter -- and the new for-await-in syntax.\n\nThis lets you focus on the intent of your code instead of needing to worry about replicating the bookkeeping, since everything is wrapped up into one place.\n\nThere's a lot of flexibility with AsyncStream to create your own async sequences.\n\nThis is really just one example and there are likely numerous others that you can adapt in your own code.\n\nAsyncStream is a great way to adapt your existing code to become an async sequence.\n\nIt handles all of the things you would expect from an async sequence, like safety, iteration, and cancellation; but they also handle buffering.\n\nAsyncStream is a solid way of building your own async sequences and a suitable return type from your own APIs, since the only source of elements being produced is from the construction.\n\nAnd if you need to represent errors being thrown? Well, we have a type for that! AsyncThrowingStream that is just like AsyncStream but can handle errors.\n\nIt offers the same flexibility and safety as AsyncStream but can handle failures by throwing from its iteration.\n\nAsyncSequence is a really powerful tool that is both safe and familiar for dealing with more than one asynchronous value.\n\nIf you know how to use Sequence, you already know how to use AsyncSequence.\n\nWe've gone over what async sequences are, and how they're used, and introduced you to AsyncStream.\n\nWe've dived into the theory and what defines them, and a few of the newly introduced async sequences, and finally, how to build your own.\n\nI eagerly await what you do with them next.\n\n♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "0:37",
+      "title": "QuakesTool",
+      "language": "swift",
+      "code": "@main\nstruct QuakesTool {\n    static func main() async throws {\n        let endpointURL = URL(string: \"https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.csv\")!\n\n        // skip the header line and iterate each one \n        // to extract the magnitude, time, latitude and longitude\n        for try await event in endpointURL.lines.dropFirst() {\n            let values = event.split(separator: \",\")\n            let time = values[0]\n            let latitude = values[1]\n            let longitude = values[2]\n            let magnitude = values[4]\n            print(\"Magnitude \\(magnitude) on \\(time) at \\(latitude) \\(longitude)\")\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "3:24",
+      "title": "Iterating a Sequence",
+      "language": "swift",
+      "code": "for quake in quakes {\n    if quake.magnitude > 3 {\n        displaySignificantEarthquake(quake)\n    }\n}"
+    },
+    {
+      "timestamp": "3:52",
+      "title": "How the compiler handles iteration",
+      "language": "swift",
+      "code": "var iterator = quakes.makeIterator()\nwhile let quake = iterator.next() {\n    if quake.magnitude > 3 {\n        displaySignificantEarthquake(quake)\n    }\n}"
+    },
+    {
+      "timestamp": "4:11",
+      "title": "How the compiler handles asynchronous iteration",
+      "language": "swift",
+      "code": "var iterator = quakes.makeAsyncIterator()\nwhile let quake = await iterator.next() {\n    if quake.magnitude > 3 {\n        displaySignificantEarthquake(quake)\n    }\n}"
+    },
+    {
+      "timestamp": "4:28",
+      "title": "Iterating an AsyncSequence",
+      "language": "swift",
+      "code": "for await quake in quakes {\n    if quake.magnitude > 3 {\n        displaySignificantEarthquake(quake)\n    }\n}"
+    },
+    {
+      "timestamp": "5:36",
+      "title": "Terminating iteration early by breaking",
+      "language": "swift",
+      "code": "for await quake in quakes {\n    if quake.location == nil {\n        break\n    }\n    if quake.magnitude > 3 {\n        displaySignificantEarthquake(quake)\n    }\n}"
+    },
+    {
+      "timestamp": "5:51",
+      "title": "Skipping values by continuing",
+      "language": "swift",
+      "code": "for await quake in quakes {\n    if quake.depth > 5 {\n        continue\n    }\n    if quake.magnitude > 3 {\n        displaySignificantEarthquake(quake)\n    }\n}"
+    },
+    {
+      "timestamp": "6:05",
+      "title": "AsyncSequence might throw",
+      "language": "swift",
+      "code": "do {\n    for try await quake in quakeDownload {\n        ...\n    }\n} catch {\n    ...\n}"
+    },
+    {
+      "timestamp": "7:15",
+      "title": "Concurrently iterating inside an async task",
+      "language": "swift",
+      "code": "let iteration1 = Task {\n    for await quake in quakes {\n        ...\n    }\n}\n\nlet iteration2 = Task {\n    do {\n        for try await quake in quakeDownload {\n            ...\n        }\n    } catch {\n        ...\n    }\n}\n\n//... later on  \niteration1.cancel()\niteration2.cancel()"
+    },
+    {
+      "timestamp": "7:56",
+      "title": "Reading bytes from a FileHandle",
+      "language": "swift",
+      "code": "for try await line in FileHandle.standardInput.bytes.lines {\n    ...\n}"
+    },
+    {
+      "timestamp": "8:16",
+      "title": "Reading lines from a URL",
+      "language": "swift",
+      "code": "let url = URL(fileURLWithPath: \"/tmp/somefile.txt\")\nfor try await line in url.lines {\n    ...\n}"
+    },
+    {
+      "timestamp": "8:49",
+      "title": "Reading bytes from a URLSession",
+      "language": "swift",
+      "code": "let (bytes, response) = try await URLSession.shared.bytes(from: url)\n\nguard let httpResponse = response as? HTTPURLResponse,\n      httpResponse.statusCode == 200 /* OK */\nelse {\n    throw MyNetworkingError.invalidServerResponse\n}\n\nfor try await byte in bytes {\n    ...\n}"
+    },
+    {
+      "timestamp": "9:12",
+      "title": "Notifications",
+      "language": "swift",
+      "code": "let center = NotificationCenter.default\nlet notification = await center.notifications(named: .NSPersistentStoreRemoteChange).first {\n    $0.userInfo[NSStoreUUIDKey] == storeUUID\n}"
+    },
+    {
+      "timestamp": "11:10",
+      "title": "Using an AsyncStream",
+      "language": "swift",
+      "code": "class QuakeMonitor {\n    var quakeHandler: (Quake) -> Void\n    func startMonitoring()\n    func stopMonitoring()\n}\n\nlet quakes = AsyncStream(Quake.self) { continuation in\n    let monitor = QuakeMonitor()\n    monitor.quakeHandler = { quake in\n        continuation.yield(quake)\n    }\n    continuation.onTermination = { @Sendable _ in\n        monitor.stopMonitoring()\n    }\n    monitor.startMonitoring()\n}\n\nlet significantQuakes = quakes.filter { quake in\n    quake.magnitude > 3\n}\n\nfor await quake in significantQuakes {\n    ...\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "The Swift Programming Language: Concurrency",
+        "url": "https://docs.swift.org/swift-book/documentation/the-swift-programming-language/concurrency/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10058/6/59A23687-3AF9-42AE-A922-079B630ED443/downloads/wwdc2021-10058_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10058/6/59A23687-3AF9-42AE-A922-079B630ED443/downloads/wwdc2021-10058_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10020",
+      "year": "2022",
+      "title": "Compose advanced models with Create ML Components",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10020"
+    },
+    {
+      "id": "110379",
+      "year": "2022",
+      "title": "Create a more responsive media app",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110379"
+    },
+    {
+      "id": "110355",
+      "year": "2022",
+      "title": "Meet Swift Async Algorithms",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110355"
+    },
+    {
+      "id": "10134",
+      "year": "2021",
+      "title": "Explore structured concurrency in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10134"
+    },
+    {
+      "id": "10132",
+      "year": "2021",
+      "title": "Meet async/await in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10132"
+    },
+    {
+      "id": "10095",
+      "year": "2021",
+      "title": "Use async/await with URLSession",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10095"
+    },
+    {
+      "id": "10109",
+      "year": "2021",
+      "title": "What's new in Foundation",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10109"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:48:39.134Z"
+}

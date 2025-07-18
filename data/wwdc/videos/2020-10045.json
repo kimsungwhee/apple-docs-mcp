@@ -1,0 +1,132 @@
+{
+  "id": "10045",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10045/",
+  "title": "Advances in diffable data sources",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nWelcome. My name is Steve Breen, and I'm an engineer on the UIKit team. And in this video, we're going to chat a bit about advances in Diffable Data Source for iOS 14.\n\nSo, before we dive into our content, I want to highlight a portion of the companion sample project for this video entitled \"Emoji Explorer.\" This sample has a lot of interesting components baked right into its design.\n\nNow, in this first section, there's a horizontally scrolling grid of emoji. This is a pretty common design element in many of today's apps. Okay, so, this section in the middle of Emoji Explorer is especially novel. It's an expandable-collapsible outline-styled UI which is new in iOS 14.\n\nAnd finally, in this last section, there's a design that looks suspiciously like a UITableView right here in the middle of our UICollectionView. Okay, that's Emoji Explorer, and we'll be referring back to this throughout our video.\n\nOkay. So, to review, Diffable Data Source, which was introduced in iOS 13, greatly simplifies the management of UI state through the addition of a new snapshot data type.\n\nSnapshots encapsulate the entire UI state via the use of unique section and item identifiers. So, when updating a UICollectionView, we first create a new snapshot, populate it with the current UI state, and apply it to the data source.\n\nDiffable Data Source computes the differences and animates things automatically without any additional work needed from the application developer.\n\nSo we covered this API in detail in the WWDC 2019 video, \"Advances in UI Data Sources,\" and I encourage you to check out that video to learn more.\n\nSo, for iOS 14, we've built on the foundation of Diffable Data Source with two new features: Section Snapshots and first class Reordering Support. Let's chat a bit about Section Snapshots.\n\nFor iOS 14, we're adding a new section snapshot right alongside the existing snapshot type we call \"section snapshots.\" And as the name implies, section snapshots encapsulates the data for a single section in a UICollectionView. There are two reasons for this enhancement. First, to allow data sources to be more composable into section-sized chunks.\n\nAnd second, to allow modeling of hierarchical data which is needed to support rendering outline-style UIs, a common visual design found all throughout iOS 14.\n\nSo let's go back to Emoji Explorer and see how section snapshots are used to build this out in our sample app.\n\nFirst, in our horizontally scrolling section, we are using a single section snapshot to completely model the content found here.\n\nNext, in our second section where we see this expandable-collapsible outline-style section, a second section snapshot is used to model this hierarchical data. And finally, in our list section, we again model this section's content with a third section snapshot.\n\nSo for Emoji Explorer, we compose our Diffable Data Source from three distinct section snapshots each representing a single section's content. Let's take a look at some API. So, here's a snippet of the new Section Snapshot API, and check out the SDK for the entire API.\n\nSo, please note that we'll use the term \"snapshot\" when we're referring to the original snapshot type introduced in iOS 13, which includes sections and item identifiers.\n\nAnd we'll use the term \"section snapshot\" to refer to this new to iOS 14 type. So, glancing at this new section snapshot type, we see that it's generic over the item type.\n\nNote there's an absence of any kind of section identifier type. section snapshots just inherently don't know what section they represent.\n\nTo add content to our section snapshot, we'll use the 'append' API.\n\nNow, notice the optional parent parameter. When supplied, this allows us to create parent-child relationships in the section snapshot needed to model hierarchical data.\n\nNow, we've added two new APIs to UICollectionViewDiffableDataSource to accommodate the new section snapshot type.\n\nFirst, we have a new 'apply' method which takes a section snapshot and a section identifier.\n\nOur second new API allows us to retrieve a section snapshot representing a particular section's contents. So next, let's flesh out a code snippet showing how to use snapshots and section snapshots together to build up our Collection View's content. First, we'll add sections in the order we desire by applying a snapshot to our Diffable Data Source.\n\nAnd here we see, we have the sections in a particular order: 'recent,' 'top,' and 'suggested.' Now, after we have the desired section order, we're going to populate the items for each of these sections by applying section snapshots directly to each section. Let's take a look at how to create hierarchical data using this Section Snapshot API. First, we'll append some root items to our sections. Smiley, nature, food, et cetera using the 'append' API.\n\nRecall the 'append' method has an optional 'parent' parameter. So when that's not supplied, that means apply these items to the root. So, to configure our parent-child relationship, we'll append some child items into a parent item. In this example, the parent item is \"food.\" And that's it. We've created a section snapshot which models our application's hierarchical data. Okay. So, it should be clear by now, section snapshots are capable of representing hierarchical data.\n\nNow, at times, it's very convenient to reason about just a portion of this hierarchical data.\n\nSo, in this code snippet, we're interested in getting all the children related to a particular parent item, optionally including the parent in a resultant section snapshot.\n\nOkay. So, next up, let's chat a bit about expansion state.\n\nSo expansion state is managed as part of a section snapshot's state. And when building up a snapshot for display, you can easily determine whether or not a child content is initially visible by setting that item's parent expansion state.\n\nYou can also query a snapshot to determine if an item is expanded or collapsed. Note that if you mutate a section snapshot's expansion state, this won't apply until you actually apply that to the Diffable Data Source. Okay, so when a user interacts with an outline-styled UI which is configured with the new Cell Outline Disclosure Accessory, the framework will automatically update the section snapshot with the new expansion state and apply that section snapshot to the data source. Now, often it's useful to be notified about expansion state changes caused by these user interactions. For example, you may have a design that requires that a particular parent never collapse.\n\nTo support this, Diffable Data Source has new APIs for giving applications programmatic control over expansion state changes caused by user interactions. Okay, so here are these new APIs.\n\nFirst, we notice that Diffable Data Source has a new property called \"SectionSnapshotHandlers.\" The new SectionSnapshotHandlers type is a struct which is generic over item and contains five optional closures. To handle our previously mentioned requirement, we could provide a shouldCollapseItem handler which will return 'false' for a particular parent to avoid collapsing the outline. Now, we also provide support for lazy loading of expensive content with the API snapshotForExpandingParent.\n\nSo this is useful to minimize the amount of content loaded in the initial section snapshot when getting that content is expensive. So, you can load that content as needed depending on the current child snapshot's state. So, that wraps up Section Snapshots. One of the advances Diffable Data Source brings is the ability to model our Collection View's data with unique item identifiers. With these unique item identifiers, it is possible for the framework to automatically commit reordering changes on the application's behalf based on user interactions. But this isn't really enough. Our application needs to be notified that a user-initiated reordering interaction took place so that it can persist the new visual order to the application's backing store, which is its final source of truth. So, to support reordering, Diffable Data Source now has a new property: reorderingHandlers.\n\nThis a struct which contains three optional closures: canReorderItem, willReorder, and didReorder. So, to enable reordering via this new API, you'll first need to supply a canReorderItem closure. This will be called when a user attempts to start a reordering interaction. If it returns 'true,' the reordering interaction is allowed to begin. When the user is done with the reordering interaction, the didReorder closure is called to allow your application to commit the new ordering state to your application's source of truth. Note that you must provide both the canReorderItem and didReorder closure to enable the reordering feature. Okay. So, the didReorder closure passes your application a new type: NSDiffableDataSourceTransaction.\n\nSo, transactions supply all the information needed to reason about the update being performed against the Diffable Data Source. First, let's check out the NSDiffableDataSourceTransaction. This type supplies four basic pieces of information. First, we have the initialSnapshot. This is the state of the Diffable Data Source before the update is applied.\n\nNext, we have the finalSnapshot. Now, this is the state of the Diffable Data Source after the update is applied. And we can use these item identifiers from this snapshot directly to determine the new ordering which we need to commit to our application's source of truth. Additionally, we can see the Swift standard lib CollectionDifference is also supplied. And if your application has a data type such as 'Array' for the source of truth, we can apply that CollectionDifference directly to that. And, lastly, we see a list of section transactions that provide per-section details about all the sections involved in this reordering update. Section transactions are quite similar. They have one section transaction supplied for each section involved in the reordering update. First off, we can inspect the sectionIdentifier this sectionTransaction has been applied to. And we also see we have the initial and final section snapshots, along with the CollectionDifference specific to this section's update. Okay. So, let's check out an example. Here, our backing store is an array of items supplying the source of truth for a single section Collection View.\n\nUsing the Swift standard lib CollectionDifference supplied with the transaction, we'll create a new backing store and update our source of truth directly.\n\nWell, that wraps up our video today covering all the advances we've brought to Diffable Data Source for iOS 14.\n\nDownload the sample app. It's full of examples of how to use these new APIs. And use this code as a starting point to update your apps to take advantage of these new APIs. And watch the related videos mentioned throughout this talk to go deeper.\n\nThanks for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:24",
+      "title": "NSDiffableDataSourceSectionSnapshot",
+      "language": "swift",
+      "code": "// NSDiffableDataSourceSectionSnapshot\n\npublic struct NSDiffableDataSourceSectionSnapshot<ItemIdentifierType> where ItemIdentifierType : Hashable {\n\n    public init()\n\n    public init(_ snapshot: NSDiffableDataSourceSectionSnapshot<ItemIdentifierType>)\n\n    public mutating func append(_ items: [ItemIdentifierType], to parent: ItemIdentifierType? = nil)\n\n    public mutating func insert(_ items: [ItemIdentifierType], before item: ItemIdentifierType)\n\n    public mutating func insert(_ items: [ItemIdentifierType], after item: ItemIdentifierType)\n\n    public mutating func delete(_ items: [ItemIdentifierType])\n\n    public mutating func deleteAll()\n\n    public mutating func expand(_ items: [ItemIdentifierType])\n\n    public mutating func collapse(_ items: [ItemIdentifierType])\n\n    public mutating func replace(childrenOf parent: ItemIdentifierType, using snapshot: NSDiffableDataSourceSectionSnapshot<ItemIdentifierType>)\n\n    public mutating func insert(_ snapshot: NSDiffableDataSourceSectionSnapshot<ItemIdentifierType>, before item: (ItemIdentifierType))\n\n    public mutating func insert(_ snapshot: NSDiffableDataSourceSectionSnapshot<ItemIdentifierType>, after item: (ItemIdentifierType))\n\n    public func isExpanded(_ item: ItemIdentifierType) -> Bool\n\n    public func isVisible(_ item: ItemIdentifierType) -> Bool\n\n    public func contains(_ item: ItemIdentifierType) -> Bool\n\n    public func level(of item: ItemIdentifierType) -> Int\n\n    public func index(of item: ItemIdentifierType) -> Int?\n\n    public func parent(of child: ItemIdentifierType) -> ItemIdentifierType?\n\n    public func snapshot(of parent: ItemIdentifierType, includingParent: Bool = false) -> NSDiffableDataSourceSectionSnapshot<ItemIdentifierType>\n\n    public var items: [ItemIdentifierType] { get }\n\n    public var rootItems: [ItemIdentifierType] { get }\n\n    public var visibleItems: [ItemIdentifierType] { get }\n}"
+    },
+    {
+      "timestamp": "4:20",
+      "title": "UICollectionViewDiffableDataSource Additions for Section Snapshots",
+      "language": "swift",
+      "code": "// UICollectionViewDiffableDataSource additions for iOS 14\n\nextension UICollectionViewDiffableDataSource<Item, Section> {\n\n    func apply(_ snapshot: NSDiffableDataSourceSectionSnapshot<Item>, \n               to section: Section, \n               animatingDifferences: Bool = true, \n               completion: (() -> Void)? = nil)\n\n    func snapshot(for section: Section) ->   \n                  NSDiffableDataSourceSectionSnapshot<Item>\n}"
+    },
+    {
+      "timestamp": "4:43",
+      "title": "Using Snapshots and Section Snapshots together",
+      "language": "swift",
+      "code": "// Example of using snapshots and section snapshots together\n\nfunc update(animated: Bool=true) {\n\n   // Add our sections in a specific order\n   let sections: [Section] = [.recent, .top, .suggested]\n   var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()\n   snapshot.appendSections(sections)\n   dataSource.apply(snapshot, animatingDifferences: animated)\n\n   // update each section's data via section snapshots in the existing position\n   for section in sections {\n      let sectionItems = items(for: section)\n      var sectionSnapshot = NSDiffableDataSourceSectionSnapshot<Item>()\n      sectionSnapshot.append(sectionItems)\n      dataSource.apply(sectionSnapshot, to: section, animatingDifferences:animated)\n   }\n}"
+    },
+    {
+      "timestamp": "5:18",
+      "title": "Creating hierarchical data with NSDiffableDataSourceSectionSnapshot",
+      "language": "swift",
+      "code": "// Create hierarchical data for our Outline\n\nvar sectionSnapshot = ...\n\nsectionSnapshot.append([\"Smileys\", \"Nature\", \n                        \"Food\", \"Activities\",\n                        \"Travel\", \"Objects\", \"Symbols\"])\n\nsectionSnapshot.append([\"🥃\", \"🍎\", \"🍑\"], to: \"Food\")"
+    },
+    {
+      "timestamp": "6:01",
+      "title": "Child Section Snapshots",
+      "language": "swift",
+      "code": "let childSnapshot = sectionSnapshot.snapshot(for: parent, includingParent: false)"
+    },
+    {
+      "timestamp": "6:11",
+      "title": "Section Snapshot Expand / Collapse API",
+      "language": "swift",
+      "code": "struct NSDiffableDataSourceSectionSnapshot<Item: Hashable> {\n   func expand(_ items: [Item])\n   func collapse(_ items: [Item])\n   func isExpanded(_ item: Item) -> Bool\n}"
+    },
+    {
+      "timestamp": "7:21",
+      "title": "Section Snapshot Handlers",
+      "language": "swift",
+      "code": "// Section Snapshot Handlers: handling user interactions for expand / collapse state changes\n\nextension UICollectionViewDiffableDataSource {\n\n  struct SectionSnapshotHandlers<Item> {\n    var shouldExpandItem: ((Item) -> Bool)?\n    var willExpandItem: ((Item) -> Void)?\n\t\n    var shouldCollapseItem: ((Item) -> Bool)?\n    var willCollapseItem: ((Item) -> Void)?\n    \n    var snapshotForExpandingParent: ((Item, NSDiffableDataSourceSectionSnapshot<Item>) -> NSDiffableDataSourceSectionSnapshot<Item>)?\n  }\n  \n  var sectionSnapshotHandlers: SectionSnapshotHandlers<Item>\n \n}"
+    },
+    {
+      "timestamp": "8:52",
+      "title": "Reordering Handlers",
+      "language": "swift",
+      "code": "// Diffable Data Source Reordering Handlers\n\nextension UICollectionViewDiffableDataSource {\n\n  struct ReorderingHandlers {\n    var canReorderItem: ((Item) -> Bool)?\n    var willReorder: ((NSDiffableDataSourceTransaction<Section, Item>) -> Void)?\n    var didReorder: ((NSDiffableDataSourceTransaction<Section, Item>) -> Void)?\n  }\n\n  var reorderingHandlers: ReorderingHandlers\n}"
+    },
+    {
+      "timestamp": "9:45",
+      "title": "Diffable Data Source Transactions",
+      "language": "swift",
+      "code": "// NSDiffableDataSourceTransaction\n\nstruct NSDiffableDataSourceTransaction<Section, Item> {\n   var initialSnapshot: NSDiffableDataSourceSnapshot<Section, Item> { get }\n   var finalSnapshot: NSDiffableDataSourceSnapshot<Section, Item> { get }\n   var difference: CollectionDifference<Item> { get }\n   var sectionTransactions: [NSDiffableDataSourceSectionTransaction<Section, Item>] { get }\n}\n\nstruct NSDiffableDataSourceSectionTransaction<Section, Item> {\n   var sectionIdentifier: Section { get }\n   var initialSnapshot: NSDiffableDataSourceSectionSnapshot<Item> { get }\n   var finalSnapshot: NSDiffableDataSourceSectionSnapshot<Item> { get }\n   var difference: CollectionDifference<Item> { get }\n}"
+    },
+    {
+      "timestamp": "11:07",
+      "title": "Diffable Data Source Reordering Example",
+      "language": "swift",
+      "code": "dataSource.reorderingHandlers.didReorder = { [weak self] transaction in \n   guard let self = self else { return }\n\n   if let updateBackingStore = self.backingStore.applying(transaction.difference) {\n      self.backingStore = updatedBackingStore\n   }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Implementing modern collection views",
+        "url": "https://developer.apple.com/documentation/UIKit/implementing-modern-collection-views"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10045/2/7473959D-7A47-4AC5-ACC1-1FFD5712F680/wwdc2020_10045_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10045/2/7473959D-7A47-4AC5-ACC1-1FFD5712F680/wwdc2020_10045_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10252",
+      "year": "2021",
+      "title": "Make blazing fast lists and collection views",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10252"
+    },
+    {
+      "id": "10026",
+      "year": "2020",
+      "title": "Lists in UICollectionView",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10026"
+    },
+    {
+      "id": "10027",
+      "year": "2020",
+      "title": "Modern cell configuration",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10027"
+    },
+    {
+      "id": "220",
+      "year": "2019",
+      "title": "Advances in UI Data Sources",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/220"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:57:46.660Z"
+}

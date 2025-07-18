@@ -1,0 +1,214 @@
+{
+  "id": "10128",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10128/",
+  "title": "Your guide to Metal ray tracing",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Graphics & Games"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Pawel Szczerbuk: Hello, my name is Pawel Szczerbuk, and I'm a GPU Software Engineer. Metal can help you scale your ray tracing applications to complex and detailed scenes. Ray tracing is fundamental to image fidelity in production rendering while ray tracing in games focuses on high frame rates while improving visual quality. This image of Disney's Moana Island Scene was rendered with Metal ray tracing. Today I am going to talk about how to use Metal ray tracing. I will highlight some exciting new features you can use to accelerate ray tracing in games and production renderers.\n\nRay tracing applications simulate individual rays of light bouncing around a scene To render with Metal ray tracing, the first step is to define your scene geometry. Then Metal builds an Acceleration Structure that contains your geometry and can be efficiently queried for intersections using GPU acceleration. In a GPU function, create a ray to intersect with your scene. Make an intersector object in your shader and provide it with both your ray and the acceleration structure. This returns an intersection result, with all the information you may need to either shade the pixel, or process it further. Each of these pieces work together to enable you to build your scene, use instancing to add visual complexity, and perform ray intersection. And there are some amazing tools at your disposal to help you work with ray tracing applications. It all starts with building your scene.\n\nThe Metal ray tracing API supports a few different types of geometry. All of this geometry is stored in an acceleration structure.\n\nAn acceleration structure speeds up the ray tracing process by recursively partitioning the geometry. This allows for quick elimination of any geometry that does not intersect with the ray. You can set up an acceleration structure in three steps. Create an acceleration structure descriptor, where you will provide your actual geometry. Once you have the descriptor, you can allocate the acceleration structure, and then build it. An acceleration structure descriptor contains one or more geometry descriptors. There are three types of geometry descriptors available in Metal. Triangles are the primitives we all know and love, used to model almost everything in computer graphics. Bounding box primitives are entirely defined by your custom intersection function that Metal will call when a ray hits an enclosing bounding box. And new this year, curves. These are great for rendering hair and fur. To create an acceleration structure using triangles, create a triangle geometry descriptor for an individual piece of geometry. You'll provide a vertex buffer, index buffer, and triangle count. Bounding box geometry works in a similar way, except instead of vertices, you provide the bounding boxes that enclose your geometry. Additionally, you provide an intersection function which Metal will invoke when a ray hits your bounding box primitive.\n\nFor more details about how to set up the intersection function, see the 2020 \"Discover ray tracing with Metal\" talk.\n\nGeometry such as hair, fur, and vegetation can have thousands or even millions of primitives. These are typically modeled as fine, smooth curves. Instead of using triangles to approximate these curves, you can use Metal's new curve primitives. These curves will remain smooth even as the camera zooms in. And compared to triangles, curves have a more compact memory footprint and allow faster acceleration structure builds.\n\nA full curve is made of a series of connected curve segments. Every segment on a curve is its own primitive, and Metal assigns each segment a unique primitive ID. Each of these segments is defined by a series of control points, which control the shape of the curve. These control points are interpolated using a set of basis functions. Depending on the basis function, each curve segment can have 2, 3, or 4 control points. Metal offers four different curve basis functions: Bezier, Catmull-Rom, B-Spline, and Linear. Each of these basis functions has their own benefits, so choose the best one for your use case. Metal also requires a control point index buffer. Each curve segment has one index in this buffer representing the first control point for the segment. For example, say you have four control points. You define a curve segment using the index of its first control point, so add a zero to the index buffer. This example is using Catmull-Rom basis function, so the actual curve segment is only defined between control points 1 and 2. All you need to do to connect another curve segment is add one more control point. This additional curve segment uses control points 1 through 4, so add a 1 to the index buffer. These two curve segments share 3 control points because of the index buffer, which is one reason curves are able to save memory. Repeat this as many times as needed to finish the curve. To start a new curve, simply add additional control points which don't overlap the previous control points and add the corresponding index to the index buffer. So far the curves I've described have been abstract mathematical objects. In order to render them, they need to have some kind of 3D shape. Each control point also has a radius which is interpolated along the length of the curve. By default, curves are rendered with a 3D cylindrical cross section. This is great for curves that will be seen from close-up. For curves that will only be seen from far away, Metal also supports flat curves. This can improve performance whenever you don't need full 3D geometry.\n\nSimilar to triangles and bounding boxes, curve geometry is represented with a curve geometry descriptor. Attach the buffers containing your control points, the corresponding radii, and control point indices. Set the number of control points in the control point buffer, as well as the number of actual curve segments. This should be the same as the number of indices in the index buffer. Specify what kind of curves you are using. This example uses round Bezier curves with 4 control points per curve segment. That's all you need to do to set up a curve geometry descriptor.\n\nNow that you've created your geometry descriptors, you can set up the acceleration structure descriptor. Use the primitive acceleration structure descriptor for primitive geometry like triangles, bounding boxes, and curves. Add the geometry descriptor to the acceleration structure descriptor. Multiple geometry descriptors can be added to a single acceleration structure to combine the geometry. When you have your acceleration structure descriptor ready, you can allocate memory for the acceleration structure. Metal gives you full control over when and where this memory is allocated.\n\nThis is a two-part operation. First calculate the size of the objects needed for the build. The Metal device provides a method to calculate the required allocation size for an acceleration structure. Although it's possible to allocate storage for acceleration structures directly from the Metal device, allocating them from a heap will allow you to reduce resource management overhead later. The heap may have additional size and alignment requirements, which you can query using another method on the Metal device.\n\nWith these sizes you can now allocate memory to store the acceleration structure. This storage is represented by an MTL Acceleration Structure object. To allocate one of these objects, call the make Acceleration Structure method on a heap or Metal device, passing the size. You will also allocate some scratch memory which Metal will use while building the acceleration structure. Since this memory only needs to be accessed by the GPU, you can do this by allocating a private storage mode buffer from the Metal device.\n\nNow you're ready to actually build the acceleration structure. Schedule the build operation, and then Metal will build the acceleration for you on the GPU. You do this using an acceleration structure command encoder.\n\nThis encoder has several methods that you can use to build and modify acceleration structures. In this case, call the build method with the destination acceleration structure, the descriptor, and the scratch buffer. Metal will build the primitive acceleration structure for your geometry, and it will be available for use in subsequent GPU commands. That's how you can represent the geometry in your scene with a primitive acceleration structure. To help you scale to larger scenes, Metal also supports instance acceleration structures.\n\nIt would take an enormous amount of memory to store a complex, detailed environment like the Moana island scene in a single primitive acceleration structure. But this intricate scene has a repetitive structure in the thousands of trees, millions of leaves, and other objects, which can be exploited to render the scene efficiently. All unique objects in the scene, including the mountains, corals, and trees, can be represented as primitive acceleration structures. These can be combined into an instance acceleration structure representing the whole scene. So while a primitive acceleration structure contains geometry, an instance acceleration structure contains references to other acceleration structures, transformed to different positions, sizes, and orientations to compose a full scene. Each instance has a transformation matrix to place the acceleration structure that it references in the scene. Building an instance acceleration structure is similar to building a primitive acceleration structure. You will start by creating a descriptor. This time, instead of geometry, you provide a buffer containing information about each instance, like the acceleration structure it references, and the transformation matrix that places it in the scene. Then build the acceleration structure on the GPU in the same way that you build a primitive acceleration structure.\n\nTo create the descriptor, construct an MTL Instance Acceleration Structure Descriptor and set the number of instances it will contain. Then provide an array of the primitive acceleration structures, which can be referenced by instances, and specify which type of instance descriptor will be contained in the instance buffer. Metal offers several instance descriptor types which you can choose from, depending on your use-case. You will configure the instances in the acceleration structure in two steps.\n\nFirst, allocate a buffer to store the per-instance data. The size of this buffer depends on the number of instances and the size of each instance descriptor, but it's allocated just like any other Metal buffer. Once you've allocated the buffer, assign it to the instance acceleration structure descriptor.\n\nNext you will fill the instance buffer with information about all of the instances in the acceleration structure. For each instance, create a descriptor and specify the acceleration structure that this instance refers to. You will identify the acceleration structure with an index into the array that you set on the instance acceleration structure descriptor. Each instance also has a transformation matrix, visibility mask, and other properties depending on which type of instance descriptor you are using.\n\nThe last step is to build the actual acceleration structure, which is the same process as for a primitive acceleration structure. All of the steps before the build can run on the CPU. But if the number of instances is large, the process of filling out the instance buffer can become compute intensive. Since instance descriptors are stored in a normal Metal buffer, you can accelerate this step by filling out these descriptors from the GPU. This is a great opportunity for GPU acceleration, as long as you know how many instances your acceleration structure will contain before you hand off the work to the GPU. But if you want to do something like instance culling, you would have to cull instances on the CPU so you can set the final instance count on the descriptor. New this year, you can drive this process on the GPU with the new indirect instance acceleration structure descriptor. With this indirect descriptor, you can cull instances, fill the instance buffer, and set the final instance count entirely on the GPU. To perform a GPU-driven acceleration structure build, create an indirect instance acceleration structure descriptor. Set the maximum instance count on the descriptor, and the buffer where you will write the final instance count from the GPU. Then simply set the instance descriptor buffer, and you're ready to start configuring instances on the GPU.\n\nYou will use a different type of descriptor in the instance buffer. The indirect instance descriptor is similar to the direct instance descriptor, except that you can identify the acceleration structure being instanced by simply assigning it to the descriptor. That's how you build an instance acceleration structure. So far, I've talked about two-level model of instancing. In this model, a forest in the Moana island scene is composed of thousands of instances of different trees. But if we dig deeper, a tree itself is a trunk with many copies of the same leaf. You can take advantage of this structure using the new multi-level instancing feature. With multi-level instancing, an instance acceleration structure can contain not just primitive acceleration structures, but also other instance acceleration structures. For example, in this scene a palm tree can be expressed as an instance acceleration structure containing a trunk and instances of a leaf, while the scene as a whole can contain instances of the palm tree. The Moana island scene is a great example of the power of multi-level instancing. When using two levels of instancing, adding one type of tree to a scene could mean adding hundreds or even thousands of copies of parts of the tree. But with multi-level instancing, you can add instances of a complex tree, defined with repeated instances of its parts. This saves millions of instances across the Moana island scene. But multi-level instancing isn't just for production renderers. It is also valuable for real time apps like games.\n\nGames also use the two-level acceleration structure pattern, building worlds from instances of game objects. However, games are different from production renderers. Production renderers use deep hierarchies to reuse objects, but games use long lists of instances for game objects. Games also rebuild their instance acceleration structure each frame for their dynamic content, and high instance count mean a lot of GPU time for the rebuild.\n\nHowever in a game, a lot of the content is static and doesn't need to be updated every frame. You can split the world into static and dynamic acceleration structures to limit acceleration structure updates to only the content that changes. This means only rebuilding the dynamic content, which is typically much less than the static content. When applying this split of static and dynamic content, it is important to balance the depth of the hierarchy with the additional cost of ray traversal. In a frame with acceleration structure building and ray tracing, using 3 levels of instancing allows you to reduce build time with only minor impact on trace time, overall reducing the frame time. Multi-level instancing is a great tool to reduce memory usage and speed up rebuilds. You also have other ways you can optimize your Metal ray tracing apps. One of them is Build parallelization.\n\nA typical application will need to build or update many acceleration structures representing different scenes and different parts of a scene. You can greatly reduce your start-up time by running these builds in parallel.\n\nWhenever you can, be sure to batch your builds by encoding multiple builds to the same command encoder so they can run in parallel. You will want to parallelize as many builds as you can while ensuring that the working set fits in memory. Also remember that after an acceleration structure build completes, the scratch buffer is no longer needed. This means that you can re-use the scratch buffers from one batch of acceleration structure builds to the next. Sometimes the best way to reduce the time spent rebuilding acceleration structures is to avoid rebuilding altogether. This is where acceleration structure refitting comes in. When Metal builds an acceleration structure, it groups nearby primitives into a hierarchy of boxes. If your primitives move, those boxes no longer accurately represent the scene, and the acceleration structure needs to be updated. But if the geometry only changes slightly, then the hierarchy may still be reasonable. Instead of building a new acceleration structure from scratch, Metal can refit the existing acceleration structure to reflect the new positions of primitives in your geometry. This is cheaper than rebuilding the acceleration structure from scratch. Refit requires a scratch buffer like a build operation. The size of the refit scratch buffer is in the same struct you used earlier to allocate the acceleration structure. The refit operation runs on the GPU and is encoded with an acceleration structure command encoder. The refit can operate in-place or into a different acceleration structure.\n\nFinally, compaction is a great way to reduce the size of your acceleration structures in memory. When you first build an acceleration structure, Metal can't know exactly how much memory it needs, so it has to make a conservative estimate. Once you've built the acceleration structure, Metal can calculate the minimum size needed to represent it. With compaction, you can allocate a new acceleration structure with the minimal size, and then use the GPU to copy from the current acceleration structure to the new one. This is especially valuable for primitive acceleration structures. To use compaction, encode a command to calculate the compacted size of your acceleration structure on the GPU. When you execute the command, Metal will write the compacted size to a buffer that you provide. Once you've read the compacted size, you can allocate a new acceleration structure with that size and then encode a \"copy and compact\" operation from the old to the new acceleration structure. After this command buffer has completed, you can release the original acceleration structure. To learn more about optimizing your Metal ray tracing apps, check out the 2022 \"Maximizing your Metal ray tracing performance\" session. In this section, I have discussed how to set up instancing, leverage the new multi-level instancing feature, and handle instancing at scale. Now it's time to intersect rays with the scene. In Metal, you intersect rays in a GPU function that executes as part of a command. On Apple Silicon you can intersect rays in both compute and render commands, and on AMD and Intel you can intersect rays in compute commands. To get ready to intersect rays, bind your acceleration structure on the command encoder. Now you can intersect rays with this acceleration structure in your GPU function. Declare the function with an acceleration structure parameter, and create an intersector object. You can set properties on this intersector to configure ray intersection for the best performance. To intersect a ray with your scene, simply create a ray and call the intersect method on the intersector object, passing the ray and the acceleration structure as parameters. This returns everything you need to know about the intersection, like the kind of primitive the ray intersected, the distance to the intersection, the ID of the primitive, and more.\n\nTo get more information about the triangle intersection point, add the \"triangle data\" tag to the intersector and \"intersection result\" types. This makes the triangle barycentric coordinates available in the intersection result. That covers intersecting rays with a primitive acceleration structure. Intersecting rays with an instance acceleration structure is very similar. Bind your instance acceleration structure the same way you bind a primitive acceleration structure, and be sure to call useResource or useHeap to make the acceleration structures referenced in your instance acceleration structure available on the GPU. You only need to make a couple of changes to your GPU function to intersect rays with an instance acceleration structure. First add the instancing tag to the acceleration structure type. Then add the instancing and \"max levels\" tags to your intersector and \"intersection result\". The \"max levels\" tag specifies the number of levels of instancing in your acceleration structure. For example, the acceleration structure representing the Moana island scene is a three-level acceleration structure. The first level is the instance acceleration structure containing the whole scene. The second level has instances of corals, trees, and the terrain. The third level has instances of the parts of the trees, like leaves, flowers, and trunks. When a ray intersects this scene, it doesn't just intersect a primitive, but also the instances that contain the primitive. If a ray intersects a leaf of this tree, it also intersects an instance of the tree, and an instance of the leaf in the tree. Metal keeps track of this for you by recording the ID of each intersected instance. In this case, the first intersected instance is the tree with an ID of 6, and the second intersected instance is the leaf with an ID of 1. The ray could also intersect just one instance. For example, if the ray intersects the terrain, then Metal will only record the ID of the terrain instance. You can find the number of instances that were intersected and IDs of the intersected instances in the intersection result. That's how you can intersect rays with primitive acceleration structures and instance acceleration structures. There are a few things to keep in mind when using curve primitives. By default, Metal assumes you are not using curve primitives when you perform ray intersection. You can tell Metal that you are using curves by setting the geometry type on the intersector object. Once you've set the geometry type, you're ready to intersect curves. As before, find information about the intersection on the intersection result. If you use the \"curve data\" tag, then the intersection result also contains the curve parameter. This is the value you can plug into the curve's basis function to compute the point along the curve where it intersected the ray. These functions are implemented for you in the Metal Shading Language. You can learn more in the Metal Shading Language specification. In many applications, curve geometry is represented with just one kind of curve. For example, all the curves in your scene might be expressed as cubic bezier curves, with circular cross sections. In this case, you can tell Metal what kind of curves your scene uses by setting the properties of your curves on the intersector object. This allows you to get the best performance when using curve primitives. That is how you can intersect rays with your scene. And you can use Xcode to debug and profile your raytracing workloads.\n\nOne of the tools at your disposal when dealing with difficult to debug problems is Shader Validation. It performs runtime checks in your shaders and catches issues which may lead to crashes or corruptions. Shader Validation now covers all of the Metal API, including the latest ray tracing features. In addition, Shader Validation has greatly reduced impact on shader compilation time. This is extremely helpful when you are working with long and complex shaders, like those commonly found in ray tracing applications. Another tool that can help you is the state of the art Acceleration Structure viewer. It enables you to inspect the scene which you use for intersection testing. When I open the Acceleration Structure viewer, I get an outline on the left for navigating the individual building blocks in the acceleration structure down to the geometry primitives. Here, it lists the individual triangles that make up the triangle geometry. On the right, I have a viewport, where I can inspect the acceleration structure in various highlighting modes. For example, the \"Axis-Aligned Bounding Box Traversals\" highlighting mode can visualize areas with deeper levels of traversals, which correspond to more expensive intersection testing. As I move the pointer over the scene, the inspector updates with the number of intersections which a ray would hit in the pointed direction. Another example is the Acceleration Structure highlight mode. This visualizes the acceleration structures in different colors. The Acceleration Structure viewer supports the new multi-level instancing feature and curve geometries. When I move the camera in the viewport, I can find instance acceleration structures for some trees and curves for some foliage. To identify an acceleration structure, I can click in the viewport to reveal it in the outline. Now, take a closer look at the acceleration structure for these palm leaves. In this acceleration structure, the palm leaves consist of curves. I can change the viewport to the Primitive highlight mode to visualize the curve segments. To better inspect the curve segments, I'll zoom in a little bit. Similar to selecting acceleration structures in the scene earlier, here, I can click to select each segment. Another useful tool at your disposal when examining a ray tracing workload is Shader Debugger. This can help you with troubleshooting issues in your shader code. Here, I'm at a compute dispatch which performs intersection testing in the shader. To begin debugging my shader, I can the Shader Debugging button, choose a thread in the popover, and then click the Debug button.\n\nAfter it finishes gathering data, I can examine the value for each variable at any point during shader execution. Take a closer look at the value for primitive ID. To provide more debugging context, Shader Debugger also gives me data from the neighboring threads. Here, I can hover the pointer over the value view to inspect the primitive IDs from the same thread group.\n\nPerformance is another important aspect of any app. The Profiling timeline gives an overview of the ray tracing workload performance, allowing you to inspect and correlate various performance metrics side by side. In addition, I can change the Debug navigator to view all the pipeline states in the workload. And with the shader profiling data, the navigator lists the most expensive pipeline states at the top. Further expanding a pipeline state reveals the shader code. After opening a shader, I can get the per-line shader profiling insights about where and how each individual shader spends its execution time. When I move the pointer over the pie-chart in the sidebar, it shows a popover with more detailed breakdown of the cost at that line of code. These tools support all of Metal's new ray tracing features, and can offer great debugging and profiling aids when you're working on your Metal apps.\n\nMetal ray tracing also supports many more features such as: Primitive and instance motion for animating scenes in production renderers, custom intersection functions, for customizing ray intersection with enhancements like alpha testing, and intersection query, for portability from query-based APIs. The Metal Ray Tracing API, Language and Tools support real time rendering apps like games, and production renderers. You can use the latest Metal Ray Tracing API to build your scenes using primitive acceleration structures, including geometry like curves. Instancing and especially the new multi-level instancing feature enables you to scale to larger, more complex scenes. Your GPU functions can call the Metal Ray Tracing APIs directly. And finally, Xcode can help you in debugging and profiling your app. Be sure to check out the previous ray tracing talks where we have covered many of these topics in more detail, as well as our sample code and documentation.\n\nThanks for watching. ♪ ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:06",
+      "title": "Create triangle geometry descriptor",
+      "language": "swift",
+      "code": "// Create geometry descriptor:\nlet geometryDescriptor = MTLAccelerationStructureTriangleGeometryDescriptor()\n\ngeometryDescriptor.vertexBuffer = vertexBuffer\ngeometryDescriptor.indexBuffer = indexBuffer\ngeometryDescriptor.triangleCount = triangleCount"
+    },
+    {
+      "timestamp": "3:20",
+      "title": "Create bounding box geometry descriptor",
+      "language": "swift",
+      "code": "// Create geometry descriptor:\nlet geometryDescriptor = MTLAccelerationStructureBoundingBoxGeometryDescriptor()\n\ngeometryDescriptor.boundingBoxBuffer = boundingBoxBuffer\ngeometryDescriptor.boundingBoxCount = boundingBoxCount"
+    },
+    {
+      "timestamp": "6:42",
+      "title": "Create curve geometry descriptor",
+      "language": "swift",
+      "code": "let geometryDescriptor = MTLAccelerationStructureCurveGeometryDescriptor()\n  \ngeometryDescriptor.controlPointBuffer = controlPointBuffer\ngeometryDescriptor.radiusBuffer = radiusBuffer\ngeometryDescriptor.indexBuffer = indexBuffer\n\ngeometryDescriptor.controlPointCount = controlPointCount\ngeometryDescriptor.segmentCount = segmentCount\ngeometryDescriptor.curveType = .round\ngeometryDescriptor.curveBasis = .bezier\ngeometryDescriptor.segmentControlPointCount = 4"
+    },
+    {
+      "timestamp": "7:29",
+      "title": "Create primitive acceleration structure descriptor",
+      "language": "swift",
+      "code": "// Create acceleration structure descriptor\nlet accelerationStructureDescriptor = MTLPrimitiveAccelerationStructureDescriptor()\n\n// Add geometry descriptor to acceleration structure descriptor\naccelerationStructureDescriptor.geometryDescriptors = [ geometryDescriptor ]"
+    },
+    {
+      "timestamp": "8:08",
+      "title": "Query for acceleration size and alignment requirements",
+      "language": "swift",
+      "code": "// Query for acceleration structure sizes\nlet sizes: MTLAccelerationStructureSizes\nsizes = device.accelerationStructureSizes(descriptor: accelerationStructureDescriptor)\n\n// Query for size and alignment requirement in a heap\nlet heapSize: MTLSizeAndAlign\nheapSize = device.heapAccelerationStructureSizeAndAlign(size: sizes.accelerationStructureSize)"
+    },
+    {
+      "timestamp": "8:39",
+      "title": "Allocate acceleration structure and scratch buffer",
+      "language": "swift",
+      "code": "// Allocate acceleration structure from heap\nvar accelerationStructure: MTLAccelerationStructure!\naccelerationStructure = heap.makeAccelerationStructure(size: heapSize.size)\n\n// Allocate scratch buffer\nlet scratchBuffer = device.makeBuffer(length: sizes.buildScratchBufferSize,\n                                      options: .storageModePrivate)!"
+    },
+    {
+      "timestamp": "8:40",
+      "title": "Encode the acceleration structure build",
+      "language": "swift",
+      "code": "let commandEncoder = commandBuffer.makeAccelerationStructureCommandEncoder()!\n\ncommandEncoder.build(accelerationStructure: accelerationStructure,\n                     descriptor: accelerationStructureDescriptor,\n                     scratchBuffer: scratchBuffer,\n                     scratchBufferOffset: 0)\n\ncommandEncoder.endEncoding()"
+    },
+    {
+      "timestamp": "11:30",
+      "title": "Create instance acceleration structure descriptor",
+      "language": "swift",
+      "code": "var instanceASDesc = MTLInstanceAccelerationStructureDescriptor()\n\ninstanceASDesc.instanceCount = ...\ninstanceASDesc.instancedAccelerationStructures = [ mountainAS, treeAS, ... ]\ninstanceASDesc.instanceDescriptorType = .userID"
+    },
+    {
+      "timestamp": "12:07",
+      "title": "Allocate the instance descriptor buffer",
+      "language": "swift",
+      "code": "let size = MemoryLayout<MTLAccelerationStructureUserIDInstanceDescriptor>.stride\nlet instanceDescriptorBufferSize = size * instanceASDesc.instanceCount\n\nlet instanceDescriptorBuffer = device.makeBuffer(length: instanceDescriptorBufferSize,\n                                                 options: .storageModeShared)!\n    \ninstanceASDesc.instanceDescriptorBuffer = instanceDescriptorBuffer"
+    },
+    {
+      "timestamp": "12:33",
+      "title": "Populate instance descriptors",
+      "language": "swift",
+      "code": "var instanceDesc = MTLAccelerationStructureUserIDInstanceDescriptor()\n\ninstanceDesc.accelerationStructureIndex = 0    // index into instancedAccelerationStructures\ninstanceDesc.transformationMatrix = ...\ninstanceDesc.mask = 0xFFFFFFFF"
+    },
+    {
+      "timestamp": "14:06",
+      "title": "Configure indirect instance acceleration structure descriptor",
+      "language": "swift",
+      "code": "var instanceASDesc = MTLIndirectInstanceAccelerationStructureDescriptor()\n\ninstanceASDesc.instanceDescriptorType = .indirect\ninstanceASDesc.maxInstanceCount = ...\ninstanceASDesc.instanceCountBuffer = ...\ninstanceASDesc.instanceDescriptorBuffer = ..."
+    },
+    {
+      "timestamp": "14:29",
+      "title": "Populate indirect instance descriptor",
+      "language": "swift",
+      "code": "device MTLIndirectAccelerationStructureInstanceDescriptor *instance_buffer = ...;\n// ...\nacceleration_structure<> as = ...;\ninstance_buffer[i].accelerationStructureID = as;\ninstance_buffer[i].transformationMatrix[0] = ...;\ninstance_buffer[i].transformationMatrix[1] = ...;\ninstance_buffer[i].transformationMatrix[2] = ...;\ninstance_buffer[i].transformationMatrix[3] = ...;\ninstance_buffer[i].mask = 0xFFFFFFFF;"
+    },
+    {
+      "timestamp": "19:22",
+      "title": "Update geometry using refitting",
+      "language": "swift",
+      "code": "// Allocate scratch buffer\nlet scratchBuffer = device.makeBuffer(length: sizes.refitScratchBufferSize,\n                                      options: .storageModePrivate)!\n\n// Create command buffer/encoder ...\n\n// Refit acceleration structure\ncommandEncoder.refit(sourceAccelerationStructure: accelerationStructure,\n                     descriptor: asDescriptor,\n                     destinationAccelerationStructure: accelerationStructure,\n                     scratchBuffer: scratchBuffer,\n                     scratchBufferOffset: 0)"
+    },
+    {
+      "timestamp": "20:24",
+      "title": "Use compaction to reclaim memory",
+      "language": "swift",
+      "code": "// Use compaction to reclaim memory\n\n// Create command buffer/encoder ...\n\nsizeCommandEncoder.writeCompactedSize(accelerationStructure: accelerationStructure,\n                                      buffer: sizeBuffer,\n                                      offset: 0,\n                                      sizeDataType: .ulong)\n\n// endEncoding(), commit command buffer and wait until completed ...\n\n// Allocate new acceleration structure using UInt64 from sizeBuffer ...\n\ncompactCommandEncoder.copyAndCompact(sourceAccelerationStructure: accelerationStructure,\n                             destinationAccelerationStructure: compactedAccelerationStructure)"
+    },
+    {
+      "timestamp": "21:36",
+      "title": "Set acceleration structure on the command encoder",
+      "language": "swift",
+      "code": "encoder.setAccelerationStructure(primitiveAccelerationStructure, bufferIndex:0)"
+    },
+    {
+      "timestamp": "21:48",
+      "title": "Intersect rays with primitive acceleration structure",
+      "language": "swift",
+      "code": "// Intersect rays with a primitive acceleration structure\n\n[[kernel]]\nvoid trace_rays(acceleration_structure<> as, /* ... */) {\n  intersector<> i;\n\n  ray r(origin, direction);\n\n  intersection_result<> result = i.intersect(r, as);\n\n  if (result.type == intersection_type::triangle) {\n    float distance = result.distance;\n\n\n    // shade triangle...\n  }\n}"
+    },
+    {
+      "timestamp": "22:24",
+      "title": "Use triangle_data tag to get triangle barycentric coordinates",
+      "language": "swift",
+      "code": "// Intersect rays with a primitive acceleration structure\n\n[[kernel]]\nvoid trace_rays(acceleration_structure<> as, /* ... */) {\n  intersector<triangle_data> i;\n\n  ray r(origin, direction);\n\n  intersection_result<triangle_data> result = i.intersect(r, as);\n\n  if (result.type == intersection_type::triangle) {\n    float distance = result.distance;\n    float2 coords = result.triangle_barycentric_coord;\n\n    // shade triangle...\n  }\n}"
+    },
+    {
+      "timestamp": "22:51",
+      "title": "Set instance acceleration structure on the command encoder",
+      "language": "swift",
+      "code": "encoder.setAccelerationStructure(instanceAccelerationStructure, bufferIndex:0)\nencoder.useHeap(accelerationStructureHeap);"
+    },
+    {
+      "timestamp": "23:07",
+      "title": "Intersect rays with instance acceleration structure",
+      "language": "swift",
+      "code": "// Intersect rays with an instance acceleration structure\n\n[[kernel]]\nvoid trace_rays(acceleration_structure<instancing> as, /* ... */) {\n  intersector<instancing, max_levels<3>> i;\n\n  ray r(origin, direction);\n\n  intersection_result<instancing, max_levels<3>> result = i.intersect(r, as);\n\n  if (result.type == intersection_type::triangle) {\n    float distance = result.distance;\n\n    // shade triangle...\n  }\n}"
+    },
+    {
+      "timestamp": "24:43",
+      "title": "Find intersected instance information in the intersection result",
+      "language": "swift",
+      "code": "// Intersect rays with an instance acceleration structure\n\n[[kernel]]\nvoid trace_rays(acceleration_structure<instancing> as, /* ... */) {\n  intersector<instancing, max_levels<3>> i;\n\n  ray r(origin, direction);\n\n  intersection_result<instancing, max_levels<3>> result = i.intersect(r, as);\n\n  if (result.type == intersection_type::triangle) {\n    float distance = result.distance;\n    for (uint i = 0; i < result.instance_count; ++i) {\n      uint id = result.instance_id[i];\n      // ...\n    }\n    // shade triangle...\n  }\n}"
+    },
+    {
+      "timestamp": "25:02",
+      "title": "Intersect rays with curve primitives",
+      "language": "swift",
+      "code": "// Intersect rays with curve primitives\n\n[[kernel]]\nvoid trace_rays(acceleration_structure<> as, /* ... */) {\n  intersector<> i;\n\n  i.assume_geometry_type(geometry_type::curve | geometry_type::triangle);\n\n  ray r(origin, direction);\n\n  intersection_result<> result = i.intersect(r, as);\n\n  if (result.type == intersection_type::curve) {\n    float distance = result.distance;\n    // shade curve...\n  }\n}"
+    },
+    {
+      "timestamp": "25:26",
+      "title": "Find curve parameter in the intersection result",
+      "language": "swift",
+      "code": "// Intersect rays with curve primitives\n\n[[kernel]]\nvoid trace_rays(acceleration_structure<> as, /* ... */) {\n  intersector<curve_data> i;\n\n  i.assume_geometry_type(geometry_type::curve | geometry_type::triangle);\n\n  ray r(origin, direction);\n\n  intersection_result<curve_data> result = i.intersect(r, as);\n\n  if (result.type == intersection_type::curve) {\n    float distance = result.distance;\n    float param = result.curve_parameter;\n    // shade curve...\n  }\n}"
+    },
+    {
+      "timestamp": "26:04",
+      "title": "Set geometry type on the intersector for better performance",
+      "language": "swift",
+      "code": "// Intersect rays with curve primitives\n\n[[kernel]]\nvoid trace_rays(acceleration_structure<> as, /* ... */) {\n  intersector<curve_data> i;\n\n  i.assume_geometry_type(geometry_type::curve | geometry_type::triangle);\n  i.assume_curve_type(curve_type::round);\n  i.assume_curve_basis(curve_basis::bezier);\n  i.assume_curve_control_point_count(3);\n\n  ray r(origin, direction);\n\n  intersection_result<curve_data> result = i.intersect(r, as);\n\n  if (result.type == intersection_type::curve) {\n    float distance = result.distance;\n    float param = result.curve_parameter;\n    // shade curve...\n  }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Accelerating ray tracing using Metal",
+        "url": "https://developer.apple.com/documentation/metal/metal_sample_code_library/accelerating_ray_tracing_using_metal"
+      },
+      {
+        "title": "Rendering reflections in real time using ray tracing",
+        "url": "https://developer.apple.com/documentation/Metal/rendering-reflections-in-real-time-using-ray-tracing"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10128/5/D57CE53D-520E-44FB-99BA-4E63AA58C47C/downloads/wwdc2023-10128_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10128/5/D57CE53D-520E-44FB-99BA-4E63AA58C47C/downloads/wwdc2023-10128_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10105",
+      "year": "2022",
+      "title": "Maximize your Metal ray tracing performance",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10105"
+    },
+    {
+      "id": "10149",
+      "year": "2021",
+      "title": "Enhance your app with Metal ray tracing",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10149"
+    },
+    {
+      "id": "10150",
+      "year": "2021",
+      "title": "Explore hybrid rendering with Metal ray tracing",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10150"
+    },
+    {
+      "id": "10012",
+      "year": "2020",
+      "title": "Discover ray tracing with Metal",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10012"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:30:03.150Z"
+}

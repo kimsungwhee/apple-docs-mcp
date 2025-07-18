@@ -1,0 +1,114 @@
+{
+  "id": "10617",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10617/",
+  "title": "Bring keyboard and mouse gaming to iPad",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Graphics & Games"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nHi, my name is Nat Brown, and I work on the Game Technologies team here at Apple. This video covers adding keyboard and mouse input support to your games for iPadOS.\n\nWe've added specific support for keyboard and mouse gaming because we know games are often designed around their main form of input.\n\nFor example, most iPhone and iPad games are designed around Multi-Touch input. Multi-Touch input is incredibly flexible. Whole new genres of games have emerged utilizing taps, swipes, touches and gestures. This is Ordia by Loju LTD. It's one of the winners of last year's Apple Design Awards, and it's super fun.\n\nSome games have added on-screen controls with thumbstick areas and buttons similar to a game controller. This has worked well for many first-person view-oriented games, as well as for driving games. Here, I can play one of our sample applications, Fox2, using its on-screen controls. On the left, is a touch area that acts like a left joystick, and on the right, I have two actions, as well as a right joystick.\n\nStill, many games and game genres were really designed around the tactile feedback and the precision of a game controller, and they don't always translate well to on-screen controls. For example, driving games can take advantage of the analog triggers and the shoulder buttons to give finer control to acceleration and braking. And many gamers consider this right thumbstick more sensitive and accurate to use for aiming and camera control. Here in Fox2, I find it more fun to play the game with a game controller on an iPad. It's more of a lean-back experience, and I have additional control. But we also know there are whole genres of very popular games that aren't a perfect fit for touch input and they're also not a perfect fit for game controllers. Multiplayer Online Battle Arena, or MOBA games, using precise mouse control to select areas or to move units, while also supporting keyboard modifiers to those mouse actions, they don't always translate well to using touch input. First-person perspective games that use WASD keys for movement and other left-hand adjacent keys for actions and modifiers, while the mouse precisely aims the camera are another type of game not always perfect for touch. So we've added game-focused APIs for keyboard and mouse input for these types of games. It's a coordinated effort between the UIKit and the Game Controller framework to give you the options you need for creating your best game experience. For the rest of this talk, I'm going to first dive into the details on the new keyboard and mouse APIs in the Game Controller framework. I'm gonna spend a moment describing examples of when you might choose to use the Game Controller APIs versus other pointer APIs at the UIKit layer.\n\nI'm gonna show a quick example of adding support in one of our classic Game Controller samples, Fox2.\n\nAnd, finally, I'll play a bit of the game to show you the game in action.\n\nSo let's dive into the Game Controller framework support for keyboard and mouse input.\n\nThe Game Controller framework this year introduces two new classes: GCKeyboard and GCMouse. Like the trusty GCController class, you can find out when these new types of input devices connect and disconnect, register blocks to watch for input changes asynchronously, and, in some cases, you can poll to read the current state of these input devices.\n\nThese classes conform to the GCDevice protocol, just like GCController. They have a physical input profile, which you can use to look at the specific input surfaces they expose.\n\nIn the case of GCKeyboard, you'll find a set of buttons. And those buttons also appear in the aggregate elements collection. You won't find Dpads or Axes on GCKeyboards.\n\nIn the case of GCMouse, you may see zero or more Axes and one or more buttons depending on the type of physical pointing device you have paired at the time. It is exactly the point of physical input profiles to let you tune your game to the specific capabilities of attached devices.\n\nNow we're finally to the actual code, which is my favorite part. I'm gonna show you the types of change handlers you can establish on GCKeyboard devices. And you'll also see how you can inexpensively poll the keyboard key states.\n\nWe'll see how to get raw mouse delta events delivered to your change handlers...\n\nand how you use the companion UIKit pointer locking API in order to hide the system pointer and avoid triggering system gestures at the edges of the screen.\n\nWe'll also look at how to find out if the keyboard and mouse devices are connected and when they disconnect.\n\nSo it's pretty straightforward with GCKeyboard to get notified about key-down and key-up events.\n\nYou first check to see if there's a keyboard attached. You'll notice that we're using coalesced on the GCKeyboard. That's because we merge all the keyboard input together. Then, as you are used to elsewhere in the Game Controller framework for watching events asynchronously, you simply assign a change handling block to either the whole keyboard with a key-Changed-Handler, or alternately, assign a change handling block to a specific keyboard button using a value-Changed-Handler. In this case, notice I added a handler to just catch what the space bar is up to or down to.\n\nThe other common way to read keyboard input in games is through polling to check the current up or down state of a key rather than through a changed handler. Here we are at some point in our game's update loop, and we're polling the input using this poll-Input function. We are just checking the up/down state of the W, A, S and D keys and reacting by preparing to move our character later in the game update logic.\n\nSo whether you choose callbacks or polling is really up to you and your needs, depending on how you are trying to align your input and your rendering loops. One nice thing about these polling APIs is that they are Order(1) and non-blocking, they're non-yielding and they're thread-safe, meaning you can call these APIs without worrying about interrupting or stalling a critical input handling, simulation or rendering thread.\n\nEvents coming from the GCMouse devices are not too different from the keyboard. Here you can see how our mouse-Moved-Handler is receiving just delta information coming from the device. This is the delta or change in input value since the last input was received. It is not the current X and Y position of the mouse and screen coordinates, and that's intentional.\n\nWith GCMouse, there is no way to poll the current pointer position because, well, you're using this API because you're in charge of defining how and where you want your in-game pointer to appear, if at all.\n\nAnd you are also in charge of how you want its acceleration to work and the behavior you expect at the screen edges as well.\n\nBut what about system gestures, like bringing up the dock, or other multitasking gestures that can happen at screen edges and corners? That takes us to the need to lock the pointer to your application and to hide it. If you're using GCMouse for a full-screen game, you almost certainly wanna do this. Any game that draws its own pointer or which sometimes shows no pointer, a game that performs its own input acceleration, yeah, you'll also wanna lock the pointer from the system's perspective. This will both hide the pointer and it'll lock it to just your full-screen application. The pointer now can't trigger those system gestures that would otherwise break your game.\n\nTelling the system you want the pointer lock is very easy. On your top level ViewController, tell the system if you prefer your pointer locking by overriding the prefers-Pointer-Locked getter to return your current state.\n\nYou can dynamically change your mind about having the pointer locked and hidden by simply calling UIViewController's set-Needs-Update- Of-Prefers-Pointer-Locked and returning a new value from prefers- Pointer-Locked when it gets called. This allows you to, for example, use a key to toggle between a mouse-controlled camera mode, where you are controlling your character's viewpoint, and having the system's on-screen pointer, which can be used to interact with user interface elements.\n\nFinally, here's how you detect the presence of a keyboard and mouse. It's just the same as detecting when game controllers connect and disconnect. We keep some local state to keep track of the mouse and maybe whether we've seen a keyboard.\n\nThen, if you wanna have special logic for handling specific mice or multiple mice, you can do so in the Connect-Notification handling block. You might simply set up button and delta event handlers directly here and effectively coalesce any attached GCMouse devices. That's up to you.\n\nIn the case of keyboards, you can't differentiate multiple keyboards, and all keyboard events from multiple keyboards are instead coalesced for you. So while you might use notifications to notice when a keyboard disconnects and perhaps pause the game to prompt for different input, in general, you'll find that just using GCKeyboard-Device.coalesced to check on the key state when non-nil is the right path. The coalesced keyboard input is a little bit like the GCController.current controller in this respect-- a lot easier to use if you don't really have any special needs around seeing the device connect or disconnect.\n\nSo, when should you use Game Controller APIs for keyboard and mouse handling versus the UIKit APIs introduced in iOS 13.4? The answer is, it really depends, and you might find yourself using a bit of a mix of the two.\n\nIf your game is almost always full-screen, has mostly custom UI, renders a custom pointer or hides the pointer during gameplay, wants delta mouse events to implement custom input acceleration and wants to avoid having system gestures intrude on gameplay, or if it needs to poll for the very latest input in multiple time-critical threads, you probably wanna make use of GCKeyboard and GCMouse.\n\nIf, on the other hand, your game is only optionally full-screen and can be split screen or multitasking aware...\n\nif the standard system pointer shape morphing and blending support fits your interaction model, and system gestures at the edge of the screen or hot corners do not intrude on your gameplay, and the UIResponder delegate callbacks on your main thread are adequate for receiving keyboard and mouse input, you will have access to all of the new key-up and key-down and key modifier keyboard and mouse events that games are looking for, and you should be fine using UIKit.\n\nThe reality is that you may find yourself using both in different modes of your game. During the match portion of a first-person viewpoint game, for example, you may have the pointer locked and no cursor visible, and then you'll be using the delta mouse events. After a match, it may then make sense to unlock the pointer and present standard system UI and a pointer matching the rest of the system. So now let me show you how easy it was to add keyboard and mouse support to our Fox2 sample.\n\nWe already had a UIViewController with a lot of functions we need for moving the character, changing the camera and performing actions like jumping and attacking. All we need to do is wire those up to the keyboard and mouse and to keep track of a bit of state.\n\nWe're adding a delta variable to pick up the mouse motion which we'll apply in the main game loop.\n\nWhen we see a new mouse device attach, we're going to call this new registerMouse function to attach our value change handlers.\n\nNow, here where we had that comment to set up our handlers, we first set up the mouse-Moved-Handler to capture those raw delta mouse events we were just talking about. We just store those in our ViewController.\n\nWe'll wire up the mouse's left button to cause our fox to fight with the enemies. It's easy because we already wrote those methods for our Game Controller and on-screen touch controls. We're just wiring them to a new input source.\n\nFinally, in our change handlers, we set ourselves up to read from the mouse scroll wheel to change the fieldOfView of the main camera. The camera's already automatically following our character, so we just wire up a fieldOfView change. This is actually a new feature for keyboard and mouse. We didn't have a way to zoom in and out of the touch screen or the Game Controller version.\n\nLast, but not least, we made some small changes in our main update loop. This is the loop of code that runs every frame of the game. We use the most recent delta mouse event data to change our camera direction, and then we clear the delta event variable until the next delta event comes in from the mouse.\n\nFor the keyboard, we didn't set up any value change handlers. We're just polling for the current key press state right here in the update loop, and we change the character's direction based on the W, A, S and D keys, like a good little keyboard and mouse game does.\n\nFinally, we allow the user to hold the left Shift key to cause our fox to run instead of walk. That's a pretty common keyboard and mouse game trick-- to use modifier keys to modify motion or aiming.\n\nAnd that's all it took. Let's compile this new version of the game and give it a play.\n\nSo, here I am playing Fox2.\n\nI can use the keyboard. And the W, A, S and D keys allow me to move. The space bar jumps.\n\nI've got control with the mouse of where my camera's looking.\n\nI can use the scroll wheel to zoom in and out.\n\nAnd that's it for keyboard and mouse gaming on iPadOS. Now you know how to use GCKeyboard and GCMouse and when you might wanna use GCMouse versus UIKit Mouse APIs. You've also seen how easy it was to add to a game that already had controller and touch input.\n\nIf you're interested in more ways to control games and game input, you may also find these two other talks useful.\n\nAnd that's it for keyboard and mouse gaming for iPadOS. Thanks for coming to WWDC.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:42",
+      "title": "Keyboard event change handlers",
+      "language": "swift",
+      "code": "if let keyboard = GCKeyboardDevice.coalesced?.keyboardInput {\n\n  // bind to any key-up/-down\n  keyboard.keyChangedHandler = {\n    (keyboard, key, keyCode, pressed) in\n    // compare buttons to GCKeyCode\n  }\n  \n  // bind to a specific key-up/-down\n  keyboard.button(forKeyCode: .spacebar)?.valueChangedHandler = {\n    (key, value, pressed) in\n    // spacebar was pressed or released\n  }\n\n}"
+    },
+    {
+      "timestamp": "5:18",
+      "title": "Polling keyboard state",
+      "language": "swift",
+      "code": "func pollInput() {\n  \n  if let keyboard = GCKeyboardDevice.coalesced?.keyboardInput {\n\t  if (keyboard.button(forKeyCode: .keyW)?.isPressed ?? false) { /* move up    */ }\n\t  if (keyboard.button(forKeyCode: .keyA)?.isPressed ?? false) { /* move left  */ }\n\t  if (keyboard.button(forKeyCode: .keyS)?.isPressed ?? false) { /* move down  */ }\n\t  if (keyboard.button(forKeyCode: .keyD)?.isPressed ?? false) { /* move right */ }\n  }\n  \n}"
+    },
+    {
+      "timestamp": "6:05",
+      "title": "Mouse event change handlers",
+      "language": "swift",
+      "code": "if let mouse = GCMouse.currentMouse {\n\n   mouse.mouseInput.mouseMovedHandler = {\n     (mouse, deltaX, deltaY) in\n     // use delta to calculate your game's cursor position or other motion\n   }\n\n}"
+    },
+    {
+      "timestamp": "7:27",
+      "title": "Pointer lock",
+      "language": "swift",
+      "code": "class ViewController: UIViewController {\n    \n    override var prefersPointerLocked: Bool {\n        return true\n    }\n    \n    override func viewDidLoad() {\n        super.viewDidLoad()        \n        self.setNeedsUpdateOfPrefersPointerLocked()\n    }\n}"
+    },
+    {
+      "timestamp": "8:07",
+      "title": "Discovery",
+      "language": "swift",
+      "code": "class ViewController: UIViewController {\n  var keyboard: GCKeyboard? = nil\n  var mouse: GCMouse? = nil\n  \n  init() {\n    let center = NotificationCenter.defaultCenter\n    let main = OperationQueue.mainQueue\n        \n    center.addObserverForName(GCMouseDidConnectNotification, object: nil, queue: main) {\n      (note) in\n      self.mouse = note.object as? GCMouse\n    }\n\n    center.addObserverForName(GCKeyboardDidConnectNotification, object: nil, queue: main) {\n      (note) in\n      self.keyboard = note.object as? GCKeyboard // the same as GCKeyboard.coalesced\n    }\n\n  }\n}"
+    },
+    {
+      "timestamp": "10:56",
+      "title": "Updating Fox 2",
+      "language": "swift",
+      "code": "var delta: CGPoint = CGPoint.zero\n\nfunc registerMouse(_ mouseDevice: GCMouse) {\n  \n  if #available(iOS 14.0, OSX 10.16, *) {\n    guard let mouseInput = mouseDevice.mouseInput else {\n      return\n    }\n          \n    // set up our mouse value change handlers\n    \n  }\n}\n\n    weak var weakController = self\n\n    mouseInput.mouseMovedHandler = {(mouse, deltaX, deltaY) in\n      guard let strongController = weakController else {\n        return\n      }\n                                    \n      strongController.delta = CGPoint(x: CGFloat(deltaX), y: CGFloat(deltaY))\n                                    \n    }\n            \n    mouseInput.leftButton.valueChangedHandler = {(button, value, pressed) in\n      guard let strongController = weakController else {\n        return\n      }\n                                                 \n      strongController.controllerAttack()\n                                                 \n    }\n            \n    mouseInput.scroll.valueChangedHandler = {(cursor, x, y) in\n      guard let strongController = weakController else {\n        return\n      }          \n      guard let camera = strongController.cameraNode.camera else {\n        return\n      }\n                                             \n      camera.fieldOfView = CGFloat.maximum(CGFloat.minimum(120,\n                                           camera.fieldOfView + CGFloat(y)), 30)\n\n      }\n    }\n\nfunc pollInput() {\n  ...\n  \n  // Mouse\n  let mouseSpeed: CGFloat = 0.02\n  self.cameraDirection += simd_make_float2(-Float(self.delta.x * mouseSpeed), \n                                            Float(self.delta.y * mouseSpeed))\n  self.delta = CGPoint.zero\n        \n  // Keyboard\n  if let keyboard = GCKeyboard.coalesced?.keyboardInput {\n    \n      if (keyboard.button(forKeyCode: .keyA)?.isPressed ?? false) { self.characterDirection.x = -1.0 }\n      if (keyboard.button(forKeyCode: .keyD)?.isPressed ?? false) { self.characterDirection.x = 1.0 }\n      if (keyboard.button(forKeyCode: .keyW)?.isPressed ?? false) { self.characterDirection.y = -1.0 }\n      if (keyboard.button(forKeyCode: .keyS)?.isPressed ?? false) { self.characterDirection.y = 1.0 }\n            \n      self.runModifier = (keyboard.button(forKeyCode: .leftShift)?.value ?? 0.0) + 1.0\n    \n  }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Game Controller",
+        "url": "https://developer.apple.com/documentation/GameController"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10617/8/08DA25F5-5B0E-4661-9AB2-63BFE9C7A088/wwdc2020_10617_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10617/8/08DA25F5-5B0E-4661-9AB2-63BFE9C7A088/wwdc2020_10617_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10081",
+      "year": "2021",
+      "title": "Tap into virtual and physical game controllers",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10081"
+    },
+    {
+      "id": "10614",
+      "year": "2020",
+      "title": "Advancements in Game Controllers",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10614"
+    },
+    {
+      "id": "10145",
+      "year": "2020",
+      "title": "Design for Game Center",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10145"
+    },
+    {
+      "id": "10094",
+      "year": "2020",
+      "title": "Handle trackpad and mouse input",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10094"
+    },
+    {
+      "id": "10109",
+      "year": "2020",
+      "title": "Support hardware keyboards in your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10109"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:34:20.016Z"
+}

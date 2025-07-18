@@ -1,0 +1,92 @@
+{
+  "id": "110375",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/110375/",
+  "title": "Deep dive into Xcode Cloud for teams",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools"
+  ],
+  "hasTranscript": true,
+  "hasCode": false,
+  "transcript": {
+    "fullText": "♪ instrumental hip hop music ♪ Hello, my name is John, and I'm an engineer on the Xcode Cloud team. And I'm Jo Lynn, a designer on the Xcode Cloud team. Today we're going to take a look at some of the features of Xcode Cloud that are super helpful when you're using Xcode Cloud as part of a team, whether that's a team of 5 or 500. And I'm going to share some other features and best practices that work well when you use Xcode Cloud as part of a team. In our session today, we're going to go into detail on some topics which are also covered in some other sessions. If you want to learn more about webhooks and other advanced workflow topics, check out the \"Customize your advanced Xcode Cloud workflows\" session. In this session, we're going to look at how we can integrate Xcode Cloud into your existing tools and technologies that you use every day, easily manage your code dependencies, and showcase Xcode Cloud best practices to help you set up workflows to continuously build, test, and distribute your apps effectively.\n\nLet's get started. When it comes to integrating Xcode Cloud into your existing tools, we have a couple of options. Webhooks allow easy integration with tools and services that support them. You can connect a webhook in App Store Connect by telling Xcode Cloud what URL to send the webhook to, and you should start to see those webhooks come in right away.\n\nOur API also allows a great amount of visibility into your builds, allowing you to do things like easily create build dashboards, extract your build artifacts, or, in our example today, integrate build information into your existing software.\n\nWe've been building out a bunch of new features for our food truck app, but we've also been finding new bugs, and now that we have a team of people working on the app together, we've found it difficult to understand who is working on what.\n\nTo solve this problem, we've decided to use an issue tracker to track all of the work going on in our app.\n\nIf you're using an issue tracker, you often have a view like this. A common workflow with issue trackers is to create a ticket, have designers and developers work on that ticket, and finally, close it once the feature or bug is complete. Having the actual build information shown in our issue tracker would be a big help in connecting all the dots together. Let's take a look at how we might do that now. Our plan here is to create a very simple Swift On Server-based service that will handle everything we need to integrate our issue tracker with Xcode Cloud. To speed up development, we'll use the Vapor web framework, which will let us focus on writing the webhook handling code. The basic flow will look something like this. A webhook will come from Xcode Cloud to our server. We will read that webhook and check if the commit message written by the committer has a certain string in it which maps to an issue in our tracker. If it does, we'll hit the Xcode Cloud API to gather more information about the build. Then we'll construct a comment we can post onto our issue tracker that contains the information we're interested in.\n\nWe'll then call an API on our issue tracker, which will save the message against our issue.\n\nFirst, let's take a look at the Xcode Cloud API documentation. All of the Xcode Cloud API lives under the App Store Connect API.\n\nIf we have already set up authentication tokens for the App Store Connect API, we already have everything we need to also access our Xcode Cloud data. Opening up the Build Runs collection, we can see some endpoints that let us interact with our builds. You can call an endpoint to create a build, cancel a build, or get more information about a particular build. For example, if you wanted to build a dashboard to show the status of your builds, the Ci_Build_Runs endpoint should be all we would need to call. Next, let's look at the Artifacts collection in the documentation. For our workflow, we want to keep our build artifacts outside of Xcode Cloud, and the API should have everything we need to do that. First, we can get the artifact ID from the build action endpoint, which will return all the artifacts produced for a given action. Then we can call ci_artifact, which will give us the URL we need to download our artifact in the downloadUrl attribute. Let's start by downloading the openAPI spec from the App Store Connect documentation, and go through what we need to create our client for the API.\n\nLet's create a new directory where we can create our client code. I'm going to call this xcodecloud-client. Now we need to download the command line tool for our generator. There's lots of ways to do this on the openAPI website, and for our session, I've already set it up Let's copy the openAPI spec that we just got from the app_store_connect_API into our directory. Great, now we can call the openAPI generator and tell it to create a swift client for our API.\n\nWhile the generator is running, we can quickly talk about what it's doing. An openAPI specification is made up of information about all the paths and models that make up our API. The generator is going through each of the API paths and generating Swift code that can talk to that particular path, with a strongly typed swift object. In most cases, this means you don't have to do any JSON encoding or decoding. Great, our generator is finished, so let's take a quick look at the files it created.\n\nConveniently, the client code is a Swift package. This makes it really easy to include in our webhook server that will update our issue tracker. Now we can commit our code to a new git repository, and we can then reference this as a Swift package. Now that we've got everything we need to talk with our API, let's set up our webhook. in App Store Connect, we can register our webhook that will let our server know every time a build completes.\n\nTo do that, go to your product in App Store Connect, go to settings, and navigate to webhooks.\n\nAnd I'll paste in the URL for our server. This will let Xcode Cloud know where to send the webhooks. With our web hook set up, the only thing left to do is write the code to process them, so let's get started on that. First we have to define a struct which matches to the fields we're interested in from our webhook. The webhook will contain information about the specific build being executed, as well as each actions being performed, so let's keep those in our webhook payload struct.\n\nNext, we have to create the code to have Vapor correctly route incoming webhooks to our function. We'll define a function that runs on a post request to the webhook path. Inside this function, all we need to do to convert the incoming JSON payload into a strongly typed Swift object is to decode it, so we'll also add that code as well.\n\nGreat, now all we need to do is call the Xcode Cloud API to get a little bit more information about the build which just completed so that we can include it on our issue tracker page. The webhook payload contains a lot of information about the build which just ran, and what actions succeeded or failed. We could probably stop there, but let's take it to the next level. I think it would be amazing if we also include information about which issues were found in each action.\n\nWe can write an extension function to CiBuildActionsAPI that gives us the ability to easily return the issues we're interested in for a particular action.\n\nIn this extension, we'll write a function that takes the build action ID as a parameter and returns all the issues found for a particular action.\n\nI already have this in my project, but let's fill in the rest of our code.\n\nWe only want our webhook handler to run if the build is complete, so let's guard against that. Next we can start working on our comment string. I think it would be great to have the build number, commit hash, as well as the author in this string.\n\nNow let's go through each action and call our extension function to get the issues for each action. Let's pass this all on to our issue tracker now.\n\nWith all of this information, I think this will help us keep our issue tracker up to date with our builds.\n\nAnd we're done! At this point, we want to host our server code at the URL we provided to Xcode Cloud for the webhooks, and we should start to see Xcode Cloud build information in our issue tracker.\n\nLet's have a quick summary about what we've learned so far. Xcode Cloud has a great API you can use to get an even deeper integration with your existing development workflows. You can use that API along with webhooks to connect all the dots together and integrate your existing tools and technologies with Xcode Cloud. Next, here's Jo to talk about other features and best practices. Jo: Thanks, John! Xcode Cloud is designed to integrate with Apple developer tools and services that you use to create apps and frameworks. However, your Xcode project may require additional dependencies or external tools to compile your code. Xcode Cloud works great with Swift Package Manager. It supports Swift package dependencies without requiring any additional configuration, if the package's repository is publicly accessible. You can also make Xcode Cloud work with third-party dependency managers like Cocoapods and Carthage, but you'll have to do a little extra work by using custom build scripts.\n\nYou can refer to the Xcode documentation for instructions on how to make dependencies available to Xcode Cloud.\n\nOnce we've added our Swift package and pushed changes to kick off the workflow, we can go to the cloud tab of the Report Navigator, and view the status of our latest build.\n\nSelect Logs to view the detailed build logs.\n\nWe'll see that Xcode Cloud has automagically resolved the dependencies.\n\nAfter Xcode Cloud has successfully completed the first build, you should plan next steps for refining your continuous integration and delivery practice to make sure that your app or framework is always in a shippable state. In this section, I'm going to talk about how you can use Xcode Cloud with SwiftLint for static code analysis, how to restrict editing on your workflows, and the value of configuring multiple start conditions.\n\nSwiftLint is an open source linter tool that enforces style guide rules and conventions generally accepted by the Swift community. It performs static code analysis to improve your code quality and prevent bad practices.\n\nWe have found that SwiftLint is a great way to keep your team's codebase consistent, especially when working with larger teams. What we're going to show now is how to integrate SwiftLint with Xcode Cloud using a custom build script. We want Xcode Cloud to run the SwiftLint tool after it clones our source code from the team's primary repository. In the Project navigator, I've already added a post_clone script in my ci_scripts folder to my Food Truck project.\n\nThe Xcode Cloud build environment includes Homebrew, and that's what we're using here to install SwiftLint.\n\nOn this line, we are executing SwiftLint. One thing to remember is that the script executes within the ci_scripts directory, so we have to tell SwiftLint to run within the ci_workspace environment variable, which points to our repository.\n\nLet's check out the result of the code analysis. Looks like SwiftLint found a bunch of violations, 15 of them serious. Since this is the first time we're integrating our tools, I'm going to temporarily deactivate this workflow so that we can have a discussion with the rest of our team first, come up with an agreement about coding styles and conventions, and then decide as a team which issues we want to fix. You can deactivate a workflow in Xcode from the Manage Workflows menu. Doing so will stop the start conditions from working, and only manual builds can be started.\n\nNow that our static code analysis workflow has been deactivated, we can focus on fixing the issues we want to fix. Then we can come back and enable this workflow. Our team has been growing rapidly, and we want to make conscious choices about workflow configurations. Because I'm responsible for maintaining and managing all of our team's workflows, I don't want team members to make unintentional changes to a workflow. That takes a lot of time to undo. To prevent unintentional changes, you can restrict who can make edits to your workflow. Select the workflow, then choose Restrict Editing from the context menu. Anyone in the team can use or run this workflow, but only administrators, account holders, and app managers can enforce a restriction, which makes it editable only by them.\n\nA workflow where editing is restricted will have a 'key' symbol. This means that it is locked and can only be edited by you and other administrative users.\n\nIf you see a 'lock' symbol instead, this means that it has been locked by an administrator and cannot be edited by you. This feature makes it easy to manage access for complex workflows, especially if you're part of a large team. We've just learned how easy it is to pause or lock down our workflows. Now let's talk about workflow management and maintenance.\n\nI want to run the same tests and archive actions whenever I make a pull request or when I merge my branch. The best way to do so is through multiple start conditions. This improves the maintenance of workflows because it reduces the number of workflows that you'll need to create and manage. To illustrate, in this example, I want to kick off a build given the following conditions: if there are changes in the main branch or the release branch, or if there's a scheduled build for the main branch, then, run the same set of archive and test actions as well as deploy to TestFlight for internal testing. Instead of creating 3 workflows, then managing them and keeping them in sync, I'd create a single workflow specifying all the start conditions in one go. This improves manageability, especially when the team has many workflows to maintain.\n\nConfiguring start conditions in Xcode is easy. From the workflow editor, pick the type of start conditions from the + button menu.\n\nXcode Cloud in App Store Connect provides a fully featured web-based experience. Everything that I just did in Xcode to configure our workflow, from deactivating it and locking it down, to setting up multiple start conditions, are also available from AppStoreConnect. Xcode Cloud is a powerful, continuous integration & delivery service built right into Xcode that helps development teams of any size and can easily be integrated with your existing tools and processes to help you deliver high-quality apps for your users. To the Xcode Cloud beta participants, we really appreciate your feedback and look forward to hearing more. We hope these features can help you refine your team's continuous integration & delivery practice. Thank you for watching, and have a great WWDC! ♪ instrumental hip hop music ♪",
+    "segments": []
+  },
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "About continuous integration and delivery with Xcode Cloud",
+        "url": "https://developer.apple.com/documentation/Xcode/About-Continuous-Integration-and-Delivery-with-Xcode-Cloud"
+      },
+      {
+        "title": "Configuring start conditions",
+        "url": "https://developer.apple.com/documentation/Xcode/Configuring-Start-Conditions"
+      },
+      {
+        "title": "Configuring webhooks in Xcode Cloud",
+        "url": "https://developer.apple.com/documentation/Xcode/Configuring-Webhooks-in-Xcode-Cloud"
+      },
+      {
+        "title": "Configuring your Xcode Cloud workflow’s actions",
+        "url": "https://developer.apple.com/documentation/Xcode/Configuring-Your-Xcode-Cloud-Workflow-s-Actions"
+      },
+      {
+        "title": "Developing a workflow strategy for Xcode Cloud",
+        "url": "https://developer.apple.com/documentation/Xcode/Developing-a-Workflow-Strategy-for-Xcode-Cloud"
+      },
+      {
+        "title": "Writing custom build scripts",
+        "url": "https://developer.apple.com/documentation/Xcode/Writing-Custom-Build-Scripts"
+      },
+      {
+        "title": "Xcode Cloud",
+        "url": "https://developer.apple.com/documentation/Xcode/Xcode-Cloud"
+      },
+      {
+        "title": "Xcode Cloud workflow reference",
+        "url": "https://developer.apple.com/documentation/Xcode/Xcode-Cloud-Workflow-Reference"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/110375/5/6C8AD7C3-EFFA-4253-82F2-3B8488E3519A/downloads/wwdc2022-110375_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/110375/5/6C8AD7C3-EFFA-4253-82F2-3B8488E3519A/downloads/wwdc2022-110375_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10278",
+      "year": "2023",
+      "title": "Create practical workflows in Xcode Cloud",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10278"
+    },
+    {
+      "id": "110361",
+      "year": "2022",
+      "title": "Author fast and reliable tests for Xcode Cloud",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110361"
+    },
+    {
+      "id": "110374",
+      "year": "2022",
+      "title": "Get the most out of Xcode Cloud",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110374"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:42:08.008Z"
+}

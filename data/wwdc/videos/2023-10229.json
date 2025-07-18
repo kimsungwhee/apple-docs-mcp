@@ -1,0 +1,142 @@
+{
+  "id": "10229",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10229/",
+  "title": "Make features discoverable with TipKit",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services",
+    "Design",
+    "Essentials"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Ellie: Hi, I'm Ellie Gattozzi, an Instructional Design Manager at Apple, and I'll be talking about making features discoverable with TipKit.\n\nYou'll learn how to create your first tip, add rules to specify who should see the tip, manage when it's displayed and dismissed to control the frequency of educational messaging in your app, and test your tip. But before jumping in, a little background on TipKit.\n\nYou work on features that you know people will love, but first, they need to discover them. TipKit is a new framework that makes it easy to show tips in your app.\n\nAs the Instructional Products team that works on all of Apple's user education, we designed TipKit with education specifically in mind. For example, TipKit can teach someone about a brand-new feature, help with discovery of a hidden feature, or show a faster way to accomplish a task. And it's available across iPhone, iPad, Mac, Apple Watch, and Apple TV. With that, I'll get started creating a tip. There's a feature, Favoriting a Backyard, in the Backyard Birds app. Favoriting makes it easy for a person to get to the backyards they care about the most, which makes it a great candidate for tips. Once I've identified the feature for the tip, I'm ready to turn to Xcode. I'll begin by defining a new tip for the Favorite a Backyard feature. Tips are made up of a title and message, so I'll add those. Useful tips have direct action phrases as titles that say what the feature is and messages with easy to remember benefit info or instructions so users know why they'd want to use the feature and are later able to accomplish the task on their own.\n\nHere are a few examples of effective tips. All of these are actionable, instructional, and easy to remember. Here are just a few examples of when not to use TipKit. The first is promotional and the second is an error message, neither of which are educational. In the third, it's great that the feature is better, but people don't need to do anything. The last is useful, but too complicated to read and remember in the moment.\n\nNow back to my tip. I already have my title and message, so next, I'll put in the basic structure for the tip view and configure TipsCenter. TipsCenter enables key TipKit functionality, including having tips and their associated events persist between app launches and makes it easier to test tips. A default shared instance of TipsCenter is provided and is what I've added here.\n\nWith TipsCenter configured, I can now see the tip. It's looking good, but it can look better. I'll change the text color to indigo so it matches the app, and put in an icon to help draw attention and visually associate the tip with the feature. I chose the star symbol since the tip is about favoriting. If your feature has settings that can be customized, you may want to add an action button. Action buttons can take people directly to those settings so they can make adjustments fast. Or if you feel like there's more info that people would find particularly useful, another option is to link to additional resources, such as an onboarding flow. OK, I have my instructional tip and it looks great. Now I'll identify the best treatment and placement for it. There are two types of tip views: The first is the popover view, which allows the tip to appear over your app's UI. It can point directly to a button or other element and is particularly useful for directing users without changing the current app screen. On tvOS, the popover view is exclusively used. The second is the in-line view, which adjusts the app's UI to temporarily fit around it so no UI is blocked. When using either view, it's helpful to have the tip appear close to the relevant button or element you're calling out.\n\nFor favoriting a backyard, I'm going to go with the popover view and place it so it points at the star button in the top right corner.\n\nAnd that's my app's first tip. It's looking great and is in context. But to really take advantage of TipKit's power to reach the ideal audience at the best time, we'll want to add some rules. I'll pass it over to Charlie to talk about how to take tips to the next level.\n\nCharlie: Thanks, Ellie. Hi, I'm Charlie Parks, a Software Engineering Manager from the Instructional Products team. Discovering a new feature can invoke a feeling of surprise and delight, but only if the feature is of interest to the person, and any education about it doesn't come off as spammy or irrelevant. The tip about favoriting a backyard is useful, but it may not be for everyone, especially people who have already discovered the feature. It may also be of less interest to people who infrequently use the app. At Apple, we believe that in-app education should be focused on those who would benefit from it, and we aim to avoid getting in the way of individuals while they are trying to accomplish something in an app. To ensure a tip is displayed only for the most relevant audience at the most ideal time, TipKit provides a number of eligibility rules you can use alone, or together, to determine exactly when a tip should be displayed. There are two main types of rules. The first is a parameter-based rule. Parameter-based rules are persistent and are best suited for showing tips based on a Swift value type that you want to write an expression around. The second is an event-based rule. Event-based rules allow you to define an action that must be performed before a person becomes eligible for a tip.\n\nFor my Favorite a Backyard tip, the first thing I want to do is to make sure the person is logged in to their account. I'll implement a parameter-based rule to accomplish that. First, I'll set the parameter's initial value to false. Then, I'll add this to the tip's rules. Great. I've narrowed down who will get the tip, but now I want to narrow it down further. I want people to be able to use the app and discover the feature organically before giving them a nudge. The way I'll do that is by creating an event-based rule that will make sure the tip only displays after a person has gone to the Backyard Detail View at least three times.\n\nSo, first, I'm going to create the event. Then, I'll have the rule count the number of times I want the event to trigger before the rule evaluates to true. In this case, I want the person to enter the Backyard Detail View three times before I present the tip. The last thing I need to do is to donate the event. So in the BackyardDetailView, I'll donate the event any time the view appears. These rules are coming together, but what if I wanted to tighten them a bit further? So far, I've focused on people who frequently go to a Backyard Detail View, but have never favorited a backyard. Now, I also want to show the tip only to those individuals who regularly use the app.\n\nI'll add a date query modifier to my event-based rule that will ensure it will only ever evaluate to true if someone has gone to the Backyard Detail View three times in the past five days. Another very powerful TipKit feature is the ability to create custom donations by adding associated types to each event donation, and querying the events based on those types. Using associated types, I can further refine the event-based rule, so it matches only when someone has gone to a specific Backyard Detail View.\n\nFirst, I'll create a DetailViewDonation and supply the ID of the specific backyard view. Then, in my donation, I'll include the ID of the backyard view a person is currently in. Once those are both established, I'll update my rule to query for events based on a unique backyard ID. When defining these custom donations, keep in mind the size of the data being stored. The larger the size, the slower and less performant the query will execute. Rules in TipKit are easy to compose, and they provide a powerfully simple way to make sure that tips are shown to people who will get the most benefit from them. Rules can be as general or as specific as needed and can be combined to target the ideal audience at the best time. Once a tip appears in my app, I don't want it to stay on screen forever, and I don't want it to linger if a person has used the feature described in the tip. And if I have multiple tips, I don't want them to all appear at once because that could be overwhelming and get in the way of what the person is trying to do. TipKit provides several display and dismissal behaviors, so tips appear at a good cadence and only as long as they're useful. Let's say that I've added several more tips to my app, so now I have five tips in the Backyard Birds app. The tips are all useful but would be less effective if they all showed up at once. With TipKit, I can set the display frequency for the tips, so they appear at a more ideal cadence.\n\nIn TipsCenter, I can specify the length of time that must pass before another tip can appear. I can use .daily if I want to have one tip show every 24 hours, .hourly if I want to have one tip show every 60 minutes, or I can specify a custom duration by supplying any valid TimeInterval value. And if I really feel that education is needed instantly, I can also use the .immediate modifier. This way, people will see any tips they are eligible for the moment that they're eligible for them, even if another tip recently appeared, or is on screen. Instead of ignoring display frequency at the TipsCenter level, it may be more useful to ignore it on a one-off, per-tip basis. To do so, I can add the .ignoresDisplayFrequency option to the specific tip. Now, only that specific tip will show the second someone is eligible, while the rest of the tips in my app will continue to follow the display cadence I set at the TipsCenter level. Once tips appear, I want them to stay on screen only as long as they're useful. So if someone uses the feature described in the tip, which means they've performed the action, or if they're eligible for the tip but still not interested in it, the tip should be dismissed. Let's say the person using the app has satisfied all of the rules for having the tip display: they're logged in, have opened the Backyard Detail View three times in the last five days, but have never tapped the favorite button on any backyard. Once they see the tip and tap the favorite button, I'll call the invalidate method with the reason \".userPerformedAction\" to signify that the desired outcome has been performed and the tip will be dismissed. Another way a tip can be dismissed is if the tip is displayed more than the defined .maxDisplayCount. In this case, once the tip displays five times and no action has been taken, it should not display the next time the individual enters the Backyard Detail View. These are some of the ways that tips can be dismissed using built-in functionality that TipKit provides. But since you know your app the best, you can dismiss a tip based on any interaction or criteria you see fit by using the .invalidate() method. TipKit can also sync tip status via iCloud to ensure that tips seen on one device won't be seen on the other. For instance, if someone using the app has it installed on both an iPad and an iPhone, and the features are identical on both of those devices, it's probably best to not educate them on both devices about the feature. I'll hand it back to Ellie now to talk about testing APIs that TipKit provides, and some next steps. Ellie: To make testing easy, TipKit comes with some convenient APIs that you can use to work around eligibility rules so you can show or hide tips as needed. You can inspect all the tips in your app without needing to satisfy the rules set for them. To do so, add .showAllTips to TipsCenter's configuration. If you only want certain tips to show when testing, use .showTips and pass in the specific tip IDs, or use .hideTips to prevent specific tips from showing. And if you want to make sure that no tips show, so you can focus on a different feature in your app, use .hideAllTips. You can also use .resetDatastore to purge all info in the TipKit data store, setting a pristine state at each build of the app. All of the same testing options you can call via API are also available as launch arguments that you can add to your project's scheme. You can use any of these to do a quick spot check or test full functionality. And with that, you're all set. You've created your tip, added your rules, set the frequency for tips in your app, and now are testing so everything works as expected. To summarize, tips are great for helping users discover features in your app. Remember to keep your tips short, instructional, and actionable, and use the easy to define but powerful rules to target the ideal audience. TipKit's sample code will be available on developer.apple.com, and keep an eye out for the TipKit human interface guidelines to get additional info on creating great tips. Now go review your app for discoverability opportunities, and as you're working on new features, keep TipKit in mind. On behalf of the Instructional Products team, thanks for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:55",
+      "title": "Create a tip",
+      "language": "swift",
+      "code": "struct FavoriteBackyardTip: Tip {\n\n    var title: Text {\n        Text(\"Save as a Favorite\")\n    }\n    \n    var message: Text {\n        Text(\"Your favorite backyards always appear at the top of the list.\")\n    }\n}"
+    },
+    {
+      "timestamp": "2:48",
+      "title": "Configure TipsCenter",
+      "language": "swift",
+      "code": "@main\nstruct BackyardBirdsApp: App {\n    var body: some Scene {\n        WindowGroup {\n            ContentView()\n        }\n    }\n\n    // ...\n\n    init() {\n        TipsCenter.shared.configure()\n    }\n}"
+    },
+    {
+      "timestamp": "3:18",
+      "title": "Add actions and an asset to a tip",
+      "language": "swift",
+      "code": "struct FavoriteBackyardTip: Tip {\n\n    var title: Text {\n        Text(\"Save as a Favorite\").foregroundColor(.indigo)\n    }\n    \n    var message: Text {\n        Text(\"Your favorite backyards always appear at the top of the list.\")\n    }\n    \n    var asset: Image {\n        Image(systemName: \"star\")\n    }\n    \n    var actions: [Action] {\n        [\n            Tip.Action(\n                id: \"learn-more\", \n                title: \"Learn More\"\n            )\n        ]\n    }\n}"
+    },
+    {
+      "timestamp": "4:53",
+      "title": "Create a popover view",
+      "language": "swift",
+      "code": "private let favoriteBackyardTip = FavoriteBackyardTip()\n\n// ...\n\n.toolbar {\n    ToolbarItem {\n        Button {\n            backyard.isFavorite.toggle()\n        } label: {\n            Label(\"Favorite\", systemImage: \"star\")\n                .symbolVariant(\n                    backyard.isFavorite ? .fill : .none\n                )\n        }\n        .popoverMiniTip(tip: favoriteBackyardTip)\n    }\n}"
+    },
+    {
+      "timestamp": "6:38",
+      "title": "Add a parameter based rule",
+      "language": "swift",
+      "code": "struct FavoriteBackyardTip: Tip {\n\n    @Parameter\n    static var isLoggedIn: Bool = false\n\n    // ...\n\n    var rules: Predicate<RuleInput...> {\n\n        // User is logged in\n        #Rule(Self.$isLoggedIn) { $0 == true }\n    }\n}"
+    },
+    {
+      "timestamp": "7:16",
+      "title": "Add an event based rule",
+      "language": "swift",
+      "code": "struct FavoriteBackyardTip: Tip {\n\n    @Parameter\n    static var isLoggedIn: Bool = false\n  \n    static let enteredBackyardDetailView: Event = Event<DetailViewDonation>(\n        id: \"entered-backyard-detail-view\"\n    )\n\n    // ...\n    \n    var rules: Predicate<RuleInput...> {\n        // User is logged in\n        #Rule(Self.$isLoggedIn) { $0 == true }\n            \n        // User has entered any backyard detail view at least 3 times\n        #Rule(Self.enteredBackyardDetailView) { $0.count >= 3 }\n    }\n}"
+    },
+    {
+      "timestamp": "7:34",
+      "title": "Donate the event when a view appears",
+      "language": "swift",
+      "code": ".onAppear {\n     FavoriteBackyardTip.enteredBackyardDetailView.donate()\n}"
+    },
+    {
+      "timestamp": "7:59",
+      "title": "Filter event donations in an event based rule",
+      "language": "swift",
+      "code": "// User has entered any backyard detail view at least 3 times in the past 5 days\n#Rule(Self.enteredBackyardDetailView) { \n    $0.donations.filter { \n        $0.date > Date.now.addingTimeInterval(-5 * 60 * 60 * 24)\n    }\n    .count >= 3\n}"
+    },
+    {
+      "timestamp": "8:34",
+      "title": "Create a custom donation",
+      "language": "swift",
+      "code": "// Create the associated type\nextension BackyardDetailTip {\n    struct DetailViewDonation: DonationValue {\n        let backyardID: Int\n    }\n}\n\n// Donate the unique id of the backyard detail being viewed\n.onAppear {\n     BackyardFavoriteTip.enteredBackyardDetailView.donate(\n         with: .init(backyardID: backyard.id)\n     )\n}\n\n\nstruct FavoriteBackyardTip: Tip {\n\n    // ...\n\n    var rules: Predicate<RuleInput...> {\n        // Update the rule to specify a backyardID\n        #Rule(Self.enteredBackyardDetailView) {\n            $0.donations.filter {\n                $0.date > Date.now.addingTimeInterval(-5 * 60 * 60 * 24) \n            }\n            .largestSubset(by: \\.backyardID)\n            .count >= 3\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "9:57",
+      "title": "Configure display frequency",
+      "language": "swift",
+      "code": "// One tip per day.\nTipsCenter.shared.configure {\n    DisplayFrequency(.daily)\n}\n\n// One tip per hour.\nTipsCenter.shared.configure {\n    DisplayFrequency(.hourly)\n}\n\n// Custom configuration. Only show one tip every five days.\nlet fiveDays: TimeInterval = 5 * 24 * 60 * 60\nTipsCenter.shared.configure {\n    DisplayFrequency(fiveDays)\n}\n\n// No frequency control. Show all tips as soon as eligible.\nTipsCenter.shared.configure {\n    DisplayFrequency(.immediate)\n}"
+    },
+    {
+      "timestamp": "10:34",
+      "title": "Turn off display frequency controls for a tip",
+      "language": "swift",
+      "code": "struct FavoriteBackyardTip: Tip {\n\n    // ...\n  \n    var options: [Option] {\n        [.ignoresDisplayFrequency(true)]\n    }\n}"
+    },
+    {
+      "timestamp": "11:27",
+      "title": "Invalidate a tip",
+      "language": "swift",
+      "code": "Button {\n    backyard.isFavorite.toggle()\n\n    // When user taps the favorite button, dismiss the tip\n    favoriteBackyardTip.invalidate(reason: .userPerformedAction)\n} label: {\n    Label(\"Favorite\", systemImage: \"star\")\n        .symbolVariant(backyard.isFavorite ? .fill : .none)\n}\n.popoverMiniTip(tip: favoriteBackyardTip)"
+    },
+    {
+      "timestamp": "11:41",
+      "title": "Configure max display count on a tip",
+      "language": "swift",
+      "code": "struct FavoriteBackyardTip: Tip {\n\n    // ...\n\n    var options: [Option] {\n        [.maxDisplayCount(5)]\n    }\n}"
+    },
+    {
+      "timestamp": "12:46",
+      "title": "Programmatically call testing API",
+      "language": "swift",
+      "code": "// Show all defined tips in the app\nTipsCenter.showAllTips()\n\n// Show some tips, but not all\nTipsCenter.showTips([tip1, tip2, tip3])\n\n// Hide some tips, but not all\nTipsCenter.hideTips([tip1, tip2, tip3])\n\n// Hide all tips defined in the app\nTipsCenter.hideAllTips()\n\n// Purge all TipKit related data\nTipsCenter.resetDatastore()"
+    },
+    {
+      "timestamp": "13:31",
+      "title": "Configure launch arguments in your scheme",
+      "language": "swift",
+      "code": "// Show all defined tips in the app\ncom.apple.TipKit.ShowAllTips 1\n\n// Show some tips, but not all\ncom.apple.TipKit.ShowTips tipID,otherTipID\n\n// Hide some tips, but not all\ncom.apple.TipKit.HideAllTips 1\n\n// Hide all tips defined in the app\ncom.apple.TipKit.HideTips tipID,otherTipID\n\n// Purge all TipKit related data\ncom.apple.TipKit.ResetDatastore 1"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10229/4/07E6CA29-01CD-4E03-A3FF-D7D8A3FB4CEF/downloads/wwdc2023-10229_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10229/4/07E6CA29-01CD-4E03-A3FF-D7D8A3FB4CEF/downloads/wwdc2023-10229_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10070",
+      "year": "2024",
+      "title": "Customize feature discovery with TipKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10070"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:12:47.742Z"
+}

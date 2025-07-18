@@ -1,0 +1,129 @@
+{
+  "id": "10140",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10140/",
+  "title": "Build location-aware enterprise apps",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Accessibility & Inclusion",
+    "Business & Education"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello, and welcome to WWDC.\n\nHello, and welcome to WWDC. My name is Lucas, and I'm an engineer on the Caffè Macs team at Apple. In this session, I'll talk about how we've considered location at a micro and macro level to provide a great Caffè Macs app experience to our employees.\n\nI'll talk primarily about the employee experience before social distancing and share a few places where we're already working on new features around safety considerations. Whether you're working on your own Caffè app, an app for your corporate facility, or an enterprise app used by employees around the world, these considerations should help you deliver a great app experience. First, I'll give you a quick inside view of Caffè Macs Apple Park. By understanding the Caffè Macs experience, you'll see why location was so important for the app we built. Second, we'll discuss how user preferences let our users control their app experience, even before calling location services. Next, we'll talk about delivering on-site, in-app experiences using location services. And finally, we'll briefly dive into the world of internationalization. Let's begin with an overview of Caffè Macs and the employee experience we wanna provide. Caffè Macs is Apple Park's unofficial town square. It's a gathering place where everyone in the company comes to meet, chat and share a meal. Whether you're looking for a lunch, a snack or a coffee, Caffè Macs is the perfect place for some healthy, delicious food. Our mission is to provide great food and service to our employees.\n\nTo do so, we offer employees an in-house enterprise app, where you can browse the menu, order meals and pay using Apple Pay. We also have a kiosk app on iPad, which allows guests to place orders. That order is then sent to our third application, the Kitchen Display System, which is used in the kitchen, on an iPad.\n\nOnce the order is received, the chefs will begin preparing your food.\n\nAnd when it's ready, they'll use the Kitchen Display System to notify the user that their food is ready to be picked up.\n\nPreferences and location services in the Caffè Macs app are critical in order to deliver a great made-to-order food experience for our employees. Okay, so that's a brief overview of the cafeteria experience.\n\nNow let's look into our location-based app experience. In the Caffè Macs app, we've allowed employees to select their default location.\n\nWe use this preference in order to quickly show the menu for a Caffè. Notice my current Default Location preference is set to \"Closest to Me.\" The selection will use my location in order to show the appropriate Caffè menu.\n\nWhen I select a specific Caffè, the app defaults to showing the menu for that location.\n\nThis allows the user to control their location-based experience, where they wanna preempt or deny permission for location services. During app launch, we check the user's Caffè preference.\n\nWe allow users to select either \"Closest to Me,\" which will use location services to determine which Caffè to show the user when they launch the app, or a specific Caffè, which will show the user the Caffè of their choice. These options give users control over which menu they see. This is great for one of the recent updates we've made to the Caffè Macs app, which allows users to quickly choose a pickup window at their selected Caffè, ensuring proper social distancing. You can then store the preference and use it to determine the app's default state at start-up.\n\nA simple approach is to store the user's selection using Foundation's UserDefaults, where you store key-value pairs persistently across launches of your app. UserDefaults is a great place to store these types of small preference values for your app use. As we just saw, allowing users to select their default location is a great first step. Next, let's take things one step further and talk about how we deliver on-site experiences using location services. One of the challenges we have with the Caffè Macs app is to show the correct menu, based on where the user is standing.\n\nThere's one main Caffè on campus and a coffee station nearby, and at any given time, a person can be near both locations. You may experience the same challenge when building an app for your facilities, where multiple points of interest are close together. For our app, we wanna ensure our users are placing orders at the location they are expecting. To achieve this, we can use Core Location and the iBeacon protocol. In order to use Core Location in your app, you'll have to request authorization for these services from your user. At Apple, we care deeply about privacy. Employees choose whether or not to grant permission to enterprise apps that use location services.\n\nIt's important to only request access to the data that your app needs and explain to the user why you need it.\n\nTo go deeper on ensuring privacy when using location, please watch this year's related session. There are two types of authorization your app can request: \"When in Use\" and \"Always.\" With the \"When in Use\" authorization, your app will receive location events while in the foreground, and by enabling the background location usage indicator, the app may continue to access location in the background. The \"Always\" authorization would allow us to access the user location in the background, without starting in the foreground and without the indicator. But this is unnecessary for the Caffè Macs app. The Caffè Macs app requests \"When in Use\" preference for location services, which is all we need for our location experience. For more about requesting authorization, including the new approximate authorization request, please watch this Core Location session. Keep in mind that asking for authorization doesn't guarantee your app will receive it. Your app should gracefully handle the case where authorization is denied, where the user chooses to grant your app less access than you requested, or where the user grants your app temporary access with the \"Allow Once\" option.\n\nTo prepare our app for calling \"Request When in Use\" authorization, we add the NSLocationWhenInUseUsageDescription key, with purpose string, to our app's Info.plist file.\n\nThe system displays our purpose string and the authorization request dialogue. Before requesting authorization, add the required keys to your Info.plist file.\n\nIf a required key isn't present, authorization requests fail immediately.\n\nAdditionally, request authorization only when your user needs location services to perform a task in your app.\n\nIf it's not clear to your user why your app is requesting location services, the user may deny your request.\n\nWhen you request authorization, or when your app's authorization status changes, you use the locationManager, didChangeAuthorization method of your delegate object to process the changes.\n\nThe availability of location services may change at any time. The user can disable location services in the system settings, either for your app specifically, or for all apps.\n\nIf your app is running, either in the foreground or in the background, when the availability status changes, the system calls locationManager, didChangeAuthorization method to notify you of the changes.\n\nLocation services require hardware that may not be present on every device.\n\nBefore relying on a specific location service, check if the device supports the service by calling the methods of the CLLocationManager object.\n\nIf location services are not available on the device, you can fall back on the default user preference that we discussed earlier.\n\nOnce your app has received authorization and you've determined the device supports it, your app is ready to use location. We can use Core Location in order to arrange for beacon signals.\n\nA beacon is a device that emits a signal which can be detected by the system and passed to your app. Those signals can identify that the user is within a Caffè. And once we detect a specific beacon signal, we can then show the menu for that Caffè.\n\nOnly the previously mentioned location authorization is required in order to use iBeacon protocol.\n\nWhen deploying your beacon hardware, you must program each beacon with an appropriate proximity UUID, major value and minor value.\n\nThe values identify each of your beacons uniquely and make it possible for your app to differentiate between them later.\n\nThis also helps you establish hierarchy, where applicable in your use case, for example, so that you can match the Caffè level, or a specific food station.\n\nBeacons make location-based products and services available to users by broadcasting these unique values to your device.\n\nAdding beacon support to your app involves detecting beacons in two different stages. One: Use region monitoring to detect the presence of a beacon. And two: Use beacon ranging to determine the proximity to a detected beacon.\n\nYou can find out more about this by watching the 2019 \"What's New in Core Location\" session. Here's how you can use region monitoring to alert your app when a beacon is nearby.\n\nTo monitor for beacons, create a CLBeaconIdentityConstraint object with your proximity UUID.\n\nNext, instantiate a CLBeaconRegion object and register it with the startMonitoring for method of your CLLocationManager object. The beaconRegion contains the proximity UUID, major value and minor value, of the beacons that you wanna detect.\n\nOnly beacons with matching values trigger a call to your delegate object.\n\nPrior to calling this method, you must have created a CLLocationManager object and assigned a delegate to it.\n\nWhen a matching beacon is detected, the CLLocationManager object notifies its delegate by calling the LocationManager, didEnterRegion method.\n\nSimilarly, when a detected beacon moves out of range, the locationManager calls the LocationManager, didExitRegion method.\n\nNext, you can check if ranging is available on the hardware running your app by calling isRangingAvailable type method on CLLocationManager.\n\nStart ranging only if the device supports the service. Also, you can optionally store the beacon so that the ranging can be stopped on demand.\n\nYou can use the major and minor values here in order to distinguish amongst your unique beacons. If multiple beacons use the same UUID, major and minor values, the array of beacons delivered to the LocationManager, didRangeBeacons in method might be differentiated only by the proximity and accuracy values. We've seen how ranging for beacon signals is a great resource for creating tailored, on-site experiences, and these location services make our apps more contextual to the user's environment. Let's talk about how to adapt your app's behavior to location on a global scale. At Apple, we have employees around the world. We want our apps to provide a great experience, no matter where they're used.\n\nThere are a number of internationalization topics you should consider for your global enterprise apps. For user-visible representation of dates and times, DateFormatter provides a variety of localized presets and configuration options.\n\nInstances of DateFormatter create string representations of date objects and convert textual representation of dates and times into date objects.\n\nFor instance, users in different regions might expect to see dates and times formatted in a specific way. In the new pickup window feature we've added for social distancing, we'll need to have the correct localized time presented to the user for them to select from, no matter where they are. This is how you can create a DateFormatter instance. The Foundation framework also provides a NumberFormatter class. Instances of NumberFormatter can configure the textual representation of NSNumber objects and convert textual representation of numeric values into NSNumber objects.\n\nNote that NumberFormatter only formats, it doesn't provide currency conversions.\n\nYou can format currency amounts using the predefined currency number format style, which is used by the NumberFormatter's numberStyle property. By observing both the device's locale and the ISO 4217 currency code, you can format the amounts using a NumberFormatter instance.\n\nHere in the kiosk application, we use a NumberFormatter on an order summary screen, which is a fantastic resource for formatting the total in the user's locale. But notice how the image is displaying the total in Uruguayan pesos. Just behind the modal, you'll notice that the Caffè is Parmer Lane 5, which is in Texas. In order to format the amount appropriately, we'll need to set the currency code to American dollars.\n\nAfter setting the format style to the predefined currency style, you'll also want to set your NumberFormatter's locale and currency code. A currency code is a three-letter code that is, in most cases, composed of a country's two-character Internet code plus an extra character to denote the currency unit. For example, the currency code for the Canadian dollar is CAD. The NumberFormatter locale instance property determines the default values for many formatter attributes, such as the currency code and the decimal separator. By setting the currency code and locale, we can display prices according to the user and business preferences. You can find out more about this by watching this year's session on formatters. In order to provide a great user experience, our enterprise app should be localized to your user's preferred reading language. For user interface files, Xcode generates a file with a .strings extension that contains placeholders for the text that localizers translate later.\n\nLearn more about how to best localize your app by watching these sessions.\n\nBy looking at the Caffè Macs app, we reviewed how user preferences can be used to deliver a default location experience. Location services take it one step further by delivering location-based products and services.\n\nInternationalization ensures your app offers a great experience all around the world.\n\nIncorporating location, both at a micro and macro level, in the Caffè Macs app has allowed us to deliver a great experience for employees at Apple.\n\nWe're looking forward to seeing how you apply these learnings to your own apps, and we can't wait to see what you build. Thanks.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:28",
+      "title": "Preferences: User-defined Preferred Location",
+      "language": "swift",
+      "code": "// Storing the user’s preference using UserDefaults\n\nUserDefaults.standard.set(defaultLocation.id, forKey: \"defaultLocationId\")\n\nlet defaultLocationId = UserDefaults.standard.integer(forKey: \"defaultLocationId\")"
+    },
+    {
+      "timestamp": "6:14",
+      "title": "Location Services: Requesting Authorization",
+      "language": "swift",
+      "code": "// Add NSLocationWhenInUseUsageDescription to your Info.plist \n// e.g. “Location is required for placing orders while using the app.\"\n\nlocationManager.requestWhenInUseAuthorization()\n\nfunc locationManager(\n    _ manager: CLLocationManager,\n    didChangeAuthorization status: CLAuthorizationStatus) {\n        \n    switch status {\n    case .restricted, .denied: \n        disableLocationFeatures()\n\n    case .authorizedWhenInUse, .authorizedAlways: \n        enableLocationFeatures()\n\n    case .notDetermined: // The user hasn’t chosen an authorization status\n    }\n}"
+    },
+    {
+      "timestamp": "7:02",
+      "title": "Location Services:  Determining Device Support",
+      "language": "swift",
+      "code": "if CLLocationManager.isMonitoringAvailable(for: CLBeaconRegion.self) {\n    // Supports region monitoring to detect beacon regions\n}\n\nif CLLocationManager.isRangingAvailable() {\n    // Supports obtaining the relative distance to a nearby iBeacon device\n}"
+    },
+    {
+      "timestamp": "8:54",
+      "title": "Stage 1: Region Monitoring",
+      "language": "swift",
+      "code": "// Stage 1: Region Monitoring\n\nfunc monitorBeacons() {\n    if CLLocationManager.isMonitoringAvailable(for: CLBeaconRegion.self) {\n\n        let constraint = CLBeaconIdentityConstraint(uuid: proximityUUID)\n\n        let beaconRegion = CLBeaconRegion(\n            beaconIdentityConstraint: constraint,\n            identifier: beaconID\n        )\n        \n        self.locationManager.startMonitoring(for: beaconRegion)\n    }\n}"
+    },
+    {
+      "timestamp": "9:30",
+      "title": "Stage 2: Beacon Ranging",
+      "language": "swift",
+      "code": "// Stage 2: Beacon Ranging\n\nfunc locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {\n    guard let region = region as? CLBeaconRegion,\n        CLLocationManager.isRangingAvailable()\n        else { return }\n    \n    let constraint = CLBeaconIdentityConstraint(uuid: region.uuid)\n    manager.startRangingBeacons(satisfying: constraint)\n    beaconsToRange.append(region)\n}\n\nfunc locationManager(_ manager: CLLocationManager, didExitRegion region: CLRegion) {\n    \n}"
+    },
+    {
+      "timestamp": "10:09",
+      "title": "Stage 2: Beacon Ranging",
+      "language": "swift",
+      "code": "// Stage 2: Beacon Ranging\n\nfunc locationManager(\n    _ manager: CLLocationManager,\n    didRangeBeacons beacons: [CLBeacon],\n    in region: CLBeaconRegion) {\n    \n    guard let nearestBeacon = beacons.first else { return }\n    let major = CLBeaconMajorValue(truncating: nearestBeacon.major)\n    let minor = CLBeaconMinorValue(truncating: nearestBeacon.major)\n    \n    switch nearestBeacon.proximity {\n    case .near, .immediate:\n        displayInformation(for: major, and: minor)\n        \n    default:\n        handleUnknownOrFarBeacon(for: major, and: minor)\n    }\n}"
+    },
+    {
+      "timestamp": "11:32",
+      "title": "Formatting Dates",
+      "language": "swift",
+      "code": "// Formatting Dates\nlet dateFormatter = DateFormatter()\ndateFormatter.dateStyle = .medium\ndateFormatter.timeStyle = .short\ndateFormatter.string(from: Date())\n// \"Jun 25, 2020 at 9:41 AM\""
+    },
+    {
+      "timestamp": "12:41",
+      "title": "Configuring the Format of Currency",
+      "language": "swift",
+      "code": "// Configuring the Format of Currency\nlet formatter = NumberFormatter()\nformatter.currencyCode = \"CAD\"\nformatter.numberStyle = .currency\nformatter.string(from: amount)\n// \"CA$1.00\""
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10140/5/C86424DC-C2CF-464A-BDCE-35C9B4476E4B/wwdc2020_10140_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10140/5/C86424DC-C2CF-464A-BDCE-35C9B4476E4B/wwdc2020_10140_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10219",
+      "year": "2020",
+      "title": "Build localization-friendly layouts using Xcode",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10219"
+    },
+    {
+      "id": "10162",
+      "year": "2020",
+      "title": "Design for location privacy",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10162"
+    },
+    {
+      "id": "10160",
+      "year": "2020",
+      "title": "Formatters: Make data human-friendly",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10160"
+    },
+    {
+      "id": "10660",
+      "year": "2020",
+      "title": "What's new in location",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10660"
+    },
+    {
+      "id": "403",
+      "year": "2019",
+      "title": "Creating Great Localized Experiences with Xcode 11",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/403"
+    },
+    {
+      "id": "705",
+      "year": "2019",
+      "title": "What's New in Core Location",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/705"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:09:13.650Z"
+}

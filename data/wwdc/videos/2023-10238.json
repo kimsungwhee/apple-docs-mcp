@@ -1,0 +1,94 @@
+{
+  "id": "10238",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10238/",
+  "title": "Tune up your AirPlay audio experience",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Kelly: Hi, my name is Kelly, and I am an engineer on the AirPlay team. Welcome to the session. Today, we're going to cover some of the features of the latest version of AirPlay and provide you with some tips to ensure you're delivering an amazing AirPlay experience on your app. This is the agenda we have for you today. I'll start with an overview of AirPlay. Then explore some of the features AirPlay enhanced audio buffering provides. And lastly, I'll cover how to integrate enhanced audio buffering into your app. AirPlay is the easiest way to share videos, photos, music, and more from Apple devices to nearby speakers and screens. With so many AirPlay-compatible devices in homes today, AirPlay is more popular than ever. You can use AirPlay in one of the following ways: With AirPlay Audio, you can share your favorite music or podcast by streaming to one or more HomePods and AirPlay-compatible speakers in perfect sync. With AirPlay Video, you can stream your favorite movies and shows from your Apple devices to an Apple TV or AirPlay-compatible smart TV in high quality, supporting up to 4K HDR. And with mirroring, you can share what's on your Apple device-- photos, personal videos, games, web pages, or spreadsheets-- to Apple TV or AirPlay-compatible smart TVs. Your friends and family can easily share what's on their Apple devices too. For today's video, I will focus on the audio streaming aspect of AirPlay. AirPlay delivers a seamless audio streaming experience to one or more devices. There's a full ecosystem of devices that support AirPlay audio today, from Apple devices like HomePod, Mac, and Apple TV, to audio and video products from the world's top brands, including hundreds of millions of smart TVs.\n\nAirPlay is so convenient, and I personally love using it in my day-to-day.\n\nAs AirPlay continues to grow, so do expectations from developers and customers. To take AirPlay to the next level, there's a new and improved protocol, AirPlay enhanced audio buffering, to deliver an even better home theater and multi-channel experience. Enhanced audio buffering is built from the ground up with whole home audio in mind. It is robust. The audio streams faster than real-time playback speed in order to minimize playback interruptions. It is responsive, so your app immediately responds to a tap on HomePod or when using your iPhone as a remote control. It supports multi-channel audio formats, like Dolby ATMOS from an Apple TV and new this year, intelligent use of Lossless playback for iOS. Enhanced audio buffering provides the best support for HLS Interstitials to support ads. You can learn more about HLS interstitials from my colleague Amit's video, \"Explore AirPlay with Interstitials.\" As you can see, we have built a great foundation with enhanced audio buffering for the future. Integrating this will create an amazing AirPlay experience with your app. Let's see how you can benefit from enhanced audio buffering. I'm streaming audio from my phone to the HomePod.\n\nImagine I am taking out the trash, and I am now out of my Wi-Fi range. ♪ ♪ Notice the HomePod continues playing. When I try to reconnect to the network, my music doesn't skip a beat, and my phone seamlessly reconnects to the HomePod. ♪ ♪ I am able to control playback from my phone again. This is the type of performance people expect when using AirPlay to play music on AirPlay-compatible speakers like HomePod. Now with all the great things enhanced audio buffering provides, let's incorporate it into your app. Let's review how to add AirPlay support to your app.\n\nIt is important to have the audio session configured properly for the correct mixing and interruption behavior for your app. If playing media is central to your app, set your audio session's category to playback. This will ensure your app's media will continue playing when the app is in background.\n\nIn general you can set the mode to default, but it is recommended for spoken audio, like podcasts or audiobooks, to set the mode to spokenAudio. Lastly, set the audio session's routing policy to longFormAudio. Longform audio is anything other than system sounds, such as music or podcasts. New this year, we're making AirPlay more seamless than ever. Your iPhone and iPad now use on-device intelligence to learn your AirPlay preferences. So because you usually listen to music when you cook dinner, the nearby HomePod in the kitchen automatically shows up, making it super easy for people to get your app's content playing where they want. If you provide longform audio content, then you want to support this.\n\nAnd it's simple to add support for intelligent AirPlay suggestion in your app. In addition to the AVAudioSession configuration we already discussed, the only new step is to go to your app's Info Plist, the AVInitialRouteSharingPolicy key, and set it to LongFormAudio.\n\nIn Xcode, this key is called \"AirPlay optimization policy\" in the drop-down menu. And that's it. iOS will handle the rest, and use on-device learning to smartly offer people the nearby speakers they use when opening your app.\n\nNext, add AVRoutePickerView to your view hierarchy to include an AirPlay picker in your app. The picker provides people with a list of potential AirPlay devices that they can use with your app.\n\nLastly, use MPNowPlayingInfoCenter to inform the system about the current playing item, and MPRemoteCommandCenter to receive remote commands, like play, pause, or skip. That covers your app's set up for AirPlay. Now, to support enhanced audio buffering, you'll need to adopt one of these two sets of APIs, AVPlayer and AVQueuePlayer or AVSampleBufferAudioRenderer and AVSampleBufferRenderSynchronizer.\n\nBoth APIs will work for non-AirPlay playback, including local or Bluetooth. However, some developers might want different APIs for AirPlay and non-AirPlay playback. In that case, your app can register to the routeChangeNotification and act accordingly depending on the current route.\n\nAVPlayer and AVQueuePlayer provides the simplest way to support enhanced audio buffering for your app.\n\nFor a majority of app developers, we recommend adopting AVQueuePlayer.\n\nAVQueuePlayer will handle most of what playback needs, such as managing items, controlling playback, and seeking through media.\n\nMost of Apple's own media apps also use AVQueuePlayer. To get started, create a queue player. Identify a URL that points to local or cloud content that you want to play.\n\nThen create an AVAsset instance with the URL, and create an AVPlayerItem instance with that asset.\n\nLastly, give the AVPlayerItem to the player and start playback. It's that simple. You might be thinking, \"It is just enqueuing a play item into the player. Where's the AirPlay part?\" And that's right. By using AVPlayer and AVQueuePlayer, you automatically get enhanced audio buffering when it is routed to AirPlay. For more AVPlayer functionalities, please refer to the links in the description. If you have a unique app that needs to perform preprocessing on the media data or have a DRM model AVPlayer doesn't support, then you can use AVSampleBufferAudioRenderer and AVSampleBufferRenderSynchronizer. You will use the APIs to synchronize multiple queued sample buffers to a single timeline. Here I will go over the basics on how to enqueue audio data with it. First, you need to create a serial queue to perform all playback operations on. Create the audio renderer and the render synchronizer. The synchronizer is used to establish the media timeline.\n\nThen, add the audio renderer to the render synchronizer. This will tell the audio renderer to follow the media timeline.\n\nTo enqueue audio data, install a callback that will let you know you need more data.\n\nStart enqueuing audio data in that callback.\n\nAnd when there is no more audio data, tell the renderer to stop requesting data. This is just the basics of the interface. For more details, please refer to the linked documentation in the description, where we describe in depth on how to use this API, along with a sample project to build a custom player. That covers the two APIs you can use to take advantage of enhanced audio buffering to AirPlay-compatible devices. And that's not all. Car manufacturers are now able to support enhanced buffering in their CarPlay implementations. Why is this important? An increasing number of vehicles support wireless CarPlay. Robust playback and responsive control is crucial to have the best audio experience on the road. The good news is, by adding enhanced audio buffering to your app with one of the two APIs we previously talked about, it will also work for CarPlay. People using your app will have the best audio streaming experience wherever their journey takes them.\n\nTo recap, you'll need to configure the audio session for AirPlay support, add an AirPlay picker to your app, integrate Media Player into your app, and adopt AVQueuePlayer or the custom rendering and synchronizing API for enhanced audio buffering. This is only the beginning. We are continuously improving and working to bring more features to this technology. Hope you enjoyed the session. Thank you. ♪ ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:00",
+      "title": "Set the audio type",
+      "language": "swift",
+      "code": "let audioSession = AVAudioSession.sharedInstance()\ntry audioSession.setCategory(. playback ,xmode: . default , policy:.longFormAudio )"
+    },
+    {
+      "timestamp": "7:23",
+      "title": "AVQueuePlayer",
+      "language": "swift",
+      "code": "let player = AVQueuePlayer()\n\nlet url = URL(string: \"http://www.examplecontenturl.com\")\nlet asset = AVAsset(url: url)\nlet item = AVPlayItem(asset: asset)\n\nplayer.insert(item, after: nil)\nplayer.play()"
+    },
+    {
+      "timestamp": "8:28",
+      "title": "Add the audio renderer to the render synchronizer",
+      "language": "swift",
+      "code": "let serializationQueue = DispatchQueue(label: \"sample.buffer.player.serialization.queue\")\nlet audioRenderer = AVSampleBufferAudioRenderer()\nlet renderSynchronizer = AVSampleBufferRenderSynchronizer()\n\nrenderSynchronizer.addRenderer(audioRenderer)"
+    },
+    {
+      "timestamp": "8:50",
+      "title": "Enqueue audio data",
+      "language": "swift",
+      "code": "serializationQueue.async { [weak self] in\n    guard let self = self else { return }\n    // Start processing audio data and stop when there's no more data.\n    self.audioRenderer.requestMediaDataWhenReady(on: serializationQueue) { [weak self] in\n        guard let self = self else { return }\n        while self.audioRenderer.isReadyForMoreMediaData {\n            let sampleBuffer = self.nextSampleBuffer() // Returns nil at end of data.\n            if let sampleBuffer = sampleBuffer {\n                self.audioRenderer.enqueue(sampleBuffer)\n            } else {\n                // Tell the renderer to stop requesting audio data.\n                audioRenderer.stopRequestingMediaData()\n            }\n        }\n    }\n\n    // Start playback at the natural rate of the media.\n    self.renderSynchronizer.rate = 1.0\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "AVQueuePlayer",
+        "url": "https://developer.apple.com/documentation/AVFoundation/AVQueuePlayer"
+      },
+      {
+        "title": "Playing custom audio with your own player",
+        "url": "https://developer.apple.com/documentation/AVFAudio/playing-custom-audio-with-your-own-player"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10238/4/5BA02CFE-52D4-497B-BD99-75E591F41885/downloads/wwdc2023-10238_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10238/4/5BA02CFE-52D4-497B-BD99-75E591F41885/downloads/wwdc2023-10238_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10275",
+      "year": "2023",
+      "title": "Explore AirPlay with interstitials",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10275"
+    },
+    {
+      "id": "10104",
+      "year": "2023",
+      "title": "Integrate your media app with HomePod",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10104"
+    },
+    {
+      "id": "10150",
+      "year": "2023",
+      "title": "Optimize CarPlay for vehicle systems",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10150"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:22:26.512Z"
+}

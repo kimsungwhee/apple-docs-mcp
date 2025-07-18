@@ -1,0 +1,110 @@
+{
+  "id": "10208",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10208/",
+  "title": "Explore Digital Crown, Trackpad, and iPad pointer automation",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC. I'm Jeremy Goldman, an engineer on the XCTest team. In this session, we're going to explore some exciting new ways to interact with devices from UI Tests in Xcode 13. In particular, we're going to focus on three new interactions across three different platforms: the iPadOS Pointer, the watchOS Digital Crown, and the macOS trackpad.\n\nLet's start with the iPadOS Pointer.\n\nIn iPadOS 13.4, Apple introduced mouse and trackpad support, providing users with a brand new way to interact with iPad, using accessories like the Magic Keyboard. Many developers have taken full advantage of this by adding pointer-specific behavior and interactions to their iPad apps, like custom hover animations. In Xcode 13, we're providing a powerful new API for controlling the iPadOS Pointer in UI Tests. This API will enable you to create robust automated tests for multiple types of pointer interactions in your iPad apps and will be available for use with devices running iPadOS 15 and later.\n\nLet's examine this new API in more detail. First, we're adding a new property on XCUIDevice to indicate whether or not a device supports pointer interaction. Next, we're adding new methods on XCUIElement for performing different pointer interactions, like hovering, multiple types of clicking, and two-finger scrolling. We're also adding methods for more advanced click-and-drag use cases as well as a class method for executing blocks of code with one or more modifier keys held down. These methods are also available on XCUICoordinate, if additional precision is required. Let's explore how these new APIs work in practice by creating a new UI Test for a pointer interaction in an iOS app.\n\nIn this demo, I'll be using the Fruta app, which has a sidebar that's initially hidden on launch. I recently added pointer-specific functionality on iPad, where a horizontal two-finger trackpad swipe opens the sidebar. Let's add a UI Test for that. Here I have an empty UI Test class, which is where I'll add my new UI Test.\n\nLet's quickly walk through what this test is doing. It starts by launching the app and then asserting that the sidebar is not initially present on launch. Then it performs a horizontal two-finger trackpad swipe and asserts that the sidebar is now present. One other thing I'd like to point out is this availability attribute I've added on the test method. This is necessary whenever you're using methods that are only available starting with a specific iOS version. In this case, the pointer interaction APIs were introduced in iOS 15.0.\n\nLet's try running the test on the iPad simulator. You can follow along with the cursor indicator, which is the dark circle near the bottom left corner of the screen.  Great! It looks like our test works on iPad. However, this app is also available on iPhone, which does not support pointer interaction. Let's try running this test on the iPhone simulator.  So it appears the test failed with an error message that \"Pointer events are not supported on this device.\" To resolve this, we need to modify our test so that it only executes on devices that do support pointer interaction. We can do this by using XCTSkipUnless with the new supportsPointerInteraction property on XCUIDevice to skip the test on unsupported devices, instead of failing.  Now let's try running the test on the iPhone simulator again.  Perfect. So now this test will be skipped on devices that don't support pointer interaction. Let's talk about some new ways to interact with devices on other platforms, more specifically, watchOS and the Digital Crown. As you may already know, Xcode 12.5 introduced UI Testing support for watchOS apps. This support includes methods newly available on watchOS for synthesizing touch events as well as hardware button events, like clicking the crown.\n\nIn Xcode 13, we're expanding this support with a new method for synthesizing Digital Crown rotation. This method requires just one parameter, the number of rotations, and has an optional velocity parameter to specify the speed at which the crown should be rotated. This velocity parameter has type XCUIGestureVelocity, which means you can either use one of the preset values, like slow, fast, and default, or you can specify a custom decimal value in rotations per second.\n\nLet's see how this new method works in practice.\n\nSay I have a simple weather app for watchOS that displays the current temperature outside. The app has a feature where users can scroll the digital crown forward to see forecasted temperatures at future times or scroll backward to see the recorded temperature at past times.\n\nLet's walk through a basic UI Test that makes sure this crown rotation functionality behaves as expected.\n\nThe test starts by launching the app and then asserting that the forecast time label initially says Current Temperature. Then, we rotate the digital crown one full rotation forward, and assert the label updated to say \"One hour from now.\" After that, we rotate the crown two full rotations backward, and the test finishes by asserting that the label updated to say \"One hour ago.\" Finally, let's talk about the macOS trackpad. More specifically, let's focus on scrolling. Scrolling can be broken down into two different categories: discrete and continuous. Discrete scrolling has precise incremental movement. Think about rotating the scroll wheel on a physical mouse. The on-screen content moves in uniform increments for each tick on the scroll wheel, and the movement is non-inertial, meaning it stops moving immediately when you stop rotating the scroll wheel. On the other hand, continuous, or phased scrolling, has fluid and dynamic movement. Picture swiping with two fingers on a trackpad. The on-screen content scrolls smoothly while you're swiping, and the movement is inertial, meaning it continues moving after you lift your fingers off until it gradually comes to a stop.\n\nXCTest currently provides a scroll method on macOS that enables you to perform discrete pixel-precise scrolling in your UI Tests. This method requires two parameters to specify the exact horizontal and vertical distance in pixels to scroll.\n\nIn Xcode 13, we're introducing new methods for synthesizing continuous or trackpad-like scrolling on macOS. These methods accept an optional velocity parameter to specify the speed at which you'd like to scroll. This velocity parameter has type XCUIGestureVelocity which means, just like in the rotateDigitalCrown method we explored earlier, you can either use the presets or you can specify a custom decimal value in pixels per second.\n\nXcode 13 introduces APIs across multiple platforms to enable automation of new input methods and provide support for more specialized use cases.\n\nUse this new functionality to create UI Tests for pointer-specific interactions in your iPad apps, automate digital crown rotation in your watchOS UI Tests, and perform continuous, trackpad-like scrolling on macOS with the new swipe methods. If you're interested in learning more, make sure to check out these related sessions.\n\nThanks for watching and enjoy the rest of WWDC. [music]",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:28",
+      "title": "New supportsPointerInteraction property on XCUIDevice",
+      "language": "swift",
+      "code": "extension XCUIDevice {\n\n  public var supportsPointerInteraction: Bool\n\n}"
+    },
+    {
+      "timestamp": "1:37",
+      "title": "New methods on XCUIElement and XCUICoordinate for pointer interactions on iOS",
+      "language": "swift",
+      "code": "extension XCUIElement {\n  open func hover()\n\n  open func click()\n\n  open func rightClick()\n\n  open func doubleClick()\n\n  open func scroll(byDeltaX: CGFloat, deltaY: CGFloat)\n\n  open func click(forDuration: TimeInterval, thenDragToElement: XCUIElement)\n\n  open func click(forDuration: TimeInterval, thenDragToElement: XCUIElement,\n                  withVelocity: XCUIGestureVelocity, thenHoldForDuration: TimeInterval)\n\n  open class func perform(withKeyModifiers flags: XCUIElement.KeyModifiers,\n                          block: () -> Void)\n}"
+    },
+    {
+      "timestamp": "2:31",
+      "title": "Empty UI test class",
+      "language": "swift",
+      "code": "import XCTest\n\nclass Pointer_UI_Tests: XCTestCase {\n\n\n\n}"
+    },
+    {
+      "timestamp": "2:43",
+      "title": "UI test for opening the sidebar with a two-finger horizontal trackpad swipe",
+      "language": "swift",
+      "code": "import XCTest\n\nclass Pointer_UI_Tests: XCTestCase {\n\n  @available(iOS 15.0, *)\n  func testHorizontalScrollRevealsSidebar() throws {\n    let app = XCUIApplication()\n    app.launch()\n\n    let sidebar = app.tables[\"Sidebar\"]\n\n    // Make sure sidebar menu is not present initially.\n    XCTAssertFalse(sidebar.exists, \"Sidebar should not be present initially\")\n\n    // Swipe horizontally to reveal sidebar.\n    app.staticTexts[\"Select a smoothie\"].scroll(byDeltaX: -200, deltaY: 0)\n\n    // Verify sidebar is now present.\n    XCTAssertTrue(sidebar.waitForExistence(timeout: 5),\n                  \"Sidebar did not appear within 5 second timeout\")\n  }\n\n}"
+    },
+    {
+      "timestamp": "4:36",
+      "title": "Use the new supportsPointerInteraction property to skip the test on devices that don't support pointer interaction",
+      "language": "swift",
+      "code": "import XCTest\n\nclass Pointer_UI_Tests: XCTestCase {\n\n  @available(iOS 15.0, *)\n  func testHorizontalScrollRevealsSidebar() throws {\n    try XCTSkipUnless(XCUIDevice.shared.supportsPointerInteraction,\n                      \"Device does not support pointer interaction\")\n\n    let app = XCUIApplication()\n    app.launch()\n\n    let sidebar = app.tables[\"Sidebar\"]\n\n    // Make sure sidebar menu is not present initially.\n    XCTAssertFalse(sidebar.exists, \"Sidebar should not be present initially\")\n\n    // Swipe horizontally to reveal sidebar.\n    app.staticTexts[\"Select a smoothie\"].scroll(byDeltaX: -200, deltaY: 0)\n\n    // Verify sidebar is now present.\n    XCTAssertTrue(sidebar.waitForExistence(timeout: 5),\n                  \"Sidebar did not appear within 5 second timeout\")\n  }\n\n}"
+    },
+    {
+      "timestamp": "5:27",
+      "title": "New method on XCUIDevice for Digital Crown rotation on watchOS",
+      "language": "swift",
+      "code": "// New rotateDigitalCrown API\n\nextension XCUIDevice {\n\n  open func rotateDigitalCrown(delta: CGFloat, velocity: XCUIGestureVelocity = .default)\n\n}"
+    },
+    {
+      "timestamp": "6:22",
+      "title": "UI test to verify the app's Digital Crown rotation functionality behaves as expected",
+      "language": "swift",
+      "code": "// Example use of watchOS Digital Crown API\n\nfunc testForecastScrolling() {\n  let app = XCUIApplication()\n  app.launch()\n\n  let forecastTime = app.staticTexts[\"forecast-time\"]\n\n  XCTAssertEqual(forecastTime.label, \"Current Temperature\")\n\n  // Scroll 1 full rotation forward.\n  XCUIDevice.shared.rotateDigitalCrown(delta: 1.0)\n  XCTAssertEqual(forecastTime.label, \"One hour from now\")\n\n  // Scroll 2 full rotations backward.\n  XCUIDevice.shared.rotateDigitalCrown(delta: -2.0)\n  XCTAssertEqual(forecastTime.label, \"One hour ago\")\n}"
+    },
+    {
+      "timestamp": "7:46",
+      "title": "Existing API for performing discrete (mouse wheel-like) scrolling on macOS",
+      "language": "swift",
+      "code": "extension XCUIElement {\n\n  // Use the existing API for discrete (mouse wheel-like) scrolling.\n  open func scroll(byDeltaX: CGFloat, deltaY: CGFloat)\n\n}"
+    },
+    {
+      "timestamp": "8:05",
+      "title": "New API for performing continuous (trackpad-like) scrolling on macOS",
+      "language": "swift",
+      "code": "extension XCUIElement {\n\n  // Use the new API for continuous (trackpad-like) scrolling.\n  open func swipeUp(velocity: XCUIGestureVelocity = .default)\n  open func swipeDown(velocity: XCUIGestureVelocity = .default)\n  open func swipeLeft(velocity: XCUIGestureVelocity = .default)\n  open func swipeRight(velocity: XCUIGestureVelocity = .default)\n\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10208/7/D03FEAA6-4A84-48E0-BC4B-0B194701D23A/downloads/wwdc2021-10208_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10208/7/D03FEAA6-4A84-48E0-BC4B-0B194701D23A/downloads/wwdc2021-10208_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10296",
+      "year": "2021",
+      "title": "Diagnose unreliable code with test repetitions",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10296"
+    },
+    {
+      "id": "10207",
+      "year": "2021",
+      "title": "Embrace Expected Failures in XCTest",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10207"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:43:33.421Z"
+}

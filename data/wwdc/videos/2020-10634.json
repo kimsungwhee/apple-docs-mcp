@@ -1,0 +1,140 @@
+{
+  "id": "10634",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10634/",
+  "title": "Discover search suggestions for Apple TV",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC. Hi my name is Dale Taylor and I'm an engineer on the tvOS team. Today I'm going to talk to you about Search. In tvOS 14, we've made it even better. Here's how search looks in our TV app. We've increased the size of the text in the search field, so it's easy to see what you've typed. And in many languages we've optimized the keyboard layout to one line. That leaves more space for your search results. Some apps like our Music app take advantage of our new search suggestions feature. These suggestions allow you to minimize typing and find what you're looking for even faster. If you're already using UISearchController, you get most of what you've seen here for free. For those of you that aren't, let's review how simple it is to add to your app. Let me show you. We have a simple tab-based app here with photos and videos from travel over the years. As a reminder, tvOS apps work best with a NavigationController as the root view controller that contains a UITabBarController. Let's head to Xcode and look at adding search UI to our app.\n\nFirst let's add a new view controller to go in our tab bar. We can call it SearchViewController. Then we'll set up some basic functionality.\n\nWe can configure a tab bar item. We'll use the search system item because that's the platform convention for indicating a search tab. Now let's add our SearchController. Since we're adding this is a child ViewController, we want to put this in a UI search container view controller. First let's set up some constants to hold our variables. Then we can create instances of our SearchController and SearchContainerViewController. We want to add that as a child view controller as well and viewDidLoad.\n\nTo show our search results we'll need a search results controller. We have one already made named GridViewController with a simple collection view and an 'items' property. Anything we set on the items property will show up in our collection view. Let's start by defining a constant.\n\nThen we can create an instance of this view controller and pass it to our UISearchController.\n\nWe'll also want our search controller to scroll along with our collection view, when we scroll through the search results. searchControllerObservedScrollView in viewDidLoad. We'll want to update the contents of the results of view controller when our search results change. Let's start by making our view controller conform to UISearchResultsUpdating.\n\nThen we can set ourselves as the searchResultsUpdater in viewDidLoad. Then we can handle updates from our search controller and updateSearchResults.\n\nWe can filter out the data and we can set those results on our search results controller. Finally, we can go to our app delegate and we can add our new view controller to our tab bar. Let's give it a try. If I swipe over to search you can see what we built. If we try searching now, we can see it filter our search results. Now let's talk about what we can do to make it even better. You may remember that I mentioned search suggestions earlier. Before I show you how easy they are to implement in our sample app, let me tell you a little bit about how to use them. We've added a new class UISearchSuggestionItem. It's a model that represents the search suggestion in the UI. It supports an image, text and a description for accessibility. To display these you just assign them to the new searchSuggestions property on your UISearchController. If you have your own object, feel free to use that as well, as long as it conforms to the UISearchSuggestion protocol. Here's an example of how you'd use it. You can just create UISearchSuggestionItems with the optional properties, and assign an array of suggestions to the search controller. Now that you know how to add search suggestions to your search controller, how do you make them update dynamically? You'll use the UISearchResultsUpdating protocol that I mentioned earlier in the demo. You'll recall that this gets assigned to the searchResultsUpdater property on UISearchController. In the demo we used this protocol to handle text input updates with updateSearchResultsForSearchController. We used the search term from the search bar to query our data source. We've extended this protocol in tvOS14 to handle search suggestions. When someone using the app selects a search suggestion, you can respond to it in updateSearchResultsForSearchController:sel ectingSearchSuggestion: This is useful because the search suggestion can contain more information than just the search term. For instance, you could use the suggestion's image to differentiate between content types. Now that I've given you a brief overview of how search suggestions work, let me show you how to add them to our sample project where we integrated search. Our datasource has the capability of giving us suggested search results. Let's start by making our SuggestedEntry conform to UISearchSuggestion.\n\nWe can define properties for the localizedSuggestion an iconImage. And we'll fill out a description for accessibility as well.\n\nYou'll notice that for our icon image. We're returning a different image whether it's a video or photo - that way we can see that in our suggestion when it's on screen. Now we can go back to our searchController and display these suggestions in our search UI. All we have to do is assign them to the searchSuggestions property when the input changes. We can fill in our empty parameter for suggestions, and then we can assign the suggestions to our searchController.\n\nIf no one's typed anything, we don't need any suggestions, so we'll assign an empty array.\n\nNow let's run our app and see how it looks.\n\nIf we navigate over to the search tab and start typing, we can see the suggestions populate as we type. Let's see what happens if I click on a suggestion. Hmm. I clicked on the suggestion for videos named blue, so I shouldn't have any photos in my search results. No problem, that's an easy fix. Let's head back to our searchController. We can adopt the new method in UISearchResultsUpdating to handle the SearchSuggestion being selected.\n\nThen we can check to see if our suggestion was for a video suggestion.\n\nIf it was, we'll update our search results accordingly.\n\nWe can navigate back to the search tab, start typing blue and select our suggestion for blue video. You'll notice that now we only see videos when selecting that suggestion. That's exactly what we wanted. We've worked hard to make UISearchController as easy to use as possible, but here are a few suggestions to help make sure people using your app have the best experience. Our keyboard is highly adaptable to various languages and input methods. You should consider this when laying out your search results. Here are a few examples of alternate layouts. For people using IR remotes, we'll display a grid keyboard. While typing, the search results will only occupy some of the screen width, and then they'll slide in to fill the screen when focused. When the system language is set to Thai, we use a three line keyboard layout to provide the best input experience. Keep this in mind when sizing search results because not as many will fit on-screen. You should also try to avoid covering the keyboard with your own UI, even in the borders outside the safe area. It will likely lead to focus issues and we don't recommend doing it. If you need to differentiate between types of content in search suggestion items, use symbol images. It's a great way to present more information in limited space. Our library of SF symbols will work great for these suggestions. Today we've shown you the improvements we've made to UISearchController in tvOS 14 and how easy it is to adopt. You saw how you can integrate search suggestions to make searching even faster. If you follow the best practices we've shown you here, your customers will have a great search experience in your app.\nThanks and enjoy the rest of the conference.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:40",
+      "title": "SearchViewController init",
+      "language": "swift",
+      "code": "private let appData: AppData\n\ninit(appData: AppData) {\n    self.appData = appData\n    \n    super.init(nibName: nil, bundle: nil)\n}\n\nrequired init?(coder: NSCoder) {\n    fatalError(\"init(coder:) has not been implemented\")\n}"
+    },
+    {
+      "timestamp": "1:51",
+      "title": "Search Tab Bar Item",
+      "language": "swift",
+      "code": "// use the system standard search tab bar item\ntabBarItem = UITabBarItem(tabBarSystemItem: UITabBarItem.SystemItem.search, tag: 0)"
+    },
+    {
+      "timestamp": "2:05",
+      "title": "SearchController and SearchContainerViewController Definition",
+      "language": "swift",
+      "code": "private let searchController: UISearchController\nprivate let searchContainerViewController: UISearchContainerViewController"
+    },
+    {
+      "timestamp": "2:11",
+      "title": "SearchController and SearchContainerViewController Initialization",
+      "language": "swift",
+      "code": "self.searchController = UISearchController(searchResultsController: self.searchResultsController)\nself.searchContainerViewController = UISearchContainerViewController(searchController: searchController)"
+    },
+    {
+      "timestamp": "2:16",
+      "title": "viewDidLoad - Add Child View Controller",
+      "language": "swift",
+      "code": "override func viewDidLoad() {\n    addChild(searchContainerViewController)\n    \n    searchContainerViewController.view.frame = view.bounds\n    view.addSubview(searchContainerViewController.view)\n    searchContainerViewController.didMove(toParent: self)\n}"
+    },
+    {
+      "timestamp": "3:17",
+      "title": "Set searchControllerObservedScrollView",
+      "language": "swift",
+      "code": "// scroll search controller allong with results collection view\nsearchController.searchControllerObservedScrollView = searchResultsController.collectionView"
+    },
+    {
+      "timestamp": "3:43",
+      "title": "Assign searchResultsUpdater",
+      "language": "swift",
+      "code": "searchController.searchResultsUpdater = self"
+    },
+    {
+      "timestamp": "4:00",
+      "title": "Implement updateSearchResults",
+      "language": "swift",
+      "code": "func updateSearchResults(for searchController: UISearchController) {\n    if let searchText = searchController.searchBar.text {\n        // get search results for 'searchText' from data source\n        let (results, _) = appData.searchResults(seachTerm: searchText, includePhotos: true, includeVideos: true)\n        \n        searchResultsController.items = results\n    } else {\n        // no search text, show unfiltered results\n        searchResultsController.items = appData.allEntries\n    }\n}"
+    },
+    {
+      "timestamp": "4:16",
+      "title": "Create Instance of SearchViewController",
+      "language": "swift",
+      "code": "let searchViewController =  SearchViewController(appData: appData)"
+    },
+    {
+      "timestamp": "5:30",
+      "title": "UISearchSuggestionItem Example",
+      "language": "swift",
+      "code": "let suggestion1 = UISearchSuggestionItem(localizedSuggestion: \"Result1\", localizedDescription: \"Result1\", iconImage: nil)\nlet suggestion2 = UISearchSuggestionItem(localizedSuggestion: \"Result2\", localizedDescription: \"Result2\", iconImage: nil)\n\nsearchController.searchSuggestions = [suggestion1, suggestion 2]"
+    },
+    {
+      "timestamp": "7:05",
+      "title": "Implement UISearchSuggestion Properties",
+      "language": "swift",
+      "code": "var localizedSuggestion: String? {\n    return self.name\n}\n\nvar iconImage: UIImage? {\n    return self.isVideo ? UIImage(systemName: \"video\") : UIImage(systemName: \"photo\")\n}"
+    },
+    {
+      "timestamp": "7:20",
+      "title": "Implement Accessibility Description",
+      "language": "swift",
+      "code": "var localizedDescription: String? {\n    if (self.isVideo) {\n        return String.localizedStringWithFormat(NSLocalizedString(\"%@ - Video\", comment: \"\"), self.name)\n    }\n    return String.localizedStringWithFormat(NSLocalizedString(\"%@ - Photo\", comment: \"\"), self.name)\n}"
+    },
+    {
+      "timestamp": "9:01",
+      "title": "Add new UISearchResultsUpdating",
+      "language": "swift",
+      "code": "func updateSearchResults(for searchController: UISearchController, selecting searchSuggestion: UISearchSuggestion) {\n    if let searchText = searchController.searchBar.text {\n        var includePhotos = true;\n        var includeVideos = true;\n        \n        \n    }\n}"
+    },
+    {
+      "timestamp": "9:13",
+      "title": "Inspect Suggestion",
+      "language": "swift",
+      "code": "// check if the suggestion is for a photo or video\nif let suggestedEntry = searchSuggestion as? SuggestedEntry {\n    includeVideos = suggestedEntry.isVideo\n    includePhotos = !includeVideos\n}"
+    },
+    {
+      "timestamp": "9:21",
+      "title": "Filter Results",
+      "language": "swift",
+      "code": "// filter the results by to include photos, videos, or both\nlet (results, _) = appData.searchResults(seachTerm: searchText, includePhotos: includePhotos, includeVideos: includeVideos)\n            \nsearchResultsController.items = results"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Human Interface Guidelines: Designing for tvOS",
+        "url": "https://developer.apple.com/design/human-interface-guidelines/designing-for-tvos"
+      },
+      {
+        "title": "UISearchController",
+        "url": "https://developer.apple.com/documentation/UIKit/UISearchController"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10634/4/F7B5D94B-69EE-4ABC-86AF-2354D9C93060/wwdc2020_10634_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10634/4/F7B5D94B-69EE-4ABC-86AF-2354D9C93060/wwdc2020_10634_sd.mp4?dl=1"
+  },
+  "extractedAt": "2025-07-18T09:25:24.258Z"
+}

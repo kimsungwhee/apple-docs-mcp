@@ -1,0 +1,73 @@
+{
+  "id": "10116",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10116/",
+  "title": "Explore multiview video playback in visionOS",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video",
+    "Design"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, my name is Eric, and I’m a media experience software engineer. This talk will go over how to bring simultaneous video watching to your app using the newly available multiview architecture.\n\nLet's review what comprises an immersive media viewing experience on VisionOS. Things like spatial audio, 3D video, and a large screen backed by immersive environments are just some of the incredible experiences available on this system.\n\nThese features and more are all made possible by powerful frameworks that themselves continue to improve. AVFoundation handles all the work of playing movies, including 2D and 3D content. On visionOS, AVFoundation interfaces with RealityKit to render performantly and with high quality video and spatial audio. AVKit leverages AVFoundation and RealityKit, as well as UI frameworks and platform-specific capabilities to create a playback experience tailored to the platform. AVKit and in particular AVPlayerViewController offers a familiar user interface, integrates with many other system features and continues to enhance video viewing capabilities. On visionOS, presenting AVPlayerViewController offers many unique capabilities, one of which is multiview.\n\nFirst, I'll introduce multiview and show you a great way to present multiple video screens for simultaneous viewing on visionOS.\n\nAfter that, I'll talk about core concepts in multiview and how to leverage them to build a great multiview experience.\n\nImagine, I might want to watch a few of my favorite streamers at once, or I might have two sports games I want to keep an eye on at the same time. Maybe the content I'm watching has multiple available camera angles, and I want that enhanced perspective.\n\nFor use cases like these, and more, AVKit offers multiview: a system-integrated viewing experience that is also customizable to the application. Let me show you the potential of multiview.\n\nHere I'm watching content on a large screen, made easy with AVPlayerViewController.\n\nNotice the new multiview button in the top left. This informs me there's other related content I may want to watch. I tap the multiview button to reveal a content browser fully vended by the app, where I can scroll to see what's available.\n\nThis one looks interesting.\n\nNow I'm watching side-by-side in multiview. Notice how the two screens cast light effects on their surroundings, a nice effect that builds on what happens in single playback. The original video has main focus, which includes a slightly more prominent look and audio playback. When I close the content browser, I get the familiar media playback controls and the main-focus video responds directly to these controls. I can pause, or scrub, and adjust other settings, like volume.\n\nI can tap the other video to change main focus, and its audio takes over.\n\nSome settings apply to the group, for instance, volume is the same wherever I move focus. Other settings, like playback speed, affect only the video I set them on.\n\nI can add more content. I'll tap the multiview button in the playback controls to bring back the content browser.\n\nNotice the progression as I add videos, and how the browser responds by showing my choices. Multiview allows up to five video screens at once, with layout templates that maximize comfort and viewability.\n\nTo remove a video, I can tap the close button on its screen, or I can remove it using the browser. If I want to change the layout, I drag, and the video responds within the layout template to indicate where it will land.\n\nLet's bring this video to the center.\n\nBringing it all together, I can add or remove, arrange, reposition, and even resize to get exactly the viewing experience I want.\n\nAnd I can easily go back to a single video. Here, all the behaviors and features I described, like light casting, playback controls, and resizing continue to work in the same familiar way. Multiview has added a lot to the experience, while keeping everything intuitive and familiar. Multiview is a highly customizable feature. Let's go over how to design a compelling and intuitive multiview experience.\n\nFirst, we'll discuss some of the key concepts involved in multiview.\n\nWe'll use these concepts to code elements of a multiview-enabled app.\n\nLast, we'll discuss best practices when adding multiview to an app.\n\nEvery video screen that appears in a multiview experience is backed by an individual AVPlayerViewController.\n\nAs player view controllers are added to multiview, their screens are laid out together in a way that maximizes viewing comfort and ergonomics.\n\nLet's examine a single AVPlayerViewController. It has a new counterpart, AVExperienceController. This controller defines the set of possible video playback experiences that its parent player view controller can switch between. Example experiences are embedded, where video appears alongside other app content, or expanded, where the video screen appears alone, as diagramed here.\n\nEach AVExperienceController can specify its own set of allowed experiences. Adding multiview as an allowed experience enables a multiview button in the corresponding player view controller's UI. When a person taps that button, the experience controller transitions to a multiview experience. At this point a content selection browser appears, indicating the start of that experience.\n\nThis view is customizable. Provide a content browser view controller to manage the available content, and to vend the UI that interacts with that content. Attach this view controller to AVMultiViewManager. AVMultiViewManager takes care of many details, for example it makes the content browser available when needed. It also tracks which experience controllers have transitioned to multiview and maintains the layout of video screens.\n\nFundamentally, the browser view controller and AVMultiViewManager work cooperatively to add or remove content in the ongoing multiview experience.\n\nFor example, when a person picks additional content via the browser UI, signal the browser view controller to create another AVPlayerViewController to play that content. Use its experience controller to transition to the ongoing multiview experience. AVMultiViewManager tracks the set of experience controllers that enter multiview and updates the video screen layout accordingly. Let's see how this works in code.\n\nFirst, define a custom browser view controller, along with its core responsibilities: Managing the available content for multiview, as well as supplying the UI for selecting that content. Place it on AVMultiViewManager. Set it early on, so the multiview manager can activate the browser UI whenever needed.\n\nWhen a person selects content via the browser, adding it to multiview is straightforward. Create a new AVPlayerViewController, and set it up to play the chosen content. Access its AVExperienceController and add multiview to the allowed experiences. Note that the AVPlayerViewController has been created but its view is not yet in the view hierarchy. In this moment, its experience controller is in a default experience for the platform. To bring it into multiview, transition the experience controller. The multiview manager takes over from there.\n\nWhen a person removes content via the browser, follow a similar pattern. In that case, the experience controller for that content is already in multiview, so transition it to another allowed experience. Here embedded is used. If the corresponding AVPlayerViewController was not previously installed in a view hierarchy, the multiview manager will simply make it disappear.\n\nWhile the content browser is the primary way for someone to add or remove multiview content, it's not the only way. The app handles events that originate outside of the content browser using AVExperienceController's delegate.\n\nUse the delegate to react to transition changes. The delegate receives transition events however they occur, and these include context about each transition's progress. For example, when the multiview button of a single-screen AVPlayerViewController is tapped its ExperienceController will transition to multiview; the delegate is informed so the app can react to the start of multiview.\n\nAnother example is how a person may remove multiview content by tapping one of the video screens, or even exit multiview entirely via the playback controls. The delegate receives these transition events to allow maintaining consistency between app state and what the multiview manager does.\n\nThe delegate also has the option to complete additional work before a transition can begin. This is an opportunity for the app to prepare state, show or hide any relevant UI, and generally prepare for a smooth transition.\n\nFor more on how to implement a multiview experience, refer to the documentation. Let's go over some best practices when using multiview in an app. Multiview as a feature requires some careful thought. Several screens at once is a lot going on, and could be overwhelming for someone not expecting it. Supporting graceful progression is key to a pleasant multiview experience. In particular, allow the person to decide how much to watch at one time. Start out with the familiar single watch experience. For someone who wants to take it up a notch, suggest multiview using the standard button offered by AVPlayerViewController. That person may, after exploring multiview options, still prefer a single screen. In that scenario, provide an equally good experience.\n\nWhen it comes to content, consider the use case. Multiview is ideal for watching simultaneous content, with primary emphasis on one piece of content. It is not ideal for something like watching a series of TV show episodes, for that, consider AVQueuePlayer. In general, if there is no strong use case for multiview, consider exploring other AVKit options for just the right experience.\n\nNow, let's talk about content browsing. The content browser is the primary means to add and remove content. It can be engaging, but it should be intuitive, so people know what to expect and can get to watching what they want.\n\nAn intuitive content browser encourages interacting with multiple video screens by conveying information clearly and actively responding to choices.\n\nDescribe each piece of content succinctly with a title and thumbnail preview of the content. The browser area is limited relative to the video screens, so minimize decorations and focus on elements that facilitate identification.\n\nStylize the browser as a whole to fit the rest of the experience. For example, aim for aspect-correct thumbnails that match the content when it plays. Also, match accent colors where appropriate. Over-emphasizing it or its choices may just hamper the overall experience.\n\nHighlight current selections prominently. A person may be watchingonly a small subset of the available content, so help them to identify in the browser which content is onscreen. However, keep in mind that rearranging content too aggressively in the browser, or crowding the limited space, could hinder the person's ability to navigate and choose.\n\nIf your app relies on an immersive media experience, I highly encourage you to check out what AVKit has to offer. AVKit continues to improve on its rich feature set of media playback capabilities. Multiview is a great example of how leveraging AVKit can bring on an enhanced experience for an application, or even all new possibilities. And Multiview is powerful. As with other aspects of AVKit, it is a combination of optimizations for smooth playback, commitment to delivering a familiar and intuitive viewing experience across platforms, and customizability to fit application needs. I'm very excited to see what you build with it.\n\nThanks for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "7:47",
+      "title": "Supply a custom browser view controller",
+      "language": "swift",
+      "code": "import AVKit\n\nAVMultiViewManager\n\t.default\n\t.contentSelectionViewController = multiViewController()"
+    },
+    {
+      "timestamp": "8:09",
+      "title": "Add content to multiview",
+      "language": "swift",
+      "code": "import AVKit\n\nlet controller = AVPlayerViewController()\n\nlet experienceController = controller.experienceController\nexperienceController.allowedExperiences = .recommended(including: [.multiView])\n\nawait experienceController.transition(to: .multiView)"
+    },
+    {
+      "timestamp": "8:47",
+      "title": "Remove content from multiview",
+      "language": "swift",
+      "code": "import AVKit\n\nlet experienceController = …\n\nawait experienceController.transition(to: .embedded)"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Forum: Media Technologies",
+        "url": "https://developer.apple.com/forums/topics/media-technologies?cid=vf-a-0010"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10116/4/E50DFC91-1CB7-4E9B-B204-72EA322434D8/downloads/wwdc2024-10116_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10116/4/E50DFC91-1CB7-4E9B-B204-72EA322434D8/downloads/wwdc2024-10116_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10070",
+      "year": "2023",
+      "title": "Create a great spatial playback experience",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10070"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:21:58.374Z"
+}

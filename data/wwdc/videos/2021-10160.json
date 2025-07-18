@@ -1,0 +1,286 @@
+{
+  "id": "10160",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10160/",
+  "title": "Capture and process ProRAW images",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Graphics & Games"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Bass music playing ♪  ♪ David Hayward: Hi, my name is David Hayward, and I'm an engineer with the Core Image team.\n\nToday, my colleagues Tuomas Viitanen, Matt Dickoff, and I will be giving a detailed presentation that will show you everything you need to know about the ProRAW image format and how add support for it to your application.\n\nHere’s what we will discuss today.\n\nFirst, I will describe what makes up a ProRAW file.\n\nNext, we will discuss how to capture these files, how to store them in a photo library, and how to edit and display them.\n\nLet’s start with, What is a ProRAW? For some time, Apple devices have been able to fully leverage our Image Signal Processor to capture beautiful HEIC or JPEG images that are ready for display.\n\nThen starting in iOS 10, we supported capturing Bayer-pattern RAW sensor data and storing that in a DNG file.\n\nThe differences and advantages of these two approaches was well-described in the WWDC 2016 session titled “Advances in iOS photography”.\n\nThat presentation used a great analogy to describe the two formats.\n\nA processed HEIC or JPEG is like going to a bakery and ordering a multilayer cake.\n\nWhereas a Bayer-pattern RAW file is like going to the grocer and getting the raw ingredients to make a cake.\n\nThe advantage of processed HEIC or JPEGs are that you get a final image baked by Apple.\n\nIt is fast to display and has great quality because it is made by fusing multiple capture frames using Smart HDR, Deep Fusion, or Night mode.\n\nAlso, it has a small file size because it uses advanced lossy compression.\n\nThe advantage of Bayer RAW is that you get an image that has much greater flexibility for editing.\n\nIt has not been saved using lossy compression, and it has more bits of precision.\n\nOur goal with ProRAW was to establish an image format with the best features of both.\n\nThe advantage of ProRAW is that it has a similar look to HEIC but uses lossless compression.\n\nAlso, depending on the scene, it is fused from multiple exposures, so it has great dynamic range for editing.\n\nBecause they are low noise and already demosaiced, they are reasonably fast to display.\n\nThe ProRAW format is designed to maximize three properties: compatibility, quality, and look.\n\nLet's discuss each of these in some more detail.\n\nIn order to ensure compatibility, the ProRAW files are contained in a standard Adobe DNG file.\n\nThe linearized DNG file format is supported by Apple apps such as Photos, Adobe apps such Lightroom, and many others.\n\nMany apps get support automatically via the system frameworks, ImageIO, and Core Image.\n\nEarlier versions of iOS and macOS also have basic support for the format.\n\nAnd it is also worth mentioning that the files can contain full resolution, JPEG-quality prerendered previews.\n\nAll ProRAWs captured by Camera app will contain these previews which will look identical to the image if it had been taken without ProRAW mode enabled.\n\nThe quality of a ProRAW file is quite impressive.\n\nThe pixels in the DNG are scene-referred and linearizable, may be generated from multiple demosaiced exposures combined with image fusion, losslessly compressed 12-bit RGB; but we create these bits through an adaptive companding curve so we can achieve up to 14 stops of dynamic range.\n\nThe resulting file sizes can range from 10 megabytes to 40 megabytes, but that size will scale based on the unique scene of each photo.\n\nApple goes to great effort tuning the quality of our images.\n\nProRAW images have a default look that is consistent with the look of our HEICs and JPEGs.\n\nThis is achieved by embedding special tags in the DNG file.\n\nThese tags are documented in the DNG spec and provide the recipe for how to render the default look of each image.\n\nThe first tag applied is the LinearizationTable which decompands the 12-bit stored data to linear scene values.\n\nWe use the BaselineExposure tag because ProRAW images adapt to the dynamic range of the scene.\n\nThe BaselineSharpness tag allows us to specify how much edge sharpening to apply by default.\n\nThe ProfileGainTableMap tag -- which is new in the DNG 1.6 spec -- allows us to describe how the adjust the bright and shadow regions.\n\nLastly, is the ProfileToneCurve that specifies the output global tone curve.\n\nAll of these tags are unique to each image.\n\nBecause they provide the recipe and not the cake, the image remains highly editable.\n\nFor example, the default sharpness, or tone curves, can be altered at any time.\n\nLastly, when present in the scene, we store semantic masks in the ProRAW for regions such a people, skin, and sky.\n\nSo now that we know what makes up a ProRAW, I would like to introduce Tuomas who will describe how to capture them.\n\nTuomas Viitanen: Thank you, David.\n\nMy name is Tuomas Viitanen.\n\nI'm an engineer in the Camera Software team, and I will guide you through how you can capture Apple ProRAWs with your application.\n\nAVFoundation Capture APIs provide you with access to camera on iOS and MacOS.\n\nThey allow you to stream live preview and video, capture photos, and record movies, among many other things.\n\nAnd as a recent addition, we added support to capture photos in the new Apple ProRAW DNG format.\n\nA good source of information on the basic use of the AVFoundation Capture APIs are Advances in iOS Photography talk from WWDC 2016 that explains how to use the AVCapture photo output and AVCam sample code that is an example of a simple camera capture application.\n\nNext, we'll look at the Apple ProRAW capture in detail.\n\nBut first, let's take a quick look at where Apple ProRAW is supported.\n\nA good starting point for that is to do a comparison with the existing Bayer RAW support.\n\nBayer RAW was introduced in iOS 10 and is supported on a wide range of devices.\n\nApple ProRAW was introduced in iOS 14.3 and is supported on iPhone 12 Pro and iPhone 12 Pro Max.\n\nApple's own Camera application supports Apple ProRAW capture with all fusion captures, like Deep Fusion and Night mode, as well as with flash captures.\n\nApple ProRAW allows photo-quality prioritization to be set to .balanced and .quality, which allows you to get the benefit of Apple image fusion to your RAW captures.\n\nWhile Bayer RAW is only supported on single-camera AVCaptureDevices, like wide and tele.\n\nApple ProRAW is supported on all devices, including dual wide-, dual-, and triple-camera devices that seamlessly switch between cameras when zooming.\n\nSimilar to Bayer RAW, Apple ProRAW does not support depth data delivery nor content aware distortion correction.\n\nLive Photo capture is only supported with Bayer RAW but portrait effects matte and semantic segmentation skin and sky mattes are only supported with ProRAW.\n\nSo, let's go through how you can capture Apple ProRAWs.\n\nThe items we cover are: how to set up your capture device and capture session, how to set up your photo output, how to prepare your photo settings for the ProRAW capture, and what options you have after you capture a ProRAW photo.\n\nLet's start from setting up the session.\n\nApple ProRAW is only supported on the formats that support the highest quality photos.\n\nYou will get that by setting the capture sessionPreset to .photo.\n\nOr if you would like to select the device format manually, you can find the formats that support the highest quality stills.\n\nNote that this is different from high quality stills, which is supported on a broader set of formats.\n\nAnd then simply configure the desired format to be the activeFormat of the device.\n\nIn this example and later, I'm simply using the first index from the list of supported items, but you'll want to replace this with a selection that's based on criteria that works best for your application.\n\nNow, let's look how you can configure the photo output for the ProRAW capture.\n\nFirst, you need to enable ProRAW on the photoOutput.\n\nBe sure to do that already before starting the session, as it will otherwise cause a lengthy pipeline reconfiguration.\n\nSetting this property to true prepares the capture pipeline for ProRAW captures, and adds the ProRAW pixel formats to the list of supported RAW photo pixel format types.\n\nIf you like, you can also indicate to the capture pipeline whether you prefer speed or quality with your captures, or if you just like a balance between the two.\n\nMore info on the effect of photo-quality prioritization to the captured photos can be found from the Capture high-quality photos using video formats talk.\n\nAnd next, we'll look how you can prepare for the capture.\n\nTo be able to create photo settings for your ProRAW capture, you need to select a correct RAW pixel format.\n\nYou get the supported RAW pixel formats from the same availableRawPhoto PixelFormatTypes that gives you the supported Bayer RAW formats.\n\nYou can distinguish the ProRAW formats from the BayerRAW formats using the new isAppleProRAWPixelFormat class method on the photoOutput.\n\nAn example of a ProRAW pixel format is l64r that's a 16-bit full range RGBA pixel format.\n\nFor reference, you can also query whether a format is a Bayer RAW format using isBayerRAWPixelFormat class method.\n\nNext, we'll go through some of the options you have for capturing Apple ProRAW and, optionally, a fully rendered process photo along with it.\n\nThe first and simplest option of capturing ProRAW is to request only the ProRAW photo.\n\nTo do that, you can simply specify the rawPixelFormatType when creating the photoSettings.\n\nThis gives you a single asset which is simple to work with and store to photo library like Matt will later show you.\n\nIt's also possible to capture a pair of processed photo and ProRAW similar to what you can do with Bayer RAW by providing also the processedFormat for the photoSettings.\n\nBut this requires you to work with multiple assets, and it's also harder to keep track of them in the photo library.\n\nLuckily, Apple ProRAW supports up to a full-resolution JPEG image as thumbnail, and in many cases, this gives you the best of the previous two options.\n\nTo request a thumbnail, you can select the desired format from availableRawEmbedded ThumbnailPhotoCodecTypes and specify the desired thumbnail dimensions.\n\nNow you're almost ready to capture a ProRAW photo.\n\nBut before that, if you like, you can specify the photo-quality prioritization for this capture.\n\nNote that the value you specify here must be less than or equal to the maxPhotoQualityPrioritization you specified previously on the photoOutput.\n\nYou can also request up to a display-sized preview image if you would like to have something to show for the clients quickly after the capture.\n\nAnd then you can capture the ProRAW photo using the same capturePhoto method that's used for all other still captures as well.\n\nNow that the still capture is on the way, let's take a look what you can do when the requested photo is ready.\n\nWhen the photo is fully processed, your didFinishProcessingPhoto delegate will be invoked with an AVCapturePhoto representing the ProRAW photo.\n\nIf you requested a preview image for the capture, you can now get the pixel buffer with uncompressed preview image or a CGImageRepresentation of that to show on the display.\n\nAnd in case you requested a processed photo along with the ProRAW, your didFinishProcessingPhoto delegate will be invoked twice.\n\nYou can distinguish the ProRAW from the processed photo using isRawPhoto property on the received AVCapturePhoto.\n\nAnd then you can simply request the fileDataRepresentation for the ProRAW to save the DNG to the photo library.\n\nOr optionally, get a pixel buffer with the RAW pixel data if you prefer to work with that.\n\nLike David mentioned earlier, the ProRAW DNG may include semantic segmentation mattes.\n\nThe inclusion of these mattes is automatic and scene dependent.\n\nWhile the mattes are currently not available through the AVFoundation Capture APIs, you can retrieve them through Core Image and ImageIO APIs like David will later show you.\n\nAnd finally, we'll look at some customization options you have with the ProRAW DNG.\n\nYou can customize the ProRAW by implementing the AVCapturePhotoFileData RepresentationCustomizer delegate methods.\n\nBy implementing replacementAppleProRAW CompressionSettings, you can change the compression bit depth and quality of the ProRAW photo.\n\nThe Apple ProRAW is encoded losslessly by default using 12 bits with a companding curve.\n\nYou can change the bit depth of the losslessly compressed ProRAW by keeping the quality level at 1 and providing the desired bit depth with the customizer.\n\nThis saves storage space but still keeps the high quality of the ProRAW photo.\n\nIn case you prefer a lossy compression, you can set the quality level to below 1, in which case ProRAW is compressed automatically using 8-bit lossy compression.\n\nThis gives you a small file size, but does have a clear impact on the quality of the ProRAW photo.\n\nNow that you have implemented the customizer, you can request customization for the captured ProRAW DNG in your didFinishProcessingPhoto delegate.\n\nBy creating the customizer and providing that for fileDataRepresentation, you will get the customized ProRAW back with the compression settings you just provided.\n\nThat was the introduction to the Apple ProRAW capture using AVFoundation Capture APIs.\n\nI'll hand it over to Matt who will tell you more about Apple ProRAW and photo library.\n\nMatt? Matt Dickoff: Thanks, Tuomas! Hello! My name's Matt Dickoff, and I'm an engineer on the Photos team.\n\nI'll be walking you through how to first save the ProRAW file you've just captured as a complete asset in the photo library.\n\nThen, we'll step through how to fetch RAWs that already exist in the photo library.\n\nPhotoKit is a pair of frameworks used to interact with the photo library on Apple Platforms.\n\nIt was first introduced in these releases and has seen improvements and additions since then.\n\nNotably, it has support for RAW image formats like Apple ProRAW.\n\nToday I'll only be covering the specific APIs that deal with RAWs in the photo library.\n\nIf you still have questions about PhotoKit after this presentation, I encourage you to take a look at the online developer documentation.\n\nIn order to save a new asset, we'll need to perform changes on the shared PHPhotoLibrary.\n\nAs with saving any asset, the change we'll be making is a PHAssetCreationRequest, and we'll be adding our Apple ProRAW file to this asset as the primary .photo PHAssetResource.\n\nSo let's see what the code for that looks like.\n\nFirst, we start by performing changes on the shared photo library.\n\nWe'll simply make a PHAssetCreationRequest and then add the Apple ProRAW file to it as the primary photo resource.\n\nAnd that's it! Just handle the success and error as your application sees fit.\n\nNow that we know how to add assets to the photo library, let's take a look at how we can fetch them back, including RAW assets that the user may already have in their library.\n\nI'm happy to say that in iOS 15, we've provided a new PHAssetCollectionSubtype, .smartAlbumRAW.\n\nWith this smart album, you can easily get a collection that contains all the assets in the photo library that have a RAW resource.\n\nThis album is the same RAW album that you see in the Apple Photos app.\n\nNow that we have some PHAssets with RAW resources, let's take a look at what it takes to actually get at those resources.\n\nFirst, we'll want to get all the PHAssetResources for a PHAsset.\n\nNext, we'll be looking for two different types of resource: the .photo we talked about previously, and additionally, .alternatePhoto.\n\nI want to take a brief moment to explain what .alternatePhoto is.\n\nSome photo libraries will contain assets that follow the old RAW plus JPEG storage model that some DSLR cameras use.\n\nThis requires storing the RAW and a JPEG as two distinct resources; the JPEG as the photo and the RAW as the alternate photo.\n\nThis leads to an increased file footprint in the photo library, less portability, and often a confusing user experience.\n\nThis model is not recommended for Apple ProRAW.\n\nIf your intent is to save a ProRAW file to the photo library, you should use the capture settings to embed a full-size JPEG preview in the file.\n\nNow, back to our resources.\n\nWe'll be checking the uniformTypeIdentifier of the resource to see if it conforms to a RAW type that we are interested in.\n\nAnd finally, once we have a RAW resource, we'll use the PHAssetResourceManager to retrieve the actual data.\n\nNow let's take a look at that in code.\n\nFirst, we iterate through all the PHAssetResources on an asset, look for any that are .photo or .alternatePhoto type, check that they conform to the RAW image UTType, and finally use the PHAssetResourceManager to request the data for that resource.\n\nAnd that's it! You now know how to use PhotoKit to both save and retrieve assets with RAW resources from the photo library.\n\nNow I'm going to hand it back to David who will talk about how best to edit and display Apple ProRAW images.\n\nDavid: Thank you, Matt.\n\nThe last section of our talk today will be about how to use the Core Image framework to edit and display ProRAW images.\n\nI will describe how to create CIImages from a ProRAW file; how to apply the most common user adjustments; how you can turn off the default look to get linear, scene-referred values; how to render edits to output-referred formats such as HEIC; and finally, how to display ProRAWs to a Mac with an Extended Dynamic Range display.\n\nGetting a preview image from a ProRAW is possible using the CGImageSourceCreateWithURL and CGImageSourceCreate ThumbnailAtIndex APIs.\n\nNew in iOS 15 and macOS 12, Core Image has added a new convenience API to access the preview.\n\nGetting semantic segmentation mattes such as person, skin, and sky is supported by passing the desired option key when initializing the CIImage.\n\nThis too has a new and more convenient API to access the optional matte images.\n\nMost importantly, your application will want to get the primary ProRAW image.\n\nIf your application just wants to show the default rendering look, all you need to do is create an immutable CIImage from a URL or data.\n\nHowever, if your application wants to unlock the full editability of ProRAWs, then create a CIFilter from the URL.\n\nIf you just ask that filter for its outputImage, you will get a CIImage with a default look.\n\nThe key advantage of this API is that the filter can be easily modified.\n\nThe RAW CIFilter has several inputs that your application can change to produce new outputImage.\n\nThe basic code pattern is to set a value object for one of the documented key strings.\n\nThis setValue forKey API was due for an update though.\n\nSo new in iOS 15 and macOS 12, we have created a more discoverable and Swift-friendly API.\n\nTo use the new API, create a CIRAWFilter instance and then just set the desired property to a new value.\n\nNext, let’s discuss what properties you might want to change.\n\nGiven the dynamic range of ProRAW images, one of the most important controls to provide is exposure.\n\nYou can set this value to any float.\n\nFor example, set it to positive 1 to make the image twice as bright or negative 1 to make it half as bright.\n\nBecause ProRAWs are edited in a linear scene-referred space, adjusting the image white balance is more effective.\n\nThe scene neutral can be specified as a temperature in degrees kelvin, or as an x/y chromaticity coordinate.\n\nThe default sharpness of a ProRAW look can be adjusted to any value from zero to one.\n\nAnd the strength of ProRAW local tone map can be adjusted to any value from zero to one.\n\nThe local tone map allows for each region of the image to have its own optimized tone curve.\n\nHere is an example of a ProRAW image with a local tone map strength turned to fully off...\n\nand at half strength...\n\nand fully on.\n\nIn this image, the local tone curves bring up the darker regions and bring down the brighter areas so as to present the best possible result on a Standard Dynamic Range display.\n\nNext, let’s discuss how your application can get direct access to the 14 stops of linear scene-referred data.\n\nMost users will prefer the common adjustments I described earlier, but access to linear data can be very useful for certain application cases.\n\nTo get a linear image, you just need turn off the filter inputs that apply the default look to the image.\n\nSet the baselineExposure, exposureBias, boost, and localToneMapAmount to 0, and disable gamut mapping before getting the outputImage.\n\nOnce you have the linearRAWImage, you can use it as an input to other Core Image filters to perform scene-referred computations.\n\nFor example, you could use the built-in Core Image histogram filter to calculate statistics.\n\nOr you may want to render the linear image to get its pixel data.\n\nTo do this, just create a CIRenderDestination for a RGBA-half-float mutable data, tell the render destination to use a linear colorSpace of your choice, and then have a CIContext start a task to render the rawFilter’s output image.\n\nHere is an example of ProRAW with the default look in comparison to the as-captured linear scene-referred image.\n\nThe linear image will look flat and underexposed, but it still contains the full and unclipped 14 stops of data from the scene.\n\nThis pair of images also provides a good illustration of the difference between an output-referred image and a scene-referred image.\n\nIn the output-referred default look, the area of the image with the maximum luma is in the sunset on the left.\n\nBut this sky area on the right has a luma that is 80 percent as bright as that of the sunset.\n\nWhile the default image looks great, the luma values do not represent the reality of the scene.\n\nFor the linear scene-referred image, the sky on the right of the image has a maximum radiance of just 12 percent of the radiance of the sunset, which is more physically logical.\n\nThis is why the linear scene-referred image is so important for image processing and analysis.\n\nAfter your application has made changes to the ProRAW CIFilter properties, you may want to save the image to an output-referred format such as HEIC or JPEG.\n\nHere’s an example of how to save the rawFilter output image to an 8-bit deep HEIC file.\n\nWith this API, you can specify the output colorSpace to use, though we recommend displayP3.\n\nIt is also possible to use the options dictionary to save the semantic masks into the HEIC.\n\nAlso, because ProRAWs have extra precision, you might consider using this new Core Image API to save to 10-bit deep HEIC files.\n\nSo far, all of the adjustments I’ve described produce an output image that is tone-mapped and gamut-mapped to the Standard Dynamic Range.\n\nThis is commonly abbreviated as “SDR”.\n\nThe next topic I’d like to discuss is how you can present the dynamic range of ProRAW images in full glory on an Extended Dynamic Range display.\n\nMany Mac displays -- ranging from the MacBook Pros to iMacs to the Pro Display XDR -- can present EDR content using a MetalKit View.\n\nTo display a ProRAW CIImage, we recommend using a MetalKit View subclass for best performance.\n\nYour MetalKit View subclass should create a CIContext and a MTLCommandQueue for the view.\n\nFor important details on how to get the best performance with Core Image in a MetalKit View, please review our presentation from last year on the subject.\n\nIf your Mac display supports EDR, then you can set the view’s colorPixelFormat to rgba16Float and set wantsExtendedDynamic RangeContent to true.\n\nThen, when it is time for your view subclass to draw, set the rawFilter.extended DynamicRangeAmount to 1 and tell the Core Image context to start a task to render the outputImage.\n\nLooking at a ProRAW image on an EDR display is really something one needs to see in person to fully appreciate.\n\nBut let me try to approximate what it looks like.\n\nHere, the SDR image is shown, while this shows what that same ProRAW file will feel like in EDR.\n\nThe bright areas and specular highlights are no longer restricted by tone mapping, so they will be visible in full glory.\n\nThis concludes our presentation on Apple ProRAW.\n\nToday we have described in detail the design and contents of the file format as well as how you can capture, store, and edit these images.\n\nI look forward to seeing how your applications can unlock the full potential of these images.\n\n♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "7:52",
+      "title": "Setting up device and session",
+      "language": "swift",
+      "code": "// Use the .photo preset\n\nprivate let session = AVCaptureSession()\nprivate func configureSession() {\n  session.beginConfiguration()\n\tsession.sessionPreset = .photo\n\t//...\n}"
+    },
+    {
+      "timestamp": "8:03",
+      "title": "Setting up device and session",
+      "language": "swift",
+      "code": "// Or optionally find a format that supports highest quality photos\n\nguard let format = device.formats.first(where: { $0.isHighestPhotoQualitySupported }) else {\n  // handle failure to find a format that supports highest quality stills\n} \ndo \n{\t\n  try device.lockForConfiguration()\n  {\n    // ...\n  }\n  device.unlockForConfiguration()\n} \ncatch \n{\n  // handle the exception\n}"
+    },
+    {
+      "timestamp": "8:39",
+      "title": "Setting up photo output 1",
+      "language": "swift",
+      "code": "// Enable ProRAW on the photo output\n\nprivate let photoOutput = AVCapturePhotoOutput()\nprivate func configurePhotoOutput() {\n  photoOutput.isHighResolutionCaptureEnabled = true\n\tphotoOutput.isAppleProRAWEnabled = photoOutput.isAppleProRAWSupported\n\t//...\n}"
+    },
+    {
+      "timestamp": "8:59",
+      "title": "Setting up photo output 2",
+      "language": "swift",
+      "code": "// Select the desired photo quality prioritization\n\nprivate let photoOutput = AVCapturePhotoOutput()\nprivate func configurePhotoOutput() {\n\tphotoOutput.isHighResolutionCaptureEnabled = true\n\tphotoOutput.isAppleProRAWEnabled           = photoOutput.isAppleProRAWSupported\n\tphotoOutput.maxPhotoQualityPrioritization  = .quality // or .speed .balanced\n  //...\n}"
+    },
+    {
+      "timestamp": "9:26",
+      "title": "Prepare for ProRAW capture 1",
+      "language": "swift",
+      "code": "// Find a supported ProRAW pixel format\n\nguard let proRawPixelFormat = photoOutput.availableRawPhotoPixelFormatTypes.first(\n  where: {\n    AVCapturePhotoOutput.isAppleProRAWPixelFormat($0) \n  }) \nelse {\n\t// Apple ProRAW is not supported with this device / format\n}\n\n// For Bayer RAW pixel format use\n\nAVCapturePhotoOutput.isBayerRAWPixelFormat()"
+    },
+    {
+      "timestamp": "10:09",
+      "title": "Prepare for ProRAW capture 2",
+      "language": "swift",
+      "code": "// Create photo settings for ProRAW only capture\n\nlet photoSettings = AVCapturePhotoSettings(rawPixelFormatType: proRawPixelFormat)\n\n// Create photo settings for processed photo + ProRAW capture\n\nguard let processedPhotoCodecType = photoOutput.availablePhotoCodecTypes.first \nelse \n{\n\t// handle failure to find a processed photo codec type\n}\nlet photoSettings = AVCapturePhotoSettings(rawPixelFormatType: proRawPixelFormat,\n\tprocessedFormat: [AVVideoCodecKey: processedPhotoCodecType])"
+    },
+    {
+      "timestamp": "10:53",
+      "title": "Prepare for ProRAW capture 3",
+      "language": "swift",
+      "code": "// Select a supported thumbnail codec type and thumbnail dimensions\n\nguard let thumbnailPhotoCodecType = photoSettings.availableRawEmbeddedThumbnailPhotoCodecTypes.first \nelse \n{\n  // handle failure to find an available thumbnail photo codec type\n}\n\nlet dimensions = device.activeFormat.highResolutionStillImageDimensions\n\nphotoSettings.rawEmbeddedThumbnailPhotoFormat = [\n  AVVideoCodecKey: thumbnailPhotoCodecType,\n  AVVideoWidthKey: dimensions.width,\n  AVVideoHeightKey: dimensions.height]"
+    },
+    {
+      "timestamp": "11:08",
+      "title": "Prepare for ProRAW capture 4",
+      "language": "swift",
+      "code": "// Select the desired quality prioritization for the capture\n\nphotoSettings.photoQualityPrioritization = .quality // or .speed .balanced\n\n// Optionally, request a preview image\n\nif let previewPixelFormat = photoSettings.availablePreviewPhotoPixelFormatTypes.first\n{\t\n  photoSettings.previewPhotoFormat = [kCVPixelBufferPixelFormatTypeKey as String: previewPixelFormat]\n}\n\n// Capture!\n\nphotoOutput.capturePhoto(with: photoSettings, delegate: delegate)"
+    },
+    {
+      "timestamp": "11:44",
+      "title": "Consuming captured ProRAW 1",
+      "language": "swift",
+      "code": "func photoOutput(_ output: AVCapturePhotoOutput,\n                 didFinishProcessingPhoto photo: AVCapturePhoto,\n                 error: Error?) \n{\n  guard error == nil \n  else \n  {\n    // handle failure from the photo capture\n  }\n\tif let preview = photo.previewPixelBuffer \n  { \n    // photo.previewCGImageRepresentation()\n    // display the preview\n  }\n\tif photo.isRawPhoto \n  {\n\t\tguard let proRAWFileDataRepresentation = photo.fileDataRepresentation() \n    else \n    {\n      // handle failure to get ProRAW DNG file data representation\n    }\n\t\tguard let proRAWPixelBuffer = photo.pixelBuffer \n    else \n    {\n      // handle failure to get ProRAW pixel data\n    }\n\t\t// use the file or pixel data\n\t}"
+    },
+    {
+      "timestamp": "12:52",
+      "title": "Consuming captured ProRAW 2",
+      "language": "swift",
+      "code": "// Provide settings for lossless compression with less bits\n\nclass AppleProRAWCustomizer: NSObject, AVCapturePhotoFileDataRepresentationCustomizer \n{\n\tfunc replacementAppleProRAWCompressionSettings(for photo: AVCapturePhoto,\n                                                 defaultSettings: [String : Any],\n                                                 maximumBitDepth: Int) -> [String : Any] \n  {\n    return [AVVideoAppleProRAWBitDepthKey: min(10, maximumBitDepth),\n            AVVideoQualityKey: 1.00]\n  }\n}"
+    },
+    {
+      "timestamp": "13:35",
+      "title": "Consuming captured ProRAW 3",
+      "language": "swift",
+      "code": "// Provide settings for lossy compression\n\nclass AppleProRAWCustomizer: NSObject, AVCapturePhotoFileDataRepresentationCustomizer \n{\n\tfunc replacementAppleProRAWCompressionSettings(\n    for photo: AVCapturePhoto,\n    defaultSettings: [String : Any],\n    maximumBitDepth: Int) -> [String : Any] \n  {\n    return [AVVideoAppleProRAWBitDepthKey: min(8, maximumBitDepth),\n            AVVideoQualityKey: 0.90]\n  }\n}"
+    },
+    {
+      "timestamp": "13:51",
+      "title": "Consuming captured ProRAW 4",
+      "language": "swift",
+      "code": "// Customizing the compression settings for the captured ProRAW photo\n\nfunc photoOutput(_ output: AVCapturePhotoOutput,\n                 didFinishProcessingPhoto photo: AVCapturePhoto,\n                 error: Error?) \n{\n  guard error == nil \n  else \n  {\n    // handle failure from the photo capture\n  }\n    if photo.isRawPhoto \n  {\n\t\tlet customizer = AppleProRAWCustomizer()\n\t\tguard let customizedFileData = photo.fileDataRepresentation(with: customizer) \n    else \n    {\n      // handle failure to get customized ProRAW DNG file data representation\n    }\n\t\t// use the file data\n\t}"
+    },
+    {
+      "timestamp": "15:19",
+      "title": "Saving a ProRAW asset with PhotoKit",
+      "language": "swift",
+      "code": "PHPhotoLibrary.shared().performChanges \n{\n    let creationRequest = PHAssetCreationRequest.forAsset()\n  \n    creationRequest.addResource(with:.photo, \n                                fileURL:proRawFileURL, \n                                options:nil)\n} \ncompletionHandler: \n{ \n  success, error in\n  // handle the success and possible error\n}"
+    },
+    {
+      "timestamp": "15:45",
+      "title": "Fetching RAW assets from the photo library",
+      "language": "swift",
+      "code": "// New enum PHAssetCollectionSubtype.smartAlbumRAW\n\nPHAssetCollection.fetchAssetCollections(with: .smartAlbum, \n                                        subtype: .smartAlbumRAW, \n                                        options: nil)"
+    },
+    {
+      "timestamp": "17:16",
+      "title": "Retrieving RAW resources from a PHAsset",
+      "language": "swift",
+      "code": "let resources = PHAssetResource.assetResources(for: asset)\nfor resource in resources \n{\n  if (resource.type == .photo || resource.type == .alternatePhoto) \n  {\n    if let resourceUTType = UTType(resource.uniformTypeIdentifier) \n    {\n      if resourceUTType.conforms(to: UTType.rawImage) \n      {\n        let resourceManager = PHAssetResourceManager.default()\n        resourceManager.requestData(for: resource, options: nil) \n        { \n          data in\n          // use the data\n        } \n        completionHandler: \n        { \n          error in\n          // handle any error \n        }\n      }\n    }\n  }\n}"
+    },
+    {
+      "timestamp": "18:28",
+      "title": "Getting CIImages from a ProRAW",
+      "language": "swift",
+      "code": "// Getting the preview image\n\nlet isrc  = CGImageSourceCreateWithURL(url as CFURL, nil)\nlet cgimg = CGImageSourceCreateThumbnailAtIndex(isrc!, 0, nil)\n\nreturn CIImage(cgImage: cgimg)"
+    },
+    {
+      "timestamp": "18:36",
+      "title": "Getting CIImages from a ProRAW  2 (New in iOS 15 and macOS 12)",
+      "language": "swift",
+      "code": "// Getting the preview image\n\nlet rawFilter = CIRAWFilter(imageURL: url)\n\nreturn rawFilter.previewImage"
+    },
+    {
+      "timestamp": "18:44",
+      "title": "Getting CIImages from a ProRAW 3",
+      "language": "swift",
+      "code": "// Getting the preview image\n\nlet rawFilter = CIRAWFilter(imageURL: url)\n\nreturn rawFilter.previewImage\n\n// Getting segmentation mattes images\n\nreturn CIImage(contentsOf: url,\n               options: [.auxiliarySemanticSegmentationSkinMatte : true])"
+    },
+    {
+      "timestamp": "18:56",
+      "title": "Getting CIImages from a ProRAW 4",
+      "language": "swift",
+      "code": "// Getting the preview image\n\nlet rawFilter = CIRAWFilter(imageURL: url)\n\nreturn rawFilter.previewImage\n\n// Getting segmentation mattes images\n\nlet rawFilter = CIRAWFilter(imageURL: url)\n\nreturn rawFilter.semanticSegmentationSkinMatte"
+    },
+    {
+      "timestamp": "19:09",
+      "title": "Getting CIImages from a ProRAW 5",
+      "language": "swift",
+      "code": "// Getting the primary image\n\nreturn CIImage(contentsOf: url, options:nil)\n\nlet rawFilter = CIFilter(imageURL: url, options:nil)\n\nreturn rawFilter.outputImage"
+    },
+    {
+      "timestamp": "19:31",
+      "title": "Applying common user adjustments",
+      "language": "swift",
+      "code": "func get_adjusted_raw_image (url: URL) -> CIImage?\n{\n    // Load the image\n    let rawFilter = CIFilter(imageURL: url, options:nil)\n    \n    // Change one or more filter inputs\n    rawFilter.setValue(value, forKey: CIRAWFilterOption.keyName.rawValue)\n   \n    // Get the adjusted image\n    return rawFilter.outputImage\n}"
+    },
+    {
+      "timestamp": "19:54",
+      "title": "Applying common user adjustments 2",
+      "language": "swift",
+      "code": "func get_adjusted_raw_image (url: URL) -> CIImage?\n{\n    // Load the image\n    let rawFilter = CIRAWFilter(imageURL: url)\n    \n    // Change one or more filter inputs\n    rawFilter.property = value\n   \n    // Get the adjusted image\n    return rawFilter.outputImage\n}"
+    },
+    {
+      "timestamp": "20:17",
+      "title": "Applying common user adjustments 3",
+      "language": "swift",
+      "code": "// Exposure\n\nrawFilter.exposure = -1.0\n\n// Temperature and tint\n\nrawFilter.neutralTemperature = 6500  // in °K\nrawFilter.neutralTint        = 0.0\n\n// Sharpness\n\nrawFilter.sharpnessAmount = 0.5\n\n// Local tone map strength\n\nrawFilter.localToneMapAmount = 0.5"
+    },
+    {
+      "timestamp": "21:40",
+      "title": "Getting linear scene-referred output 1",
+      "language": "swift",
+      "code": "// Turn off the filter inputs that apply the default look to the RAW\n\nrawFilter.baselineExposure      = 0.0\nrawFilter.shadowBias            = 0.0\nrawFilter.boostAmount           = 0.0\nrawFilter.localToneMapAmount    = 0.0\nrawFilter.isGamutMappingEnabled = false\n\nlet linearRawImage = rawFilter.outputImage"
+    },
+    {
+      "timestamp": "22:00",
+      "title": "Getting linear scene-referred output 2",
+      "language": "swift",
+      "code": "// Use the linear image with other filters\n\nlet histogram = CIFilter.areaHistogram()\n\nhistogram.inputImage = linearRawImage\nhistogram.extent     = linearRawImage.extent\n\n// Or render it to a RGBAh buffer\n\nlet rd = CIRenderDestination(bitmapData: data.mutableBytes,\n                             width: 􀠪imageWidth, \n                             height: 􀠪imageHeight, \n                             bytesPerRow: 􀠪rowBytes,\n                             format: .RGBAh)\n\nrd.colorSpace = CGColorSpace(name: CGColorSpace.extendedLinearITUR_2020)\n\nlet task = context.startTask(toRender: rawFilter.outputImage, \n                             from: rect, \n                             to: rd, \n                             at: point)\n\ntask.waitUntilCompleted()"
+    },
+    {
+      "timestamp": "23:54",
+      "title": "Saving edits to other file formats 1 (8-bit HEIC)",
+      "language": "swift",
+      "code": "// Saving to 8-bit HEIC\n\ntry ciContext.writeHEIFRepresentation(of: rawFilter!.outputImage!,\n                                      to: theURL,\n                                      format: .RGBA8,\n                                      colorSpace: CGColorSpace(name: CGColorSpace.displayP3)!,\n                                      options: [:])"
+    },
+    {
+      "timestamp": "24:12",
+      "title": "Saving edits to other file formats 2 (10-bit HEIC)",
+      "language": "swift",
+      "code": "// Saving to 10-bit HEIC\n\ntry ciContext.writeHEIF10Representation(of: rawFilter!.outputImage!,\n                                        to: theURL,\n                                        format: .RGBA8,\n                                        colorSpace: CGColorSpace(name: CGColorSpace.displayP3)!, \n                                        options: [:])"
+    },
+    {
+      "timestamp": "24:51",
+      "title": "Displaying to a Metal Kit View in EDR on Mac",
+      "language": "swift",
+      "code": "class MyView : MTKView {\n  var context: CIContext\n  var commandQueue: MTLCommandQueue\n  //...\n}"
+    },
+    {
+      "timestamp": "25:13",
+      "title": "Displaying to a Metal Kit View in EDR on Mac",
+      "language": "swift",
+      "code": "// Create a Metal Kit View subclass\n\nclass MyView : MTKView {\n  var context: CIContext\n  var commandQueue: MTLCommandQueue\n  //...\n}\n\n// Init your Metal Kit View for EDR\n\ncolorPixelFormat = MTLPixelFormat.rgba16Float\n\nif let caml = layer as? CAMetalLayer {\n  caml.wantsExtendedDynamicRangeContent = true\n  //...\n}\n\n// Ask the filter for an image designed for EDR and render it\n\nrawFilter.extendedDynamicRangeAmount = 1.0\n\ncontext.startTask(toRender: rawFilter.outputImage, \n                  from: rect, \n                  to: rd, \n                  at: point)"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Capture setup",
+        "url": "https://developer.apple.com/documentation/AVFoundation/capture-setup"
+      },
+      {
+        "title": "Capturing Photos in RAW and Apple ProRAW Formats",
+        "url": "https://developer.apple.com/documentation/AVFoundation/capturing-photos-in-raw-and-apple-proraw-formats"
+      },
+      {
+        "title": "Capturing Still and Live Photos",
+        "url": "https://developer.apple.com/documentation/AVFoundation/capturing-still-and-live-photos"
+      },
+      {
+        "title": "Core Image",
+        "url": "https://developer.apple.com/documentation/CoreImage"
+      },
+      {
+        "title": "PhotoKit",
+        "url": "https://developer.apple.com/documentation/photokit"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10160/6/08FEC739-8354-4B2F-B06F-F7F8FCD5E6ED/downloads/wwdc2021-10160_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10160/6/08FEC739-8354-4B2F-B06F-F7F8FCD5E6ED/downloads/wwdc2021-10160_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10159",
+      "year": "2021",
+      "title": "Explore Core Image kernel improvements",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10159"
+    },
+    {
+      "id": "10046",
+      "year": "2021",
+      "title": "Improve access to Photos in your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10046"
+    },
+    {
+      "id": "10047",
+      "year": "2021",
+      "title": "What’s new in camera capture",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10047"
+    },
+    {
+      "id": "10021",
+      "year": "2020",
+      "title": "Build Metal-based Core Image kernels with Xcode",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10021"
+    },
+    {
+      "id": "10089",
+      "year": "2020",
+      "title": "Discover Core Image debugging techniques",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10089"
+    },
+    {
+      "id": "10641",
+      "year": "2020",
+      "title": "Handle the Limited Photos Library in your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10641"
+    },
+    {
+      "id": "10652",
+      "year": "2020",
+      "title": "Meet the new Photos picker",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10652"
+    },
+    {
+      "id": "10008",
+      "year": "2020",
+      "title": "Optimize the Core Image pipeline for your video app",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10008"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:32:14.441Z"
+}

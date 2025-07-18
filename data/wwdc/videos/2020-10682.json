@@ -1,0 +1,105 @@
+{
+  "id": "10682",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10682/",
+  "title": "Swan's Quest, Chapter 2: A time for tones",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Swift"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello, and welcome to WWDC.\n\nHello, and welcome back to Swan's Quest. I'm Rob, your host as we go inside the second chapter of our journey. We hope you had a fun time with the first challenge, and learned a little bit about accessible interfaces. In the second chapter, you returned to the Lizard, who helps you uncover the mystery of the Swan's scroll. I don't want to spoil it for you, but I can tell you that to pass this challenge, you need to play a series of musical notes for the Swan.\n\nIn order to play notes, we're gonna show you two pieces of API: ToneOutput and Timer. We'll cover both of them in enough detail for you to impress our magnificent regent. Finally, we'll end with a side quest for those of you in search of more adventure. First, let's talk about how to play tones. For that, we're gonna use the ToneOutput type.\n\nWe introduced ToneOutput in Sonic Workshop, and included it in Sonic Create, so you could use it in your own projects. Let's take a closer look at ToneOutput.\n\nOur ToneOutput type has a straightforward API for playing generated signals from a tone value. It produces 44,100 samples a second. That's so your ears hear continuous sound instead of discrete pulses.\n\nThe primary instance method, play(tone:) is what you call to create a signal.\n\nThe definition for tone is equally straightforward. A pitch, which is a Double representation of a frequency, and a volume, also described as a Double.\n\nAnd this is what it looks like in use. In this example, we create an instance of ToneOutput, then pass it a 440 Hz frequency, or middle A.\n\nRun this code in your Playground and you should hear a tone reminiscent of the Emergency Broadcast System. If you don't stop running your Playground code, that tone's gonna play forever.\n\nLet's check in with Stephen to see how to play more than one note.\n\nThanks, Rob. As he mentioned, the ToneOutput sample will play continuously unless it is stopped.\n\nTo stop the ToneOutput instance, we need to call stopTones as highlighted here.\n\nWe can accomplish this in our example by calling Dispatch_async_After, which calls stopTones after 400 milliseconds. The note will play for a short period of time and then stop.\n\nThis approach won't work if you want to play more than one note.\n\nWe recommend using a timer. It's a more straightforward API and it's easy to repeat a loop over a predetermined time interval.\n\nLet's update our example to play multiple notes.\n\nHere, we have supplied the frequencies for middle A, middle B and middle C. To play them consecutively after one another, we use a timer. We iterate over our array of tones, playing the next one every 400 milliseconds. When we get to the end of our array, we call stopTones on our ToneOutput and invalidate our timer so it'll stop repeating.\n\nFinally, you need to make a call to endPerformance, so that you get credit for your work. You'll use this same call on all of your remaining challenges to signal to the Swan that you've finished performing. And that's how you can use a timer to play multiple different notes one after the other.\n\nThanks, Stephen.\n\nBefore we go any further, I want to warn you.\n\nThis side quest will contain spoilers for this chapter's challenge. If you want to complete the challenge first, hit pause on this video and come back after you've completed the challenge. Good luck.\n\nOkay, are you ready to do this side quest? The Swan's challenge was to play a C-major scale, and they provided all of the frequencies for you. Let's see if you can adapt that code to play an F-major scale. If you think about it, you already have many of the frequencies you need.\n\nFirst, the F-major scale starts at F4. You already have that note from the Swan. Second, you should be able to reuse your code from your C-major scale.\n\nFinally, if you need to go up an octave, just double the frequency. That means to get an A5 from an A4, you need to multiply 440 Hz by two to get 880 Hz.\n\nRight. You're gonna need the frequency for B-flat too.\n\nDuring this episode, we gave you tips for completing the second challenge in Swan's Quest. We introduced you to ToneOutput and how to use Swift Playgrounds to play tuned pitches by frequency. Then we discussed how to use timers to change notes for a certain duration.\n\nTomorrow, we'll be back with a \"note-able\" challenge. You're not gonna wanna miss it. Good luck, have fun, and join us in the forums to share your solutions for the side quest. We'd love to hear how you did.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:09",
+      "title": "ToneOutput.swift",
+      "language": "swift",
+      "code": "//  ToneOutput.swift\n\npublic class ToneOutput : AURenderCallbackDelegate {\n    let sampleRate = 44100.0\n\n    public func play(tone: Tone) { /**/ }\n   \n    public func stopTones() { /**/ }\n\n    // ...\n\n}"
+    },
+    {
+      "timestamp": "1:30",
+      "title": "Inside the Tone type",
+      "language": "swift",
+      "code": "//  ToneOutput.swift\n \npublic struct Tone: Codable {\n    public var pitch: Double\n    public var volume: Double\n    \n    // ...\n}"
+    },
+    {
+      "timestamp": "1:45",
+      "title": "Play a middle A",
+      "language": "swift",
+      "code": "// Play a middle A\n\nimport SPCAudio\n\nlet toneOutput = ToneOutput()\nlet middleA = Tone(pitch: 440.0, volume: 0.3) \ntoneOutput.play(tone: middleA)"
+    },
+    {
+      "timestamp": "2:21",
+      "title": "Play a middle A for 0.5 seconds",
+      "language": "swift",
+      "code": "// Play a middle A\n\nimport SPCAudio\n\nlet toneOutput = ToneOutput()\nlet a4 = Tone(pitch: 440.0, volume: 0.3)\ntoneOutput.play(tone: a4)\n\nDispatchQueue.main.asyncAfter(deadline: .now() + DispatchTimeInterval.milliseconds(400)) {\n    toneOutput.stopTones()\n}"
+    },
+    {
+      "timestamp": "2:51",
+      "title": "Play more than one tone",
+      "language": "swift",
+      "code": "// Play more than one tone\n\nlet toneOutput = ToneOutput()\nlet tones = [\n    Tone(pitch: 440.00, volume: 0.3),\n    Tone(pitch: 493.88, volume: 0.3),\n    Tone(pitch: 523.25, volume: 0.3) \n]\n\nvar toneIndex = 0\nTimer.scheduledTimer(withTimeInterval: 0.4, repeats: true) { timer in\n    guard toneIndex < tones.count else {\n        toneOutput.stopTones()\n        timer.invalidate()\n        owner.endPerformance()\n        return\n    }\n    \n    toneOutput.play(tone: tones[toneIndex])\n    toneIndex += 1\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "sampleProject": "https://developer.apple.com/sample-code/swift/swans-quest/a-time-for-tones.zip",
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10682/3/B984C50E-3AF2-42F2-9BD0-219FC77E8074/wwdc2020_10682_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10682/3/B984C50E-3AF2-42F2-9BD0-219FC77E8074/wwdc2020_10682_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10643",
+      "year": "2020",
+      "title": "Build a SwiftUI view in Swift Playgrounds",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10643"
+    },
+    {
+      "id": "10654",
+      "year": "2020",
+      "title": "Create Swift Playgrounds content for iPad and Mac",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10654"
+    },
+    {
+      "id": "10681",
+      "year": "2020",
+      "title": "Swan's Quest, Chapter 1: Voices in the dark",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10681"
+    },
+    {
+      "id": "10683",
+      "year": "2020",
+      "title": "Swan's Quest, Chapter 3: The notable scroll",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10683"
+    },
+    {
+      "id": "10684",
+      "year": "2020",
+      "title": "Swan's Quest, Chapter 4: The sequence completes",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10684"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:49:31.485Z"
+}

@@ -1,0 +1,144 @@
+{
+  "id": "10146",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10146/",
+  "title": "Configure and link your App Clips",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Store, Distribution & Marketing"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nHi, everyone. I'm Ada, an engineer on App Clips. I'll be joined by my colleague Luming today to show you all you need to know about linking to your app clips.\n\nApp Clips provides an entry point for your users to experience your app with minimum friction. When your users need your app's functionality to perform a task, your app clip is presented to the user seamlessly with a deep-link navigation. This session covers what you have to do to handle linking into your app clip and configure the linking experience. First, let's take a look at an example of how one can perform a task with an app clip.\n\nImagine you come across a smoothie stand. You really want a nice, cold smoothie. You find an NFC tag with a sign that says, \"Tap here to order.\" You tap the tag and a card pops up at the bottom of the screen which has a brief description of the smoothie-ordering app clip.\n\nWhen you tap on the \"Open\" button, the app clip is launched on your device, taking you directly to the smoothie-ordering page.\n\nYou complete the purchase with Apple Pay, and now you have a smoothie in your hand.\n\nThe linking magic happens in these steps. The NFC tag actually encodes a URL that's registered with an app clip experience, which I'll explain later in this session. Once you tap \"Open,\" the app clip gets launched with a URL that is passed via an NSUserActivity, and the app clip takes you directly to the ordering page.\n\nBesides NFC, app clip links can also appear in other places. These are URLs that could be encoded in physical tags or visual codes, or associated with a physical location on the map. Let's go through each of these linking methods.\n\nAs I mentioned in my example earlier, an NFC tag can encode an app clip URL that users can tap their phones on to open an app clip.\n\nAn app clip URL can also be encoded in a QR code, which people can scan to open an app clip.\n\nApp clip links can show up on the Maps place card for registered businesses, and also in the Siri nearby suggestions.\n\nYou can also open an app clip from Safari. If your web page is configured with a Smart App Banner for app clip, people can tap the \"Open\" button in that banner to open the app clip.\n\nAnd when they send an iMessage with that web page's URL, it's presented as a special app clip link bubble, which gives the user a choice to open the link in the app clip, or in Safari.\n\nAnd to give you an even better experience, later this year, Apple will be releasing the new app clip codes, which is the best way for your users to discover your app clip. It's visually beautiful and distinct, so when they see one, they know there's an app clip waiting for them. Each app clip code encodes a URL. Apple will be releasing tools later this year that can create these beautiful visual codes.\n\nNow that we've looked at the different ways people can follow links into your app clip, let's go through the steps an app clip developer needs to do to set up this linking experience. First, you have to make changes to your web server and your app clip project so these links can be handled by the app clip.\n\nNext, you have to configure the app clip card, which is the card that introduces the user to the app clip and is part of the app clip experience. You can set up the default and advanced app clip experiences on App Store Connect.\n\nLastly, let's configure the Smart App Banner to show your app clip on your web page. If the contents of your web page can be delivered as a better and more streamlined app clip experience, consider adding this banner to provide a way for your users to get to the app clip from that web page.\n\nFirst, let's start with configuring your web server and your app clip for link handling.\n\nThe association between your website and your app clip must be validated for the app clip to be able to present contents in place of the website's URL. To securely associate your app clip with the server, you will need the apple-app-site-association file on your web server, along with the appropriate associated domains entitlement on your app clip. Then you have to update the code in your app clip to handle links from incoming NSUserActivities.\n\nFirst, let's update the apple-app-site-association file on the web server.\n\nThis file is located in a .well-known subdirectory in your server's root folder. If you have set up universal links for your app before, you probably have this file already set up on your server, and the root dictionary has other entries already, such as web credentials and app links. To declare the new app clips association in this file, add another entry in the root dictionary with the key \"appclips\" and the value containing a dictionary containing a single \"apps\" key that is set to an array containing your app clips app identifier.\n\nNext, let's update the app clip project to add the associated domains entitlement.\n\nIn Xcode, navigate to your project settings and add the associated domains capability.\n\nUnder domains, add a new string \"appclips:your-website-domain.\" Now that both your website and your app clip have been set up with associated domains, let's add code to handle NSUserActivity, which contains the URL passed into your app clip.\n\nIf your app clip has adopted the new SwiftUI app life cycle, this is how you would add a handler for the web-browsing userActivity. In that method, you can get the web page URL property from the NSUserActivity. Then you can parse that URL and direct the user to the linked content.\n\nKeep in mind that once the user upgrades from the app clip to the app, navigating to that app clip link will actually open your app, rather than the app clip. So make sure your app also has similar code for handling the URLs for universal links as well.\n\nIf your app clip uses the UIKit's SceneDelegate life cycle, here's some similar code for handling incoming user activities in the UISceneDelegate.\n\nTo learn about how to set up associated domains, and handling NSUserActivities, please refer to the \"What's New in Universal Links\" sessions.\n\nTo test the URL handling code in your app clip in Xcode, you can specify a test URL to be passed to your app clip. Open up the scheme editor in Xcode. Select the \"arguments\" tab.\n\nUnder \"environment variables,\" specify the _XCAppClipURL variable. Now when you run your app clip from Xcode, it'll be launched with this URL.\n\nNow that we're done configuring the web server and the app clip, let's configure the app clip experiences.\n\nEach app clip experience starts with the app clip card that the user sees when they tap on an app clip link. It shows the information about the app clip, and asks for the user's consent to open it.\n\nWhen coming up with the metadata to use to configure the app clip card, please follow these requirements on the length of the title and subtitle for the optimal layout of the card. There are also requirements for the image's size, aspect ratio and format for the best user experience across all devices. The image you choose should match the experience this app clip action delivers.\n\nNow let's set up the app clip card on App Store Connect. After you've delivered a build containing both your app and your app clip to App Store Connect, the app clip should be visible on App Store Connect with a new app clip configuration section. This is where you can start setting up the default and advanced app clip experiences.\n\nThe metadata for the default app clip experience includes the app clip card's image, subtitle and the verb for the action. There's a list of predefined actions you can choose from. This metadata will be used in a Smart App Banner in Safari, and in the app clip link bubble in Messages. And also in the app clip card when it's presented.\n\nIf you want your app clip to be accessible from more than just Safari and Messages, you must set up an advanced app clip experience by clicking the \"Get Started\" link here. Each advanced app clip experience is tied to a URL which can be encoded in a physical tag, such as the NFC tag, or a QR code, so your app clip can be launched from these physical invocation methods.\n\nAfter clicking through some introduction screens, you will arrive on this page where you can specify the URL for the advanced app clip experience. For the same app clip, you can set up multiple advanced app clip experiences, each with a different URL. I'll give you some examples of multiple app clip experiences in a bit.\n\nOn the next page, you can set up the image, title, subtitle, and choose an action verb for the app clip card for this experience. You can also choose to associate this app clip experience with a physical location.\n\nNow let's take a look at some use cases of advanced app clip experiences, and the best practices for registering URLs for these experiences. A single app clip could handle different types of tasks, and therefore different app clip experiences can be customized for the same app clip. For example, this restaurant app clip provides two types of experiences for their customers: the food-ordering experience, where users can view the menu and place their order, and the reservation experience, where customers can reserve tables.\n\nIn this case, two advanced app clip experiences can be set up. One for melamela.example/order where the image could be a picture of their menu, and the subtitle \"View menu and order.\" And another one for melamela.example/reservation where the image could be a picture of the restaurant setting, and the subtitle \"Reserve a table.\" One thing to remember about the way the URL is mapped to the app clip is that it's based on the most specific prefix match against registered app clip experience URLs. That means you don't need to register every single possible app clip URL for the business.\n\nDo keep in mind, though, that even if your registered experience URL is used only as a prefix, your app clip must be able to handle being launched with the exact registered URL. This can happen when your app clip is invoked through Siri nearby suggestions, and from Maps. Here's an example of how you can register one app clip experience URL to work with multiple invocation URLs. A bike shop has an online bike rental system. It has hundreds of bikes for rent, which are identified by an ID number. The URLs for reserving these bikes will specify that ID in the query string argument. Fortunately, this bike shop does not need to register an advanced app clip experience for every one of these URLs because URLs are matched based on prefix match. Only one app clip experience URL needs to be registered: https://bikesrental.example/rent. That is enough to deliver an app clip experience for all these bike URLs with that prefix and different query string arguments.\n\nHere's another example to explain a strategy for picking the URLs to register for advanced app clip experiences. The café in this example is a big chain with multiple locations, where each location basically offers similar experiences to their customers. Because of the common URL format for all the locations, which all start with https://brighteggcafe.example/store/, we can just register an app clip experience for that URL prefix. When their customers follow a link to any of their stores, they'll get the same app clip card.\n\nBut let's say the coffee shop wants to provide a more special app clip experience for its flagship store in Cupertino. To handle this, you can also register the Cupertino store URL for a different app clip experience with a different image and subtitle text. The main takeaway here is you can register a shorter, more general URL prefix that covers most cases, and register a more specific URL only when you need to provide a different app clip experience.\n\nFor more information on setting up the default and advanced app clip experiences on App Store Connect, please refer to the \"What's New in App Store Connect\" session. And for best practices on the app clip card design, please refer to the \"Design Great App Clips\" session.\n\nNow to the last step for handling linking into your app clip, setting up the Smart App Banner to open your app clip. This is how people can open app clips from a web page in Safari, or in Messages when a web page URL that has this banner configured is sent. If you have set up Smart App Banners for your app before, you must be familiar with the Apple iTunes App Meta Tag that you add to your web page's HTML to specify your app's unique identifier. To configure this banner for your app clip, set the app-clip-bundle-id content attribute to the app clip's bundle identifier. You should continue to set the app ID attribute as well, so it will fall back to the full app-linking behavior for users with systems older than iOS 14.\n\nSafari will verify the domain association between the website and the app clip before showing the banner.\n\nBy default, when the user taps on a Smart App Banner's \"Open\" button, they will see the default app clip card configured for this app clip. But if you register this URL with an advanced app clip experience, you can customize the metadata for the experience such that the user could see a more descriptive title in the banner and get an app clip card that's tailored for the task this app clip performs.\n\nTo demonstrate what we have talked about on handling linking for your app clip, I'll ask my colleague Luming to give us a demo. Luming. Thanks, Ada, for your wonderful introduction on linking to your app clips. I'm Luming, an engineer from the App Clips team, and today, I'll be showing you how to link to your app clip. To link your users to your app clip through physical or digital invocation you need to set up associated domains first. As my colleague, Ada, mentioned earlier in this talk, we need to both configure our web server and our app clip project for link handling. So let's start with the web server first.\n\nHere, I have the source code of my web server. It's a pretty straightforward static website. Under the root directory of my web server, I have already created a .well-known folder, and within it, there's an apple-app-site-association file. My AASA file has already been configured for universal links, Handoff, and web credentials with Password AutoFill. Now all we need to do here is to update the AASA file to link to our app clip.\n\nAnd there we go.\n\nNow that we have already configured our web server, let's come back to the Fruta Xcode project.\n\nTo link your app clip, you need to register to handle userActivity of type NSUserActivityTypeBrowsingWeb. In our app clip's WindowGroup declaration, I'll add a new onContinueUserActivity handler of TypeBrowsingWeb.\n\nInside it, I'll parse the incoming URL and get the queryItems in the URL.\n\nAfter that, I'll get the first queryItem that has the name \"smoothie,\" and if there is one, set the selectedSmoothieID on the data store to that URL parameter, which is our smoothie identifier. Back in the Fruta Xcode project, I'll go to the \"Signings and Capabilities\" tab. In it, I'll add a new capability. I'll choose to add \"associated domains.\" I'll expand this capability and click on the plus button to add a new associated domain. Here I will enter \"appclips:Fruta.example.\" Now that we have set up our associated domain, let's configure a launch URL to debug our app clip with. To do this, I'll click on the \"Target Popup\" button and click \"Edit Scheme.\" You'll see the environment variables section has already been prepopulated with the value \"example.com.\" All we need to do here is to tick the checkbox before the environment variable of name _XCAppClipURL.\n\nIn it, I'll enter a URL that our app clip is able to parse, and our app clip will pick up the smoothie=BerryBlue parameter as we have set up earlier.\n\nI'll close the editor and build and run the clip on the device.\n\nVoilà. Our app has automatically parsed the app launch URL and navigated us to the Berry Blue smoothie. I'll order, pay with Apple Pay...\n\nand wait for my order to be ready.\n\nLooks like my smoothie is ready.\n\nI would love to enjoy the smoothie myself, but there's more to demo. Since I've already submitted my Fruta app to App Store Connect, and have configured an app clip card experience on App Store Connect using the flow Ada has discussed earlier in this talk, so now, if I tap my phone on this NFC tag, an app clip card shows up and I can launch the clip right here through physical invocation.\n\nAnother way, as my colleague, Ada, has discussed earlier in this talk, is through the Smart App Banner in Safari.\n\nSo now I'm back at my website sources, and in the index.html file, all we need to do is to add a new meta tag for our app clip.\n\nI've specified a name of \"apple-iTunes-app\" and \"app-clip-bundle-id\" as its content. Notice I'm keeping the app-ID parameter so that my users running an iOS release before iOS 14 can still see a Smart App Banner, referring them to download the app from the App Store. All right. After pushing my changes up to the server, I'm back onto my phone and have navigated to Fruta.example in Safari.\n\nAs you have guessed, while Fruta.example is a .example domain, and it's not for sale, we have a lot of production budget this year. You all are really worth the exhilarating 14-hour domain auction marathon. So, of course, you can still browse through the menu on the web page as you would before, but on top of the page, there's a new Smart App Banner. When I tap on \"Open,\" I'll see the same app clip card as we saw earlier with physical invocation via NFC.\n\nAnd after tapping \"Open,\" we're brought to the app clip again.\n\nAnd that is a quick demo on linking to your app clip. Thank you, and back to you, Ada. Thanks, Luming, for showing us how to set up linking in app clips. That Berry Blue smoothie sure looks refreshing. There's one more thing that I want to briefly talk about, which is beta testing for app clips. So, after you've delivered your build that includes both your app and your app clip to App Store Connect, you should find a new app clip section in TestFlight that lets you add test invocation points for your app clip so your beta testers can test opening the URLs for the different app clip experiences. Click on \"Add App Clip Invocation\"...\n\nand set up the title and URL of an app clip experience you'd like your beta testers to try out. For more information about testing and submitting app clips in App Store Connect, please refer to the \"What's New in App Store Connect\" session.\n\nTo summarize, in this session, we have shown you how you can handle links into your app clip by setting up the associated domains for the new app clip service type, and handling the web-browsing NSUserActivity in your app clip...\n\nhow you can configure default and advanced app clip experiences on App Store Connect, including best practices on what URLs to use when registering app clip experiences... how to set up the Smart App Banner to open your app clip on your web page, and finally, what's new in TestFlight for testing app clips.\n\nThanks for watching this session, and I can't wait to see the cool app clips you will create. [chimes]",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "5:04",
+      "title": "Update the apple-app-site-association file",
+      "language": "swift",
+      "code": "{\n    \"appclips\": {\n        \"apps\": [ \"ABCDE12345.example.fruta.Clip\" ]\n    },\n \n   ...\n}"
+    },
+    {
+      "timestamp": "6:17",
+      "title": "Configure app clip for link handling (SwiftUI app life cycle)",
+      "language": "swift",
+      "code": "import SwiftUI\n\n@main\nstruct AppClip: App {\n    var body: some Scene {\n        WindowGroup {\n           ContentView()\n              .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { userActivity in\n                  guard let incomingURL = userActivity.webpageURL,\n                        let components = NSURLComponents(url: incomingURL,\n                            resolvingAgainstBaseURL: true) \n                  else {\n                      return\n                  }\n\n                  // Direct to the linked content in your app clip.\n              }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "6:54",
+      "title": "Configure app clip for link handling (UIKit scene-based life cycle)",
+      "language": "swift",
+      "code": "// Handle NSUserActivity in UISceneDelegate.\n\nclass SceneDelegate: UIResponder, UIWindowSceneDelegate {\n\n    func scene(_ scene: UIScene, continue userActivity: NSUserActivity) \n    {\n        // Get URL components from the incoming user activity\n        guard userActivity.activityType == NSUserActivityTypeBrowsingWeb,\n            let incomingURL = userActivity.webpageURL,\n            let components = NSURLComponents(url: incomingURL, \n                resolvingAgainstBaseURL: true) \n        else {\n            return\n        }\n\n        // Direct to the linked content in your app clip.\n    }\n\n}"
+    },
+    {
+      "timestamp": "14:35",
+      "title": "Configure the Smart App Banner to open app clip (HTML)",
+      "language": "swift",
+      "code": "<meta name=\"apple-itunes-app\" \n    content=\"app-clip-bundle-id=com.example.fruta.Clip,\n    app-id=123456789\">"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "App Clips",
+        "url": "https://developer.apple.com/documentation/AppClip"
+      },
+      {
+        "title": "Configuring App Clip experiences",
+        "url": "https://developer.apple.com/documentation/AppClip/configuring-the-launch-experience-of-your-app-clip"
+      },
+      {
+        "title": "Fruta: Building a Feature-Rich App with SwiftUI",
+        "url": "https://developer.apple.com/documentation/appclip/fruta_building_a_feature-rich_app_with_swiftui"
+      },
+      {
+        "title": "Responding to invocations",
+        "url": "https://developer.apple.com/documentation/AppClip/responding-to-invocations"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10146/6/F04CF30D-7D67-44DC-83BA-E9AB09BD12F7/wwdc2020_10146_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10146/6/F04CF30D-7D67-44DC-83BA-E9AB09BD12F7/wwdc2020_10146_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10178",
+      "year": "2023",
+      "title": "What’s new in App Clips",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10178"
+    },
+    {
+      "id": "10013",
+      "year": "2021",
+      "title": "Build light and fast App Clips",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10013"
+    },
+    {
+      "id": "10012",
+      "year": "2021",
+      "title": "What's new in App Clips",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10012"
+    },
+    {
+      "id": "10118",
+      "year": "2020",
+      "title": "Create App Clips for other businesses",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10118"
+    },
+    {
+      "id": "10172",
+      "year": "2020",
+      "title": "Design great App Clips",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10172"
+    },
+    {
+      "id": "10174",
+      "year": "2020",
+      "title": "Explore App Clips",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10174"
+    },
+    {
+      "id": "10120",
+      "year": "2020",
+      "title": "Streamline your App Clip",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10120"
+    },
+    {
+      "id": "10651",
+      "year": "2020",
+      "title": "What's new in App Store Connect",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10651"
+    },
+    {
+      "id": "10098",
+      "year": "2020",
+      "title": "What's new in Universal Links",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10098"
+    },
+    {
+      "id": "717",
+      "year": "2019",
+      "title": "What's New in Universal Links",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/717"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:20:31.446Z"
+}

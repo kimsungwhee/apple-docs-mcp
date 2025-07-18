@@ -1,0 +1,218 @@
+{
+  "id": "10256",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10256/",
+  "title": "Meet the Swift Algorithms and Collections packages",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Swift"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Bass music playing ♪  ♪ Kyle Macomber: Hi, I'm Kyle. The Swift Standard Library team maintains a growing roster of open-source packages including Swift ArgumentParser, Swift Numerics, and Swift System. Today, we're excited to introduce two big new additions to the family: Swift Algorithms and Swift Collections! Swift Algorithms is an open-source package of sequence and collection algorithms that augments the Swift standard library. One of the most powerful features of Swift is the rich taxonomy of algorithms that come built in. It takes a little investment to learn the vocabulary, but once you do, it can be striking to discover just how many algorithms are hiding in plain sight and how much you can improve the quality of your code by adopting them. To see what I mean, let's take a look at some code from a messaging application that I've been working on. Consider this loop which iterates over the index paths for the selected rows in a table view, collecting all the corresponding messages for forwarding or deletion. This is just a map. Using map makes this code clearer to the reader because it provides extra context that the body of the closure, regardless of its length or complexity, is just transforming the input. Using map also makes this code faster because it avoids intermediate allocations due to array resizing by reserving capacity -- something our raw loop wasn't bothering to do. Or consider this loop which, if the user taps on an image, iterates the messages in the transcript, collecting all the attachments for display using Quick Look. This is just a map and a filter! In fact, this pattern of filtering out nils and mapping to unwrap optionals is so common that we have a special name and algorithm for it: compactMap. Next, consider this code. I have an array of messages, and I want to transform it into an array of transcript items. The tricky thing is that any given message might correspond to multiple items in the chat transcript. Using map here produces an array of arrays. But that's not what I want; I just want a flat array. Does this mean I have to go back to using a raw for loop? Of course not; we've got another algorithm for that. It's called \"joined\". What it does is join together all the inner arrays into a single, flat collection of elements. This pattern of mapping and joining is so common that we define another special kind of map for it: flatMap. Of course, map and filter are just the tip of the iceberg. Consider this raw loop from the chat detail screen in my app. I want to display the last six photos in a chat, from newest to oldest. So I iterate the transcript in reverse -- from newest to oldest -- and if the item is a photo, I add it to the array. And once I have six, I stop. We can express this more concisely by chaining together algorithms from the standard library -- reversed, compactMap, and prefix -- to take no more than the first six. Chaining together algorithms also gives us more flexibility to express this code more clearly. For example, I find it more natural to think about this operation in terms of the suffix of the transcript rather than the prefix of the reversed transcript. So the chain of algorithms is clearer and more concise than the raw loop, but how does the performance compare? If each step in the chain allocates an intermediate array, isn't it going to be slower than the raw loop? The answer would be yes if the standard library weren't playing some clever tricks here. Let's return to the joined algorithm we saw earlier to take a closer look at what's going on. It turns out joined doesn't actually allocate and return a new array here. Instead, it returns a FlattenSequence. FlattenSequence is what we call a \"lazy adapter\". For most purposes, it works like an array, but it's just a thin wrapper, so it's effectively free to create. And it's lazy, so it processes its elements on demand, rather than doing all the work up front. Lazy adapters like FlattenSequence are what enable algorithm chains to have competitive performance with raw for loops. Let's return to the detail screen and take a closer look at our algorithm to compute the last six photos in a chat. We see that suffix actually just returns an array slice -- that's clever -- and that reversed is also implemented as a lazy adapter, one which intercedes to start at the end and end at the start. What about compactMap? It's still returning an array. Can that be lazy? It can. You just have to add a .lazy to the start of the chain, and it makes any of the algorithms that take a closure, like map and filter, lazy! Lazy algorithm chains are a great fit for use cases like this one, where you're only processing a small number of elements from a potentially very large collection. Of course, sometimes you do need or want an array. And in that case, you can always just wrap your algorithm chain in an array initializer. This is one more reason why, on the Standard Library team, we're a big fan of lazy algorithms. It's really easy to turn a lazy algorithm into an eager result, but it's impossible to go the other way. So I've been making great progress on my messaging app, and my designer approaches me with a feature request. They'd like to include time stamps in the transcript, if more than an hour has passed between any two consecutive messages. Seems reasonable. There's got to be another algorithm I can use for this, right? There is. But to access it, I'm going to need to import the Swift Algorithms package. Every once in a while, you're going to encounter use cases like these that the Swift standard library doesn't have coverage for yet. The purpose of the Algorithms package is to provide a low-friction venue for us -- with your help -- to incubate new families of missing algorithms for eventual inclusion in the standard library. We've already added over 40 algorithms to Swift Algorithms. For things like generating all the combinations or permutations of a collection of elements; or iterating the elements of a sequence by two or three or in groups determined by a predicate; or selecting the five smallest elements in a collection, the five largest, or just any five at random. Let's take a closer look at some of the powerful iteration tools that come with Swift Algorithms. windows(ofCount:) provides a sliding window, here of size 3, into the elements of a collection. For each turn of the loop, window is just a subsequence of the base collection -- here an ArraySlice -- which avoids any intermediate allocation. windows(ofCount: 2) are particularly common and so we have a convenience for it. It's called \"adjacentPairs\". adjacentPairs vends a tuple rather than a subsequence, allowing for more convenient element access. Another powerful iteration tool is chunks(ofCount:). Unlike windows, chunks don't overlap. If a collection isn't evenly divisible by the chunk count, the last chunk in the sequence will contain the remainder. And just like windows, chunks are subsequences of the base collection, so they're cheap to create. Sometimes you want to chunk a collection into runs of like-elements. Here we're chunking on isPrime. This means we'll iterate the chunks of consecutive elements that return the same value for isPrime. For convenience, chunked(on:) vends a tuple of both the chunk and the value being chunked on. Have you ever found yourself writing a raw loop like this one that only does some work if the previous and current elements differ? This is just chunked! Let's return now to that feature request from my designer to include time stamps in the transcript whenever more than an hour has passed between messages. If you recall, we create the transcript by flat mapping over the messages to make the transcript items. Well, every transcript item has access to its date. We can chunk on the date to group transcript items together if less than an hour has passed between them. We've already seen how to chunk a collection into runs of like elements. Swift Algorithms comes with another variant of chunked that allows you to provide a custom predicate. It passes you adjacent pairs of elements, and you return true if they belong in the same group. Here, we return true if the time interval between transcript items is less than an hour. Next, we need to create the time stamps and join everything together into a single, flat collection. Earlier, we used joined to flatten a nested collection. The standard library comes with another variant of joined that can insert a separator. It's really common to use this algorithm to join together strings with, say, a new line or a comma separator. However, in this case, a constant separator isn't sufficient. We need access to the first date in the next chunk in order to construct the time stamp. Well, the Algorithms package includes another variant of joined that lets you compute the separator from the previous and next chunks. We can use that here to join back together the chunks of transcript items, now separated by time stamps. Pretty satisfying, huh? Of course, we don't need to be paying for any of these intermediate allocations. All of this can be computed on demand just by adding a .lazy. Voilà! I want to caution, though, that laziness is not a silver bullet. When you're only iterating a sequence a single time, computing on demand can save work and avoid allocations. But when you're iterating a sequence again and again -- like I am with the transcript in my messaging app -- computing on demand will repeat the same work over and over -- mapping, chunking, and joining every time the user enters edit mode, taps on an image, or visits the detail screen. In cases like this, you should still use a lazy algorithm chain. It's just that as a last step, it'll be more efficient if you save your work by collecting everything together into an array. We've looked at over a dozen different algorithms from the Swift standard library and the Algorithms package. All of them work not only on array, but also string, and every other Swift type that conforms to the sequence and collection protocols -- including every data structure in the new Swift Collections package. Chaining together algorithms makes your code clearer, faster, and more correct. And becoming proficient at it isn't complicated; it's just about building your vocabulary. So next time you find yourself reading or writing a raw loop, stop and think about if it's a map, a filter, or one of the other algorithms you've just seen. If nothing comes to mind, search the documentation on the sequence and collection protocols, or read the guides in the Swift Algorithms GitHub repository, or visit us on the Swift forums where we can figure it out together. Who knows, it might serve as the inspiration for a new addition to the Algorithms package! Next up, Karoy will teach you about the versatile data structures that come with the new Swift Collections package. Karoy? Karoy Lorentey: Thanks, Kyle! Let's talk about data structures. As it stands today, the Swift standard library implements just three major general-purpose data structures: it provides arrays, unordered sets, and unordered dictionaries. These have proved great choices as universal collection types, and they're especially nice for transferring data across module boundaries. They all implement copy-on-write value semantics, providing efficient in-place mutation operations while also ensuring that collection values are safe to pass around without these mutations leading to unexpected changes in any of the copies created. However, there are so many more data structures out there. It would be useful to have a larger selection to choose from. Earlier this year, we released the Swift Collections package, with new data structure implementations. This package lets Swift developers gain real-life production experience with new collection types before we eventually propose them for inclusion in the Swift standard library. By importing the Swift Collections package, we get access to additional types. The initial version of the package implements three of the most frequently requested data structures. These happen to be new variations of the three standard collection types. We have a double-ended queue, an OrderedSet, and an OrderedDictionary. These are similar to array, set, and dictionary; they are variants of the same theme, adding new features to the existing constructs. That said, these new types aren't replacements for the existing ones; they are complementary to them. For some use cases, the new types will be a better fit. However, for many others, the existing types continue to be the right choice. In order to know which data structure to reach for, we need to learn how these differ from the existing types. So let's take a brief look at each of these, starting with double-ended queues -- or, rather, queues in general. Queues pop up everywhere where an arbitrary number of items need to be processed one by one, from customers waiting in line in a supermarket to asynchronous tasks in an application. In their most abstract form, queues provide two major operations: we can push items to the back of the queue, and we can pop elements off the front.\n\nA double-ended queue makes these queue operations symmetric. It supports efficiently pushing new items to the front of the queue... ...as well as popping elements off the back.\n\nThe name \"double-ended queue\" is quite a mouthful for such a useful type, so we like to shorten it to \"deque\". And to shave off one more syllable, this is traditionally pronounced \"deck\", like a deck of cards. In the Collections package, deque has roughly the same API as the familiar array type, and it implements many of the same protocols. For example, we can use an array literal to create a deque. Deque conforms to the RandomAccessCollection protocol. Like array, deque uses integer indices that are offsets measured from the start of the collection. This makes it easy to access any element based on its position. For example, the element at index 1 in this deque is the letter E. Now, I'm sure I'm not the only one who is bothered by that lowercase f at the end of this collection. Luckily, deque conforms to the MutableCollection protocol, so we can fix this by assigning through the index 2, replacing the lowercase f with an uppercase one. Ah, that looks so much better! Deque also implements the RangeReplaceableCollection protocol, so it provides all of the familiar operations for inserting, removing, or replacing subranges of elements. For example, we can insert a sequence at the front of our deque by calling the insert(contentsOf:) method with an index of zero. How it executes this is where deque starts to differ from an array. If we used an array to store our items, then inserting new elements at the front would need to start by moving the existing elements to make room for the new ones. To make accesses as simple as possible, arrays keep their elements in a single contiguous buffer, starting at the beginning of their storage. If the array is large, this makes prepending new elements relatively expensive; so inserting a new element at the front takes time that is roughly proportional to the number of elements that are already in the array. A deque works differently. It wraps its storage buffer around its boundaries so that it can prepend new elements without moving any of the existing ones. The indices are still offsets from the logical start of the collection, so after the insertion, the element at index 1 is now B. This means that deques need to do some work to translate between their logical indices and their actual storage positions, but accessing elements is still quite efficient. And because prepending to a deque doesn't involve sliding any existing members, they are able to perform this operation radically faster than array. Inserting a new element at the front takes a constant amount of time, no matter how many elements are already in the collection. This is the power of data structures. Once we have them in our toolbox, we can use them to solve problems that were previously out of reach. Switching to the right data structure can make all the difference. It can turn an unusably slow app into a responsive wonder that is a joy to use. Of course, deques can also be clever about how they perform operations in the middle of their storage. For instance, when removing a range of elements, deque has the option of closing the resulting gap by moving the preceding elements rather than the subsequent ones, and this can reduce the number of elements that need to be moved. This isn't as drastic an improvement as prepending an element was, but when we are removing elements at random, it does make things twice as fast on average. So, that's deque. Now, let's take a look at ordered sets. The standard, preexisting set type is a collection that guarantees that all of its elements are unique. However, it doesn't preserve their original ordering. In fact, the order of elements in a set is effectively random. This means that two instances of the same set often list them in two entirely different permutations. Despite this, two sets containing the same elements are considered equal; the order is not significant. This is great when all we want is to guarantee uniqueness, but sometimes we also want to be in control of how the elements are ordered. For example, if we are writing a to-do list app, we may want to ensure that it lists each item only once, but we also need to keep them in the specific order set by the user. So that is what an ordered set does. Depending on our viewpoint, it works either like an array that keeps its elements unique, or we can view it as a set that preserves the order we establish on its members. Like arrays and sets, ordered sets are also expressible by array literals. However, unlike a set, the order of elements is guaranteed to be preserved. The order is also significant; two ordered sets compare equal if they contain not just the same members, but they must also be in the same order. If we just need to know if two ordered sets contain the same elements, in any order, then we can compare them through the special unordered view. This lightweight view ignores element ordering, so it provides a more conventional, set-like interface. By default, though, ordered sets resemble how arrays work. This is reinforced by the fact that ordered sets are random access collections with integer offset indices. We can use integer subscripts to access items, just like in an array or a deque. As expected from a set, we can also add and remove elements, although these operations do need to take the position into account. For instance, we have an append operation that adds a new element to the end of the set if it isn't already a member. Its return value indicates whether the element needed to be added, and it also reports the index of the item. We also have an insert operation that puts the new element at the specified location. In this case, the letter B already exists, so the operation simply returns the index of the existing member. Removing an element leaves a hole in the ordered set, and the rest of the members need to be moved to fill it, just like in an array. Ordered sets need to keep their elements unique, so they can't support arbitrary item replacements. This means that unlike arrays, they can't conform to the MutableCollection or RangeReplaceableCollection protocols. However, they do support standard reordering operations such as sorting or shuffling. Ordered sets also implement all high-level set operations from the SetAlgebra protocol, in an order-preserving manner. For example, forming a union appends any missing elements, in the order they appear in the second set. Subtracting a set keeps the remaining elements in their original order. Even though the ordered sets implement most SetAlgebra operations, they cannot officially conform to that protocol because it requires that the order of elements must not matter. However, their unordered view has an order-insensitive concept of equality. So it can and does conform to SetAlgebra. We can use it to pass OrderedSet values to any function that requires a SetAlgebra value. Looking under the hood, the standard, unordered set type stores its elements directly in a flat hash table using a randomly seeded universal hash function. This provides great lookup performance for the elements, but it discards their original ordering. To support arbitrary, user-specified element orderings, an ordered set stores its elements in a regular array instance, instead. Ordered set still uses the same fast and secure hash table implementation, but in this case, the table only needs to store integer indices into the storage array. The range of these integers is bound by the size of the hash table, so we can compress the table by packing the integer values into as few bits as possible. This can sometimes save a considerable amount of memory compared to a regular set while still maintaining competitive performance for most operations. Lookup performance is comparable to the standard set. Finding a random member takes roughly constant time, no matter the size of the collection. Array needs to laboriously look at each element, which takes longer time as the collection grows. Appending a new element to an ordered set also performs roughly comparably to inserting an element into a standard set. This still needs to hash the new item, and it also includes a check if the element already exists, so this is a far more complicated operation than directly appending an element to a simple array. But these still take constant time, no matter how large the collections become. However, while OrderedSet is able to quickly look up existing elements and append new ones, it cannot efficiently implement removing or inserting an item at the front or middle of the set. Like array, these operations need to slide elements around in the storage array, but they also need to renumber subsequent indices in the hash table. This means that removals and insertions turn into operations with linear complexity, making these slower than the regular set. There is always a trade-off! But once we get familiar with how these data structures work, we will be able to confidently select the right one to solve any problem, based on the requirements we need to satisfy and the operations that are important to optimize. Selecting the right data structure can lead to an algorithmic improvement that can result in hundreds, or even thousands, of times faster code. Selecting the wrong one can do the opposite. So I think it's useful to learn about these because, ultimately, it results in great apps and happy users. This new OrderedSet type is a pure Swift variant of the existing NSOrderedSet type in Foundation. However, because OrderedSet is implemented in a package, it doesn't bridge with NSOrderedSet. This means existing Objective-C APIs won't get automatically imported to use the new type. These are separate things.\n\nThe third data structure provided by the Collections package is an ordered analogue of the standard dictionary type. Like the standard dictionary, this is a sequence of key-value pairs that lets us use a key as a subscript to quickly look up its corresponding value. Unlike the regular dictionary, the order of key-value pairs is well-defined. By default, it follows the order in which the keys were originally inserted. To append a new element, we can assign a value to a new key. We can remove elements by assigning nil to an existing key. Throughout these operations, the ordered dictionary maintains its contents in a well-defined order.\n\nOrdered dictionaries use array-like integer indices, but this introduces an interesting issue. In our example dictionary, the indexing subscript operation conflicts with the key subscript. When we subscript with zero, do we mean to access the value for the key zero or do we mean to retrieve the key-value pair at offset zero? We think that the key-based subscript is the primary operation for a dictionary type, so to prevent this ambiguity, subscripting an ordered dictionary always means the keying subscript. OrderedDictionary doesn't provide an indexing subscript operation at all. This means that OrderedDictionary cannot be a collection, because the collection protocol requires such a subscript. Therefore, OrderedDictionary only conforms to the sequence protocol. However, for cases where a collection conformance is desirable, OrderedDictionary provides the special elements view. Elements is a random-access collection that provides an indexing subscript returning a key-value pair. Looking at the underlying implementation, while the regular dictionary type uses two separate hash tables for storing keys and values respectively, an ordered dictionary uses a single compressed hash table and two parallel arrays instead. This can save even more space than ordered sets do. So these are the three new data structures available in the Collections package. By using these constructs, we can boost the performance of our apps, or reduce memory use or -- just as importantly -- we can express constraints that we weren't able to easily satisfy with the standard types, such as preserving element ordering in a set. Because these new types all conform to some sequence and collection protocols, they also interoperate with the algorithms provided by the standard library as well as the new Algorithms package that Kyle showed us earlier. Swift Collections and Swift Algorithms are only two of the new members of our growing list of open-source packages. The future of the Swift library ecosystem is being molded right now, as we push onto new platforms and into new domains. And this is being done in plain sight as we increasingly leverage open-source packages. We're deliberately releasing these packages early, while they're still pliable, and we're developing them as community efforts on GitHub. So try them out. File an issue. Open a pull request. It's never been a better time, and it's never been easier to get involved and make an impact. I hope you're as excited about these new Swift packages as we are. We can't wait to see what you build with these! Thank you for watching, and enjoy the rest of the conference! ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:00",
+      "title": "The map algorithm",
+      "language": "swift",
+      "code": "// Raw loop:\nvar selectedMessages: [Message] = []\nfor indexPath in indexPathsForSelectedRows {\n    selectedMessages.append(messages[indexPath.row])\n}\n\n// Using `map` makes this clearer and faster.\nindexPathsForSelectedRows.map { messages[$0.row] }"
+    },
+    {
+      "timestamp": "1:36",
+      "title": "The compactMap algorithm",
+      "language": "swift",
+      "code": "// Raw loop:\nvar attachments: [Attachment] = []\nfor message in messages {\n    if let attachment = message.attachment {\n        attachments.append(attachment)\n    }\n}\n\n// The above is just a `map` and a `filter`.\nmessages\n    .filter { $0.attachment != nil }\n    .map { $0.attachment! }\n\n// This pattern is so common we have a special name and algorithm for it.\nmessages.compactMap { $0.attachment }"
+    },
+    {
+      "timestamp": "2:06",
+      "title": "The flatMap algorithm",
+      "language": "swift",
+      "code": "extension Message {\n    func makeMessageParts() -> [TranscriptItem]\n}\n\nmessages // [Message]\n    .map { $0.makeMessageParts() } // [[TranscriptItem]]\n    .joined() // [TranscriptItem]\n\n// This pattern is so common that we have another special kind of map for it.\nmessages // [Message]\n    .flatMap { $0.makeMessageParts() }  // [TranscriptItem]"
+    },
+    {
+      "timestamp": "3:00",
+      "title": "Chaining together algorithms",
+      "language": "swift",
+      "code": "// Raw loop:\nvar photos: [PhotoItem] = []\nfor item in transcript.reversed() {\n    if let photo = item as? PhotoItem {\n        photos.append(photo)\n        if photos.count == 6 {\n            break\n        }\n    }\n}\n\n// The above can be expressed more concisely by chaining together algorithms.\ntranscript\n    .reversed() // [TranscriptItem]\n    .compactMap { $0 as? PhotoItem } // [PhotoItem]\n    .prefix(6) // [PhotoItem]\n\n// This gives us more flexibility to express this code more clearly.\ntranscript\n    .compactMap { $0 as? PhotoItem } // [PhotoItem]\n    .suffix(6) // [PhotoItem]\n    .reversed() // [PhotoItem]"
+    },
+    {
+      "timestamp": "4:19",
+      "title": "Lazy adapters",
+      "language": "swift",
+      "code": "extension Message {\n    func makeMessageParts() -> [TranscriptItem]\n}\n\nmessages\n    .map { $0.makeMessageParts() } // [[TranscriptItem]]\n    .joined() // FlattenSequence<[[TranscriptItem]]>"
+    },
+    {
+      "timestamp": "4:58",
+      "title": "Lazy algorithm chains",
+      "language": "swift",
+      "code": "transcript\n    .lazy // LazySequence<[TranscriptItem]>\n    .compactMap { $0 as? PhotoItem } // LazyCompactMap<[TranscriptItem], PhotoItem>\n    .suffix(6) // LazyCompactMap<ArraySlice<TranscriptItem>, PhotoItem>\n    .reversed() // ReversedCollection<LazyCompactMap<ArraySlice<TranscriptItem>, PhotoItem>>"
+    },
+    {
+      "timestamp": "5:48",
+      "title": "Wrapping a lazy algorithm chain in an Array initializer",
+      "language": "swift",
+      "code": "Array(\n    transcript\n        .lazy\n        .compactMap { $0 as? PhotoItem }\n        .suffix(6)\n        .reversed()\n)"
+    },
+    {
+      "timestamp": "7:13",
+      "title": "windows(ofCount:)",
+      "language": "swift",
+      "code": "import Algorithms\n\nlet x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]\n\nfor window in x.windows(ofCount: 3) {\n    print(window)\n}\n\n// Prints [0, 1, 2]\n// Prints [1, 2, 3]\n// Prints [2, 3, 4]\n// Prints [3, 4, 5]"
+    },
+    {
+      "timestamp": "7:30",
+      "title": "adjacentPairs()",
+      "language": "swift",
+      "code": "import Algorithms\n\nlet x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]\n\nfor (prev, next) in x.adjacentPairs() {\n    print((prev, next))\n}\n\n// Prints (0, 1)\n// Prints (1, 2)\n// Prints (2, 3)\n// Prints (3, 4)"
+    },
+    {
+      "timestamp": "7:45",
+      "title": "chunks(ofCount:)",
+      "language": "swift",
+      "code": "import Algorithms\n\nlet x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]\n\nfor chunk in x.chunks(ofCount: 3) {\n    print(chunk)\n}\n\n// Prints [0, 1, 2]\n// Prints [3, 4, 5]\n// Prints [6, 7, 8]\n// Prints [9]"
+    },
+    {
+      "timestamp": "8:08",
+      "title": "chunked(on:)",
+      "language": "swift",
+      "code": "import Algorithms\n\nlet x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]\n\nfor (isPrime, chunk) in x.chunked(on: \\.isPrime) {\n    print((isPrime, chunk))\n}\n\n// Prints (false, [0, 1])\n// Prints (true, [2, 3])\n// Prints (false, [4])\n// Prints (true, [5])"
+    },
+    {
+      "timestamp": "8:33",
+      "title": "Recognizing the chunked(on:) pattern",
+      "language": "swift",
+      "code": "// Raw loop:\nvar prev: Element?\nfor element in collection {\n    if prev?.value != element.value {\n        // do work\n    }\n    prev = element\n}\n\n// The above is just `chunked(on:)`.\nfor (value, chunk) in collection.chunked(on: \\.value) {\n    // do work\n}"
+    },
+    {
+      "timestamp": "8:49",
+      "title": "Mapping, chunking, and joining",
+      "language": "swift",
+      "code": "import Algorithms\n\nextension Message {\n    func makeMessageParts() -> [TranscriptItem]\n}\n\ntranscript = Array(\n    messages\n        .lazy\n        .flatMap { $0.makeMessageParts() }\n        .chunked { $1.date.timeIntervalSince($0.date) < 60 * 60 }\n        .joined { DateItem(date: $1.first!.date) }\n)"
+    },
+    {
+      "timestamp": "14:56",
+      "title": "Double-ended queues",
+      "language": "swift",
+      "code": "var queue: Deque = [\"A\", \"B\", \"C\"]\n\nqueue.append(\"D\")\nqueue.append(\"E\")\nqueue.removeFirst()  // \"A\"\nqueue.removeFirst()  // \"B\"\n\nqueue.prepend(\"F\")\nqueue.prepend(\"G\")\nqueue.removeLast()   // \"E\"\nqueue.removeLast()   // \"D\""
+    },
+    {
+      "timestamp": "15:46",
+      "title": "Deque protocol conformances",
+      "language": "swift",
+      "code": "var items: Deque = [\"D\", \"E\", \"f\"]\nprint(items[1])  // \"E\"\nitems[2] = \"F\"\nitems.insert(contentsOf: [\"A\", \"B\", \"C\"], at: 0)\nprint(items[1])  // \"B\""
+    },
+    {
+      "timestamp": "17:31",
+      "title": "Accessing elements is still efficient",
+      "language": "swift",
+      "code": "var items: Deque = [\"D\", \"E\", \"F\"]\nprint(items[1])  // \"E\"\nitems.insert(contentsOf: [\"A\", \"B\", \"C\"], at: 0)\nprint(items[1])  // \"B\""
+    },
+    {
+      "timestamp": "18:39",
+      "title": "Removing elements at random is twice as fast on average",
+      "language": "swift",
+      "code": "var items: Deque = [\"A\", \"B\", \"C\", \"D\", \"E\", \"F\"]\nitems.removeSubrange(1 ..< 3)"
+    },
+    {
+      "timestamp": "19:33",
+      "title": "Unordered sets",
+      "language": "swift",
+      "code": "let first: Set = [\"A\", \"B\", \"C\", \"D\", \"E\", \"F\"]\nprint(first)  // [\"B\", \"E\", \"C\", \"F\", \"D\", \"A\"]\nlet second: Set = [\"A\", \"B\", \"C\", \"D\", \"E\", \"F\"]\nprint(second)  // [\"A\", \"D\", \"E\", \"F\", \"C\", \"B\"]\nprint(first == second)  // true"
+    },
+    {
+      "timestamp": "20:26",
+      "title": "Ordered sets",
+      "language": "swift",
+      "code": "let first: OrderedSet = [\"A\", \"B\", \"C\", \"D\", \"E\", \"F\"]\nprint(first)         // [\"A\", \"B\", \"C\", \"D\", \"E\", \"F\"]\n\nlet second: OrderedSet = [\"F\", \"E\", \"D\", \"C\", \"B\", \"A\"]\n\nprint(first == second)                      // false\nprint(first.unordered == second.unordered)  // true"
+    },
+    {
+      "timestamp": "21:04",
+      "title": "Ordered sets resemble how arrays work",
+      "language": "swift",
+      "code": "var items: OrderedSet = [\"E\", \"D\", \"C\", \"B\", \"A\"]\nitems[3]  // \"B\"\nitems.append(\"F\")         // (inserted: true, index: 5)\nitems.insert(\"B\", at: 1)  // (inserted: false, index: 3)\nitems.remove(\"E\")\nitems.sort()\nitems.shuffle()"
+    },
+    {
+      "timestamp": "22:32",
+      "title": "Ordered sets implement high-level set operations",
+      "language": "swift",
+      "code": "var items: OrderedSet = [\"B\", \"D\", \"E\"]\nitems.formUnion([\"A\", \"B\", \"C\", \"F\"])\nitems.subtract([\"A\", \"B\", \"G\"])\n\nlet other: OrderedSet = [\"C\", \"D\", \"E\", \"F\"]\nprint(items == other)  // false\nprint(items.unordered == other.unordered)  // true"
+    },
+    {
+      "timestamp": "26:46",
+      "title": "Ordered dictionaries",
+      "language": "swift",
+      "code": "var dict: OrderedDictionary = [2: \"two\", 1: \"one\", 0: \"zero\"]\n\nprint(dict[1])  // Optional(\"one\")\nprint(dict)     // [2: \"two\", 1: \"one\", 0: \"zero\"]\n\ndict[3] = \"three\"\ndict[1] = nil\nprint(dict)     // [2: \"two\", 0: \"zero\", 3: \"three\"]"
+    },
+    {
+      "timestamp": "27:38",
+      "title": "Subscripting always means the keying subscript",
+      "language": "swift",
+      "code": "var dict: OrderedDictionary = [2: \"two\", 0: \"zero\", 3: \"three\"]\n\nprint(dict[0])           // Optional(\"zero\")       \n\nprint(dict.elements[0])  // (key: 2, value: \"two\")"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Collection",
+        "url": "https://developer.apple.com/documentation/Swift/Collection"
+      },
+      {
+        "title": "Sequence",
+        "url": "https://developer.apple.com/documentation/Swift/Sequence"
+      },
+      {
+        "title": "Swift Forums",
+        "url": "https://forums.swift.org"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10256/8/389DAED7-3871-4195-95B0-59E7F10A5E52/downloads/wwdc2021-10256_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10256/8/389DAED7-3871-4195-95B0-59E7F10A5E52/downloads/wwdc2021-10256_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10020",
+      "year": "2022",
+      "title": "Compose advanced models with Create ML Components",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10020"
+    },
+    {
+      "id": "110355",
+      "year": "2022",
+      "title": "Meet Swift Async Algorithms",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110355"
+    },
+    {
+      "id": "10192",
+      "year": "2021",
+      "title": "What‘s new in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10192"
+    },
+    {
+      "id": "10217",
+      "year": "2020",
+      "title": "Explore numerical computing in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10217"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:49:05.984Z"
+}

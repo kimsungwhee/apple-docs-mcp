@@ -1,0 +1,104 @@
+{
+  "id": "10235",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10235/",
+  "title": "What’s new in voice processing",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Julian: Hi, welcome to \"What's new in voice processing.” I'm Julian from the Core Audio team. Voice over IP applications have become more essential than ever, to help people stay connected with their colleagues, friends, and family. The audio quality in voice chat plays a critical role in delivering a great user experience. It's important yet challenging to implement the audio processing that sounds great under all circumstances. That's why Apple offers the voice processing APIs, so that everyone can always enjoy the best possible audio experience when they chat in your app, no matter what kind of acoustic environment they are in, which Apple product they are using, and what audio accessory is being connected to. Apple's voice processing APIs are widely used by many apps, including our own FaceTime and Phone app. It provides best-in-class audio signal processing, including echo cancellation, noise suppression, automatic gain control, among others to enhance the voice chat audio. Its performance is tuned by acoustic engineers for each Apple product model in conjunction with each type of audio device, to account for their unique acoustic characteristics. Choosing Apple's voice processing APIs also grants users full control over the mic mode settings for your app, including Standard, Voice Isolation, and Wide Spectrum. We highly recommend using Apple's voice processing APIs for your Voice over IP applications. Apple's voice processing APIs are available in two options. The first option is an I/O audio unit called AUVoiceIO, also known as AUVoiceProcessingIO. This option is for apps that need to interact with I/O audio unit directly.\n\nThe second option is AVAudioEngine, more specifically by enabling AVAudioEngine's \"voice processing\" mode.\n\nAVAudioEngine is higher-level API. It's generally easier to use and it reduces the amount of code you have to write when working with audio. Both options provide the same voice processing capabilities. Now, what's new? We are making the voice processing APIs available on tvOS for the very first time. For more details on that, please check out session \"Discover Continuity Camera for tvOS\". We are also adding a couple of new APIs to AUVoiceIO and AVAudioEngine to provide you more controls over voice processing, and to help you implement new features.\n\nThe first API is to help you control the ducking behavior of other audio-- and I'll explain what that means in a minute. The second API is to help you implement a muted talker detection feature for your app. In this session, I'm going to focus on the details of these two new APIs. The first API I'd like to talk about is \"Other audio ducking.” Before we dive into this API, let me first explain what other audio is and why ducking matters. When you use Apple's voice processing API, let's take a look at what's happening to the playback audio. Your app is providing a voice chat audio stream processed with Apple's voice processing and played to the output device. However, there could be other audio streams playing at the same time.\n\nFor example, your app could be playing another audio stream that is not rendered through the voice processing API.\n\nThere also could be other apps playing audio at the same time as your app. All the audio streams other than the voice audio stream from your app are considered as \"other audio\" by Apple's voice processing, and your voice audio gets mixed in with other audio before getting played to the output device. For voice chat apps, typically the primary focus of the playback audio is the voice chat audio. That's why we duck the volume level of other audio, in order improve the intelligibility of the voice audio. In the past, we applied a fixed amount of ducking to other audio. This has worked well for most apps, and if your app is happy with the current ducking behavior, then you don't need to do anything. However, we realize that some apps would like to have more controls over the ducking behavior, and this API will help you accomplish that.\n\nLet's examine this API for AUVoiceIO first, and we'll get to AVAudioEngine later. For AUVoiceIO, this is the struct of other audio ducking configuration. It provides controls of two independent aspects of ducking-- the style of ducking; that is, mEnableAdvancedDucking, and the amount of ducking, that is mDuckingLevel. For mEnableAdvancedDucking, by default, this is disabled. Once enabled, it will adjust the ducking level dynamically based on the presence of voice activity from either side of the chat participants. In other words, it applies more ducking when user from either side is talking, and it reduces ducking when neither side is talking. This is very similar to the ducking in FaceTime SharePlay, where media playback volume is high when neither party in FaceTime is talking, but as soon as someone starts talking, the media playback volume is reduced.\n\nNext, mDuckingLevel. There are four levels of controls: default (Default), minimum (Min), medium (Mid), and maximum (Max). The default (Default) ducking level applies the same amount of ducking we've been applying, and this will continue to be our default setting. The minimum (Min) ducking level minimizes the amount of ducking we apply. In other words, this is the setting to use if you want other audio volume to be as loud as possible. Vice versa, the maximum (Max) ducking level maximizes the amount of ducking we apply. Generally speaking, choosing a higher ducking level helps improve the intelligibility of the voice chat.\n\nThe two controls can be used independently. When used in combination, it gives you the full flexibility of controlling the ducking behavior.\n\nNow that we've covered what the ducking configuration does, you can create one that's suitable for your app. For example, here I'm going to enable the advanced ducking, and select the ducking level to be minimum.\n\nThen I'll set this ducking configuration to AUVoiceIO, via kAUVoiceIOProperty_ OtherAudioDuckingConfiguration.\n\nFor AVAudioEngine clients, the API looks very similar. Here is the struct definition of other audio ducking configuration, and this is the enum definition of ducking level.\n\nTo use this API with AVAudioEngine, you'd first enable voice processing on the input node of the engine then set up the ducking configuration.\n\nAnd finally, set the configuration on the input node. Next, let's talk about another API that helps you implement a very useful feature in your app. Have you ever been in the situation in an online meeting where you thought you were chatting with colleagues or friends, but moments later, you realized you were muted and no one actually heard your brilliant points or funny stories? Yes, awkward. It's quite useful to provide a muted talker detection feature in your app, like what FaceTime is doing here.\n\nThat's why we are providing an API for you to detect the presence of a muted talker. It was first introduced in iOS 15, and now we are making it available to macOS 14 and tvOS 17. Here is the high-level overview of how to use this API. First, you'd need to provide a listener block to AUVoiceIO or AVAudioEngine to receive the notification when muted talker is detected. The listener block you provide is invoked whenever the muted talker starts talking or stops talking then implement your handling code for such notification. For example, you may want to prompt the user to unmute themselves if the notification indicates the user starts talking while muted. Last but not least, it's required to implement mute via the mute API of AUVoiceIO or AVAudioEngine.\n\nLet me walk you through some code examples with AUVoiceIO. We'll get to the AVAudioEngine example later. First, prepare a listener block that handles the notification.\n\nThe block has a parameter of type AUVoiceIOSpeechActivityEvent, which can be one of two values-- SpeechActivityHasStarted or SpeechActivityHasEnded.\n\nThe listener block will be invoked whenever the speech activity event changes during mute.\n\nInside the block, this is where you implement how you want to handle this event, For example, when SpeechActivityHasStarted event is received, you might want to prompt the user to unmute themselves. Once you have this listener block ready, register the block with AUVoiceIO via kAUVoiceIOProperty_MutedSpeechActivityEventListener.\n\nWhen user mutes, implement the mute via mute API kAUVoiceIOProperty_MuteOutput.\n\nYour listener block is getting invoked only if A, the user is muted, and B, when the speech activity state changes.\n\nContinuous presence of or lack of speech activity will not cause redundant notification.\n\nFor AVAudioEngine clients, the implementation is very similar. After you enable voice processing on the input node of the engine, prepare a listener block where you handle the notification.\n\nThen register the listener block with the input node.\n\nWhen user mutes, use AVAudioEngine's voice processing mute API to mute.\n\nNow, we've covered implementing a muted talker detection feature with AUVoiceIO and AVAudioEngine. For those of you who are not ready yet to adopt Apple's voice processing APIs, we are providing an alternative to help you implement this feature.\n\nThis alternative is only available on macOS via the CoreAudio HAL APIs, that is, Hardware Abstraction Layer APIs. There are two new HAL properties to help you detect voice activity when used in combination. First, enable voice activity detection on the input device via kAudioDevicePropertyVoiceActivityDetectionEnable. Then register an HAL property listener on kAudioDevicePropertyVoiceActivityDetectionState. This HAL property listener is invoked whenever there is a change in the voice activity state. When your app is notified by the property listener, query the property to get its current value.\n\nNow let me walk you through this with some code example.\n\nTo enable voice activity detection on the input device, first construct the HAL property address.\n\nThen set the property onto the input device to enable it.\n\nNext, to register a listener on the voice activity detection state property, construct the HAL property address, then supply your property listener.\n\nHere the \"listener_callback\" is the name of your listener function.\n\nThis is an example of how to implement the property listener.\n\nThe listener conforms to this function signature.\n\nIn this example, we assume that this listener is only registered for one HAL property, which means when it's invoked, there is no ambiguity as to which HAL property has changed.\n\nIf you register the same listener for notification of more than one HAL properties, then you must first go through the array of inAddresses to see what exactly has changed.\n\nIn handling this notification, query the VoiceActivityDetectionState property to get its current value then implement your own logics in handling that value.\n\nThere are some important details about these voice activity detection HAL APIs. First of all, it's detecting voice activity from echo-cancelled microphone input so it's ideal for voice chat applications.\n\nSecondly, this detection works regardless of process mute state. In order to implement a muted talker detection feature with it, it's up to your app to implement the additional logic that combines the voice activity state with the mute state. For HAL API clients to implement mute we highly recommend using HAL's process mute API. It suppresses the recording indicator light in the menu bar, and gives user confidence that their privacy is protected under mute. Let's do a recap on what talked about today. We discussed about Apple's voice processing APIs and why we recommend it for voice over IP applications. We talked about ducking of other audio, and the API to control the ducking behavior with code examples of how to use it with AUVoiceIO and AVAudioEngine. We also talked about how to implement muted talker detection with code examples of AUVoiceIO and AVAudioEngine. And for clients who have not adopted Apple's voice processing APIs, we also showed an alternative option to do it on macOS with Core Audio HAL APIs. We are looking forward to great apps you'll build with Apple's voice processing APIs. Thanks for watching! ♪ ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "5:50",
+      "title": "Other audio ducking",
+      "language": "swift",
+      "code": "// Insert code snipp297struct AUVoiceIOOtherAudioDuckingConfiguration {\n\tBoolean mEnableAdvancedDucking;\n\tAUVoiceIOOtherAudioDuckingLevel  mDuckingLevel;\n};et.\ntypedef CF_ENUM(UInt32, AUVoiceIOOtherAudioDuckingLevel) {\n\tkAUVoiceIOOtherAudioDuckingLevelDefault = 0,\n\tkAUVoiceIOOtherAudioDuckingLevelMin = 10,\n\tkAUVoiceIOOtherAudioDuckingLevelMid = 20,\n\tkAUVoiceIOOtherAudioDuckingLevelMax = 30\n};"
+    },
+    {
+      "timestamp": "6:48",
+      "title": "Other audio ducking",
+      "language": "swift",
+      "code": "const AUVoiceIOOtherAudioDuckingConfiguration duckingConfig = {\n\t.mEnableAdvancedDucking = true,\n\t.mDuckingLevel = AUVoiceIOOtherAudioDuckingLevel::kAUVoiceIOOtherAudioDuckingLevelMin\n};\n// AUVoiceIO creation code omitted\nOSStatus err = AudioUnitSetProperty(auVoiceIO, kAUVoiceIOProperty_OtherAudioDuckingConfiguration, kAudioUnitScope_Global, 0, &duckingConfig, sizeof(duckingConfig));"
+    },
+    {
+      "timestamp": "7:20",
+      "title": "Other audio ducking",
+      "language": "swift",
+      "code": "public struct AVAudioVoiceProcessingOtherAudioDuckingConfiguration {\n\tpublic var enableAdvancedDucking: ObjCBool \n\tpublic var duckingLevel: AVAudioVoiceProcessingOtherAudioDuckingConfiguration.Level\n}\nextension AVAudioVoiceProcessingOtherAudioDuckingConfiguration {\n\tpublic enum Level : Int, @unchecked Sendable {\n\t\tcase `default` = 0\n\t\tcase min = 10\n\t\tcase mid = 20\n\t\tcase max = 30\n\t}\n}"
+    },
+    {
+      "timestamp": "7:31",
+      "title": "Other audio ducking",
+      "language": "swift",
+      "code": "let engine = AVAudioEngine()\nlet inputNode = engine.inputNode\ndo {\n\ttry inputNode.setVoiceProcessingEnabled(true)\n} catch {\n\tprint(\"Could not enable voice processing \\(error)\")\n}\nlet duckingConfig = AVAudioVoiceProcessingOtherAudioDuckingConfiguration(mEnableAdvancedDucking: false, mDuckingLevel: .max)\ninputNode.voiceProcessingOtherAudioDuckingConfiguration = duckingConfig"
+    },
+    {
+      "timestamp": "7:32",
+      "title": "Muted talker detection AUVoiceIO",
+      "language": "swift",
+      "code": "AUVoiceIOMutedSpeechActivityEventListener listener =  ^(AUVoiceIOMutedSpeechActivityEvent event) {\t\t\n    if (event == kAUVoiceIOSpeechActivityHasStarted) {\n\t\t// User has started talking while muted. Prompt the user to un-mute\n\t} else if (event == kAUVoiceIOSpeechActivityHasEnded) {\n\t\t// User has stopped talking while muted\n\t}\n};\nOSStatus err = AudioUnitSetProperty(auVoiceIO, kAUVoiceIOProperty_MutedSpeechActivityEventListener, kAudioUnitScope_Global, 0, &listener,  sizeof(AUVoiceIOMutedSpeechActivityEventListener));\n// When user mutes\nUInt32 muteUplinkOutput = 1;\nresult = AudioUnitSetProperty(auVoiceIO, kAUVoiceIOProperty_MuteOutput, kAudioUnitScope_Global, 0, &muteUplinkOutput, sizeof(muteUplinkOutput));"
+    },
+    {
+      "timestamp": "11:08",
+      "title": "Muted talker detection AVAudioEngine",
+      "language": "swift",
+      "code": "let listener =  { (event : AVAudioVoiceProcessingSpeechActivityEvent) in\n\tif (event == AVAudioVoiceProcessingSpeechActivityEvent.started) {\n\t\t// User has started talking while muted. Prompt the user to un-mute\n\t} else if (event == AVAudioVoiceProcessingSpeechActivityEvent.ended) {\n\t\t// User has stopped talking while muted\n\t}\n}\ninputNode.setMutedSpeechActivityEventListener(listener)\n// When user mutes\ninputNode.isVoiceProcessingInputMuted = true"
+    },
+    {
+      "timestamp": "12:31",
+      "title": "Voice activity detection - implementation with HAL APIs",
+      "language": "swift",
+      "code": "// Enable Voice Activity Detection on the input device\nconst AudioObjectPropertyAddress kVoiceActivityDetectionEnable{\n        kAudioDevicePropertyVoiceActivityDetectionEnable,\n        kAudioDevicePropertyScopeInput,\n        kAudioObjectPropertyElementMain };\nOSStatus status = kAudioHardwareNoError;\nUInt32 shouldEnable = 1;\nstatus = AudioObjectSetPropertyData(deviceID, &kVoiceActivityDetectionEnable, 0, NULL, sizeof(UInt32), &shouldEnable);\n// Register a listener on the Voice Activity Detection State property\nconst AudioObjectPropertyAddress kVoiceActivityDetectionState{\n        kAudioDevicePropertyVoiceActivityDetectionState,\n        kAudioDevicePropertyScopeInput,\n        kAudioObjectPropertyElementMain };\nstatus = AudioObjectAddPropertyListener(deviceID, &kVoiceActivityDetectionState, (AudioObjectPropertyListenerProc)listener_callback, NULL); // “listener_callback” is the name of your listener function"
+    },
+    {
+      "timestamp": "13:13",
+      "title": "Voice activity detection - listener_callback implementation",
+      "language": "swift",
+      "code": "OSStatus listener_callback(\n    AudioObjectID                 inObjectID,\n    UInt32                        inNumberAddresses,\n    const AudioObjectPropertyAddress*   __nullable inAddresses,\n    void* __nullable              inClientData)\n{\n  // Assuming this is the only property we are listening for, therefore no need to go through inAddresses\n       UInt32 voiceDetected = 0;\n     UInt32 propertySize = sizeof(UInt32);\n     OSStatus status = AudioObjectGetPropertyData(inObjectID, &kVoiceActivityState, 0, NULL, &propertySize, &voiceDetected);\n  \n       if (kAudioHardwareNoError == status) {\n if (voiceDetected == 1) {\n    // voice activity detected\n\t} else if (voiceDetected == 0) {\n\t\t    // voice activity not detected\n\t}\n }\n return status;\n};"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10235/4/78AFC6EE-45CE-4229-AB90-1DE57152E4BA/downloads/wwdc2023-10235_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10235/4/78AFC6EE-45CE-4229-AB90-1DE57152E4BA/downloads/wwdc2023-10235_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10256",
+      "year": "2023",
+      "title": "Discover Continuity Camera for tvOS",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10256"
+    },
+    {
+      "id": "10233",
+      "year": "2023",
+      "title": "Enhance your app’s audio experience with AirPods",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10233"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:22:31.562Z"
+}

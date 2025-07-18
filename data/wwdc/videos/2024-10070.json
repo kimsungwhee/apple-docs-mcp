@@ -1,0 +1,142 @@
+{
+  "id": "10070",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10070/",
+  "title": "Customize feature discovery with TipKit",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, my name is Jake and I am really excited to share some of the new ways you can customize TipKit to help people learn about your app's new and undiscovered features.\n\nTipKit is a framework that makes it easy to show tips in your app. It can teach someone about a brand-new feature or show a faster way to accomplish a task. TipKit lets you easily create tips and automatically manages their display states and history to ensure they are only shown in the right moments. TipKit also lets you control who should see your tips and when with eligibility rules and display frequency. And TipKit provides different presentation styles to best fit your app's UI and it's available on every platform. And now you can do even more to customize feature discovery so your tips feel integrated and seamless. In this video, I'll cover how to group tips together so features are discovered in the ideal order, show how to make tips reusable with custom tip identifiers, match tips to your app's look and feel with TipViewStyle, and sync the TipKit datastore using CloudKit so tip display states are shared across devices.\n\nBut first, tip groups. Tip groups allow you to specify multiple tips and present them one at a time, either in a specific order or using the first tip eligible for display.\n\nWe're going to update our app that helps backcountry hikers discover and navigate new trails.\n\nI recently added a compass control to our map with two features we're going to let people know about using tips. The first tip we want to create is about tapping the compass to show the current location on the map. So we'll make a new tip struct with a title, message, and image that describe the feature.\n\nOur second tip is for a gesture that is a little more hidden; our compass control can also be long pressed to rotate the map back to 0 degrees North, so we're going to add a tip about that feature too.\n\nAnd to display them, we're going to make two calls from the compass to TipKit's popoverTip view modifier. One for the showLocationTip, and another for the rotateMapTip.\n\nThese popovers work great, but there's just one problem. Right now, we don't have control over the order our tips are presented in and we really want someone to know about the tap compass feature before showing a tip about long pressing the compass. So let's update this code to use a TipGroup.\n\nTo control their display, we're going to add both of our compass tips to a TipGroup. We'll initialize it with an ordered priority. Using an ordered priority ensures that our RotateMapTip won't be displayed until the ShowLocationTip has been invalidated, either by the ShowLocationTip view being dismissed, or someone performing the show location tap gesture. And now we just need to update the compass's popoverTip view modifier to use the currentTip property to display our group's currently available tip.\n\nTipGroup's currentTip property can also be cast as a specific type to customize where a tip is presented. If we had separate buttons for both of our compass features, we could use currentTip as? ShowLocationTip to ensure that that tip's popover will only be presented from the first control. And the RotateMapTip popover will only be presented from the second.\n\nNow that we have both of our compass tips appearing in the correct order, there is only one thing left to add. We need to invalidate both of our tips when the features they describe are used. Invalidating a tip ensures that it will not be shown to someone that has already discovered its feature. Additionally, for TipGroups that use an ordered priority, a tip can only be displayed when all of the preceding tips have been invalidated. TipGroups can be configured with either an ordered or firstAvailable priority. An ordered priority, like the one used for our compassTips, is great for progressively teaching people about related features.\n\nThe firstAvailable priority displays the first tip that has its display rules satisfied. This is useful if you have a view with multiple unrelated tips, but only want one to appear at a time. And TipGroups also work great with displayFrequency. Our backcountry trails app configures tips with a weekly displayFrequency. This allows trail seekers time to discover our compass's features on their own before showing them tips about it. TipKit's displayFrequency is an excellent way to avoid overwhelming people with too many tips the first time they launch your app. Tip groups are the perfect way to show tips one at a time and in the exact order you want them to be displayed.\n\nBy using tip groups alongside display rules and display frequency you can progressively call out functionality without overburdening your app with too many tips.\n\nNow let's talk about making tips reusable with custom identifiers. A tip's status and rules are unique based on its identifier. Overriding a tip's default identifier allows you to reuse the same tip struct based on its content. Our backcountry trails app was recently updated with support for a new trail that we'd like to let people know about using tips. We'll start by creating a tip for the newly added Butler Fork trailhead with a message about where it's located. We're also going to include an action button so people can easily navigate to the new trail on our map. And because we only want this tip to appear for hikers that will find it most useful, we're going to add an event rule so the tip is only displayed if someone has visited the trail's region 3 or more times.\n\nAnd to show the tip, we just need to add an instance of it to our TrailList and display it using a TipView. We're also going to add an action handler, so the new trail can be highlighted when the Go there now button is tapped.\n\nBut how well will this work if we add support for more new trails in the future? Uh-oh! Our TrailList code is going to be mostly tips if we continue adding new trails to our app. Also multiple tip views could appear at the same time, which would make it difficult for people to access the actual trail list. This approach isn't very scalable so let's update our code to make a reusable tip with a custom identifier.\n\nWe'll start by defining a new tip that is created with a specific trail object and give it a message based on that trail's name and region. Next, let's add a custom ID for the tip based on the trail used to initialize it. By customizing that ID, each instance of our NewTrailTip will have a unique status and rules based on the trail they're describing. This will allow our tip to be re-displayed with a new trail even if it has been previously invalidated for a different trail. And to ensure these tips still only appear for hikers interested in the areas they describe, we're going to update our didVisit display rule so it's based on the region of the newly added trail.\n\nNow we just need to change our TrailList code to create a new tip based on the latest trail. This allows us to automatically display a tip anytime we add a new trail to our app. And because we're only creating a single instance of our tip we don't have to worry about multiple NewTrailTips appearing at the same time. Every tip has a persistent record based on its identifier, even if its never displayed. This allows TipKit to make tips eligible based on events that happen across multiple launches of your app. That's why when you specify a custom identifier it's important to base it on something concrete like a user ID or a trail name.\n\nBy default, a tip's identifier will be the type name used to initialize it. Overriding that ID allows your tips to be reused based on their content.\n\nCustom identifiers are a great way to have TipKit reuse the same tip model for different tips.\n\nNext, let's talk about customizing the appearance of tip views.\n\nTips have a great default presentation, but in some cases you may need deeper customization to better match your app's UI. For these tips, you can customize their appearance and behavior using TipViewStyle. We have these really beautiful photos for every trail we add to our hiking app and I think we should use the NewTrailTip to showcase them. So let's make a custom TipViewStyle and use each trail's hero image as the background and have the tip's title and message displayed in an overlay.\n\nFor the title and message, we're going to use the properties from the makeBody function's configuration argument instead of the tip's instance values. This will allow any modifiers we apply to our TipView to work with the message and title in our custom style.\n\nAnd to apply it, we just need to call the tipViewStyle modifier. Now, our tip displays with the trail's gorgeous photo as its background.\n\nBut our NewTrailTip also includes an action for quickly highlighting the trail on our map and I don't think we want to put a button on top of that photo.\n\nInstead, lets update our custom style to make the entire tip view tappable.\n\nWe'll start by getting the NewTrailTip's action from the configuration argument. Now we just need to call the action handler when the tip view is tapped. Using the actions property from the configuration argument ensures the handler we created as part of our TipView will still be called when the action is performed.\n\nWhen creating a custom TipViewStyle, it's important to favor the properties from its configuration argument over the tip's instance values whenever possible.\n\nThis allows the closures and modifiers applied to your TipViews to still be evaluated when using a custom style.\n\nCustom TipViewStyles also work great alongside other tip view modifiers like tipCornerRadius and tipBackground. And for apps that use UIKit or AppKit, there is a viewStyle property that can be set to change the style of TipUI and TipNSViews. By creating a TipViewStyle you can easily show tips with custom appearances and behaviors while still allowing TipKit's rules engine to handle their display and dismissal.\n\nAnd now, let's turn to CloudKit syncing.\n\nCloudKit improves your app's user experience by syncing the display states for tips and ensuring someone doesn't need to dismiss the same tip on more than one of their devices. Now that we've added some great tips to our backcountry trails app we should setup CloudKit syncing so our tips's statuses and rules can be shared. We'll start by adding iCloud to the Signing and Capabilities of our Xcode project. From there we'll turn on CloudKit under iCloud Services and create a new container for syncing our tips. We also need to add Background Modes and enable its Remote Notifications capability. This will allow TipKit to process remote changes in the background to ensure our app's trail tips always have the correct status and display state.\n\nFor the last step, we just need to update our Tips configuration call to include the cloudKitContainer option and pass in our new container's ID.\n\nAnd that's it. Now our trail tips will stay in sync across devices so the same tip won't need to be dismissed multiple times. And because TipKit also syncs event and parameter values, the donations that allow our NewTrailTip to appear on one device will be shared, allowing it to be displayed on other devices.\n\nTips in your app may only appear a few times before being invalidated.\n\nBy persisting your tips, TipKit avoids loading their models into memory until they are ready to be displayed. And with CloudKit syncing, a tip's status and rules are shared so tips are not re-displayed on one device after being dismissed from another.\n\nTipKit also syncs events and parameters allowing you to create display rules based on event donations across multiple devices.\n\nAnd display count and duration values are also synced so tips that specify a MaxDisplayCount can be invalidated based on their total number of shared appearances.\n\nIn some cases, you may want to use CloudKit syncing but still have certain tips that are unique on different platforms. For those, you can use UIDevice to create platform specific tip IDs that allow the same tip to be re-displayed on multiple devices.\n\nAnd for testing, TipKit's resetDatastore function will clear the local datastore as well as the CloudKit records for all of your tips.\n\nTipKit is built on top of the powerful persistence of SwiftData. This lets tip statuses, rules, parameters, and events retain their values across app launches. And with CloudKit syncing it's even easier to share these values between devices.\n\nTipKit has powerful tools to ensure your app's tips are only shown at the perfect time and to the audience that will find them most useful. Use TipGroup to allow your features to be discovered one at a time and in the ideal order. Tip groups work great alongside display rules and display frequency for customizing feature discovery in your app. And to learn more about creating display rules check out last year's WWDC video \"Make features discoverable with TipKit\".\n\nCustom identifiers provide an easy way to make reusable tip models so tips can be re-displayed based on their content. TipViewStyle can be used to create custom layouts and interactions for your tips so they always match your app's UI. And CloudKit can be used to sync TipKit's datastore across devices so your tips don't get re-displayed unnecessarily.\n\nOn behalf of the entire TipKit team, I'd like to say thank you so much for joining me today and we can't wait to see how TipKit can help people discover your apps' great new features!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:43",
+      "title": "Create new tips",
+      "language": "swift",
+      "code": "// Create new tips\n\nstruct ShowLocationTip: Tip {\n    var title: Text {\n        Text(\"Show your location\")\n    }\n\n    var message: Text? {\n        Text(\"Tap the compass to highlight your current location on the map.\")\n    }\n\n    var image: Image? {\n        Image(systemName: \"location.circle\")\n    }\n}"
+    },
+    {
+      "timestamp": "1:54",
+      "title": "Create new tips",
+      "language": "swift",
+      "code": "// Create new tips\n\nstruct ShowLocationTip: Tip {\n    var title: Text {\n        Text(\"Show your location\")\n    }\n\n    var message: Text? {\n        Text(\"Tap the compass to highlight your current location on the map.\")\n    }\n\n    var image: Image? {\n        Image(systemName: \"location.circle\")\n    }\n}\n\nstruct RotateMapTip: Tip {\n    var title: Text {\n        Text(\"Reorient the map\")\n    }\n\n    var message: Text? {\n        Text(\"Tap and hold on the compass to rotate the map back to 0° North.\")\n    }\n\n    var image: Image? {\n        Image(systemName: \"hand.tap\")\n    }\n}"
+    },
+    {
+      "timestamp": "2:09",
+      "title": "Show popover tips",
+      "language": "swift",
+      "code": "// Show popover tips\n\nstruct MapCompassControl: View {\n    let showLocationTip = ShowLocationTip()\n    let rotateMapTip = RotateMapTip()\n\n    var body: some View {\n        CompassDial()\n            .popoverTip(showLocationTip)\n            .popoverTip(rotateMapTip)\n            .onTapGesture {\n                showCurrentLocation()\n            }\n            .onLongPressGesture(minimumDuration: 0.1) {\n                reorientMapHeading()\n            }\n    }\n}"
+    },
+    {
+      "timestamp": "2:41",
+      "title": "Create a TipGroup",
+      "language": "swift",
+      "code": "// Create a TipGroup\n\nstruct MapCompassControl: View {\n    @State\n    var compassTips: TipGroup(.ordered) {\n        ShowLocationTip()\n        RotateMapTip()\n    }\n\n    var body: some View {\n        CompassDial()\n            .popoverTip(compassTips.currentTip)\n            .onTapGesture {\n                showCurrentLocation()\n            }\n            .onLongPressGesture(minimumDuration: 0.1) {\n                reorientMapHeading()\n            }\n    }\n}"
+    },
+    {
+      "timestamp": "3:15",
+      "title": "Show TipGroup tips on different views",
+      "language": "swift",
+      "code": "// Show TipGroup tips on different views\n\nstruct MapControlsStack: View {\n    @State\n    var compassTips: TipGroup(.ordered) {\n        ShowLocationTip()\n        RotateMapTip()\n    }\n\n    var body: some View {\n        VStack {\n            ShowLocationButton()\n                .popoverTip(compassTips.currentTip as? ShowLocationTip)\n            RotateMapButton()\n                .popoverTip(compassTips.currentTip as? RotateMapTip)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "3:50",
+      "title": "Invalidate tips",
+      "language": "swift",
+      "code": "// Invalidate tips\n\nstruct MapCompassControl: View {\n    @State\n    var compassTips: TipGroup(.ordered) {\n        showLocationTip\n        rotateMapTip\n    }\n\n    var body: some View {\n        CompassDial()\n            .popoverTip(compassTips.currentTip)\n            .onTapGesture {\n                showLocationTip.invalidate(reason: .actionPerformed)\n                showCurrentLocation()\n            }\n            .onLongPressGesture(minimumDuration: 0.1) {\n                rotateMapTip.invalidate(reason: .actionPerformed)\n                reorientMapHeading()\n            }\n    }\n}"
+    },
+    {
+      "timestamp": "5:37",
+      "title": "Create a tip",
+      "language": "swift",
+      "code": "// Create a tip\n\nstruct ButlerForkTip: Tip {\n    var title: Text {\n        Text(\"Butler Fork is now available\")\n    }\n\n    var message: Text? {\n        Text(\"To see key trail info, tap Big Cottonwood Canyon on the map.\")\n    }\n  \n    var actions: [Action] {\n        Action(title: \"Go there now\")\n    }\n  \n    var rules: [Rule] {\n        #Rule(Region.bigCottonwoodCanyon.didVisitEvent) {\n            $0.donations.count > 3\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "6:01",
+      "title": "Show a TipView",
+      "language": "swift",
+      "code": "// Show a TipView\n\nstruct ButlerForkTip: Tip {\n    var title: Text {\n        Text(\"Butler Fork is now available\")\n    }\n\n    var message: Text? {\n        Text(\"To see key trail info, tap Big Cottonwood Canyon on the map.\")\n    }\n  \n    var actions: [Action] {\n        Action(title: \"Go there now\")\n    }\n  \n    var rules: [Rule] {\n        #Rule(Region.bigCottonwoodCanyon.didVisitEvent) {\n            $0.donations.count > 3\n        }\n    }\n}\n\nstruct TrailList: View {\n    var trails: [Trail]\n\n    var body: some View {\n        ScrollView {\n            let butlerForkTip = ButlerForkTip()\n            TipView(butlerForkTip) { _ in\n                highlightButlerForkTrail()\n            }\n\n            ListSection(title: \"Trails\", trails: trails)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "6:45",
+      "title": "Create a reusable tip",
+      "language": "swift",
+      "code": "// Create a reusable tip\n\nstruct NewTrailTip: Tip {\n    let newTrail: Trail\n\n    var title: Text {\n        Text(\"\\(newTrail.name) is now available\")\n    }\n\n    var message: Text? {\n        Text(\"To see key trail info, tap \\(newTrail.region) on the map.\")\n    }\n\n    var actions: [Action] {\n        Action(title: \"Go there now\")\n    }\n  \n    var id: String {\n        \"NewTrailTip-\\(newTrail.id)\"\n    }\n  \n    var rules: [Rule] {\n        #Rule(newTrail.region.didVisitEvent) {\n            $0.donations.count > 3\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "7:26",
+      "title": "Show a TipView",
+      "language": "swift",
+      "code": "// Show a TipView\n\nstruct NewTrailTip: Tip {\n    let newTrail: Trail\n\n    var title: Text {\n        Text(\"\\(newTrail.name) is now available\")\n    }\n\n    var message: Text? {\n        Text(\"To see key trail info, tap \\(newTrail.region) on the map.\")\n    }\n\n    var actions: [Action] {\n        Action(title: \"Go there now\")\n    }\n  \n    var id: String {\n        \"NewTrailTip-\\(newTrail.id)\"\n    }\n  \n    var rules: [Rule] {\n        #Rule(newTrail.region.didVisitEvent) {\n            $0.donations.count > 3\n        }\n    }\n}\n\nstruct TrailList: View {\n    var trails: [Trail]\n    let newTrail: Trail\n\n    var body: some View {\n        ScrollView {\n            let newTrailTip = NewTrailTip(newTrail: newTrail)\n            TipView(newTrailTip) { _ in\n                highlightTrail(newTrailTip)\n            }\n\n            ListSection(title: \"Trails\", trails: trails)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "8:55",
+      "title": "Create a custom TipViewStyle",
+      "language": "swift",
+      "code": "// Create a custom TipViewStyle\n\nstruct NewTrailTipViewStyle: TipViewStyle {\n    func makeBody(configuration: Configuration) -> some View {\n        let tip = configuration.tip as! NewTrailTip\n\n        TrailImage(imageName: tip.newTrail.heroImage)\n            .frame(maxHeight: 150)\n            .overlay {\n                VStack {\n                    configuration.title.font(.title)\n                    configuration.message.font(.subheadline)\n                }\n            }\n    }\n}\n\nextension NewTrailTipViewStyle {\n    struct TrailImage: View {\n        let imageName: String\n\n        var body: some View {\n            Image(imageName)\n                .resizable()\n                .aspectRatio(contentMode: .fill)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "9:20",
+      "title": "Apply a TipViewStyle",
+      "language": "swift",
+      "code": "// Apply a TipViewStyle\n\nstruct NewTrailTipViewStyle: TipViewStyle {\n    func makeBody(configuration: Configuration) -> some View {\n        let tip = configuration.tip as! NewTrailTip\n\n        TrailImage(imageName: tip.newTrail.heroImage)\n            .frame(maxHeight: 150)\n            .overlay {\n                VStack {\n                    configuration.title.font(.title)\n                    configuration.message.font(.subheadline)\n                }\n            }\n    }\n}\n\nextension NewTrailTipViewStyle {\n    struct TrailImage: View {\n        let imageName: String\n\n        var body: some View {\n            Image(imageName)\n                .resizable()\n                .aspectRatio(contentMode: .fill)\n        }\n    }\n}\n\nstruct TrailList: View {\n    var trails: [Trail]\n    let newTrail: Trail\n\n    var body: some View {\n        ScrollView {\n            let newTrailTip = NewTrailTip(newTrail: newTrail)\n            TipView(newTrailTip) { _ in\n                highlightTrail(newTrailTip)\n            }\n            .tipViewStyle(NewTrailTipViewStyle())\n\n            ListSection(title: \"Trails\", trails: trails)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "9:45",
+      "title": "Add the tip's action handler",
+      "language": "swift",
+      "code": "// Apply a TipViewStyle\n\nstruct NewTrailTipViewStyle: TipViewStyle {\n    func makeBody(configuration: Configuration) -> some View {\n        let tip = configuration.tip as! NewTrailTip\n        let highlightTrailAction = configuration.actions.first!\n\n        TrailImage(imageName: tip.newTrail.heroImage)\n            .frame(maxHeight: 150)\n            .onTapGesture { highlightTrailAction.handler() }\n            .overlay {\n                VStack {\n                    configuration.title.font(.title)\n                    HStack {\n                        configuration.message.font(.subheadline)\n                        Spacer()\n                        Image(systemName: \"chevron.forward.circle\")\n                            .foregroundStyle(.white)\n                    }\n                }\n            }\n    }\n}\n\nextension NewTrailTipViewStyle {\n    struct TrailImage: View {\n        let imageName: String\n\n        var body: some View {\n            Image(imageName)\n                .resizable()\n                .aspectRatio(contentMode: .fill)\n        }\n    }\n}\n\nstruct TrailList: View {\n    var trails: [Trail]\n    let newTrail: Trail\n\n    var body: some View {\n        ScrollView {\n            let newTrailTip = NewTrailTip(newTrail: newTrail)\n            TipView(newTrailTip) { _ in\n                highlightTrail(newTrailTip)\n            }\n            .tipViewStyle(NewTrailTipViewStyle())\n\n            ListSection(title: \"Trails\", trails: trails)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "11:38",
+      "title": "Add CloudKit sync for tips",
+      "language": "swift",
+      "code": "// Add CloudKit sync for tips\n\n@main\nstruct TipKitTrails: App {\n    var body: some Scene {\n        WindowGroup {\n            ContentView()\n                .task {\n                    await configureTips()\n                }\n        }\n    }\n\n    func configureTips() async {\n        do {\n            try Tips.configure([\n                .cloudKitContainer(.named(\"iCloud.com.apple.TipKitTrails.tips\")),\n                .displayFrequency(.weekly)\n            ])\n        }\n        catch {\n            print(\"Unable to configure tips: \\(error)\")\n        }\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Forum: App & System Services",
+        "url": "https://developer.apple.com/forums/topics/app-and-system-services?cid=vf-a-0010"
+      },
+      {
+        "title": "TipKit",
+        "url": "https://developer.apple.com/documentation/TipKit"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10070/5/8C64605E-ECD1-4D14-8B43-D7E3E751FAA3/downloads/wwdc2024-10070_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10070/5/8C64605E-ECD1-4D14-8B43-D7E3E751FAA3/downloads/wwdc2024-10070_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10229",
+      "year": "2023",
+      "title": "Make features discoverable with TipKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10229"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:11:57.128Z"
+}

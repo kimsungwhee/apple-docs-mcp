@@ -1,0 +1,96 @@
+{
+  "id": "10279",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10279/",
+  "title": "Simplify sign in for your tvOS apps",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Privacy & Security"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Hi. My name is Caleb. I'm a software engineer on the tvOS team. Today, I'm excited to share some great improvements we've made to sign-ins in tvOS 15. We want everyone using Apple TV to be able to get to their content quickly, and with as little friction as possible. That means the process of signing in to your apps should be fluid and painless. One of the most common ways to sign in is by using a password. Users are encouraged to have strong or unique passwords, but these can be frustrating to type. In tvOS 15, we have a great new feature that makes it easier than ever to perform password-based sign-ins in your apps. It starts with the new system sign-in view. This view does a few really important things. First, it provides a consistent sign-in experience across tvOS. Second, it tells users they can use their iPhone or iPad to complete the sign-in. Third, it gives users options for other sign-in types your app may support. I'll talk more about that later. For now, I wanna focus on using your iPhone or iPad to sign in. If a user begins a sign-in in your app, then wakes their iPhone, they'll see a notification like this from the Apple TV. When they tap the notification, iPhone will guide them through the process of signing in. It will suggest a credential from iCloud Keychain. And they can use Face ID to confirm the sign-in. The credential is then sent back to the Apple TV. Now, the app can finish the sign-in and take the user right to their content. I want to take a moment to point out that this is not a text-entry experience. It's a first-class sign-in experience, where both the Apple TV and the iPhone or iPad cooperate to guide the user through the sign-in process. Adopting this new sign-in experience is really easy. There's a high-level API on all Apple platforms that's designed to help people sign in to your apps. It's especially powerful in tvOS 15. With just a little bit of code, you can take full advantage of the great sign-in experience I just showed you. I'd love to walk you through it now. Let's start with configuring your app's associated domains. Associated domains establish a secure link between your app and domain. This allows the Apple TV and the iPhone or iPad to work together to safely suggest credentials to use for signing in. First, make sure the Apple app site association file hosted by your domain lists your tvOS app's application identifier inside the web credentials key.\n\nNext, add the Associated Domain capability to your tvOS app in Xcode. And finally, add your domain to the Associated Domains capability with the web credentials prefix. To learn more about configuring web credentials domains in your apps, see the \"Introducing Password AutoFill for Apps\" video from WWDC 2017. Next, I'd like to show you how to request a credential using AuthenticationServices. Let's take a look at some code. Here we have the basic ingredients needed to request a credential. If you're already using the AuthenticationServices API in your iOS or macOS apps, this code should look very familiar. I'll start by creating an instance of ASAuthorizationController with a password request. Something really powerful about this API is that it lets you specify multiple different kinds of requests. If your app also supports Sign in with Apple, you may include an Apple ID request in the authorization requests array. When you specify multiple requests, iPhone and iPad will let the user decide which type of credential they would like to use to sign in. Next, I'll set myself as the delegate of the authorization controller and call performRequests to start the sign-in.\n\nNow, I need to implement a few methods from ASAuthorization- ControllerDelegate.\n\nWhen the user has selected a credential they want to use on their iPhone or iPad, the system will call didCompleteWithAuthorization.\n\nNow, I can use the user and password properties on the credential to finish the sign-in. If the sign-in fails, the system will call didCompleteWithError.\n\nIf the user canceled the sign-in, I'll return from this method so the app can go back to the main sign-in UI. Otherwise, I should let the user know something went wrong and that they should try again. Next, I'd like to show you how you can customize the system sign-in view. The custom authorization methods API allows you to show buttons for other sign-in types your apps may support.\n\nThe \".other\" value provides a great deal of flexibility. You may use this option to navigate directly to a manual sign-in flow, like asking for a username and password. Or you may use it to navigate to your own UI that allows the user to select a different type of sign-in to perform. If your app allows users to sign in using their TV provider account, you should use the .videoSubscriberAccount value. And finally, the .restorePurchase value allows users to sign in by restoring an in-app purchase. When the user selects one of these custom authorization methods, it is up to your app to begin the requested sign-in flow. Let's take a look at how this works. First, I'll go back to the ASAuthorizationController code I showed you earlier. In order to show custom sign-in options, I'll set the customAuthorizationMethods property on my authorization controller. In this example, I'm using the .other and .restorePurchase values to display \"Sign in Manually\" and \"Restore Purchase\" buttons in the system sign-in view. You should choose the values that are appropriate for your app.\n\nWhen the user selects a custom authorization method, the system will call didCompleteWithCustomMethod on my authorizationController delegate. In this method, I can check the value that was passed in and perform the type of sign-in that the user requested.\n\nFinally, I want to take a moment to talk about some best practices. The best sign-in experience on tvOS starts with a single \"Sign In\" button. It guides the user through the sign-in process, offering a limited number of clear choices. By replacing your existing sign-in experience with the new system sign-in view, users will always have the option to sign in with their iPhone or iPad. And the custom authorization methods API is a great way for you to offer your users additional sign-in options. tvOS 15 makes it easier than ever to build great sign-in experiences. The system sign-in view allows users to sign-in with their iPhone or iPad. And the powerful new API in AuthenticationServices makes it easy for you to get started.\n\nFor a more in-depth look at some of the examples I shared in this presentation, see the sample code project for this session in the developer app. To learn more about how the AuthenticationServices framework can help you build great sign-in experiences across all Apple platforms, see the \"What's new in Authentication\" video from WWDC 2019. Thanks for watching, and enjoy the conference! [upbeat music]",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:28",
+      "title": "Request a credential",
+      "language": "swift",
+      "code": "let controller = ASAuthorizationController(authorizationRequests: [\n    ASAuthorizationPasswordProvider().createRequest()\n])\n\ncontroller.delegate = self\ncontroller.performRequests()"
+    },
+    {
+      "timestamp": "4:19",
+      "title": "Finish signing in",
+      "language": "swift",
+      "code": "func authorizationController(controller: ASAuthorizationController,\n    didCompleteWithAuthorization authorization: ASAuthorization) {\n    if let credential = authorization.credential as? ASPasswordCredential {\n        // Use the credential to sign in\n    }\n}"
+    },
+    {
+      "timestamp": "4:43",
+      "title": "Handle errors",
+      "language": "swift",
+      "code": "func authorizationController(controller: ASAuthorizationController,\n    didCompleteWithError error: Error) {\n    if case ASAuthorizationError.canceled = error  { return }\n    // Let the user know something went wrong\n}"
+    },
+    {
+      "timestamp": "6:00",
+      "title": "Specify custom authorization methods",
+      "language": "swift",
+      "code": "controller.customAuthorizationMethods = [\n    // Sign in Manually\n    .other,\n    // Restore Purchase\n    .restorePurchase\n]"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Simplifying User Authentication in a tvOS App",
+        "url": "https://developer.apple.com/documentation/AuthenticationServices/simplifying-user-authentication-in-a-tvos-app"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10279/6/2634C5FD-06F9-4C34-8D8A-215A0C29356B/downloads/wwdc2021-10279_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10279/6/2634C5FD-06F9-4C34-8D8A-215A0C29356B/downloads/wwdc2021-10279_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "110384",
+      "year": "2022",
+      "title": "Support multiple users in tvOS apps",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110384"
+    },
+    {
+      "id": "10106",
+      "year": "2021",
+      "title": "Move beyond passwords",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10106"
+    },
+    {
+      "id": "10105",
+      "year": "2021",
+      "title": "Secure login with iCloud Keychain verification codes",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10105"
+    },
+    {
+      "id": "10322",
+      "year": "2021",
+      "title": "Tuesday@WWDC21",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10322"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:43:07.814Z"
+}

@@ -1,0 +1,140 @@
+{
+  "id": "297",
+  "year": "2025",
+  "url": "https://developer.apple.com/videos/play/wwdc2025/297/",
+  "title": "Learn about the Apple Projected Media Profile",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello, I’m Jon, an engineer on the Core Media Spatial Technologies team. In this video, I will go over the fundamentals of how non-rectilinear video projection is represented in QuickTime files. Also, I will present updates we’ve introduced to Core Media, Video Toolbox, and AVFoundation frameworks for reading, writing, editing, and publishing Apple Projected Media Profile, or APMP video.\n\nAnd finally, I will cover using the Apple Positional Audio Codec to add immersive spatial audio to projected video media.\n\nWhether you are a camera vendor offering a 180 or 360 degree or wide field of view camera, a developer of video editing software, or an app developer wanting to work with an exciting new type of media, this video will have something for you.\n\nI recommend watching “Explore video experiences for visionOS” for important introductory information about the immersive video profiles available on visionOS 26 and the concept of video projections.\n\nI’ll start with a review of the non-rectilinear video fundamentals introduced in the “Explore video experiences for visionOS” video.\n\nNew for visionOS 26 is the Apple Projected Media Profile which can support 180, 360, and wide FOV video from consumer accesible cameras. A key differentiator within the projected media profile is the projection kind. 2D, 3D and spatial video use a rectilinear projection. 180 degree video uses a half-equirectangular projection, 360 degree video uses equirectangular, and wide-FOV video uses a parametric projection.\n\nThe equirectangular projection, also known as the equidistant cylindrical projection, is widely supported by editing applications such as Final Cut Pro.\n\nIn the equirectangular projection, the pixel coordinates of an enclosing sphere are expressed as angles of latitude and longitude and projected equally into the rows and columns of a rectangular video frame. The horizontal axis maps longitude from negative to positive 180 degrees, while the vertical axis maps latitude from negative to positive 90 degrees.\n\nThe half-equirectangular projection is similar but the X coordinate within the video frame represents the range from negative 90 to positive 90 degrees.\n\nThe ParametricImmersive projection represents the intrinsics and lens distortion parameters associated with wide-angle or fisheye lenses. Intrinsics represent information such as the focal length and optical center and the skew of the lens system used for capture. These parameters are interpreted as a 3x3 matrix, denoted as ‘K’ for camera matrix, that represents a transformation from 3D world coordinates to 2D coordinates on an image plane.\n\nIn addition, the ParametricImmersive projection can represent lens distortion parameters, for example radial distortion. Radial distortion parameters are used to correct for barrel distortion, where straight lines appear curved proportionally to their distance from the optical center due to wide angle lens design. In this image, the fence posts appear curved towards the edge of the lens.\n\nOther lens distortion characteristics such as tangential distortion, projection offset, radial angle limit, and lens frame adjustments can be specified in the ParametricImmersive projection as well.\n\nNow that I’ve covered the fundamentals, I’ll provide an overview of how to use Apple’s APIs to interact with Apple Projected Media Profile content.\n\nI’ll start by describing how APMP video is carried in QuickTime and MP4 movie files.\n\nApple Projected Media Profile enables signaling of 180, 360 and Wide FOV in QuickTime and MP4 files. QuickTime files are structured as a hierarchy of containers of various types of media data, and can include audio and video tracks as well as data describing the details of each track. The ISO Base Media File Format or ISOBMFF specification for MP4 was adapted from QuickTime. The fundamental unit of data organization in an ISOBMFF file is a box.\n\nFor visionOS 1, we introduced a new Video Extended Usage extension box with Stereo view information indicating stereoscopic or monoscopic content. For visionOS 26, we add new boxes to Video Extended Usage also known as vexu to enable signaling of the projected media profile.\n\nThe projection box signals one of the projection types such as equirectangular, half-equirectangular or ParametricImmersive.\n\nA lens collection box contains the parameters for intrinsics, extrinsics and lens distortions for the ParametricImmersive projection. The View packing box contains information about the arrangement of eyes in a frame-packed image, whether side by side or over-under.\n\nHere’s an example of the minimal signaling for a monoscopic equirectangular file. The projection box with ProjectionKind indicating equirectangular.\n\nA stereoscopic 180 degree file requires a stereo view box in addition to the projection kind signaling half-equirectangular. With these building blocks it is also possible to signal other combinations, such as stereoscopic 360.\n\nCheck out the QuickTime and ISO Base Media File Formats and Spatial and Immersive Media specification on developer.apple.com, for more information on the projection box and other boxes supported by Apple Projected Media Profile. Next, I’ll outline some ways to capture APMP content as well as typical APMP workflows.\n\nThere are a variety of cameras available to capture APMP-compatible content. For example, Canon’s EOS VR system to capture and process stereoscopic 180 video. GoPro MAX or Insta360 X5 for 360 video. And recent action cameras like the GoPro HERO 13 and Insta360 Ace Pro 2 for wide FOV video. Final Cut Pro already supports reading and writing APMP for 360 degree formats. And, coming later this year, camera video editing software such as Canon’s EOS VR Utility, and the GoPro Player support exporting of MOV or MP4 files with Apple Projected Media Profile signaling. For 180 or 360 video, use camera vendor software for operations such as stitching, stabilization, and stereo image correction. If the editor is already APMP-enabled, export as an MOV or MP4 file with APMP signaling included. Finally, AirDrop or use iCloud to transfer files to Apple Vision Pro. Otherwise if your camera’s software does not yet support Apple Projected Media, you can export as 180 or 360 using spherical metadata. Then use the avconvert macOS utility, either from the command-line, or through a Finder action by Ctrl-clicking a selection of one or more video files. Finally, AirDrop or use iCloud to transfer files to Apple Vision Pro.\n\nApple Projected Media Profile is suitable for signaling projected video through full media workflows, including capture, editing, and delivery. Here is an example of stereoscopic 180 workflow where APMP signaling can be used at each step.\n\nCapture the content using HEVC, RAW, or ProRes codecs. Then edit using ProRes. For capture and editing 3D content, you can utilize frame-packed, multiview, separate movie files per eye, and even two video tracks signaled in one movie file. In this example, capture requires two movie files, while editing is performed with side-by-side frame-packed content. Encode and publish using the multiview HEVC or MV-HEVC codec for efficient delivery and playback on visionOS. Now, that I have covered the APMP specification and typical workflows, I'll review the new capabilities available in macOS and visionOS 26 for working with APMP files using existing media APIs. I’ll start with asset conversion capabilities. Developers of media workflow-related apps will need time to adopt APMP signaling, so we’ve added functionality in AVFoundation to recognize compatible assets that use Spherical Metadata V1 or V2 signaling. Compatible 180 or 360 content has an equirectangular projection, and can be frame-packed stereo or monoscopic. Pass the asset creation option ShouldParseExternalSphericalTags to recognize directly compatible spherical content and synthesize the appropriate format description extensions. This will allow other system APIs to treat the asset as if it were signaled with Apple Projected Media Profile. Check for the presence of the format description extension convertedFromExternalSphericalTags to determine whether spherical metadata was parsed.\n\nvisionOS 26 has built-in support for lens projection parameters and popular field of view modes for camera vendors such as GoPro and Insta360. Quick Look prompts to convert such files upon opening.\n\nTo enable wide-FOV content conversion in your applications, use the ParametricImmersiveAssetInfo object from the ImmersiveMediaSupport framework. It generates a video format description that contains a ParametricImmersive projection with intrinsics and lens distortion parameters for compatible camera models. Use the isConvertible property to determine if metadata from a compatible camera was detected, and replace the video track’s format description, with a newly derived format description.\n\nNow, system APIs that use this asset will recognize the content as wide-FOV APMP.\n\nPlease refer to the “Converting projected video to Apple Projected Media Profile” sample application, to learn how to convert into delivery-ready APMP formats.\n\nYou can read APMP video using familiar system media APIs.\n\nCoreMedia and AVFoundation frameworks have been updated to support projected media identification and reading.\n\nIf you need to identify an asset as conforming to an APMP profile, perhaps for the purpose of badging or preparing a specific playback experience, you can use AVAssetPlaybackAssistant and look for the non-rectilinear projection configuration option. To learn about about building APMP video playback experiences, check out the “Support immersive video playback in visionOS apps” video.\n\nWhen you need more detail, first examine media characteristics to determine if the video track indicates a non-rectilinear projection. Then you can examine the projectionKind to determine the exact projection signaled.\n\nThe viewPackingKind format description extension identifies frame-packed content.\n\nIt supports side-by-side and over-under frame packing.\n\nTo edit projected media use the AVVideoComposition object from the AVFoundation framework and become familiar with CMTaggedBuffers.\n\nCMTaggedDynamicBuffers are used across multiple APIs to handle stereoscopic content including editing APIs such as AVVideoComposition. CMTaggedDynamicBuffer provides a way to specify certain properties of underlying buffers, denoted as CM Tags.\n\nEach CM Tag will contain a category and value.\n\nHere is an example CMTag representing a StereoView category indicating the left eye.\n\nCMTaggedDynamicBuffers may be grouped into related buffers, such as in this example showing CVPixelBuffers for left and right eyes in a stereoscopic video sample.\n\nTo enable stereoscopic video editing with AVVideoComposition, we have added API for specifying the format of tagged buffers produced by a compositor and a method to pass tagged buffers to composition requests.\n\nThe outputBufferDescription specifies what type of CMTaggedBuffers the compositor will be producing. Define it before starting composition. After constructing a stereoscopic pair of CMTaggedBuffers, call finish and pass the tagged buffers.\n\nNow that I’ve described how to convert, read and edit Apple Projected Media Profile assets, I'll talk about the process of writing them.\n\nIn this code example for writing monoscopic 360 video, I'm using AVAssetWriter to create the asset.\n\nI’m using the CompressionPropertyKey kind to specify the equirectangular projection kind. Compression properties are passed to AVAssetWriterInput using the outputSettings dictionary property AVVideoCompressionPropertiesKey.\n\nNext, I’ll provide recommendations for APMP content publishing.\n\nThese are recommended limits for playback on visionOS. The video codec encoding parameters should conform to HEVC Main or Main 10 with 4:2:0 chroma subsampling. Rec 709 or P3-D65 color primaries are recommended.\n\nStereo mode may be monoscopic or stereoscopic.\n\nThe suggested resolution at 10-bits for monoscopic is 7680 by 3840, 4320x4320 per eye for stereoscopic.\n\nFrame rates vary by resolution and bit-depth, with 30 fps recommended for 10-bit monoscopic 8K or stereoscopic 4K.\n\nBitrate encoding settings are content dependent and should be chosen appropriately for your use case, but we recommend not exceeding 150 megabits per second peak.\n\nAdditional information about the MV-HEVC stereo video profile used by Apple is available in the document “Apple HEVC Stereo Video Interoperability Profile” on developer.apple.com.\n\nWe have updated the Advanced Video Quality Tool or AVQT to support immersive formats such as 3D, Spatial, and APMP 180 and 360 content, along with algorithmic enhancements for better accuracy. AVQT is useful for assessing the perceptual quality of compressed video content and fine-tuning video encoder parameters. It is also helpful for HLS tiers bitrate optimization. New features include the ability to calculate quality metrics using awareness of the equirectangular and half-equirectangular projections.\n\nThe HTTP Live Streaming specification has been enhanced with support for streaming Apple Projected Media Profile, and the latest HLS tools available on the Apple developer website have been updated to support publishing APMP.\n\nThis is an example manifest for a stereoscopic 180 asset. The key change is in the EXT-X-STREAM-INFORMATION tag. The REQ-VIDEO-LAYOUT attribute is specifying stereo and half-equirectangular projection. Note that the map segment must also contain a formatDescription extension signaling the half-equirectangular projection and stereo view information.\n\nFor the latest information on HLS bitrate tier ladders and other HLS authoring guidelines, see the \"HLS Authoring Specification\" on the Apple developer website.\n\nSpatial Audio is as important as video when creating a compelling immersive experience. In the real world, sound can come from anywhere. To recreate this experience, a technology capable of representing the entire sound field is required. We designed the Apple Positional Audio Codec or APAC for this purpose.\n\nOne important capability of APAC is encoding ambisonic audio in order to capture a high-fidelity representation of the sound field.\n\nAmbisonic audio is a technique for recording, mixing, and playing back full-sphere Spatial Audio.\n\nAmbisonic recordings are not tied to a specific speaker layout as the sound field is encoded mathematically using a set of spherical harmonic basis functions.\n\nAmbisonic audio capture uses an array of microphones arranged to take a recording of the 3D sound environment, and then, using digital signal processing, the microphone signals are transformed into signals with directionality corresponding to spherical harmonic components. The combination of all these signals is an accurate representation of the original sound field.\n\nThe term order in ambisonics refers to the number of spherical components used to represent an audio mix.\n\n1st-order is 4 components, or channels, and correspond to 1 omnidirectional channel and 3 channels representing front-back, left-right, and up-down directionally oriented audio. 2nd-order ambisonics uses 9 components, while 3rd order ambisonics use 16. The higher order ambisonics provide more spatial resolution. Apple Positional Audio Codec is a high-efficiency spatial audio codec and is recommended for encoding spatial audio including ambisonics with APMP video.\n\nAPAC decodes on all Apple platforms except for watchOS. The built-in APAC encoder accessible via AVAssetWriter on iOS, macOS and visionOS platforms supports 1st, 2nd, and 3rd order ambisonics.\n\nThis code shows the minimal outputSettings required to encode 1st, 2nd or 3rd order ambisonics using AVAssetWriter.\n\nRecommended bitrates for ambisonics encoded to APAC for APMP range from 384 kilobits per second for 1st order to 768 kilobits per second for 3rd order.\n\nAPAC audio can be segmented and streamed via HLS. Here’s an example of a monoscopic equirectangular video with APAC audio encoding a 3rd order ambisonic track.\n\nNow that you’ve learned about Apple Projected Media Profile, add support for APMP in your app or service to enable immersive user-generated content playback, editing, and sharing. If you are a camera vendor, integrate APMP where appropriate to unlock playback in the Apple ecosystem. Adopt Apple Positional Audio Codec to deliver an immersive audio sound field from an ambisonic microphone capture together with your immersive video.\n\nThanks for watching! Now, I’m going to go capture some stereoscopic 180 video.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "8:58",
+      "title": "Recognize spherical v1/v2 equirectangular content",
+      "language": "swift",
+      "code": "// Convert spherical v1/v2 RFC 180/360 equirectangular content\n\nimport AVFoundation\n\nfunc wasConvertedFromSpherical(url: URL) -> Bool {\n\tlet assetOptions = [AVURLAssetShouldParseExternalSphericalTagsKey: true]\n\tlet urlAsset = AVURLAsset(url: url, options: assetOptions)\n\t\n\t// simplified for sample, assume first video track\n\tlet track = try await urlAsset.loadTracks(withMediaType: .video).first!\n\t\n\t// Retrieve formatDescription from video track, simplified for sample assume first format description\n\tlet formatDescription = try await videoTrack.load(.formatDescriptions).first\n\t\n\t// Detect if formatDescription includes extensions synthesized from spherical\n\tlet wasConvertedFromSpherical = formatDescription.extensions[.convertedFromExternalSphericalTags]\n\t\n\treturn wasConvertedFromSpherical\n}"
+    },
+    {
+      "timestamp": "9:54",
+      "title": "Convert wide FOV content from supported cameras",
+      "language": "swift",
+      "code": "// Convert wide-FOV content from recognized camera models\nimport ImmersiveMediaSupport\n\nfunc upliftIntoParametricImmersiveIfPossible(url: URL) -> AVMutableMovie {\n\tlet movie = AVMutableMovie(url: url)\n\n\tlet assetInfo = try await ParametricImmersiveAssetInfo(asset: movie)\n\tif (assetInfo.isConvertible) {\n\t\tguard let newDescription = assetInfo.requiredFormatDescription else {\n\t\t\tfatalError(\"no format description for convertible asset\")\n\t\t}\n\t\tlet videoTracks = try await movie.loadTracks(withMediaType: .video)\n\t\tguard let videoTrack = videoTracks.first,\n\t\t\t  let currentDescription = try await videoTrack.load(.formatDescriptions).first\n\t\telse {\n      fatalError(\"missing format description for video track\")\n\t\t}\n\t\t// presumes that format already compatible for intended use case (delivery or production)\n    // for delivery then if not already HEVC should transcode for example\n\t\tvideoTrack.replaceFormatDescription(currentDescription, with: newDescription)\n\t}\n  return movie\n}"
+    },
+    {
+      "timestamp": "10:58",
+      "title": "Recognize Projected & Immersive Video",
+      "language": "swift",
+      "code": "// Determine if an asset contains any tracks with nonRectilinearVideo and if so, whether any are AIV\nimport AVFoundation\n\nfunc classifyProjectedMedia( movieURL: URL ) async -> (containsNonRectilinearVideo: Bool, containsAppleImmersiveVideo: Bool) {\n\t\n\tlet asset = AVMovie(url: movieURL)\n\tlet assistant = AVAssetPlaybackAssistant(asset: asset)\n\tlet options = await assistant.playbackConfigurationOptions\n\t// Note contains(.nonRectilinearProjection) is true for both APMP & AIV, while contains(.appleImmersiveVideo) is true only for AIV\n\treturn (options.contains(.nonRectilinearProjection), options.contains(.appleImmersiveVideo))\n}"
+    },
+    {
+      "timestamp": "11:22",
+      "title": "Perform projection or viewPacking processing",
+      "language": "swift",
+      "code": "import AVFoundation\nimport CoreMedia\n\n// Perform projection or viewPacking specific processing\nfunc handleProjectionAndViewPackingKind(_ movieURL: URL) async throws {\n\t\n\tlet movie = AVMovie(url: movieURL)\n\tlet track = try await movie.loadTracks(withMediaType: .video).first!\n\tlet mediaCharacteristics = try await track.load(.mediaCharacteristics)\n\t\n\t// Check for presence of non-rectilinear projection\n\tif mediaCharacteristics.contains(.indicatesNonRectilinearProjection) {\n\t\tlet formatDescriptions = try await track.load(.formatDescriptions)\n\t\tfor formatDesc in formatDescriptions {\n\t\t\tif let projectionKind = formatDesc.extensions[.projectionKind] {\n\t\t\t\tif projectionKind == .projectionKind(.equirectangular) {\n\t\t\t\t\t// handle equirectangular (360) video\n\t\t\t\t} else if projectionKind == .projectionKind(.halfEquirectangular) {\n\t\t\t\t\t// handle 180 video\n\t\t\t\t} else if projectionKind == .projectionKind(.parametricImmersive) {\n\t\t\t\t\t// handle parametric wfov video\n\t\t\t\t} else if projectionKind == .projectionKind(.appleImmersiveVideo) {\n\t\t\t\t\t// handle AIV\n\t\t\t\t}\n\t\t\t}\n\t\t\tif let viewPackingKind = formatDesc.extensions[.viewPackingKind] {\n\t\t\t\tif viewPackingKind == .viewPackingKind(.sideBySide) {\n\t\t\t\t\t// handle side by side\n\t\t\t\t} else if viewPackingKind == .viewPackingKind(.overUnder) {\n\t\t\t\t\t// handle over under\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n}"
+    },
+    {
+      "timestamp": "12:51",
+      "title": "Specify outputBufferDescription for a stereoscopic pair",
+      "language": "swift",
+      "code": "var config = try await AVVideoComposition.Configuration(for: asset)\n\t\n\tconfig.outputBufferDescription = [[.stereoView(.leftEye)], [.stereoView(.rightEye)]]\n\n\tlet videoComposition = AVVideoComposition(configuration: config)"
+    },
+    {
+      "timestamp": "13:01",
+      "title": "Finish an asyncVideoCompositionRequest with tagged buffers",
+      "language": "swift",
+      "code": "func startRequest(_ asyncVideoCompositionRequest: AVAsynchronousVideoCompositionRequest) {\n\tvar taggedBuffers: [CMTaggedDynamicBuffer] = []\n\tlet MVHEVCLayerIDs = [0, 1]\n\tlet eyes: [CMStereoViewComponents] = [.leftEye, .rightEye]\n\t\n\tfor (layerID, eye) in zip(MVHEVCLayerIDs, eyes) {\n\t\t// take a monoscopic image and convert it to a z=0 stereo image with identical content for each eye\n\t\tlet pixelBuffer = asyncVideoCompositionRequest.sourceReadOnlyPixelBuffer(byTrackID: 0)\n\t\t\n\t\tlet tags: [CMTag] = [.videoLayerID(Int64(layerID)), .stereoView(eye)]\n\t\tlet buffer = CMTaggedDynamicBuffer(tags: tags, content: .pixelBuffer(pixelBuffer!))\n\t\ttaggedBuffers.append(buffer)\n\t}\n\tasyncVideoCompositionRequest.finish(withComposedTaggedBuffers: taggedBuffers)\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "AVFoundation",
+        "url": "https://developer.apple.com/documentation/AVFoundation"
+      },
+      {
+        "title": "Converting projected video to Apple Projected Media Profile",
+        "url": "https://developer.apple.com/documentation/AVFoundation/converting-projected-video-to-apple-projected-media-profile"
+      },
+      {
+        "title": "Core Media",
+        "url": "https://developer.apple.com/documentation/CoreMedia"
+      },
+      {
+        "title": "HTTP Live Streaming",
+        "url": "https://developer.apple.com/documentation/HTTP-Live-Streaming"
+      },
+      {
+        "title": "HTTP Live Streaming (HLS) authoring specification for Apple devices",
+        "url": "https://developer.apple.com/documentation/HTTP-Live-Streaming/hls-authoring-specification-for-apple-devices"
+      },
+      {
+        "title": "Using Apple’s HTTP Live Streaming (HLS) Tools",
+        "url": "https://developer.apple.com/documentation/HTTP-Live-Streaming/using-apple-s-http-live-streaming-hls-tools"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/297/5/331d65eb-4973-4be1-a3b2-c1ae3ec8703a/downloads/wwdc2025-297_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/297/5/331d65eb-4973-4be1-a3b2-c1ae3ec8703a/downloads/wwdc2025-297_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "304",
+      "year": "2025",
+      "title": "Explore video experiences for visionOS",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/304"
+    },
+    {
+      "id": "403",
+      "year": "2025",
+      "title": "Learn about Apple Immersive Video technologies",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/403"
+    },
+    {
+      "id": "296",
+      "year": "2025",
+      "title": "Support immersive video playback in visionOS apps",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/296"
+    },
+    {
+      "id": "237",
+      "year": "2025",
+      "title": "What’s new for the spatial web",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/237"
+    },
+    {
+      "id": "10149",
+      "year": "2022",
+      "title": "What’s new in AVQT",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10149"
+    },
+    {
+      "id": "10145",
+      "year": "2021",
+      "title": "Evaluate videos with the Advanced Video Quality Tool",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10145"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:21:45.501Z"
+}

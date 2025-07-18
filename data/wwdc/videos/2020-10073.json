@@ -1,0 +1,116 @@
+{
+  "id": "10073",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10073/",
+  "title": "Empower your intents",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": false,
+  "transcript": {
+    "fullText": "Hello, and welcome to WWDC.\n\nHello, and thanks for joining us. My name is Roman, and I'm a shortcuts engineer at Apple.\n\nToday I'm going to be sharing with you some techniques and some strategies for efficiently implementing Siri and Shortcuts support in your applications. First, we are going to take a tour of the new APIs in SiriKit.\n\nThen, we are going to learn all about how you can fine-tune custom intents in your app.\n\nSo let's start with a brief overview. SiriKit encompasses the Intents and Intents UI frameworks, which you use to integrate your services with Siri, Shortcuts, and Maps. And in iOS 14, you can use Intents to add configuration and intelligence to widgets. An Intents UI app extension displays custom UI in the Siri, Shortcuts, or Maps interface after your Intents app extension fulfills a user request. An Intents app extension receives user requests from SiriKit and turns them into app-specific actions, such as sending a message, playing some music, getting current weather conditions, or ordering a soup.\n\nSiriKit defines a large number of system intents that represent common tasks people take. For system intents, Siri defines the conversational flow while your app provides the data to complete the interaction. If your app lets people perform an everyday task that doesn't fit into any of the SiriKit domains, you can create a custom intent to represent it.\n\nThe job of your Intents extension is to provide SiriKit with the handler objects that you use to handle specific intents. You provide these objects from the handlerForIntent: method of your extension. Let's take a look at the life cycle of handling an intent. Every time the user interacts with an intent, whether at the resolve, confirm, or handle phases, your intent handler has ten seconds to complete the request. The ten-second timeout starts as soon as the user request initiates a connection to your extension.\n\nWhen this happens, if your extension is not yet running, it will be launched by the system. The amount of time it takes to launch your extension depends on how long it takes to load all of the frameworks your process links, and how much time it takes to run the +loads and static initializers included in your process or any frameworks it links.\n\nYour extension also needs some time to perform your business logic.\n\nSo it's important to optimize for launch time by making sure that your extension only links the frameworks that it really needs, because the time spent loading all of the link frameworks counts towards the ten-second timeout. The amount of time it takes to handle a request also affects how people perceive interactions with your app. Siri interactions are intended to be quick and lightweight, so you should avoid making the user wait while your intent handler is working.\n\nTen seconds seems like a lot. Since in most of the cases your Intents extension doesn't really need to link all of the frameworks that your app links, you have the opportunity to minimize the number of symbols that you import. Another noteworthy characteristic of Intents extensions is that they are modular, independently run processes with a lower memory footprint than an app.\n\nHowever, sometimes it's not always possible or convenient to use extensions. In iOS 14, we are introducing in-app intent handling. Now, you have an option to add an intent handler to your app where you can handle SiriKit requests such as Resolve, Confirm, Handle. Let's talk about a few good use cases that should help you decide when to handle your intents in your app versus your extension.\n\nStarting or controlling media playback, or starting a workout, previously required you to perform resolve and confirm in your Intents extension, and then handle in your app. It is more efficient to do this entirely in your app process now.\n\nIn another scenario, if handling your intent affects your app's user interface live on-screen, it's also a good candidate for in-app intent handling.\n\nIn-app intent handling also opens up an opportunity for new use cases that weren't possible before due to memory constraints of extensions, such as photo and video processing.\n\nAnd, well, let's be honest, in some cases your app's structure doesn't currently allow you to factor out code into an intents extension or a shared framework. But, of course, be mindful about the launch time of your app because it will eat into the ten-second timeout we talked about earlier in this session.\n\nWhen you're designing your intent handlers, you should evaluate which intents need to be handled in your intents extension, and which can be moved to your app.\n\nLet's see how you can implement support for in-app intent handling in your app.\n\nThe first thing you need to do is to make sure that your app supports multiple windows and has adopted the UIScene life cycle. When your app is launched in a response to a SiriKit request, it will be launched without any UIScene objects connected to your app. Then, you need to list all of the intents that you would like to handle inside of your application in the Supported Intents section of your app's target. And finally, you need to implement the handlerForIntent: method in your app's delegate.\n\nThis method acts as a dispatcher mapping incoming intents to the object capable of handling them. In your implementation, check the type of the intent parameter and return an object capable of handling that type of intent. The object you return must adopt the protocol used to handle that intent. For example, when handling a ProcessPhotoIntent object, return an object that adopts the ProcessPhotoIntentHandling protocol.\n\nIf handling an intent updates your application's user interface, and requires your users to be looking at something in the app before using the intent, your intent handler may need to make sure that the relevant UI is on-screen in the handle phase.\n\nYou can do this by checking to make sure the app is not in the background. And if it is, asking the system to open it by responding with continueInApp response code. Let's see how to add in-app intent handling to an app in Xcode.\n\nI got into cooking at home recently, so I've been working on this app called Recipe Assistant that allows me to browse my favorite recipes.\n\nWhen I tap on a recipe, I can see all of the ingredients needed to make this recipe. I can tap on the \"Directions\" button to view step-by-step directions. When I tap on the \"Next Step\" button I can advance to the next step. However, sometimes it's not always convenient to tap buttons on-screen while you're preparing the meal. So I would like users of my app to be able to advance to the next step by using a shortcut that they invoke with their voice using Siri. I'm going to implement in-app intent handling in my app since my users will be interacting with the content on-screen.\n\nHere in Xcode, I have my intent-definition file where I define my custom intent called \"ShowDirections.\" I also added the \"Add to Siri\" button to my recipe directions view so users can easily set up a shortcut here. This is what it looks like in the app.\n\nNow, back to Xcode. I have already adopted multiple-window support in my app. Now, I need to add ShowDirectionsIntent to the list of intents eligible for in-app intent handling. To do that, I'm going to click on the \"Plus\" button and add my intent.\n\nNow, what I want to do is to make every view controller in my app to be able to respond to the \"Next Step\" command.\n\nTo do that, I'm going to define a common intent handler that accepts an object conforming to the NextStepProviding protocol.\n\nA view controller that adopts the NextStepProviding protocol will need to return an instance of the IntentHandler class. It would also need to implement the nextStep function that will take the user to the next step in the app. Let's conform our intent handler to the showDirectionsIntentHandling protocol that was code-generated for us, and implement the resolve method.\n\nIn the resolve method for the recipe parameter, we are going to check if we have a recipe. If we don't have a recipe, we will ask for disambiguation. Otherwise, we will return success. In the handle method, we are going to tell the next-step provider to go to the next step. We need to make sure that our app is in the foreground. And if it's not, that we are going to launch the app using the continueInApp response code. We will need to handle launching with a user activity in our SceneDelegate, and I will come back to this in a moment. Now, I will create a new singleton class that will hold a weak reference to the current intent handler.\n\nWe are going to assign the current intent handler in viewDidAppear of each view controller in our app.\n\nIn my app delegate, I need to implement the new handlerForIntent: method, and return the current IntentHandler instance.\n\nIn my SceneDelegate object, I need to implement both willConnectToSession and continueUserActivity methods to continue user activity when we respond with continueInApp response code in our handle method. willConnectToSession will be invoked when the app does not have a UIScene object connected to it.\n\nNow, we need to conform each view controller to the NextStepProviding protocol. And finally, we need to make sure to assign the current intent handler in viewDidAppear.\n\nLet's give it a try.\n\nFirst, I need to add my shortcut to Siri.\n\nNow, let's see what the experience looks like. Hey Siri, next step.  Which recipe would you like to see? Spicy tomato sauce, chickpea curry, or cinnamon apple cake? The first one. Okay. Viewing. Here are the ingredients for spicy tomato sauce. Hey Siri, next step. Okay. Viewing. Step one, in a large pot, heat olive oil on medium heat. Hey Siri, next step. Okay. Viewing. Step two, add minced garlic and sauté for a few seconds until fragrant. Pretty cool, isn't it? When deciding between handling an intent in an extension versus an app, you should ask yourself first, can this task be accomplished in an extension? Because if so, it's better to do that. Intents extensions can be more lightweight and faster to launch depending on the number of frameworks and symbols that you link. This is your opportunity to optimize for launch time since you decide which frameworks your extension is linking. To summarize what we learned about in-app intent handling today, consider implementing an Intents extension first.\n\nAlways be mindful of how many frameworks you link in both your app and your extensions. In-app intent handling is only supported for multi-window apps, so make sure to check out \"Introducing Multiple Windows on iPad\" and \"Architecting Your App for Multiple Windows\" from WWDC 2019. We are very excited to see all the great new SiriKit integrations that you will build using in-app intent handling. Now, let's take a look at another API enhancement that we made this year. We call it \"rich disambiguation.\" In iOS 13, we introduced parameters for Shortcuts which allow your users to provide intent parameter values at runtime. When resolving parameter values of your intent, you can return disambiguation resolution result, and the user will be prompted to pick from a list of values.\n\nThis year, we are introducing the ability for your app to include subtitles and images in those lists.\n\nThe API is pretty simple. You just need to provide the subtitle as a string, and the image as INImage, for your custom types at runtime.\n\nWhat's really cool is that you can also provide dynamic options with images and subtitles that your users will see when they configure your intent in the Shortcuts app.\n\nAnother addition to disambiguation lists is pagination in Siri. As a developer, now you can provide the number of items that Siri should speak to the user at once, and also provide subsequent introductions spoken by Siri. The disambiguation pagination will be only used when the user invokes Siri by saying, \"Hey Siri.\" Here's how to support rich disambiguation with Xcode. Open your intent-definition file where you define your custom intents and expand the Siri Dialog section for the parameter that needs customized disambiguation pagination. Here, you can simply specify the maximum number of items that can be spoken to the user at once, as well as the subsequent introduction stream. You can also override the disambiguation introduction dialog provided by Siri in the voice-only mode by specifying your own dialog in the intent editor. Another addition to the SiriKit APIs this year is dynamic search for dynamic options.\n\nLast year, we introduced a dynamic-options API that allows you to provide a set of values for eligible parameters dynamically when the user is configuring your intent in the Shortcuts app. This year, we are expanding this API to include the search term provided by the user.\n\nThere is a new checkbox to provide search results as you type. If you check the checkbox, it will code-generate a new method that includes searchTerm. This method will be called repeatedly while the user is typing. If the search term is empty, you can provide the user with a list of default values. Dynamic search should only be adopted for searching large catalogs, not for filtering small static collections because the Shortcuts app supports filtering by default.\n\nThe provide options collections method completion handler accepts a new INObjectCollection object. Using this new object, you can now group your dynamic options into sections with titles, and optionally use indexed collation. In iOS 13, we introduced configurable parameters for Shortcuts. Each parameter that you specified as user-facing had to be resolved at runtime.\n\nNow, in iOS 14, you can mark each parameter as configurable and resolvable separately. Siri and the Shortcuts app will not resolve parameters which are marked as unresolvable. You don't need to provide Siri dialog for unresolvable parameters. Today, you learned all about in-app intent handling, and how you can add support for it in your apps. You can enhance your disambiguation lists and dynamic options with rich disambiguation in iOS 14.\n\nDynamic search gives you a new, flexible way of providing dynamic options for your intent parameters.\n\nWhen you're designing your intents, decide which parameters should be configurable and resolvable at runtime. Now, let's take a look at some useful tips and tricks that could help you take your custom intents to the next level. If one of your custom intents is no longer needed because you discontinued the corresponding feature in your app, or you're replacing the intent with another intent, it is now possible to deprecate custom intents in iOS 14 using Xcode 12. In the intent editor, select the intent that you would like to deprecate, and reveal the inspectors by clicking on the \"Expand Inspectors\" button in the toolbar.\n\nNow, all you need to do is just check the deprecated checkbox.\n\nIn the Shortcuts app, your existing users will see that this intent action might be no longer available in future versions of your app. Additionally, this intent action will be hidden from the Shortcuts action list. Now, let's talk about how you can specify your custom-intent class names. When you define a custom intent, a custom type, or a custom enum in the intent editor, you define a type name, not the actual class. The actual class will be code-generated for you based on the type name.\n\nSo if your app uses a class prefix, this is not the right place to specify for your custom intents, types, and enums.\n\nInstead, provide your desired class name in the Custom Class inspector of your intent. Alternatively, you can specify a common class prefix used for all custom intents, types, and enums in the Project Document inspector of your target where the code generation needs to happen. This allows you to have different class prefixes in different targets if you need. Some custom intents that you define in your intent-definition file may require an Intents UI view for the confirm and handle phases, while others don't. Let's see how you can efficiently manage that. When add your intent-definition file to an Intents UI extension target, Xcode automatically lists all of the intents from that intent-definition file as supported by this Intents UI extension.\n\nHowever, for some of your custom intents, you might not want to display any UI at all.\n\nYou can easily achieve this by creating a separate intent-definition file for your non-UI intents. Then, in the target membership inspector of your intent-definition file, simply don't include it in your Intents UI extension target. Sometimes you might want to explicitly choose the code-generation language for your custom intents. And you can easily do this in your project's build settings.\n\nBy default, Xcode will automatically decide the intent code-generation language for each of the targets eligible for code generation based on the existing search files included in this target. But here, you have an option to customize this behavior. So we've gone over a lot today. We've gone over some of the major enhancements in the SiriKit APIs this year. We've also gone over some of the best practices that you can keep in mind when you're designing your custom intents. Thank you so much for watching,\nand we can't wait to see what you build.",
+    "segments": []
+  },
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Providing Hands-Free App Control with Intents",
+        "url": "https://developer.apple.com/documentation/SiriKit/providing-hands-free-app-control-with-intents"
+      },
+      {
+        "title": "Soup Chef: Accelerating App Interactions with Shortcuts",
+        "url": "https://developer.apple.com/documentation/SiriKit/soup-chef-accelerating-app-interactions-with-shortcuts"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10073/3/AA5FAD47-6829-4827-8B36-DB2F30DFC267/wwdc2020_10073_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10073/3/AA5FAD47-6829-4827-8B36-DB2F30DFC267/wwdc2020_10073_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10190",
+      "year": "2020",
+      "title": "Create quick interactions with Shortcuts on watchOS",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10190"
+    },
+    {
+      "id": "10074",
+      "year": "2020",
+      "title": "Decipher and deal with common Siri errors",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10074"
+    },
+    {
+      "id": "10086",
+      "year": "2020",
+      "title": "Design for intelligence: Apps, evolved",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10086"
+    },
+    {
+      "id": "10088",
+      "year": "2020",
+      "title": "Design for intelligence: Discover new opportunities",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10088"
+    },
+    {
+      "id": "10200",
+      "year": "2020",
+      "title": "Design for intelligence: Meet people where they are",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10200"
+    },
+    {
+      "id": "10060",
+      "year": "2020",
+      "title": "Design high quality Siri media interactions",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10060"
+    },
+    {
+      "id": "10071",
+      "year": "2020",
+      "title": "Evaluate and optimize voice interaction for your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10071"
+    },
+    {
+      "id": "10061",
+      "year": "2020",
+      "title": "Expand your SiriKit Media Intents to more platforms",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10061"
+    },
+    {
+      "id": "10084",
+      "year": "2020",
+      "title": "Feature your actions in the Shortcuts app",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10084"
+    },
+    {
+      "id": "10083",
+      "year": "2020",
+      "title": "Integrate your app with Wind Down",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10083"
+    },
+    {
+      "id": "10068",
+      "year": "2020",
+      "title": "What's new in SiriKit and Shortcuts",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10068"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:16:30.154Z"
+}

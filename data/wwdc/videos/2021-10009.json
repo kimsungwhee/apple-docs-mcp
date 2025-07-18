@@ -1,0 +1,421 @@
+{
+  "id": "10009",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10009/",
+  "title": "Build a workout app for Apple Watch",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Health & Fitness",
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Bass music playing ♪  ♪ Brady White: Hi, I’m Brady. I’m an engineer on the Fitness team. Thanks for joining me. There are lots of great workout apps already available in the App Store. Apple Watch is an amazing device capable of tracking all sorts of fitness activity. It can track distance and elevation on those challenging bike rides. You can monitor your heart rate and energy burned during intense workouts. For swimming, it can even detect stroke type and count laps. All of this and more is available for you to build a great workout app. Let’s take a look at what we will be covering today. This session is a Code-Along. We'll go over what that means and how you can participate. We'll build our workout views in SwiftUI. Then, we'll integrate HealthKit to our views. We'll also show you how to support the Always On state. I'm excited, let's get started. This session is a code-along. We will build a workout app together from scratch. While you get your Xcode ready, let's cover a couple of concepts. What is a workout app? A workout app tracks fitness activity during a workout. A workout can be started with a single tap. While the workout is in session, live metrics are displayed, such as elapsed time, energy burned, heart rate, and distance. When the workout ends, a summary shows the metrics recorded for the workout. This is what we will build today. Let’s get started building our workout views. Let’s open Xcode and start a new project. Click Create a new Xcode project, watchOS, Watch App, click Next. Give your workout app a name, such as \"MyWorkouts\". Ensure Interface is SwiftUI, and language is Swift and click Next. Find a location for your project and click Create.\n\nLet’s hide the inspector and resize our canvas.\n\nLet’s click Resume to see what our app looks like, using Xcode previews. Great, our SwiftUI app is ready. Let’s provide a way for someone to start their workout with a StartView. A workout can be started with just a single tap. The list view with carousel-style layout will provide a list of workouts that scrolls vertically with a great depth effect. Our list of workouts will include bike, run, and walk. Let’s create our StartView. Let’s rename \"ContentView\" to \"StartView\". Command-click on ContentView, click Rename, Enter \"StartView\" as the new name. Notice that in MyWorkoutsApp.swift StartView is now NavigationView’s root view. Click Rename. Let’s define an array of workout types to display in our StartView’s list. First, let’s import HealthKit to get access to HKWorkoutActivityType.\n\nNext, let’s add our array of workout types.\n\nOur workout list will have HKWorkoutActivityTypes of cycling, running, and walking. Let’s make HKWorkoutActivityType accessible to our list by extending the HKWorkoutActivityType enum to conform to the identifiable protocol and add a name variable.\n\nThe ID-computed variable will return the rawValue of the enum.\n\nThe name variable will switch through the cases to return a name like “Run”, “Bike”, or “Walk”. Let’s add a List view to our StartView’s body to display the list of workouts.\n\nThe list uses the workoutTypes variable as its model.\n\nA NavigationLink is displayed for each workoutType. A NavigationLink defines a destination for a navigation-based interface. For now, the destination will be a text view. We'll set these navigation links up later to make sure they are tracking the right workout.\n\nPadding makes the navigation links taller to give them a larger tap area to easily start a workout.\n\nThe list uses a carousel listStyle to provide a depth effect when scrolling.\n\nThe navigationBarTitle will display “Workouts”. Let’s click Resume to see a preview of our StartView.\n\nClick Live Preview to be able to scroll. Scroll up to see the carousel ListStyle depth effect. Looks great. The workout session will be presented as a modal experience. During a workout, people typically need only session-specific functionality. They don't need to review the list of workouts or access other parts of your app. Offering the most important items in a modal experience can help people manage their session while minimizing distraction. People who use workout apps on Apple Watch expect the views to be in this order. On the left, our controls view has buttons that control the in-progress session such as End, Pause, and Resume. In the center, metrics appear on a dedicated screen that people can read at a glance. On the right, media playback controls allow media to be controlled during a workout. A TabView on watchOS switches between multiple child views when someone swipes left or right. A TabView also provides a page indicator at the bottom of the view. A TabView will work great to display our in-session views. Let’s create a SessionPagingView with a TabView for our three workout session views. Click File > New > File... SwiftUI View, click Next, name this \"SessionPagingView\" and click Create.\n\nLet’s create a Tab enum to model each view that can be selected in our TabView.\n\nThe Tab enum has three cases: controls, metrics, and nowPlaying. We’ve also added a @State variable named \"selection\" to provide the binding for the TabView’s selection. Selection’s default value will be metrics, so that when the workout starts, the metrics view is displayed. Let’s add the TabView.\n\nThe TabView’s selection parameter uses a binding to our selection state variable. Text views are placeholders for each view until they are created. Each of the views have a tag so they can be selected. Let’s click Resume and see what our SessionPagingView looks like.\n\nClick Live Preview to be able to swipe between the views.\n\nNotice the Metrics text view is displayed first, because SessionPagingView's selection variable's default value is metrics. Swiping to the left shows the Controls text view. Swiping all the way to the right shows the Now Playing text view. Great! While the workout is running, live metrics are displayed. When a session requires movement, like running, your app should use large font sizes and arrange text so that the most important information is easy to read. Our MetricsView will display elapsed time, active energy, current heart rate, and distance. HealthKit has many more HKQuantityTypes available for you to use. Let’s create the MetricsView. Click File > New > File SwiftUI View, click Next, name this \"MetricsView\" and click Create.\n\nA VStack will contain our four metric Text views.\n\nThe Text views have default values for now until we connect these Text views to our model.\n\nLet’s make elapsed time the focal point by giving it a yellow foregroundColor and semibold fontWeight.\n\nThe active energy text view creates a measurement using a default value in energy unit kilocalories. The Measurement uses a new formatted function which abbreviates the unit, usage is workout for workout energy burned, and numberFormat has zero fractionLength to trim fractions.\n\nThe heart rate text view uses a default value formatted with fractionLength zero. It appends “bpm” -- for beats per minute -- to the formatted string.\n\nThe distance text view uses a default value with UnitLength.meters. The measurement is formatted with abbreviated units. usage is road, which displays naturally progressing imperial or metric units based on locale.\n\nWe’ll use a system font of title with rounded design, monospacedDigits, and lowercaseSmallCaps.\n\nWe want our metrics to be aligned to the leading edge, so we’ve given the VStack a frame view modifier with maxWidth infinity, and leading alignment.\n\nWe want to allow content of this VStack to extend all the way to the bottom of the screen. To allow this, we ignore the bottom safe area.\n\nWe want our metrics to be aligned to the navigation bar title, so we've used scenePadding() to do this.\n\nWe want our elapsed time Text view to format the elapsed time properly and hide or show subseconds based on the Always On state. To do this, let’s create an ElapsedTimeView and create a custom ElapsedTimeFormatter. Click File > New > File, SwiftUI View, click Next, name it \"ElapsedTimeView\", and click Create.\n\nOur ElapsedTimeView has elapsedTime, which is a TimeInterval, defaulted to zero. showSubseconds is a Boolean argument defaulted to true. timeFormatter is an ElapsedTimeFormatter state variable that we define below.\n\nThe View’s body contains a Text view that casts the elapsedTime to an NSNumber so that the timeFormatter can use it. Text view has a semibold fontWeight. When showSubseconds changes, the timeFormatter’s showSubseconds variable also changes.\n\nThe ElapsedTimeFormatter is a custom formatter that uses a DateComponentsFormatter. We want elapsed time to show minutes and seconds and pad zeros. The showSubseconds variable dictates if subseconds are shown.\n\nWe override the string for value function, which returns an optional String. The first guard ensures the value is a TimeInterval.\n\nThe second guard ensures the componentsFormatter returned a string.\n\nIf showSubseconds is true, calculate the subseconds by getting the truncatedRemainder by dividingBy 1, then multiplying by 100. Use a localized decimalSeparator, then return a formattedString, appending the subseconds.\n\nIf showSubseconds is false, then just return the formattedString without subseconds. Click resume to see a preview of our ElapsedTimeView.\n\nLooks good. Minutes has zeros padded on the left side of the colon. Seconds has zeros padded on the right side of the colon. Subseconds are displayed after the decimal. Let’s add the ElapsedTimeView to MetricsView. Click MetricsView.\n\nReplace the elapsed time Text view with the ElapsedTimeView.\n\nLet’s preview our MetricsView. Looks great! The ControlsView has buttons that control the in-progress session, such as End, Pause, and Resume. When the End button is tapped, the workout summary will be displayed. When the Pause button is tapped, the workout will pause and the MetricsView will be displayed. Let’s create the ControlsView. Click File > New > File, SwiftUI View, name this \"ControlsView\" and click Create.\n\nLet’s add the End and Pause buttons.\n\nAn HStack contains two VStacks where each VStack contains a button and a text view.\n\nThe End button’s label is an Image with systemName “xmark”. The button has a red tint and uses title2 font to increase the size of the symbol. The text view below has an “End” string.\n\nThe pause button uses an image with systemName “pause”. It has a yellow tint. The text view below has a “Pause” string. Click Resume to preview the ControlsView.\n\nLooks great.\n\nThe NowPlayingView provides media playback controls while the workout is in session. This includes controls for third-party apps that are currently playing media. Let’s add the NowPlayingView. Select SessionPagingView.\n\nThe NowPlayingView is provided by WatchKit. Let’s import WatchKit.\n\nLet’s replace our text views with ControlsView, MetricsView, and the NowPlayingView.\n\nThe NowPlayingView is a SwiftUI view provided by WatchKit. It’s that simple. Click Resume to see a preview of SessionPagingView.\n\nIn Preview, we can see our MetricsView. Swipe to the left to see the ControlsView. Swipe all the way to the right... ...to see the NowPlayingView.\n\nLet’s go back to our StartView and change the destination of the NavigationLink to SessionPagingView. Select StartView.\n\nUpdate the destination to SessionPagingView.\n\nA Summary screen confirms that a workout is finished and displays the recorded information. We will enhance the summary by including Activity Rings so that people can easily check their current progress. Let’s create the Summary view. Click File > New > File, SwiftUI View, click Next, name this \"SummaryView\" and click Create.\n\nLet’s create a custom SummaryMetricView that describes the metric and its value.\n\nSummaryMetricView takes a title that describes the metric and a value string of the metric.\n\nBody contains the two text views and a divider. The text view showing the metric value uses a title system font with rounded design and lowercaseSmallCaps. It uses the accentColor as its foregroundColor. Let’s create the workout duration formatter for the SummaryView.\n\ndurationFormatter is a DateComponentsFormatter that displays hours, minutes, and seconds separated by colons and pads zeros. Let’s add the SummaryMetricViews and the Done button to our SummaryView.\n\nA ScrollView and VStack contain our four SummaryMetricViews and Done button.\n\nTotal Time text view uses the durationFormatter to display hours, minutes, and seconds, separated by colons.\n\nTotal Distance SummaryMetricView uses Measurement with a default value that is formatted using an abbreviated unit. usage is road, which displays naturally progressing imperial or metric units based on locale.\n\nTotal Energy SummaryMetricView uses Measurement with a default value and energy unit of kilocalories. It is formatted using an abbreviated unit. usage is workout for workout energy, and numberFormat has a precision with fractionLength zero.\n\nAverage Heart Rate SummaryMetricView uses a default value formatted with number precision, fractionLength of zero, and appends \"bpm\" for beats per minute. We’ll provide actual workout values later for the SummaryMetricViews. We want the text views and dividers to align to the navigation bar title so we've used .scenePadding() on the VStack.\n\nThe navigationTitle will be \"Summary\" and will display inline in the navigation bar. Next let’s add Activity Rings to the workout summary. Click File > New > File, Swift File, click Next, name this \"ActivityRingsView\" and click Create.\n\nImport HealthKit to get access to the HKHealthStore. Import SwiftUI to get access to WKInterfaceObjectRepresentable.\n\nThe ActivityRingsView struct conforms to WKInterfaceObjectRepresentable. The healthStore constant is assigned at initialization.\n\nTwo functions are required to conform to the protocol: makeWKInterfaceObject and updateWKInterfaceObject.\n\nInside makeWKInterfaceObject, we declare the activityRingsObject which is a WKInterfaceActivityRing.\n\nNext we create the predicate for the HKActivitySummaryQuery and use date components for today. Then we create the query and handle the result, which sets the activity summary on the activityRingsObject on the main queue.\n\nThen execute the query on the HKHealthStore. Finally, return the activityRingsObject. Let’s add the ActivityRingsView to the SummaryView. Click SummaryView.\n\nLet's import HealthKit to get access to HKHealthStore.\n\nNext, let's add a Text view and an ActivityRingsView above the Done button.\n\nWe’ve added a Text view and an ActivityRingsViews with a frame width and height of 50. We’ll create an HKHealthStore for now. Later, we’ll reuse one. Let’s preview our SummaryView. Click Resume.\n\nClick Live Preview to be able to scroll.\n\nSee each of our SummaryMetricViews, Activity Rings, and Done button. Let’s talk about HealthKit integration. HealthKit provides built-in functionality to track fitness activity during the workout and save that workout to HealthKit. This saves you time as a developer, and your customers will have all their workouts saved to one location. HK workout session prepares the device’s sensors for data collection so that you can accurately collect data that’s relevant to the workout, like calories and heart rate. It also allows your application to run in the background when the workout is active. HKLiveWorkoutBuilder will create and save an HKWorkout object. It automatically collects samples and events for you. To learn more, check out the “New ways to work with workouts” session. Let’s see what the data flow will be for our app. WorkoutManager will be responsible for interfacing with HealthKit. It interfaces with an HKWorkoutSession to start, pause, and end the workout. It interfaces with an HKLiveWorkoutBuilder to listen for workout samples and provide that data to our views. WorkoutManager will be an environment object. An environment object invalidates the current view whenever the observable object changes. We will assignMyWorkoutsApp’s NavigationView the WorkoutManager environmentObject, which will propagate WorkoutManager to views in the NavigationView’s view hierarchy. Views will then declare an @EnvironmentObject to gain access to WorkoutManager in the environment. Let’s create the WorkoutManager. Click File > New > File, Swift File, click Next, name this \"WorkoutManager\" and click Create.\n\nImport HealthKit so that WorkoutManager has access to HealthKit’s APIs.\n\nThen define the WorkoutManager class which is an NSObject that conforms to the ObservableObject protocol. We want to give all of our views access to WorkoutManager. We do this by assigning WorkoutManager as an environment object on MyWorkoutsApp’s NavigationView. Select MyWorkoutsApp.\n\nAdd workoutManager as a StateObject.\n\nAdd the environmentObject view modifier to the NavigationView.\n\nWhen a NavigationView is assigned an environmentObject, it automatically passes the environmentObject to views in its view hierarchy. Let’s set up our navigation model. Select WorkoutManager.\n\nWorkoutManager will manage the selected workout, which is an optional HKWorkoutActivityType.\n\nWe’ve added the selectedWorkout variable to track the selected workout. Now our StartView’s NavigationLink needs to bind its selection to WorkoutManager’s selectedWorkout. Select StartView.\n\nAdd workoutManager EnvironmentObject to StartView.\n\nLet’s update NavigationLink with tag and selection.\n\ntag is the workoutType. selection is a binding to selectedWorkout on workoutManager. Now, whenever a workout is tapped, selectedWorkout on workoutManager will update. Now let’s start an HKWorkoutSession and HKLiveWorkoutBuilder when a workout is selected. Select WorkoutManager.\n\nAdd the HKHealthStore, HKWorkoutSession, and HKLiveWorkoutBuilder. Now, let’s create a startWorkout function to start the workout.\n\nThe startWorkout function takes a workoutType parameter. A HKWorkoutConfiguration is created using the workoutType. For our app, all of our workouts will be outdoor. Note that location type determines how the HKWorkoutSession and HKLiveWorkoutBuilder behaves. For example, an outdoor cycling activity generates accurate location data, while an indoor cycling activity does not. Create the HKWorkoutSession using the healthStore and configuration.\n\nAssign builder to the session’s associatedWorkoutBuilder. This is done in a do-catch block to handle any errors thrown.\n\nAssign the builder’s dataSource to an HKLiveWorkoutDataSource using the healthStore and workoutConfiguration. An HKLiveWorkoutDataSource automatically provides live data from an active workout session.\n\nCreate a startDate, call startActivity on the session, and beginCollection on the builder. Whenever selectedWorkout changes, let’s call startWorkout.\n\nselectedWorkout can be nil. Use a guard statement to only call startWorkout when selectedWorkout is not nil. Before our app can create a workout session, we need to set up HealthKit and request authorization to read and share any health data our app intends to use. Let's add a function to request authorization.\n\nFor workout sessions, we must request permission to share workout types.\n\nWe also want to read any data types automatically recorded by Apple Watch as part of the session.  We also want permission to read the Activity Rings summary.\n\nThen call requestAuthorization on the healthStore. Let’s have the StartView request authorization from HealthKit when the view appears. Click StartView.\n\nOn appear, workoutManager’s requestAuthorization function will be called. Let’s enable HealthKit for our extension. Select MyWorkouts's project file...\n\n...MyWorkouts WatchKit Extension, Signing & Capabilities. Select Add Capability, scroll down, select HealthKit.\n\nApps with an active workout session can run in the background, so you need to add the background modes capability to your WatchKit Extension. Workout sessions require the Workout processing background mode. Select Add Capability, Background Modes. Select Workout processing. We need to add usage descriptions to our WatchKit Extension’s Info.plist file. Select Info.plist.\n\nSelect the last row, then press Return.\n\nUse the NSHealth ShareUsageDescription key.\n\nDescribe why your app needs to read the requested data. Press Return. Use the NSHealth UpdateUsageDescription key.\n\nDescribe the data your app intends to write.\n\nLet’s build and run our app to see our app request permission from HealthKit. Click Run.\n\nOur app has requested HealthKit authorization. Scroll down and click Review.\n\nSelect All Requested Data Below.\n\nSee that our app has requested to share Workouts. See our provided explanation. Tap Next. Our app has requested read access. Select All Requested Data Below. See the data types that our app has requested read access to.\n\nSee our provided explanation. Tap Done.\n\nNow that the workout session can start, we need to control the HKWorkoutSession. Select WorkoutManager.\n\nLet's add our session state control logic.\n\nA @Published variable named \"running\" tracks if the session is running.\n\nThe pause and resume functions pause and resume the session. The togglePause function will either pause or resume the session based on if the session is running.\n\nThe endWorkout function will end the session. Let’s extend WorkoutManager to be an HKWorkoutSessionDelegate to listen for changes to the session state.\n\nThe workoutSession didChangeTo toState fromState with Date function is called whenever the session state changes.\n\nOur running variable will update based on if the toState is running and is dispatched to the main queue for UI updates.\n\nWhen the session transitions to ended, call endCollection on the builder with the end date provided to stop collecting workout samples. Once endCollection finishes, call finishWorkout to save the HKWorkout to the Health database. Make sure to assign WorkoutManager as the HKWorkoutSession delegate.\n\nNow let’s have the ControlsView pause, resume, and end the session. Select ControlsView.\n\nAdd workoutManager as an EnvironmentObject so that our view can control the session.\n\nHave the End button’s action call endWorkout on workoutManager.\n\nThe Pause/Resume button needs to pause or resume the session and update its image and text based on the session state.\n\nThe button’s action calls workoutManager’s togglePause function to pause or resume the session.\n\nThe button’s Image’s systemName is either \"pause\" or \"play\", based on workoutManager’s running variable. The text below the button shows either “Pause” or “Resume”, also based on workoutManager’s running variable. Let’s update our SessionPagingView to display the workout name in the navigation bar. Select SessionPagingView.\n\nThe SessionPagingView needs access to the WorkoutManager environment variable, so let’s add that.  Now let’s configure our navigation bar. The navigation title is the WorkoutManager’s selectedWorkout’s name. The navigation bar’s back button is hidden, because we don’t want someone to go back to the StartView while they are in a workout. When the NowPlayingView is shown, we want to hide the navigation bar. When someone pauses or resumes their workout, they shouldn’t need to swipe to the MetricsView. We can do this for them by adding an onChange view modifier.\n\nWhen WorkoutManager’s running published variable changes, the displayMetricsView function is called. displayMetricsView sets the selection state variable to metrics withAnimation. Now that the workout can end, let’s add the ability to show and dismiss the SummaryView. Click WorkoutManager.\n\nAdd a published variable named \"showingSummaryView\" which is a Boolean defaulted to false.\n\nThis variable will provide a binding to a sheet’s selection on our app’s navigation view. In endWorkout, set showingSummaryView to true.\n\nLet’s add the SummaryView as a Sheet to MyWorkoutsApp’s NavigationView. Click MyWorkoutsApp.\n\nAdd a sheet view modifier to NavigationView.\n\nThe isPresented parameter is a binding to workoutManager’s showingSummaryView. The sheet’s content is a SummaryView. In SummaryView, let’s add the ability to dismiss the sheet. Click SummaryView.\n\nAdd the dismiss Dnvironment variable.\n\nIn the Done button’s action, call dismiss().\n\nLet’s run our application to start and end the session and see the SummaryView displayed. Click Stop to stop the previous run.\n\nClick Run.\n\nTap the Run workout.\n\nDefault metric values will still be displayed in-session and in the summary. We'll set that up later. Swipe to the left. Tap Pause. Notice the MetricsView is displayed. Swipe to the left.\n\nNotice the button now shows \"Resume\". Tap End.\n\nOur workout summary displays as a sheet. Scroll down. Tap Done. The sheet is dismissed and the StartView is displayed. Let’s get our MetricsView and SummaryView to show actual workout metrics. WorkoutManager will expose published workout metrics that MetricsView and SummaryView can observe. Select WorkoutManager.\n\nLet’s add the Published metric variables to WorkoutManager.\n\naverageHeartRate will be used by SummaryView. heartRate, activeEnergy, and distance will be observed by MetricsView. WorkoutManager needs to observe workout samples added to the builder by being an HKLiveWorkoutBuilderDelegate. Let’s do this now. First, let’s assign the builder’s delegate as WorkoutManager.\n\nNow let’s make WorkoutManager conform to the HKLiveWorkout BuilderDelegate protocol.\n\nWe’ve extended WorkoutManager to conform to the HKLiveWorkout BuilderDelegate protocol. workoutBuilderDidCollectEvent is called whenever the builder collects an event. We will leave this function empty for our app.\n\nworkoutBuilder didCollectDataOf collectedTypes is called whenever the builder collects new samples. We will iterate over each type in collectedTypes. The guard ensures the collected type is an HKQuantityType. Statistics are read from the builder for that quantity type. updateForStatistics -- a function we will create shortly -- will be called, which updates the published metric values. Let’s create the updateForStatistics function.\n\nupdateForStatistics takes an optional HKStatistics object. A guard early returns if statistics is nil.\n\nDispatch the metric updates asynchronously to the main queue. Switch through each quantity type. For heartRate, we want beats per minute, so we use a count HKUnit divided by a minute HKUnit. Assign heartRate as the mostRrecentQuantity’s doubleValue for beats per minute. Assign averageHeartRate as statistics.averageQuantity’s doubleValue for beats per minute.\n\nFor the activeEnergyBurned quantityType, use the kilocalorie energyUnit. Assign activeEnergy as the sumQuantity’s doubleValue for the energyUnit.\n\nFor walking, running, and cycling distance get the sumQuantity’s doubleValue for meterUnit. Now let’s have MetricsView use metric values from the WorkoutManager. Select MetricsView.\n\nAdd workoutManager as an Environment variable.\n\nLet's update our views to use metric values from WorkoutManager.\n\nThe ElapsedTimeView uses the workoutManager’s builder’s elapsedTime.\n\nThe activeEnergy Text view’s Measurement uses workoutManager’s activeEnergy.\n\nThe heartRate Text view uses workoutManager’s heartRate.\n\nThe distance text view’s Measurement uses workoutManager’s distance.\n\nThe builder’s elapsed time variable isn’t published, so our view currently will not update when builder’s elapsedTime updates. What we can do is wrap the VStack in a TimelineView.\n\nTimelineView is new this year. A TimelineView updates over time in line with its schedule. watchOS apps now support Always On state. TimelineViews make our view aware of changes to the Always On context. To learn more, check out the “What’s new in watchOS 8” and \"What's new in SwiftUI\" sessions. Apps can be in either active state or Always On state. Apps with active workout sessions can update, at most, once every second in Always On state. This means the MetricsView needs to hide subseconds in Always On state. Other design considerations should be made for Always On state, such as hiding the page indicator controls to simplify the view. Our TimelineView needs a custom TimelineSchedule that changes its interval based on the TimelineScheduleMode dictated by the Always On context. Let’s create our custom TimelineSchedule.\n\nMetricsTimelineSchedule has a startDate for when the schedule should start. Its initializer takes a startDate.\n\nMetricsTimelineSchedule implements the entries function to produce PeriodicTimelineSchedule entries. The function creates a PeriodicTimelineSchedule using the startDate. The interval is determined by the TimelineScheduleMode. When the TimelineScheduleMode is lowFrequency, the TimelineSchedule interval is one second. When the TimelineScheduleMode is normal, the interval is 30 times per second. Let’s wrap our VStack in a TimelineView.\n\nThe TimelineView uses our MetricsTimelineSchedule, using the builder’s startDate. ElapsedTimeView’s showSubseconds is determined by the TimelineView’s context.cadence. When cadence is live, subseconds are shown. Otherwise subseconds are hidden in Always On state. Let’s run our application to see the metrics updating during the workout. Click Stop to stop the current run. Click Run.\n\nTap the Run workout. Notice that elapsed time is incrementing. The watchOS simulator automatically simulates collecting live workout samples for you. Calories are accruing. Heart rate is updating. Distance is accumulating. Let’s try the Always On state by clicking the Lock button on the simulator.\n\nNotice subseconds are hidden and metrics update only once per second. Click the Unlock button to return to active state.  Swipe left and end the workout.  The SummaryView still needs the actual HKWorkout values. Let’s do this now. First, let’s add the HKWorkout to the WorkoutManager to be used in the SummaryView. Select WorkoutManager.  Add a HKWorkout Published variable.\n\nWhen the builder has finished saving the workout, assign the workout to WorkoutManager when builder’s finishWorkout function completes.\n\nWe do this assignment on the main queue for UI updates. When the SummaryView dismisses, we need to reset our model. Let’s create a resetWorkout function that does this.\n\nThe resetWorkout function resets all of our model variables back to an initial state. Let’s call resetWorkout when the summary dismisses. This is done in the didSet of showingSummaryView.\n\nLet’s display a progress view when the workout ends, while the workout is saving, before displaying the SummaryView. Let’s go to our SummaryView. Click SummaryView. First, add the workoutManager EnvironmentObject to SummaryView.\n\nWe want to display the ProgressView until workoutManager has the HKWorkout assigned when the builder finishes saving the workout.\n\nIf workoutManager’s workout is nil, then display the ProgressView with the text showing “Saving workout”, and hide the navigation bar.\n\nWe've also updated ActivityRingsView to use workoutManager’s HKHealthStore. You only need a single HKHealthStore per app. Let’s update our SummaryMetricViews to use the HKWorkout values.\n\nThe Total Time metric view uses the workout duration.\n\nThe totalDistance metric view uses the workout’s total distance.\n\nThe Total Energy metric view uses the workout’s totalEnergyBurned.\n\nThe Average Heart Rate metric view uses the workoutManager’s averageHeartRate. If you want to save average heart rate for later, you can add it as metadata to the builder before saving the workout. Let’s update our SessionPagingView to react to Always On state. Select SessionPagingView.\n\nAdd the isLuminanceReduced Environment variable.\n\nDuring Always On state, we want to hide the TabView’s page indicator and ensure the MetricsView is displayed.\n\nWe’ve set the tabViewStyle's indexDisplayMode to either never or automatic, based on isLuminanceReduced. When isLuminanceReduced changes, call the displayMetricsView function to display the MetricsView. Let’s run our app in the simulator and try it out. Click Stop to stop the last run. Click Run.\n\nSelect the Run workout. Notice metrics are updating live from the builder. Swipe left. Tap Pause. Notice metrics have stopped updating, because the workout is paused. Swipe left. Tap Resume. Metrics resume updating. Swipe right, see the NowPlayingView. Swipe left. Click Lock to trigger the Always On state. Notice subseconds are hidden and page control indicators are hidden. Click Unlock to resume active state.\n\nSwipe left, tap End.\n\nThe workout saves. The summary is displayed. Scroll down to view each of the metrics.  Activity Rings will populate based on the amount of energy, exercise minutes, and stand hours. Tap Done.  We are taken back to the start view, ready for our next workout.\n\nYou saw how easy it is to use SwiftUI to implement a fully functioning workout app integrated with HealthKit that supports the Always On state. We can’t wait to see what great workout apps you’ll build next! ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:17",
+      "title": "StartView - import HealthKit",
+      "language": "swift",
+      "code": "import HealthKit"
+    },
+    {
+      "timestamp": "3:25",
+      "title": "StartView - workoutTypes",
+      "language": "swift",
+      "code": "var workoutTypes: [HKWorkoutActivityType] = [.cycling, .running, .walking]"
+    },
+    {
+      "timestamp": "3:26",
+      "title": "StartView - HKWorkoutActivityType identifiable and name",
+      "language": "swift",
+      "code": "extension HKWorkoutActivityType: Identifiable {\n    public var id: UInt {\n        rawValue\n    }\n\n    var name: String {\n        switch self {\n        case .running:\n            return \"Run\"\n        case .cycling:\n            return \"Bike\"\n        case .walking:\n            return \"Walk\"\n        default:\n            return \"\"\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "4:22",
+      "title": "StartView - body",
+      "language": "swift",
+      "code": "List(workoutTypes) { workoutType in\n    NavigationLink(\n        workoutType.name,\n        destination: Text(workoutType.name)\n    ).padding(\n        EdgeInsets(top: 15, leading: 5, bottom: 15, trailing: 5)\n    )\n}\n.listStyle(.carousel)\n.navigationBarTitle(\"Workouts\")"
+    },
+    {
+      "timestamp": "6:55",
+      "title": "SessionPagingView - Tab enum and selection",
+      "language": "swift",
+      "code": "@State private var selection: Tab = .metrics\n\nenum Tab {\n    case controls, metrics, nowPlaying\n}"
+    },
+    {
+      "timestamp": "7:20",
+      "title": "SessionPagingView - TabView",
+      "language": "swift",
+      "code": "TabView(selection: $selection) {\n    Text(\"Controls\").tag(Tab.controls)\n    Text(\"Metrics\").tag(Tab.metrics)\n    Text(\"Now Playing\").tag(Tab.nowPlaying)\n}"
+    },
+    {
+      "timestamp": "9:02",
+      "title": "MetricsView - VStack and TextViews",
+      "language": "swift",
+      "code": "VStack(alignment: .leading) {\n    Text(\"03:15.23\")\n        .foregroundColor(Color.yellow)\n        .fontWeight(.semibold)\n    Text(\n        Measurement(\n            value: 47,\n            unit: UnitEnergy.kilocalories\n        ).formatted(\n            .measurement(\n                width: .abbreviated,\n                usage: .workout,\n                numberFormat: .numeric(precision: .fractionLength(0))\n            )\n        )\n    )\n    Text(\n        153.formatted(\n            .number.precision(.fractionLength(0))\n        )\n        + \" bpm\"\n    )\n    Text(\n        Measurement(\n            value: 515,\n            unit: UnitLength.meters\n        ).formatted(\n            .measurement(\n                width: .abbreviated,\n                usage: .road\n            )\n        )\n    )\n}\n.font(.system(.title, design: .rounded)\n        .monospacedDigit()\n        .lowercaseSmallCaps()\n)\n.frame(maxWidth: .infinity, alignment: .leading)\n.ignoresSafeArea(edges: .bottom)\n.scenePadding()"
+    },
+    {
+      "timestamp": "11:42",
+      "title": "ElapsedTimeView - ElapsedTimeView and ElapsedTimeFormatter",
+      "language": "swift",
+      "code": "struct ElapsedTimeView: View {\n    var elapsedTime: TimeInterval = 0\n    var showSubseconds: Bool = true\n    @State private var timeFormatter = ElapsedTimeFormatter()\n\n    var body: some View {\n        Text(NSNumber(value: elapsedTime), formatter: timeFormatter)\n            .fontWeight(.semibold)\n            .onChange(of: showSubseconds) {\n                timeFormatter.showSubseconds = $0\n            }\n    }\n}\n\nclass ElapsedTimeFormatter: Formatter {\n    let componentsFormatter: DateComponentsFormatter = {\n        let formatter = DateComponentsFormatter()\n        formatter.allowedUnits = [.minute, .second]\n        formatter.zeroFormattingBehavior = .pad\n        return formatter\n    }()\n    var showSubseconds = true\n\n    override func string(for value: Any?) -> String? {\n        guard let time = value as? TimeInterval else {\n            return nil\n        }\n\n        guard let formattedString = componentsFormatter.string(from: time) else {\n            return nil\n        }\n\n        if showSubseconds {\n            let hundredths = Int((time.truncatingRemainder(dividingBy: 1)) * 100)\n            let decimalSeparator = Locale.current.decimalSeparator ?? \".\"\n            return String(format: \"%@%@%0.2d\", formattedString, decimalSeparator, hundredths)\n        }\n\n        return formattedString\n    }\n}"
+    },
+    {
+      "timestamp": "13:56",
+      "title": "MetricsView - replace TextView with ElapsedTimeView",
+      "language": "swift",
+      "code": "ElapsedTimeView(\n    elapsedTime: 3 * 60 + 15.24,\n    showSubseconds: true\n).foregroundColor(Color.yellow)"
+    },
+    {
+      "timestamp": "14:47",
+      "title": "ControlsView - Stacks, Buttons and TextViews",
+      "language": "swift",
+      "code": "HStack {\n    VStack {\n        Button {\n        } label: {\n            Image(systemName: \"xmark\")\n        }\n        .tint(Color.red)\n        .font(.title2)\n        Text(\"End\")\n    }\n    VStack {\n        Button {\n        } label: {\n            Image(systemName: \"pause\")\n        }\n        .tint(Color.yellow)\n        .font(.title2)\n        Text(\"Pause\")\n    }\n}"
+    },
+    {
+      "timestamp": "16:05",
+      "title": "SessionPagingView - import WatchKit",
+      "language": "swift",
+      "code": "import WatchKit"
+    },
+    {
+      "timestamp": "16:09",
+      "title": "SessionPagingView - TabView using actual views",
+      "language": "swift",
+      "code": "ControlsView().tag(Tab.controls)\nMetricsView().tag(Tab.metrics)\nNowPlayingView().tag(Tab.nowPlaying)"
+    },
+    {
+      "timestamp": "17:08",
+      "title": "StartView - NavigationLink to use SessionPagingView",
+      "language": "swift",
+      "code": "destination: SessionPagingView()"
+    },
+    {
+      "timestamp": "17:50",
+      "title": "SummaryView - SummaryMetricView",
+      "language": "swift",
+      "code": "struct SummaryMetricView: View {\n    var title: String\n    var value: String\n\n    var body: some View {\n        Text(title)\n        Text(value)\n            .font(.system(.title2, design: .rounded)\n                    .lowercaseSmallCaps()\n            )\n            .foregroundColor(.accentColor)\n        Divider()\n    }\n}"
+    },
+    {
+      "timestamp": "18:27",
+      "title": "SummaryView - durationFormatter",
+      "language": "swift",
+      "code": "@State private var durationFormatter: DateComponentsFormatter = {\n    let formatter = DateComponentsFormatter()\n    formatter.allowedUnits = [.hour, .minute, .second]\n    formatter.zeroFormattingBehavior = .pad\n    return formatter\n}()"
+    },
+    {
+      "timestamp": "18:45",
+      "title": "SummaryView - body",
+      "language": "swift",
+      "code": "ScrollView(.vertical) {\n    VStack(alignment: .leading) {\n        SummaryMetricView(\n            title: \"Total Time\",\n            value: durationFormatter.string(from: 30 * 60 + 15) ?? \"\"\n        ).accentColor(Color.yellow)\n        SummaryMetricView(\n            title: \"Total Distance\",\n            value: Measurement(\n                value: 1625,\n                unit: UnitLength.meters\n            ).formatted(\n                .measurement(\n                    width: .abbreviated,\n                    usage: .road\n                )\n            )\n        ).accentColor(Color.green)\n        SummaryMetricView(\n            title: \"Total Energy\",\n            value: Measurement(\n                value: 96,\n                unit: UnitEnergy.kilocalories\n            ).formatted(\n                .measurement(\n                    width: .abbreviated,\n                    usage: .workout,\n                    numberFormat: .numeric(precision: .fractionLength(0))\n                )\n            )\n        ).accentColor(Color.pink)\n        SummaryMetricView(\n            title: \"Avg. Heart Rate\",\n            value: 143\n                .formatted(\n                    .number.precision(.fractionLength(0))\n                )\n            + \" bpm\"\n        ).accentColor(Color.red)\n        Button(\"Done\") {\n        }\n    }\n    .scenePadding()\n}\n.navigationTitle(\"Summary\")\n.navigationBarTitleDisplayMode(.inline)"
+    },
+    {
+      "timestamp": "21:00",
+      "title": "ActivityRingsView",
+      "language": "swift",
+      "code": "import HealthKit\nimport SwiftUI\n\nstruct ActivityRingsView: WKInterfaceObjectRepresentable {\n    let healthStore: HKHealthStore\n\n    func makeWKInterfaceObject(context: Context) -> some WKInterfaceObject {\n        let activityRingsObject = WKInterfaceActivityRing()\n\n        let calendar = Calendar.current\n        var components = calendar.dateComponents([.era, .year, .month, .day], from: Date())\n        components.calendar = calendar\n\n        let predicate = HKQuery.predicateForActivitySummary(with: components)\n\n        let query = HKActivitySummaryQuery(predicate: predicate) { query, summaries, error in\n            DispatchQueue.main.async {\n                activityRingsObject.setActivitySummary(summaries?.first, animated: true)\n            }\n        }\n\n        healthStore.execute(query)\n\n        return activityRingsObject\n    }\n\n    func updateWKInterfaceObject(_ wkInterfaceObject: WKInterfaceObjectType, context: Context) {\n\n    }\n}"
+    },
+    {
+      "timestamp": "22:15",
+      "title": "SummaryView - add ActivityRingsView",
+      "language": "swift",
+      "code": "Text(\"Activity Rings\")\nActivityRingsView(\n    healthStore: HKHealthStore()\n).frame(width: 50, height: 50)"
+    },
+    {
+      "timestamp": "25:22",
+      "title": "WorkoutManager",
+      "language": "swift",
+      "code": "import HealthKit\n\nclass WorkoutManager: NSObject, ObservableObject {\n\n}"
+    },
+    {
+      "timestamp": "25:53",
+      "title": "MyWorkoutsApp - add workoutManager @StateObject",
+      "language": "swift",
+      "code": "@StateObject var workoutManager = WorkoutManager()"
+    },
+    {
+      "timestamp": "26:00",
+      "title": "MyWorkoutsApp - .environmentObject to NavigationView",
+      "language": "swift",
+      "code": ".environmentObject(workoutManager)"
+    },
+    {
+      "timestamp": "26:25",
+      "title": "WorkoutManager - selectedWorkout",
+      "language": "swift",
+      "code": "var selectedWorkout: HKWorkoutActivityType?"
+    },
+    {
+      "timestamp": "26:49",
+      "title": "StartView  - add workoutManager",
+      "language": "swift",
+      "code": "@EnvironmentObject var workoutManager: WorkoutManager"
+    },
+    {
+      "timestamp": "26:56",
+      "title": "StartView - Add tag and selection to NavigationLink",
+      "language": "swift",
+      "code": ",\ntag: workoutType,\nselection: $workoutManager.selectedWorkout"
+    },
+    {
+      "timestamp": "27:32",
+      "title": "WorkoutManager - Add healthStore, session, builder",
+      "language": "swift",
+      "code": "let healthStore = HKHealthStore()\nvar session: HKWorkoutSession?\nvar builder: HKLiveWorkoutBuilder?"
+    },
+    {
+      "timestamp": "27:42",
+      "title": "WorkoutManager - startWorkout(workoutType:)",
+      "language": "swift",
+      "code": "func startWorkout(workoutType: HKWorkoutActivityType) {\n    let configuration = HKWorkoutConfiguration()\n    configuration.activityType = workoutType\n    configuration.locationType = .outdoor\n\n    do {\n        session = try HKWorkoutSession(healthStore: healthStore, configuration: configuration)\n        builder = session?.associatedWorkoutBuilder()\n    } catch {\n        // Handle any exceptions.\n        return\n    }\n\n    builder?.dataSource = HKLiveWorkoutDataSource(\n        healthStore: healthStore,\n        workoutConfiguration: configuration\n    )\n\n    // Start the workout session and begin data collection.\n    let startDate = Date()\n    session?.startActivity(with: startDate)\n    builder?.beginCollection(withStart: startDate) { (success, error) in\n        // The workout has started.\n    }\n}"
+    },
+    {
+      "timestamp": "29:06",
+      "title": "WorkoutManager - selectedWorkout didSet",
+      "language": "swift",
+      "code": "{\n    didSet {\n        guard let selectedWorkout = selectedWorkout else { return }\n        startWorkout(workoutType: selectedWorkout)\n    }\n}"
+    },
+    {
+      "timestamp": "29:35",
+      "title": "WorkoutManager - requestAuthorization from HealthKit",
+      "language": "swift",
+      "code": "// Request authorization to access HealthKit.\nfunc requestAuthorization() {\n    // The quantity type to write to the health store.\n    let typesToShare: Set = [\n        HKQuantityType.workoutType()\n    ]\n\n    // The quantity types to read from the health store.\n    let typesToRead: Set = [\n        HKQuantityType.quantityType(forIdentifier: .heartRate)!,\n        HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!,\n        HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!,\n        HKQuantityType.quantityType(forIdentifier: .distanceCycling)!,\n        HKObjectType.activitySummaryType()\n    ]\n\n    // Request authorization for those quantity types.\n    healthStore.requestAuthorization(toShare: typesToShare, read: typesToRead) { (success, error) in\n        // Handle error.\n    }\n}"
+    },
+    {
+      "timestamp": "30:20",
+      "title": "StartView - requestAuthorization onAppear",
+      "language": "swift",
+      "code": ".onAppear {\n    workoutManager.requestAuthorization()\n}"
+    },
+    {
+      "timestamp": "31:30",
+      "title": "Privacy - Health Share Usage Description - Key",
+      "language": "swift",
+      "code": "NSHealthShareUsageDescription"
+    },
+    {
+      "timestamp": "31:38",
+      "title": "Privacy - Health Share Usage Description - Value",
+      "language": "swift",
+      "code": "Your workout related data will be used to display your saved workouts in MyWorkouts."
+    },
+    {
+      "timestamp": "31:47",
+      "title": "Privacy - Health Update Usage Description - Key",
+      "language": "swift",
+      "code": "NSHealthUpdateUsageDescription"
+    },
+    {
+      "timestamp": "31:54",
+      "title": "Privacy - Health Update Usage Description - Value",
+      "language": "swift",
+      "code": "Workouts tracked by MyWorkouts on Apple Watch will be saved to HealthKit."
+    },
+    {
+      "timestamp": "33:29",
+      "title": "WorkoutManager - session state control",
+      "language": "swift",
+      "code": "// MARK: - State Control\n\n// The workout session state.\n@Published var running = false\n\nfunc pause() {\n    session?.pause()\n}\n\nfunc resume() {\n    session?.resume()\n}\n\nfunc togglePause() {\n    if running == true {\n        pause()\n    } else {\n        resume()\n    }\n}\n\nfunc endWorkout() {\n    session?.end()\n}"
+    },
+    {
+      "timestamp": "34:11",
+      "title": "WorkoutManager - HKWorkoutSessionDelegate",
+      "language": "swift",
+      "code": "// MARK: - HKWorkoutSessionDelegate\nextension WorkoutManager: HKWorkoutSessionDelegate {\n    func workoutSession(_ workoutSession: HKWorkoutSession,\n                        didChangeTo toState: HKWorkoutSessionState,\n                        from fromState: HKWorkoutSessionState,\n                        date: Date) {\n        DispatchQueue.main.async {\n            self.running = toState == .running\n        }\n\n        // Wait for the session to transition states before ending the builder.\n        if toState == .ended {\n            builder?.endCollection(withEnd: date) { (success, error) in\n                self.builder?.finishWorkout { (workout, error) in\n                }\n            }\n        }\n    }\n\n    func workoutSession(_ workoutSession: HKWorkoutSession, didFailWithError error: Error) {\n\n    }\n}"
+    },
+    {
+      "timestamp": "34:58",
+      "title": "WorkoutManager - assign HKWorkoutSessionDelegate in startWorkout()",
+      "language": "swift",
+      "code": "session?.delegate = self"
+    },
+    {
+      "timestamp": "35:33",
+      "title": "ControlsView - End Button action",
+      "language": "swift",
+      "code": "workoutManager.endWorkout()"
+    },
+    {
+      "timestamp": "35:43",
+      "title": "ControlsView - Pause / Resume Button and Text",
+      "language": "swift",
+      "code": "Button {\n    workoutManager.togglePause()\n} label: {\n    Image(systemName: workoutManager.running ? \"pause\" : \"play\")\n}\n.tint(Color.yellow)\n.font(.title2)\nText(workoutManager.running ? \"Pause\" : \"Resume\")"
+    },
+    {
+      "timestamp": "36:42",
+      "title": "SessionPagingView - navigationBar",
+      "language": "swift",
+      "code": ".navigationTitle(workoutManager.selectedWorkout?.name ?? \"\")\n.navigationBarBackButtonHidden(true)\n.navigationBarHidden(selection == .nowPlaying)"
+    },
+    {
+      "timestamp": "37:10",
+      "title": "SessionPagingView - onChange of workoutManager.running",
+      "language": "swift",
+      "code": ".onChange(of: workoutManager.running) { _ in\n        displayMetricsView()\n    }\n}\n\nprivate func displayMetricsView() {\n    withAnimation {\n        selection = .metrics\n    }\n}"
+    },
+    {
+      "timestamp": "37:45",
+      "title": "WorkoutManager - showingSummaryView",
+      "language": "swift",
+      "code": "@Published var showingSummaryView: Bool = false {\n    didSet {\n        // Sheet dismissed\n        if showingSummaryView == false {\n            selectedWorkout = nil\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "37:59",
+      "title": "WorkoutManager - showingSummaryView true in endWorkout",
+      "language": "swift",
+      "code": "showingSummaryView = true"
+    },
+    {
+      "timestamp": "38:22",
+      "title": "MyWorkoutApp - add summaryView sheet to NavigationView",
+      "language": "swift",
+      "code": ".sheet(isPresented: $workoutManager.showingSummaryView) {\n    SummaryView()\n}"
+    },
+    {
+      "timestamp": "38:49",
+      "title": "SummaryView - add dismiss environment variable",
+      "language": "swift",
+      "code": "@Environment(\\.dismiss) var dismiss"
+    },
+    {
+      "timestamp": "40:25",
+      "title": "WorkoutManager - Metric publishers",
+      "language": "swift",
+      "code": "// MARK: - Workout Metrics\n@Published var averageHeartRate: Double = 0\n@Published var heartRate: Double = 0\n@Published var activeEnergy: Double = 0\n@Published var distance: Double = 0"
+    },
+    {
+      "timestamp": "40:48",
+      "title": "WorkoutManager - assigned as HKLiveWorkoutBuilderDelegate in startWorkout()",
+      "language": "swift",
+      "code": "builder?.delegate = self"
+    },
+    {
+      "timestamp": "41:05",
+      "title": "WorkoutManager - add HKLiveWorkoutBuilderDelegate extension",
+      "language": "swift",
+      "code": "// MARK: - HKLiveWorkoutBuilderDelegate\nextension WorkoutManager: HKLiveWorkoutBuilderDelegate {\n    func workoutBuilderDidCollectEvent(_ workoutBuilder: HKLiveWorkoutBuilder) {\n    }\n\n    func workoutBuilder(_ workoutBuilder: HKLiveWorkoutBuilder, didCollectDataOf collectedTypes: Set<HKSampleType>) {\n        for type in collectedTypes {\n            guard let quantityType = type as? HKQuantityType else { return }\n\n            let statistics = workoutBuilder.statistics(for: quantityType)\n\n            // Update the published values.\n            updateForStatistics(statistics)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "42:01",
+      "title": "WorkoutManager - add updateForStatistics()",
+      "language": "swift",
+      "code": "func updateForStatistics(_ statistics: HKStatistics?) {\n    guard let statistics = statistics else { return }\n\n    DispatchQueue.main.async {\n        switch statistics.quantityType {\n        case HKQuantityType.quantityType(forIdentifier: .heartRate):\n            let heartRateUnit = HKUnit.count().unitDivided(by: HKUnit.minute())\n            self.heartRate = statistics.mostRecentQuantity()?.doubleValue(for: heartRateUnit) ?? 0\n            self.averageHeartRate = statistics.averageQuantity()?.doubleValue(for: heartRateUnit) ?? 0\n        case HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned):\n            let energyUnit = HKUnit.kilocalorie()\n            self.activeEnergy = statistics.sumQuantity()?.doubleValue(for: energyUnit) ?? 0\n        case HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning), HKQuantityType.quantityType(forIdentifier: .distanceCycling):\n            let meterUnit = HKUnit.meter()\n            self.distance = statistics.sumQuantity()?.doubleValue(for: meterUnit) ?? 0\n        default:\n            return\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "43:35",
+      "title": "MetricsView - VStack with Text bound to workoutManager variables",
+      "language": "swift",
+      "code": "VStack(alignment: .leading) {\n    ElapsedTimeView(\n        elapsedTime: workoutManager.builder?.elapsedTime ?? 0,\n        showSubseconds: true\n    ).foregroundColor(Color.yellow)\n    Text(\n        Measurement(\n            value: workoutManager.activeEnergy,\n            unit: UnitEnergy.kilocalories\n        ).formatted(\n            .measurement(\n                width: .abbreviated,\n                usage: .workout,\n                numberFormat: .numeric(precision: .fractionLength(0))\n            )\n        )\n    )\n    Text(\n        workoutManager.heartRate\n            .formatted(\n                .number.precision(.fractionLength(0))\n            )\n        + \" bpm\"\n    )\n    Text(\n        Measurement(\n            value: workoutManager.distance,\n            unit: UnitLength.meters\n        ).formatted(\n            .measurement(\n                width: .abbreviated,\n                usage: .road\n            )\n        )\n    )\n}"
+    },
+    {
+      "timestamp": "45:51",
+      "title": "MetricsView - MetricsTimelineSchedule",
+      "language": "swift",
+      "code": "private struct MetricsTimelineSchedule: TimelineSchedule {\n    var startDate: Date\n\n    init(from startDate: Date) {\n        self.startDate = startDate\n    }\n\n    func entries(from startDate: Date, mode: TimelineScheduleMode) -> PeriodicTimelineSchedule.Entries {\n        PeriodicTimelineSchedule(\n            from: self.startDate,\n            by: (mode == .lowFrequency ? 1.0 : 1.0 / 30.0)\n        ).entries(\n            from: startDate,\n            mode: mode\n        )\n    }\n}"
+    },
+    {
+      "timestamp": "46:38",
+      "title": "MetricsView - TimelineView wrapping VStack",
+      "language": "swift",
+      "code": "TimelineView(\n    MetricsTimelineSchedule(\n        from: workoutManager.builder?.startDate ?? Date()\n    )\n) { context in\n    VStack(alignment: .leading) {\n        ElapsedTimeView(\n            elapsedTime: workoutManager.builder?.elapsedTime ?? 0,\n            showSubseconds: context.cadence == .live\n        ).foregroundColor(Color.yellow)\n        Text(\n            Measurement(\n                value: workoutManager.activeEnergy,\n                unit: UnitEnergy.kilocalories\n            ).formatted(\n                .measurement(\n                    width: .abbreviated,\n                    usage: .workout,\n                    numberFormat: .numeric(precision: .fractionLength(0))\n                )\n            )\n        )\n        Text(\n            workoutManager.heartRate\n                .formatted(\n                    .number.precision(.fractionLength(0))\n                )\n            + \" bpm\"\n        )\n        Text(\n            Measurement(\n                value: workoutManager.distance,\n                unit: UnitLength.meters\n            ).formatted(\n                .measurement(\n                    width: .abbreviated,\n                    usage: .road\n                )\n            )\n        )\n    }\n    .font(.system(.title, design: .rounded)\n            .monospacedDigit()\n            .lowercaseSmallCaps()\n    )\n    .frame(maxWidth: .infinity, alignment: .leading)\n    .ignoresSafeArea(edges: .bottom)\n    .scenePadding()\n}"
+    },
+    {
+      "timestamp": "48:23",
+      "title": "WorkoutManager - workout: HKWorkout added",
+      "language": "swift",
+      "code": "@Published var workout: HKWorkout?"
+    },
+    {
+      "timestamp": "48:38",
+      "title": "WorkoutManager - assign HKWorkout in finishWorkout",
+      "language": "swift",
+      "code": "DispatchQueue.main.async {\n    self.workout = workout\n}"
+    },
+    {
+      "timestamp": "48:57",
+      "title": "WorkoutManager - resetWorkout()",
+      "language": "swift",
+      "code": "func resetWorkout() {\n    selectedWorkout = nil\n    builder = nil\n    session = nil\n    workout = nil\n    activeEnergy = 0\n    averageHeartRate = 0\n    heartRate = 0\n    distance = 0\n}"
+    },
+    {
+      "timestamp": "49:21",
+      "title": "WorkoutManager - add resetWorkout to showingSummaryView didSet",
+      "language": "swift",
+      "code": "resetWorkout()"
+    },
+    {
+      "timestamp": "50:06",
+      "title": "SummaryView  - add ProgressView",
+      "language": "swift",
+      "code": "if workoutManager.workout == nil {\n    ProgressView(\"Saving workout\")\n        .navigationBarHidden(true)\n} else {\n    ScrollView(.vertical) {\n        VStack(alignment: .leading) {\n            SummaryMetricView(\n                title: \"Total Time\",\n                value: durationFormatter.string(from: 30 * 60 + 15) ?? \"\"\n            ).accentColor(Color.yellow)\n            SummaryMetricView(\n                title: \"Total Distance\",\n                value: Measurement(\n                    value: 1625,\n                    unit: UnitLength.meters\n                ).formatted(\n                    .measurement(\n                        width: .abbreviated,\n                        usage: .road\n                    )\n                )\n            ).accentColor(Color.green)\n            SummaryMetricView(\n                title: \"Total Calories\",\n                value: Measurement(\n                    value: 96,\n                    unit: UnitEnergy.kilocalories\n                ).formatted(\n                    .measurement(\n                        width: .abbreviated,\n                        usage: .workout,\n                        numberFormat: .numeric(precision: .fractionLength(0))\n                    )\n                )\n            ).accentColor(Color.pink)\n            SummaryMetricView(\n                title: \"Avg. Heart Rate\",\n                value: 143.formatted(\n                    .number.precision(.fractionLength(0))\n                )\n                + \" bpm\"\n            )\n            Text(\"Activity Rings\")\n            ActivityRingsView(healthStore: workoutManager.healthStore)\n                .frame(width: 50, height: 50)\n            Button(\"Done\") {\n                dismiss()\n            }\n        }\n        .scenePadding()\n    }\n    .navigationTitle(\"Summary\")\n    .navigationBarTitleDisplayMode(.inline)\n}"
+    },
+    {
+      "timestamp": "50:43",
+      "title": "SummaryView - SummaryMetricViews using HKWorkout values",
+      "language": "swift",
+      "code": "SummaryMetricView(\n    title: \"Total Time\",\n    value: durationFormatter\n        .string(from: workoutManager.workout?.duration ?? 0.0) ?? \"\"\n).accentColor(Color.yellow)\nSummaryMetricView(\n    title: \"Total Distance\",\n    value: Measurement(\n        value: workoutManager.workout?.totalDistance?\n            .doubleValue(for: .meter()) ?? 0,\n        unit: UnitLength.meters\n    ).formatted(\n        .measurement(\n            width: .abbreviated,\n            usage: .road\n        )\n    )\n).accentColor(Color.green)\nSummaryMetricView(\n    title: \"Total Energy\",\n    value: Measurement(\n        value: workoutManager.workout?.totalEnergyBurned?\n                        .doubleValue(for: .kilocalorie()) ?? 0,\n        unit: UnitEnergy.kilocalories\n    ).formatted(\n        .measurement(\n            width: .abbreviated,\n            usage: .workout,\n            numberFormat: .numeric(precision: .fractionLength(0))\n        )\n    )\n).accentColor(Color.pink)\nSummaryMetricView(\n    title: \"Avg. Heart Rate\",\n    value: workoutManager.averageHeartRate\n        .formatted(\n            .number.precision(.fractionLength(0))\n        )\n    + \" bpm\"\n).accentColor(Color.red)"
+    },
+    {
+      "timestamp": "51:45",
+      "title": "SessionPagingView - add isLuminanceReduced",
+      "language": "swift",
+      "code": "@Environment(\\.isLuminanceReduced) var isLuminanceReduced"
+    },
+    {
+      "timestamp": "51:57",
+      "title": "SessionPagingView - add tabViewStyle and onChangeOf based on isLuminanceReduced",
+      "language": "swift",
+      "code": ".tabViewStyle(\n    PageTabViewStyle(indexDisplayMode: isLuminanceReduced ? .never : .automatic)\n)\n.onChange(of: isLuminanceReduced) { _ in\n    displayMetricsView()\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Build a workout app for Apple Watch",
+        "url": "https://developer.apple.com/documentation/HealthKit/build-a-workout-app-for-apple-watch"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10009/4/C77618B9-A832-406C-89F0-933F2139F0AD/downloads/wwdc2021-10009_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10009/4/C77618B9-A832-406C-89F0-933F2139F0AD/downloads/wwdc2021-10009_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10023",
+      "year": "2023",
+      "title": "Build a multi-device workout app",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10023"
+    },
+    {
+      "id": "10018",
+      "year": "2021",
+      "title": "What's new in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10018"
+    },
+    {
+      "id": "10002",
+      "year": "2021",
+      "title": "What's new in watchOS 8",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10002"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:38:00.953Z"
+}

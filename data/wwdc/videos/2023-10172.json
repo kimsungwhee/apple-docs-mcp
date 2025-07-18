@@ -1,0 +1,134 @@
+{
+  "id": "10172",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10172/",
+  "title": "Mix Swift and C++",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Zoe: Hi, I'm Zoe, an engineer on the Compiler team here at Apple. Today, I'm going to introduce Swift and C++ interoperability, a new feature of Xcode 15 that lets you use Swift and C++ together. This talk will be split into two parts. First, I'm going to explain the basics of interoperability. Then I'll show you how you can make your C++ APIs feel natural and safe in Swift. Swift launched into a world where there were many big apps and codebases written in Objective-C. It was essential that Swift was able to take advantage of this existing code and be incrementally adopted into these codebases. Today, Swift takes this interoperability to the next level, allowing you to adopt Swift in even more places.\n\nIf you have a large C++ codebase, you can now incrementally adopt Swift by taking advantage of bidirectional interoperability. And if you need access to a C++ library for your app, you no longer have to write an Objective-C bridging layer. Let's see how easy it is to adopt Swift in a C++ codebase by looking at a sample app.\n\nI'm working on a photo editing app. It lets me select a picture from my camera roll, invert the colors, change the brightness, and so on.\n\nBefore I get into the code, let's look at the structure of my app.\n\nThe app can be split into two parts, the image processing framework and the user interface code. The image processing framework that my app is based around is written in C++. I wanted my user interface layer to be able to easily talk to my C++ framework, so I used Objective-C++ to implement most of the user interface, such as the ViewController. Now, I want users of my app to be able to pick a few photos from their camera roll to edit. I heard SwiftUI has a new PhotoPicker view that makes this easy, so I'd like to start adopting Swift in my app. Luckily, starting with Xcode 15, I can easily adopt Swift in my Objective-C++ codebase and still have access to all my C++ APIs. So let's get started by adding a Swift file to the project. Because I'm using a C++ framework, Xcode will import my C++ APIs automatically, so I don't need a bridging header.\n\nThen, I need to enable C++ interoperability in my project build settings. As you know, Swift can already call C and Objective-C APIs, so the build setting is currently set to C and Objective-C mode. But I can change this to C++.\n\nNow that the setting reads C++ and Objective-C++, I can directly call APIs from my C++ image kit framework. Back in my Swift file, I can import the framework just like any other Swift module, and I can command click on the module name to see its contents. Now, these might look like Swift APIs, but they're actually from my C++ ImageKit library; this is just how the Swift compiler sees them. Let's look at a few of the APIs that I'm going to use today.\n\nStarting at the bottom, you can see a static member of type CxxImageEngine.\n\nThis is currently imported as an unsafe pointer, but we'll get into that more later. CxxImageEngine has a few other members, namely loadImage and getImages, which I'll use shortly. Now I'll go ahead and drop in all the UI for my photo picker so I can focus on the two methods that talk to C++.\n\nI can grab the shared CxxImageEngine and call loadImage on each of the selected images to load them into the engine. Wow, calling a C++ method in Swift is super easy. Now that my SwiftUI view is complete, I want to use it in my Objective-C++ ViewController.\n\nTo do this, I need to make my struct public so that I can access it from my Objective-C++ code.\n\nGreat! All my Swift code built successfully. Now I can go to the ViewController file and import the header that Swift generated.\n\nThis header contains all my public Swift APIs. Now that I've imported the generated header, I can start calling my Swift code in C++. First, I'm going to construct the SwiftUI view. Then, I can call the present method.\n\nAnd Xcode helps me out with code completion.\n\nLet's test this on-device.\n\nAfter I build and run the app, you can see our new SwiftUI view directly imported into my Objective-C++ app.\n\nThis was an example of truly bi-directional interoperability. I was able to seamlessly use C++ types and functions in Swift and vice versa. In C++, I was able to construct and use a SwiftUI view, where the body of the view called back into my C++ framework. All the integration was done automatically by the Swift compiler, so I didn't need to write a bridging layer. And all the APIs were direct and native, so unlike most of the other languages that interoperate, there's no overhead when calling C++ APIs in Swift or vice versa. I've been working with a pretty small app today, but the Swift compiler can support interoperability in large and complex codebases.\n\nSwift can import most C++ collections, both from the standard library and elsewhere. Swift can handle function templates and class template specializations. And it supports managing memory using shared pointer and similar user-defined types. Swift can understand these imported APIs at a high level. For example, it knows about shared pointer's retain and release operations, and it can use this high-level knowledge to apply a suite of powerful optimizations.\n\nIn the other direction, you can expose most Swift APIs to C++, such as structs, classes, their methods, and other members. You can even expose generic types like Array and resilient types that evolve over time. And C++ interoperability is fully supported by Xcode, so you will get code completion, jump-to-definition, and debugger support across both languages. These are just a few of the APIs that are supported by C++ interoperability. The Swift compiler supports interoperability between large codebases that use all these APIs and more, promoting a cohesive experience across languages and allowing you to adopt Swift in even more places. Now that we have the basics of interoperability covered, let's dive deeper into this feature, exploring some ways to make your C++ APIs feel natural and safe in Swift. The Swift compiler is able to automatically import most C++ APIs and represent them as safe Swift APIs. For example, by default, C++ types will be imported as Swift structs, C++ operators will be mapped to similar Swift operators, and containers will be automatically imported as collections. But the compiler also allows you to fine-tune how APIs are imported and expose APIs that feel even more natural. You can do this by providing the compiler with more information about your APIs through the use of annotations.\n\nFor example, a function or method might use a C++ naming convention that doesn't feel natural in Swift. In these cases, you can use annotations to rename an imported function, add argument labels, or import a getter and a setter as a computed property.\n\nAnnotations can also help explain high-level patterns like reference semantics and allow you to import some types as Swift classes.\n\nOr correct Swift if it thinks an API is unsafe when it's actually fine.\n\nThese annotations are a powerful way to communicate information about the APIs that Swift is importing. Let's identify a few different APIs that I use in the Sample App and explore how I can use these annotations to help Swift import my APIs in a way that feels safe and intuitive.\n\nNow that I have the photo picker completed, I also want to add a save button to save the edited photos back to my photo library.\n\nJumping back to Swift, I can take another look at all the APIs I imported.\n\nFirst, I'll need to gather the photos that are to be saved. And I can do that using the getImages function.\n\nThe getImages function returns a C++ vector. Before I call this method, let's understand the details of how vector operates in Swift. Swift types fall into two categories: value types and reference types. In Swift, structs represent value types and classes represent reference types.\n\nBy default, C++ types will be imported as value types in Swift.\n\nSo Swift will import vector as a value type that behaves like a Swift struct. The only difference between vector and any other Swift struct is that Swift will use the type's special members, such as copy constructors, to manage the lifetime. These copy constructors often perform deep copies. So unlike a Swift Array, which is only copied when it's modified, when Swift copies a vector, it copies all the elements.\n\nNow that I have a vector of images, I can iterate over the vector in a for-loop to get each image, convert the image back to a uiImage, and save the image to my photo library.\n\nThis for-loop works because vector has begin and end methods, so Swift will automatically import it as a collection. This automatic conformance to collection allows vector to be easily converted to a Swift Array and provides access to methods like map and filter. For safety, it's important to use these Swift Collection APIs rather than C++ iterator APIs which do not fit into Swift's safety model.\n\nWith these C++ iterators, it's easy to introduce bugs such as lifetime issues or invalid memory accesses. On the other hand, Swift collection APIs are completely safe, even when they operate on a C++ collection.\n\nThe Swift compiler will help guide you towards these safer APIs by marking unsafe C++ APIs as unavailable and suggesting a safer alternative. Let's go back to my Swift app. There's something that's been bothering me. Every time I use the C++ImageEngine, I'm reminded that it's an unsafe pointer. And in fact, the type is always used as a pointer in both Swift and C++. This is because the type has what's called \"reference semantics.\" This means the type is meant to have object identity, and copies will not be distinct values, but rather shared references to the same memory. As I mentioned before, Swift types fall into two categories: value types and reference types. Objective-C also has a clear distinction between value types and reference types, which makes mapping Objective-C types to structs and classes easy. For C++, it isn't as clear which types fall into which category because unlike Swift and Objective-C, C++ doesn't have a strong distinction between value types and reference types.\n\nSo by default, the compiler will import everything as a value type. But Swift also gives you the option to import some things as reference or class types by adding an annotation to your C++ code.\n\nSo I can map CxxImageEngine to a Swift class using the SWIFT_SHARED_REFERENCE attribute. This attribute means Swift will enforce that the type is always passed as a pointer or reference and will represent this indirection simply with the type rather than an unsafe pointer in Swift.\n\nTo make your code safe, Swift will automatically manage the lifetime of references by retaining and releasing the references as needed. To enable this kind of reference counting, you'll need to provide Swift with both of these retain and release functions. Let's dive into the C++ ImageKit header.\n\nI can import swift/bridging to access annotations like SWIFT_SHARED_REFERENCE. Now I can apply this annotation to the type, specifying both a retain and release function that Swift can call. Great! Now there are a few Swift compiler errors that are telling me I no longer need to dereference a pointer.\n\nThere's one last thing that I can do to make this C++ API feel right at home in Swift. Here in the for-loop, I'm calling getImages. Defining a getter and setter like this is a fairly common pattern in C++, but it doesn't feel very natural in Swift. To make this feel a bit more native in Swift, I can use another annotation from swift/bridging. The SWIFT_COMPUTED_PROPERTY attribute can be applied to a getter and setter to map the pair into a Swift computed property. Let's go to our C++ header again to apply this annotation.\n\nNow I can look up the callers of my getImages method by doing a secondary click on the definition and selecting my Swift caller, which I can now rename to simply \"images.\" Beautiful! Now let's test out our app one last time.\n\nI can select a few photos and save them back to my camera roll.\n\nGreat! During this talk, I used just two annotations to improve the way my APIs were imported. But there are many other annotations that you can use in your C++ headers. All you need to do to access them is import swift/bridging.\n\nTo enable C++ interoperability in Xcode 15, change the C++ and Objective-C interoperability mode from C and Objective-C to C++ and Objective-C++. And Swift and C++ interoperability is supported on all Apple platforms as well as Linux and Windows. C++ is a large and complex language, and we want to improve the way we import C++ APIs and expose Swift APIs with your feedback. When we change the way that C++ APIs are imported, we'll create a new version of interoperability. This means you can chose when you want to take on these new features, allowing you to confidently start using C++ APIs in your development today.\n\nIf you notice any issues or have any suggestions, we'd love to hear from you. Please tell us using Feedback Assistant. C++ interoperability was designed by a Swift compiler workgroup entirely in the open source. The workgroup is comprised of engineers and students from over a dozen companies and schools. The work group developed two documents that define the vision for the future of Swift and C++ interoperability and will guide the evolution of this feature over time.\n\nYou can join the workgroup and get involved on the forums. Just head to swift.org.\n\nIn Swift 5.9, you can use your C++ APIs automatically and safely with no overhead. You can incrementally adopt Swift by exposing new Swift code back to C++. And you can improve and fine-tune imported APIs by providing the compiler with more information.\n\nThanks for watching, and have fun adopting Swift in all your C++ codebases.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:10",
+      "title": "Calling a C++ method from Swift",
+      "language": "swift",
+      "code": "func loadImage(_ image: UIImage) {\n    // Load an image into the shared C++ class.\n    CxxImageEngine.shared.pointee.loadImage(image)\n}"
+    },
+    {
+      "timestamp": "4:20",
+      "title": "Import a C++ framework",
+      "language": "swift",
+      "code": "import CxxImageKit"
+    },
+    {
+      "timestamp": "4:45",
+      "title": "Import the Generated Header",
+      "language": "swift",
+      "code": "#import \"SampleApp-Swift.h\""
+    },
+    {
+      "timestamp": "4:57",
+      "title": "Calling a Swift method in C++",
+      "language": "swift",
+      "code": "- (IBAction)openPhotoLibrary:(UIButton *)sender {\n    // Construct SwiftUI view\n    SampleApp::ImagePicker::init().present(self);\n}"
+    },
+    {
+      "timestamp": "8:22",
+      "title": "Using the SWIFT_COMPUTED_PROPERTY attribute",
+      "language": "swift",
+      "code": "int  getValue() const SWIFT_COMPUTED_PROPERTY;\nvoid setValue(int newValue);"
+    },
+    {
+      "timestamp": "8:42",
+      "title": "Using the SWIFT_SHARED_REFERENCE attribute",
+      "language": "swift",
+      "code": "struct SWIFT_SHARED_REFERENCE(retain, release) CxxReferenceType;"
+    },
+    {
+      "timestamp": "8:52",
+      "title": "Using the SWIFT_RETURNS_INDEPENDENT_VALUE attribute",
+      "language": "swift",
+      "code": "SWIFT_RETURNS_INDEPENDENT_VALUE \nstd::string_view networkName() const;"
+    },
+    {
+      "timestamp": "10:45",
+      "title": "Using a for-loop to iterate over a C++ std::vector in Swift",
+      "language": "swift",
+      "code": "// Get every image out of the shared C++ class.\nfor image in CxxImageEngine.shared.pointee.getImages() {\n    let uiImage = CxxImageEngine.shared.pointee.uiImageFrom(image)\n    UIImageWriteToSavedPhotosAlbum(uiImage, nil, nil, nil)\n}"
+    },
+    {
+      "timestamp": "13:54",
+      "title": "Import swift/bridging",
+      "language": "swift",
+      "code": "#import <swift/bridging>"
+    },
+    {
+      "timestamp": "14:01",
+      "title": "Applying the SWIFT_SHARED_REFERENCE attribute to CxxImageEngine",
+      "language": "swift",
+      "code": "struct SWIFT_SHARED_REFERENCE(IKRetain, IKRelease) CxxImageEngine {\n    // ...\n};"
+    },
+    {
+      "timestamp": "14:53",
+      "title": "Applying the SWIFT_COMPUTED_PROPERTY attribute to getImages",
+      "language": "swift",
+      "code": "/// \\returns all images that have been loaded into the engine. Includes any modifications that were\n/// applied to the images.\nSWIFT_COMPUTED_PROPERTY\ninline std::vector<Image *_Nonnull> getImages() const;"
+    },
+    {
+      "timestamp": "15:06",
+      "title": "Updated for-loop using the \"images\" computed property",
+      "language": "swift",
+      "code": "// Get every image out of the shared C++ class.\nfor image in CxxImageEngine.shared.pointee.images {\n    let uiImage = CxxImageEngine.shared.pointee.uiImageFrom(image)\n    UIImageWriteToSavedPhotosAlbum(uiImage, nil, nil, nil)\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Calling APIs Across Language Boundaries",
+        "url": "https://developer.apple.com/documentation/Swift/CallingAPIsAcrossLanguageBoundaries"
+      },
+      {
+        "title": "Mixing Languages in an Xcode project",
+        "url": "https://developer.apple.com/documentation/Swift/MixingLanguagesInAnXcodeProject"
+      },
+      {
+        "title": "Mixing Swift and C++",
+        "url": "https://swift.org/documentation/cxx-interop"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10172/4/58243B95-F51E-4E6A-96C8-B85E8102E450/downloads/wwdc2023-10172_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10172/4/58243B95-F51E-4E6A-96C8-B85E8102E450/downloads/wwdc2023-10172_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10164",
+      "year": "2023",
+      "title": "What’s new in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10164"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:41:17.039Z"
+}

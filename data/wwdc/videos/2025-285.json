@@ -1,0 +1,102 @@
+{
+  "id": "285",
+  "year": "2025",
+  "url": "https://developer.apple.com/videos/play/wwdc2025/285/",
+  "title": "Meet PaperKit",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Welcome, I’m Andreea, an engineer on the Pencil & Paper team, and I’m delighted to introduce you to PaperKit. PaperKit is the framework that powers Apple’s unique markup experience system-wide. It’s used in apps like Notes, Screenshots, QuickLook, and the Journal app. It’s the easiest way to get rich markup in any app. PaperKit provides a canvas that you can both draw on and add a variety of markup elements to, including shapes, images, textboxes, and much more. Supporting both drawing and markup elements is what makes PaperKit an amazing addition to any app for a comprehensive markup experience.\n\nAnd new to macOS Tahoe, PaperKit provides the same rich markup experience, so drawing and markup elements on any macOS app work great as well, just like the new Journal app shown here.\n\nFirst, I’ll talk more about PaperKit’s key features and explain the core components behind it. Next, I’ll show how to integrate PaperKit markup to your app in a few steps. Finally, I’ll explain how to customize the PaperKit markup experience to best match your app’s requirements.\n\nI’ll start by highlighting the features available with a demo. I created an app to keep track of all my recipes and use markup to update them as I make changes. I’ve already written out a recipe for my favorite traditional Romanian cookies I’ve been making since I was 7 and rated them with some star shapes. To complete the recipe, I’ll add an image of the cookies. I can just open up the Files app and drag an image to my recipe.\n\nI'll reposition it to make sure it looks good! I’ll also highlight the ground walnuts since they’re the key ingredient.\n\nNow that I’ve gone through what PaperKit can do, I’ll break down its three main components. The first is the markup controller called PaperMarkupViewController that interactively creates and displays PaperKit markup and drawing.\n\nThe second is the data model container, called PaperMarkup. It handles saving and loading both the PaperKit markup and PencilKit drawing data, and it handles rendering the markup.\n\nThe third is a new insertion menu that allows annotation with markup elements into the canvas. On iOS, iPadOS and visionOS 26, this is called a MarkupEditViewController.\n\nOn macOS, an alternative option is a new toolbar called MarkupToolbarViewController, complete with drawing tools and buttons for annotating.\n\nGetting started with PaperKit in your app is easy. I'll begin by going over how I integrated it into my recipes app on iOS, and then cover the steps for macOS.\n\nI began by subclassing UIViewController. Within the viewDidLoad method, I initialized a markup data model container, configuring it to match the view’s bounds to ensure proper layout and rendering context. Next, I created a markup controller configured with the complete set of the latest features provided by PaperKit.\n\nI added it to the view hierarchy using the standard view controller embedding process.\n\nTo create a tool picker, I initialized a PencilKit tool picker and registered the markup controller as an observer, allowing it to respond dynamically to changes in the tool picker's state.\n\nTo display the tool picker in my app, I assigned it to the activeToolPicker property on the PencilKit responder state. This is a new API available on UIResponder that controls the tool picker visibility for the current responder. By configuring the toolPickerVisibility property, I can keep the tool picker active while explicitly managing its on-screen visibility. This enables the tool picker to remain hidden yet fully functional — still responding to interactions like double-tap and squeeze gestures — and allows any app to support the mini tool picker experience. To learn more about setting up your tool picker, check out Introducing PencilKit from WWDC19 and Squeeze the most out of Apple Pencil from WWDC24. After setting up the tool picker, I configured the accessory item as a button. When tapped, it will trigger a function to present the insertion menu.\n\nInside the method, I initialized the insertion controller using the same feature set as the markup controller.\n\nI then set the controller’s delegate to the markup view controller, configured it to display as a popover, and anchored the popover to the bar button item I added to the tool picker for proper placement.\n\nFinally, I presented the insertion menu controller modally. Getting things working on macOS is just as straightforward.\n\nSetting up the markup model and markup controller are essentially the same.\n\nThe only difference on macOS is that a toolbar can be created to present the insertion UI. From there, set the toolbar’s delegate to the markup controller and add it to the view hierarchy using the standard NSViewController embedding process.\n\nWith the basic setup complete, it's worth pausing to consider a few key factors that are essential when refining the app experience.\n\nPaperKit can be seamlessly integrated into a SwiftUI environment. The components are encapsulated within a UIViewControllerRepresentable, which is then incorporated directly into a SwiftUI view’s body. This allows UIKit-based components to be used within a SwiftUI layout, preserving compatibility across both frameworks. For more information on how to integrate view controllers into a SwiftUI environment, check out What’s New in SwiftUI from WWDC20.\n\nThe markup controller includes a delegate that allows for custom handling of callbacks. For instance, I can implement the markup change delegate method to automatically save any modifications to the markup model. Additionally, the markup controller conforms to Observable, providing an alternative to using a delegate for managing state and updates.\n\nWhen loading data from disk, it is essential to always verify the content version for forwards compatibility. There are two common approaches for handling version mismatches: presenting an alert to inform of the need to upgrade or showing a pre-rendered thumbnail of the markup.\n\nPaperKit provides tools to make forwards compatibility extremely straightforward. First, create a CGContext to render the thumbnail into. Then, generate a thumbnail image of the model using the markup model’s draw function, and finally, save it alongside the markup. Displaying this thumbnail in the case of a version mismatch is considered the best practice, and it is exactly what apps like Notes are using.\n\nNow that I’ve covered getting started with PaperKit for both iOS and macOS, I’ll dive into how you can customize your app to deliver the exact markup experience that you envision. The set of all available markup functionality in PaperKit is called a FeatureSet. It defines the capabilities and tools exposed to both the markup and the insertion controllers.\n\nFeatureSet.latest gives you the full set of markup features supported by PaperKit. It’s a great starting point as it ensures you stay up to date with new features added to the framework.\n\nTo customize your markup experience, you can use the remove and insert functions. This gives you full control over what tools and interactions are available in your app.\n\nHDR support can be enabled in your markup by setting the colorMaximumLinearExposure property on the feature set to a number greater than 1. For SDR markup, use 1. Set this property on the tool picker as well for HDR inks. For my app, 4 gave me the HDR effect I was looking for.\n\nThe value you set for colorMaximumLinearExposure will tone-map down to the supported HDR headroom for your device’s screen. Or just use the screen’s supported value, which you can grab from UIScreen or NSScreen.\n\nBy using the latest feature set and enabling HDR in your app, you’ll get all the new features and experiences. For example, a new tool for calligraphy, called the Reed tool, introduced in PencilKit, which looks great in HDR.\n\nOnce the feature set is configured to your requirements, assign the customized feature set to both the markup controller and the insertion controller to ensure consistency across the app’s markup and insertion functionality.\n\nAnother customizable property is the markup controller’s contentView, which can be set to any UIView. For example, I can use the template as a fixture in my app. All markup and drawing will be rendered on top of it. By customizing the FeatureSet, configuring the background view, and applying the refinement steps outlined earlier, your app can deliver the same powerful, system-wide markup experience, tailored in a robust and creative way.\n\nSo what’s next? Adopt Apple’s powerful markup experience, customize your FeatureSet with your own selection of tools and inks, set your own content background, and add HDR Support to your markup.\n\nWhether you're whipping up a lightweight note tool or baking a rich creative canvas, PaperKit gives you the ingredients to create the perfect experience. I can’t wait to see what you cook up with PaperKit.\n\nThanks for watching!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:47",
+      "title": "Adopt PaperKit in iOS",
+      "language": "swift",
+      "code": "// Adopt PaperKit in iOS\n\noverride func viewDidLoad() {\n    super.viewDidLoad()\n    \n    let markupModel = PaperMarkup(bounds: view.bounds)\n    let paperViewController = PaperMarkupViewController(markup: markupModel, supportedFeatureSet: .latest)\n    view.addSubview(paperViewController.view)\n    addChild(paperViewController)\n    paperViewController.didMove(toParent: self)\n    becomeFirstResponder()    \n\n    let toolPicker = PKToolPicker()\n    toolPicker.addObserver(paperViewController)\n    \n    pencilKitResponderState.activeToolPicker = toolPicker\n    pencilKitResponderState.toolPickerVisibility = .visible\n    \n    toolPicker.accessoryItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(plusButtonPressed(_:)))\n}\n\n@objc func plusButtonPressed(_ button: UIBarButtonItem) {\n    let markupEditViewController = MarkupEditViewController(supportedFeatureSet: .latest)    \n    markupEditViewController.delegate = paperViewController\n    markupEditViewController.modalPresentationStyle = .popover\n    markupEditViewController.popoverPresentationController?.barButtonItem = button\n    present(markupEditViewController, animated: true)\n}"
+    },
+    {
+      "timestamp": "6:11",
+      "title": "Adopt PaperKit in macOS",
+      "language": "swift",
+      "code": "// Adopt PaperKit in macOS\n\noverride func viewDidLoad() {\n    super.viewDidLoad()\n    \n    let markupModel = PaperMarkup(bounds: view.bounds)\n    let paperViewController = PaperMarkupViewController(markup: markupModel, supportedFeatureSet: .latest)\n    view.addSubview(paperViewController.view)\n    addChild(paperViewController)\n\n    // Create toolbar for macOS\n    let toolbarViewController = MarkupToolbarViewController(supportedFeatureSet: .latest)\n    toolbarViewController.delegate = paperViewController\n    view.addSubview(toolbarViewController.view)\n    \n    // Set layout\n    setupLayoutConstraints()\n}"
+    },
+    {
+      "timestamp": "7:18",
+      "title": "Auto-save markup changes",
+      "language": "swift",
+      "code": "// Auto-save markup changes\n    \nfunc paperMarkupViewControllerDidChangeMarkup(_ paperMarkupViewController: PaperMarkupViewController) {\n    let markupModel = paperMarkupViewController.markup\n    Task {\n        // Create a data blob and save it\n        let data = try await markupModel.dataRepresentation()\n        try data.write(toFile: paperKitDataURL)\n    }\n}"
+    },
+    {
+      "timestamp": "8:02",
+      "title": "Thumbnail for forward compatibility",
+      "language": "swift",
+      "code": "// Thumbnail for forward compatibility\n\nfunc updateThumbnail(_ markupModel: PaperMarkup) async throws {\n    // Set up CGContext to render thumbnail in\n    let thumbnailSize = CGSize(width: 200, height: 200)\n    let context = makeCGContext(size: thumbnailSize)\n    context.setFillColor(gray: 1, alpha: 1)\n    context.fill(renderer.format.bounds)            \n\n    // Render the PaperKit markup\n    await markupModel.draw(in: context, frame: CGRect(origin: .zero, size: thumbnailSize))\n    \n    thumbnail = context.makeImage()\n}"
+    },
+    {
+      "timestamp": "9:02",
+      "title": "Customized markup FeatureSet",
+      "language": "swift",
+      "code": "// Customized markup FeatureSet\n    \nvar featureSet: FeatureSet = .latest\n\nfeatureSet.remove(.text)\nfeatureSet.insert(.stickers)\n\n// HDR support\nfeatureSet.colorMaximumLinearExposure = 4\ntoolPicker.colorMaximumLinearExposure = 4\n\nlet paperViewController = PaperMarkupViewController(supportedFeatureSet: featureSet)\nlet markupEditViewController = MarkupEditViewController(supportedFeatureSet: featureSet)"
+    },
+    {
+      "timestamp": "10:50",
+      "title": "Custom background on markup controller",
+      "language": "swift",
+      "code": "// Custom background on markup controller\n\nlet template = UIImage(named: \"MyTemplate.jpg\")\nlet templateView = UIImageView(image: template)\npaperViewController.contentView = templateView"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "PaperKit",
+        "url": "https://developer.apple.com/documentation/PaperKit"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/285/4/338ce5dc-94ee-4f86-a122-4bd01d8b1239/downloads/wwdc2025-285_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/285/4/338ce5dc-94ee-4f86-a122-4bd01d8b1239/downloads/wwdc2025-285_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10214",
+      "year": "2024",
+      "title": "Squeeze the most out of Apple Pencil",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10214"
+    },
+    {
+      "id": "10107",
+      "year": "2020",
+      "title": "What's new in PencilKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10107"
+    },
+    {
+      "id": "10041",
+      "year": "2020",
+      "title": "What's new in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10041"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:10:42.795Z"
+}

@@ -1,0 +1,80 @@
+{
+  "id": "10644",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10644/",
+  "title": "Use Swift on AWS Lambda with Xcode",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC. Hello my name is Tom Doron, and today I'm thrilled to share with you a set of technologies that allow you to build and debug surveillance functions written in Swift using Xcode.\n\nMany systems these days have client components like iOS, macOS, tvOS or watchOS applications, as well as server components. The server components enable client applications to extend their functionality into the cloud. For example, access data that is not available on the device, offload tasks that can be done in the background, or offload tasks that are computationally heavy.\n\nOften, server components need to be built using different tools and different methodologies, creating a separation between the server and client engineering teams. Serverless functions offer a programming model that brings the two closer together. Serverless functions are becoming an increasingly popular choice for running event-driven or otherwise ad-hoc compute tasks in the cloud. They resolve the need in running dedicated resources by replacing them with a more dynamic resource allocation system. In many cases Serverless functions allow developers to more easily scale and control the compute cost, giving their On-Demand and elastic nature. AWS Lambda is an event driven Serverless computing platform provided by Amazon as part of Amazon Web Services, and it is considered among the industry leaders in this space.\n\nWhen building a system with Serverless functions extra attention is given to compute resource utilization, as it directly impacts the overall cost of the system. The combination of developer friendliness, and a low resource footprint, makes Swift a fantastic choice for building Serverless functions. So, given how well these two go together, we're happy to offer a Swift solution for building and debugging Serverless functions in Xcode and deploying them to AWS Lambda. Let me show you what this looks like. And this is it! Only four lines of code! Let's review the API in detail. First, we import the AWS Lambda runtime library. Next, we call Lambda.run and passing a closure that takes a context and event payload, and a completion handler. The function can call the completion handler when the work is done. The closure will be invoked as event payloads become available for you to process, and the runtime library will manage the program's lifecycle and interaction with the underlying platform. There is also a second protocol-oriented API that is designed for performance sensitive use cases. This API exposes this with NIO EventLoop underpinning, which allow the Lambda function to share the same thread as the networking processing stack, and so, to avoid context switches. This API is more powerful but it comes at a cost of cognitive and technical complexity, as the Lambda function needs to take care to never block the event loop. In most cases closure based Lambda functions are the right choice. And, in this example, you may have noticed that we're using a request and response struct that conforms to the codable protocol providing easy serialization to and from JSON. In most cases, Lambda payloads are JSON-based, so this represents a more typical use of the library. Now, let's see how to build and debug a Lambda function. And for that we'll switch over to Xcode. In this example which is included in the SWIFT AWS Runtime Library repository with a workspace with two projects -- a Lambda and an iOS app.\n\nThe Lambda is a package manager project with an executable product, and a dependency on the Swift AWS Runtime Library. If we look at the Lambda-main-dot-swift, which is the entry point for the program, we can see a request struct and a response struct -- similar to the ones we saw on the slide. The request struct is a user registration form with a name and a password field. The response is a message with a simple greeting to the new user. Switching over to the iOS app, we can see a similar setup with SwiftUI registration form with a text field for the user name and a secure field for the password, and a button that invokes a register function. The question of course is: How do we tie these two things together? How does a register function call the Lambda function on the other side? Let's try to run our Lambda function and see what happens.\n\nWe hit \"Run\" on the MyLambda target over here, and we can see that it failed. Looking at the error, it could not fetch work from the Lambda runtime engine because the connection was refused. This makes sense because we're not running in a database on the runtime; we're running in Xcode. Luckily, the library comes with a special mode that enables a simulator that simulates the AWS runtime engine. We can turn this on by editing the scheme, and sending an environment variable called \"LOCAL_LAMBDA_SERVER_ENABLED\" to true. Let's do that and try to run the Lambda again. In this case we're getting much better results. We're seeing that the local on the server was started, and is listening on local host port 7000 and receiving events on the invoke end point. That's pretty sweet. It also gives us a hint as to what we can do in the iOS application side. Let's switch over there and try to write our register function.\n\nFor this we will use a snippet we prepared up front. This snippet uses URL session to the local host address provided to us by the Lambda function, and sending the request form and then handling the response. We can add a couple of breakpoints, maybe when we're constructing the request, and as we are handling the response we can also add a breakpoint on the on the Lambda function.\n\nLet's run our iOS application in the simulator and see what happens.\n\nWe can see that Xcode is managing two processes: one for the Lambda function, and one for the iOS application. We can also see that the Lambda only takes 6.3 MB of memory. That's pretty sweet! Now, let's switch to the application in the simulator and try to register.\n\nPut in our name and our password and click the register button, and we hit the first breakpoint. This is the construction of the request. This all looks pretty good. Let's remove this break point, and continue. And now we hit the second breakpoint on the Lambda function. Here we can inspect maybe the request that we got from the client, and we see our user name and super-secret password. It looks good as well. Remove the break point, and continue. Finally we hit the last breakpoint when processing the response. We can use the lldb debugger to examine their response as well.\n\nFinally, we get our greeting showing up in the UI as expected. Awesome! But how did this work? We used Xcode to manage two processes for two executable targets. The iOS application and the Lambda function. To make the Lambda function available over HTTP, we also started a local HTTP server that simulates the AWS Lambda runtime engine. We use a special environment variable to turn this functionality on. The iOS application then used an HTTP call using URL session to submit work to the Lambda. This setup only works locally in debug mode. To interact with a Lambda deployed to AWS over HTTP, you need to expose it first through AWS API gateway. Now let's see how to deploy our Lambda Function. For this, we'll switch over to the terminal.\n\nTo deploy our Lambda function, we can use a variety of tools provided by AWS, such as SIM or AWS CLI. In this example, which is also available as part of the library code on GitHub, we built a small script that wraps the AWS CLI, and shows you the different step required to deploy the Lambda function to AWS. Let's run scripts.deploy and see what it does. First, we create a Docker image that is based on the Amazon Linux 2 image published by Swift.org. Next, we compile the Lambda function in the Docker container, then we package the executable and all of its dependencies in a zip file, which is the expected package format. Finally, we upload the zip file to AWS and notify about the new code version. With the code updated, we can also test our Lambda function using the AWS CLI wrapper script. We're going to call script.test, and see what happens. We enter our username and password, and we get a greeting as expected. Sweet! How did this work? When we deploy the Lambda function to AWS the AWS Lambda runtime engine will control the program's lifecycle. The Lambda pulls the runtime engine for work, and if such work is not available, the compute resource will be hibernated until work is available. The iOS application command line tool or any other client can use an HTTP call, using URL session or otherwise, to interact with the Lambda. To make the Lambda function available as an HTTP endpoint, you can use AWS API gateway, which routes every request it receives, to the Lambda Function queue. There are also other ways to invoke Lambda functions, such as event-based triggers, which are covered by AWS' documentation.\n\nIn order to make all this possible, we needed to create two main pieces of technology. The first part was getting Swift to run on Amazon Linux (a flavor of CentOS). Starting May 2020 Swift.org has begun publishing Swift toolchains for building and running Swift programs on Amazon Linux 2. The toolchain is useful in the context of many AWS compute services including EC2 and AWS Lambda. The second part was building a Swift Lambda runtime library; an implementation of the AWS Lambda runtime API. The library provides a multi-tier API that allows building a range of Serverless functions from quick and simple closures, to complex and performance sensitive event handlers. The program's lifecycle is managed by a Lifecycle Loop provided as part of the library. The program is designed to serve traffic forever, or until the process is terminated by the AWS platform. Long-lived processes can serve traffic faster by employing caching techniques such as caching the connection. The library also manages a state machine, representing the various stages of the Lambda execution; pulling work from the runtime engine queue, submitting the work to the user-provided function, and submitting the results back to the runtime engine. An asynchronous HTTP client that is fine-tuned for performance in the AWS Lambda runtime context is embedded in the library. Compiling the Lambda program produces an executable that links the user provided code with the underlying runtime library, and the Swift dependencies, and they can be linked together statically, or dynamically, depending on the need. AWS Lambda can then be configured to run as many copies of the Serverless functions as required, and this elasticity means that this simple programming model can be scaled up to meet even significant demand.\n\nThis also means that the Serverless functions are designed to be stateless, and care needs to be taken to avoid global mutable state, or holding onto memory for longer than required. Finally, the runtime library includes extensible integration points to trigger Serverless functions based on events. For example, events from AWS systems like S3, SQS and SNS, triggers based on HTTP endpoints exposed using AWS API gateway, or custom events that can be added by the user. To wrap up, Serverless functions are a great way to extend your iOS macOS, watchOS, tvOS, or any other client applications to the cloud. Swift is a perfect match for Serverless functions. It is fast, safe, and uses only little resources. The tools you need to build, debug and run Swift-based Serverless functions are available today. So what are you waiting for? Go build awesome things!\nThank you for listening, and enjoy WWDC.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:02",
+      "title": "Closure based Lambda function",
+      "language": "swift",
+      "code": "import AWSLambdaRuntime\n\nLambda.run { (_, name: String, callback) in\n    callback(.success(\"Hello, \\(name)!\"))\n}"
+    },
+    {
+      "timestamp": "2:33",
+      "title": "EventLoop based Lambda function",
+      "language": "swift",
+      "code": "import AWSLambdaRuntime\nimport NIO\n\nstruct Handler: EventLoopLambdaHandler {\n    typealias In = String\n    typealias Out = String\n\n    func handle(context: Lambda.Context, event: String) -> EventLoopFuture<String> {\n       context.eventLoop.makeSucceededFuture(\"Hello, \\(event)!\")\n    }\n}\n\nLambda.run(Handler())"
+    },
+    {
+      "timestamp": "2:59",
+      "title": "Closure and Codable based Lambda function",
+      "language": "swift",
+      "code": "import AWSLambdaRuntime\n\nstruct Request: Codable {\n    let name: String\n    let password: String\n}\n\nstruct Response: Codable {\n    let message: String\n}\n\nLambda.run { (_, request: Request, callback) in\n    callback(.success(Response(message: \"Hello, \\(request.name)!\")))\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10644/5/4AF78B69-A0D2-421E-A8B8-142BF9544723/wwdc2020_10644_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10644/5/4AF78B69-A0D2-421E-A8B8-142BF9544723/wwdc2020_10644_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "110360",
+      "year": "2022",
+      "title": "Use Xcode for server-side development",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110360"
+    },
+    {
+      "id": "10269",
+      "year": "2021",
+      "title": "Customize your advanced Xcode Cloud workflows",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10269"
+    },
+    {
+      "id": "10192",
+      "year": "2021",
+      "title": "What‘s new in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10192"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:43:53.873Z"
+}

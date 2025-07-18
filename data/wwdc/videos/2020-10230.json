@@ -1,0 +1,78 @@
+{
+  "id": "10230",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10230/",
+  "title": "Optimize live streams with HLS Playlist Delta Updates",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": false,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nMy name is Roger Pantos, and today we will be looking at Playlist Delta Updates. We introduced Playlist Delta Updates to optimize one particular use case of HLS.\n\nAs you probably know, when a client is playing a livestream, it is constantly reloading the media playlist to discover new segments. Now, that's fine when the playlist is small, but if you want to present a large DVR window or a long event, the playlist can actually become pretty large, even using gzip. Reloading a big playlist over and over takes time, and the bandwidth it requires can even make the player switch down to a lower quality tier if it's on a bad network.\n\nSo Playlist Delta Updates are a new way to reload an HLS playlist, where the server sends only the most recent changes to the client.\n\nThe client then combines that update, with the version it already has, to reconstruct the current version that's on the server. Let's walk through the entire process. First, Playlist Delta Updates are optional. The server advertises that it supports them using the Can-Skip-Until attribute of the server control tag.\n\nThe value of Can-Skip-Until is the skip limit, which is how old something in the playlist has to be in seconds to be skipped by a delta update. It is always at least six target durations.\n\nThe client downloads the first full playlist at least once. If the server has advertised Playlist Delta Updates, then the next time it asks for one, it can use the HLS skip Delivery Directive. It will then use the delta that is produced to update the previous version of the playlist to what's current.\n\nLet's take a closer look to see how a delta update is structured. First, the playlist version is nine or higher, and that indicates to clients that they have to understand Playlist Delta Updates to parse it. A delta update is not a stand-alone playlist, so it's not backward-compatible.\n\nClients will look at the media sequence tag to find out which segments have been removed since the last update.\n\nAnd then, the most important part of a Playlist Delta Update, is the skip tag. The skip tag replaces all the segment URL lines which were added to the playlist before the skip limit, as well as any media segment tags applied to one of those lines, such as discontinuity tags or Program-Date-Time tags.\n\nFor a long playlist, this one skip tag could replace thousands of lines of playlists that the client already has.\n\nIt has a skipped segments attribute that says how many segments were skipped.\n\nAfter the skip tag is the rest of the playlist. And that will include any segments and tags that were added since the last skip limit. Let's take a look at an example. On the left here, we have a regular live HLS playlist. I've omitted some stuff in the middle to save space, but you can see that it starts with segment 0, and the last segment is segment 20. It has that Can-Skip-Until attribute, so the client knows that as long as it got this playlist comfortably within the last 36 seconds, it can ask for a delta update. And so it does that by adding an HLS skip Delivery Directive to its playlist request.\n\nThat will produce the delta update on the right.\n\nIt has a version number of nine, and the media sequence is one, which tells us that that first segment has been rolled out of the playlist.\n\nThen we have the skip tag, and that acts as a stand-in for all the segments in the middle. It's followed by all the recently added segments, including a new one, segment 21.\n\nAnd so the client will take what's new on the right and combine it with the previous version on the left to produce a complete playlist that is up to date with what is now on the server.\n\nNow, Playlist Delta Updates were actually a feature of last year's OS, and one of the bits of feedback we got was that, while they were great, they didn't go quite far enough for providers who had large playlists that also included lots of playlist metadata in DATERANGE tags. And so this year, we are adding an extension to Playlist Delta Updates that supports skipping DATERANGE tags as well.\n\nServers say they support it by advertising a Can-Skip-Dateranges attribute in their server control tag.\n\nClients, in turn, will ask for a date range-skipping update with a new form of skip delivery directive, skip=v2.\n\nThe way v2 updates work is they skip any date range that was added to the playlist before the skip limit.\n\nAlso, they indicate which, if any, DATERANGE tags have been removed since the skip limit, using the Recently-Removed-Dateranges attribute. Now again, this is an incompatible version, so that is signaled with a playlist version of 10.\n\nNext, let's take a look at an example of date range skipping.\n\nSo on the left, we have a live HLS playlist, this time with DATERANGE tags and a Can-Skip-Dateranges attribute, saying that the server supports skipping date ranges. Now, DATERANGE tags can go anywhere in a playlist. In this case, the author decided to put them all at the bottom. The client asks for a delta update using the HLS skip=v2 delivery directive.\n\nAnd that will produce this delta on the right. It's version 10, because it skips date ranges. As before, the media sequence tag indicates that segment 0 has rolled off.\n\nThe skip tag also contains a Recently-Removed-Dateranges attribute that says that DATERANGE ID 1 was recently removed from the playlist. At then at the end of the update, we see our new segment 21 as before.\n\nDATERANGE ID 1 is missing because it was removed by the author. DATERANGE 2 is not in the update because it was in the playlist previously, early enough ago that it was skipped. DATERANGE P, on the other hand, is there because it was added to the playlist more recently. And finally, at the end, there's a new DATERANGE, DATERANGE Q. And so, when the client combines the delta with the previous playlist, it will get this: an updated playlist with all the DATERANGE tags still in the playlist present. We've got 2, we've got P, we've got Q. And without the DATERANGE ID 1 that was previously removed.\n\nSo Playlist Delta Updates are a powerful tool for optimizing livestreams with large playlists. In this year's OS, they can also do a great job on playlists with lots of DATERANGE tags. They can dramatically improve playlist reload performance, which at the end of the day will improve playback reliability, and ultimately, your users' experience. And so we hope that you can take advantage of them. Thank you very much.",
+    "segments": []
+  },
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10230/10/74A91D84-99EF-443F-86C4-0B8822E9150C/wwdc2020_10230_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10230/10/74A91D84-99EF-443F-86C4-0B8822E9150C/wwdc2020_10230_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10232",
+      "year": "2020",
+      "title": "Adapt ad insertion to Low-Latency HLS",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10232"
+    },
+    {
+      "id": "10158",
+      "year": "2020",
+      "title": "Deliver a better HLS audio experience",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10158"
+    },
+    {
+      "id": "10229",
+      "year": "2020",
+      "title": "Discover HLS Blocking Preload Hints",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10229"
+    },
+    {
+      "id": "10225",
+      "year": "2020",
+      "title": "Improve stream authoring with HLS Tools",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10225"
+    },
+    {
+      "id": "10231",
+      "year": "2020",
+      "title": "Reduce latency with HLS Blocking Playlist Reload",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10231"
+    },
+    {
+      "id": "10228",
+      "year": "2020",
+      "title": "What's new in Low-Latency HLS",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10228"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:24:31.089Z"
+}

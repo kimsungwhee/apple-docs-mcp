@@ -1,0 +1,70 @@
+{
+  "id": "10045",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10045/",
+  "title": "Create custom audio experiences with ShazamKit",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video",
+    "Business & Education"
+  ],
+  "hasTranscript": true,
+  "hasCode": false,
+  "transcript": {
+    "fullText": "♪ Bass music playing ♪  ♪ Alex Telek: Hi, I'm Alex. I'm an engineer on the Shazam team. Thanks for joining this session. Today, I'm going to show you how to create custom audio experiences for your app with ShazamKit using custom catalog recognition. On this session, I'm going to use some of the existing ShazamKit concepts, such as catalogs, signatures, and media items. If you're not already familiar with those, make sure to check out the \"Explore ShazamKit\" talk. Let's take a look at what we will be covering today. We will talk about how to build catalogs with custom audio and metadata. We will learn how you can match audio to your own custom catalog when using the microphone and the AVFAudio framework to record audio. Then we are going to customize our app to synchronize content to the custom audio. Finally, we will cover some of the best practices that you can use when working with custom catalogs. This is a code-along. There is a project available on the developer portal that we will be using throughout this session. I recommend that you download the project before we begin. As learning becomes increasingly more digital, we need to come up with ways to keep children engaged. What if you could play a video on your Apple TV and have a companion app that displays questions at exactly the right time? Today, I'm going to show you how to build a remote app that synchronizes and reacts to an educational video using custom catalog recognition. First, what are custom catalogs exactly, and how do we build one? Custom catalog is a collection of signatures that you generate from any audio. You can also add associated metadata for each signature. To add signatures to your custom catalog, you can use the SignatureGenerator object. It will convert audio buffers into a signature. First, create a signature generator, then using the installTap function on the audioEngine's inputNode, append the buffer and the audioTime to the generator. The buffer parameter is a buffer of audio captured from the output of the inputNode. audioTime is the time when the buffer was captured. When you specify the audioFormat make sure that the format is PCM in one of the supported sample rates. Calling the signature function on the generator will convert the audio buffers into a signature. We call this the reference signature, which we can then add to a custom catalog. You can also add signatures to a catalog by using a shazamsignature file. This is an opaque file that can be shared across devices. To make it easier adopting custom catalogs with ShazamKit, for this session we included this file for you to use. Before we begin, let's open the downloaded project and see what we have in there. Let's take a close look at the Question object.\n\nA Question represents a custom content in the app. First, there's a title and an offset. A title is a string describing a section in the video. Offset is the time when this section appears. For example, at 45 seconds, the teacher starts talking about a math equation. You would create a Question with that title and 45 as the offset. Equation represents a teaching moment, showing mathematical equations. You can use this as incremental building blocks. For instance, you might want to show the left- and the right-hand side of an equation at different offsets. Finally, answerRange and requiresAnswer are used to indicate when an interactive UI would show, so children can practice answering the questions. Let's take a look at what this would look like for our educational video. The first question starts at 14 seconds. I have one red apple at 21 seconds and adding three green apples at 25 seconds. Finally, at 31 seconds, the student will have a chance to answer the question. Note, that videos are usually formatted in hours, minutes and seconds, so to create offsets like I did here, you should convert the time into seconds first. For example, you could ask Siri for help, like, \"What's three minutes and 14 seconds in seconds?\" Now, let's dive into the code and see how we can get started with custom catalogs! First, I'm going to build a catalog by adding a signature with some metadata associated to it. Here, I have CatalogProvider with a function that creates the catalog. The reference signature that you are going to add to the catalog is called FoodMath.shazamsignature.\n\nLet's load that file in and create a signature object from it. Once you have that, you define the metadata using media items.\n\nI'm going to set some of the predefined media item property keys, such as title and subtitle. This is going to describe the educational video. I also created an extension on SHMediaItemProperty with two custom keys: teacher and episode. Setting the episode number and the name of the teacher will further customize the content of the catalog. All you have to do now is to create a customCatalog object.\n\nThen call addReferenceSignature on it and pass in the signature and the mediaItem object. This will associate the metadata you just created with the reference signature you loaded from disk. Perfect! Now that I have that in place, I can start matching audio to the catalog and see the result in action. So let's open the Matcher. We are going to match the input audio from the microphone to the content of the custom catalog we just created. To capture audio from the microphone, you can use AVAudioEngine from AVFAudio. In this project, I already added a description for the microphone usage in the Info.plist file. Also in the Matcher, I included code to request microphone permission and set up the audio session.\n\nFirst, to receive updates on matches, you create a session object and set the delegate.\n\nThe match function takes the custom catalog we created before, so you can just pass that to the session. Now, you're ready to match the audio using the installTap function on the audioEngine's inputNode.\n\nThe function returns an audioBuffer -- which is the converted audio from the microphone -- and an audioTime -- which is the time when the buffer was captured. Then, you call matchStreamingBuffer on the session and pass in the audio buffer and the audio time. We recommend that you include the time when available as this is going to be validated by the session to ensure that the provided audio is contiguous. Since you set the session delegate at the beginning, to handle updates, you can implement the session: didFind match: function from the session delegate.\n\nFor this, I created an object called MatchResult.\n\nIt contains a MatchedMediaItem, returned by the session: didFind match: function, this is the metadata that's associated with the reference signature in the catalog. It will include details we created earlier, like the episode number and the teacher's name. It can be only generated from a match, and it contains extra information related to that. Also in the MatchResult, we have the Question object I showed you earlier. This is representing a section in the video with a math equation. We will use this to find the relevant content for a match. So inside the delegate, we set MatchResult to take the first MatchedMediaItem object, and for now we, will set nothing for the Question.\n\nNow let's build and run and see the match in action. This is our FoodMath app, it has a list of episodes that are available for the students. I can play the video and together with my colleague Neil, we can learn to solve some math problems. Neil, what do you have for us today? Neil: So the format is I'll ask you a question, you'll have some time to think about it, and then we'll see if you got it right! You can play along too if you have our app. <  As I started the video, the app recognized that we are listening to episode three, \"Count on Me.\" This is great! Next, I want to figure out what sections to show for a particular offset in the audio, using our Question object. We use MatchedMediaItem to know what video we are watching, but it also contains extra information about a match, such as the predictedCurrentMatchOffset. This is an auto-updating position in the reference signature represented as a time interval in seconds. You can use this to figure out where you are in the video and find the relevant Question object. Going back to the code, in the delegate callback, instead of setting nil, I want to find the last Question that comes right after the predicatedCurrentMatchOffset.\n\nI can use the question's offset to compare the values. session:didFindMatch can be called multiple times with the same match.\n\nSo let's implement a filter that will only update the result when you get a new Question object. Once you have that, you can update the result with the value.\n\nNow let's see how that looks; build and run. This time, I want to learn about addition. I'm going to play the video again and see if the content of the question will show up synced with the video. Neil: Question one. Let's get started. I went to the shops today and I fancied some apples, so I bought one red apple; and I bought one, two, three green apples. How many apples did I buy in total? Your timer starts... now. < Alex: Now it's question time. What's one plus three? Could it be five? Oh. No, I got that one wrong. Let's try again. I'm going to rewind the video, and this time I'll pay more attention! Neil: Question one. Let's get started. I went to the shops today and I fancied some apples, so I bought one red apple; and I bought one, two, three green apples. How many apples did I buy in total? Your timer starts... now. < Alex: Now that I heard it again, I know that the answer is four. What if you find this question too easy? Let me skip forward and see if Neil has something a bit more complicated to teach us.\n\nNeil: Question four. The last question. So today, I'm feeling pretty hungry. So I've decided I'm going to buy 14 apples. One... two... three... four -- <  Alex: That's a lot of apples. Let me go ahead a bit more. Skip ahead 20 seconds. Neil: So I decided to buy another 28 apples.   One... two... three... four... five... six...\n\n26... 27... 28 apples. How many apples did I buy in total? Your timer starts now. < Alex: Now, that is a great question. Did you follow? I'm going to go with my favorite number! That is correct! The answer to the ultimate question is 42! It's simple: no matter where the student is in the video, your remote app will keep up and update the content. Let's cover some of the best practices when using custom catalogs. Custom catalogs can be shared between devices seamlessly using the shazamcatalog file extension. You can load from and save to disk using a fileURL as well as deliver them over the network. When using a remote web service, you may want to download the catalog first and then use the add function on the custom catalog object. Make sure to provide a local catalog when there's no available one over the network. Catalogs can store custom keys to return data specific to your use case. Make sure that the data you add in your catalog is one of the valid property list values. When using matchStreamingBuffer, ShazamKit will match the audio stream and balance the performance as well as the intensity of the search, doing all the work of generating and auto-updating the signature for you. So now you built a full app that's synchronized to an educational video, updating the content to where the student currently is using only a signature and a custom catalog. This is just one of the many examples that is possible, and we are really excited to see what you will build using ShazamKit. Thank you and have a great WWDC. ♪",
+    "segments": []
+  },
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Building a Custom Catalog and Matching Audio",
+        "url": "https://developer.apple.com/documentation/ShazamKit/building-a-custom-catalog-and-matching-audio"
+      },
+      {
+        "title": "ShazamKit",
+        "url": "https://developer.apple.com/documentation/ShazamKit"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "sampleProject": "https://developer.apple.com/sample-code/audio/shazamkit-mov.zip",
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10045/5/3099F002-4DB2-4D54-8272-1DABD4768AF2/downloads/wwdc2021-10045_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10045/5/3099F002-4DB2-4D54-8272-1DABD4768AF2/downloads/wwdc2021-10045_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10028",
+      "year": "2022",
+      "title": "Create custom catalogs at scale with ShazamKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10028"
+    },
+    {
+      "id": "10044",
+      "year": "2021",
+      "title": "Explore ShazamKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10044"
+    },
+    {
+      "id": "10322",
+      "year": "2021",
+      "title": "Tuesday@WWDC21",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10322"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:24:23.260Z"
+}

@@ -1,0 +1,66 @@
+{
+  "id": "10229",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10229/",
+  "title": "Discover HLS Blocking Preload Hints",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": false,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nMy name is Roger Pantos, and today I'd like to talk to you about Blocking Preload Hints in HLS. So first, what are Blocking Preload Hints, and what are they good for? To understand preload hinting, it helps to understand a similar feature of Low-Latency HLS, which is Blocking Playlist Reload. We actually have an entire other talk about Blocking Playlist Reload. But the basic idea is that the client can ask the server for the next version of the playlist in advance.\n\nThe server will then hold onto that request and unblock its response when that playlist updates. That allows the client to receive the update immediately.\n\nPreload hinting is similar, except it's for loading the partial segments themselves.\n\nThe idea is to make the request in advance to lower the eventual response time. The benefit of preload hinting is that it gets the media flowing to the client from the server as soon as it's available. And that eliminates that round-trip bubble between seeing a new segment appear in the playlist update and then having to go back and ask the server for it.\n\nIt's also effective for driving HTTP cache fill, because it eliminates another round trip, this time between the cache and the origin. That is a significant win for global CDNs, because the round trip there between the edge and the origin can easily exceed 100 milliseconds. So let's take a look at how it works in Low-Latency HLS.\n\nIn Low-Latency HLS, every playlist must carry a Preload Hint tag that has the URL of the next Partial Segment that the packager expects to appear.\n\nWhen the client gets that playlist, it will turn around and ask for that hinted URL. The server then holds onto that request until that Partial Segment is available and then sends it to the client.\n\nNow, normally the client also has a Blocking Playlist Reload pending request at the same time, which will unblock at about the same time as the hint request.\n\nSo the client will generally see them both arrive at the same time.\n\nPreload hints are also used to signal upcoming MAP tags so that the client can get a jump on content transitions, such as at AD boundaries.\n\nSo to recap, here is the request flow for hinting.\n\nHere we have an HLS client on the left and a server on the right.\n\nFirst, the client issues a Blocking Playlist Reload request for the next part. That blocks on the server, and the client issues a request for the hinted partial segment, which also blocks because that partial segment isn't there yet. Eventually the server will finish encoding and packaging the partial segment, and it will unblock the response for the hint request. At the same time, it will add the new Partial Segment to the playlist and unblock the playlist update as well. So that's the request flow. Let's take a look at how it looks in the playlist syntax.\n\nHere we have a Low-Latency playlist with one-second parts.\n\nThat last part at the bottom in green is called \"part1.1.m4s.\" Beneath that, there is a Preload Hint tag saying that the next part the client can try to load is \"part1.2.\" And so that's the mechanism for the client issuing a preload hint.\n\nNow, in this case, every Partial Segment has its own URL. But a Partial Segment can alternately be a byte-range of a larger resource. And so how does preload hinting work for those? The Preload Hint tag can optionally include the start of the byte-range and the length of the Partial Segment. The length is omitted if we don't know it when the hint is published. So one way that can look is like this, where we're hinting the range from zero to 4,044 of segment 23.\n\nBut you can alternately hint the client to load more than one Partial Segment in a single request. You can do that with an open-ended preload hint like this one. And this is actually a good excuse to talk about CMAF Chunks. Chunks are essentially what CMAF calls fMP4 Fragments that can be transferred individually.\n\nWhere byte-ranges come into play is that one way to deliver Partial Segments is to progressively append them to their parent segments and have the client make one request for the parent segment URL to get every Partial Segment as it becomes available.\n\nDoing it this way does require you to use Chunk Transfer Encoding between the server and the client. And the caveat here is that many CDNs don't actually support Chunk Transfer Encoding for live content delivery. But if you have a CDN that does, then the benefit you get is that you can use the same media that you're serving to your Low-Latency HLS clients to serve the Latency Dash as well.\n\nLet's see how that works. First, every resource URL is a Parent Segment.\n\nThe Parent Segment is going to be made up of multiple CMAF Chunks.\n\nThen, for Low-Latency HLS, each Chunk would be mapped to a Partial Segment. They get specified with a Parent Segment URL and a byte-range. Here's how a Partial Segment might be declared in a Playlist as a Part tag with a URL and a byte-range.\n\nSo that's how CMAF Chunks show up as Partial Segments in a playlist. Now, how does preload hinting work? The Preload Hint tag in this case will just contain the URL of the parent segment.\n\nAnd that Preload Hint tag will get updated every time the server moves to a new parent segment.\n\nEvery time it finishes appending a new CMAF Chunk, it will update the byte-range start attribute of the Preload Hint tag to point to the end of the new Chunk. Because remember, this tag's hinting the next Partial Segment here, not the current one.\n\nAnd we leave off the byte-range length because at this point we don't actually have it.\n\nAt that point, every time the client sees a new Preload Hint URL appear in the playlist, it will issue a GET request for it. And every time a new Chunk finishes being appended, the server will send that byte-range to the client via Chunk Transfer Encoding and the client will harvest every Partial Segment out of that single HTTP request. Let's look at an example.\n\nHere we have a playlist with one-second parts. You can see that the Partial Segments above segment zero are actually expressed in byte-ranges of segment zero and that the Preload Hint tag at the bottom tells the client to start loading segment 1 at offset zero.\n\nOne second later, the playlist gets updated, and now there's a new Partial Segment. And sure enough, it's declared as the first 3,000 bytes of segment 1.\n\nIn addition, the Preload Hint tag has been updated to say that the next Partial Segment will start at offset 3,000.\n\nSo one second after that, the playlist updates again. And now there is a second part, specified as a new byte-rate range of segment 1, and the Hint says that the next part will start at offset 8,000.\n\nAnd so we repeat this pattern. We hint a part and then we add it.\n\nSo that's how preload hinting works.\n\nBut before we finish talking about it, there are a few more things to know.\n\nFirst, it is legal for a server to change its plan after it publishes a Preload Hint tag, and the most common reason for this is when an operator decides that they actually want to return early from an ad, so they change their mind halfway through. In that case, the next time the playlist updates, the client will notice that the previously hinted URL no longer appears in the playlist, and so it will cancel its pending hint request and switch to loading whatever it finds in the playlist now. The other thing to know is that hint requests for prerecorded content, such as ads, can be served right away without blocking. So that's in contrast to live content, where you have to wait for the entire thing to be encoded before you can put it on the server. We've got a separate session that goes into more detail around serving ads for Low-Latency HLS.\n\nBut for right now, let's wrap up our discussion of preload hinting.\n\nSo in summary, preload hinting is where clients ask for the next Partial Segment in advance, and that gets the part flowing to the client as soon as possible. A server can either hint an entire resource or individual byte-ranges, and that enables Chunk Transfer delivery of CMAF segments and interoperability with Low-Latency DASH. Preload hinting is an important part of optimizing the entire delivery pipeline, which is why they are required by Low-Latency HLS. I hope this gives you a good idea of what preload hinting is and how it works, and that it helps you to deploy Low-Latency HLS. Thank you very much.",
+    "segments": []
+  },
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10229/8/F033AE2E-6D7C-493D-B69F-666634C4E10B/wwdc2020_10229_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10229/8/F033AE2E-6D7C-493D-B69F-666634C4E10B/wwdc2020_10229_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10232",
+      "year": "2020",
+      "title": "Adapt ad insertion to Low-Latency HLS",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10232"
+    },
+    {
+      "id": "10230",
+      "year": "2020",
+      "title": "Optimize live streams with HLS Playlist Delta Updates",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10230"
+    },
+    {
+      "id": "10231",
+      "year": "2020",
+      "title": "Reduce latency with HLS Blocking Playlist Reload",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10231"
+    },
+    {
+      "id": "10228",
+      "year": "2020",
+      "title": "What's new in Low-Latency HLS",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10228"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:25:04.218Z"
+}

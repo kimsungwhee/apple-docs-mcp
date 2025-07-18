@@ -1,0 +1,206 @@
+{
+  "id": "10056",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10056/",
+  "title": "Compose custom layouts with SwiftUI",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Paul: Hello, and welcome to Compose Custom Layouts with SwiftUI. I'm Paul, and I work on developer documentation. SwiftUI provides a rich set of building blocks that you use to compose your app's interface. You can combine built-in views that display elements like text, images, and graphics to create custom, composite views. To arrange all these elements in ever more sophisticated groupings SwiftUI provides layout tools.\n\nContainers like horizontal and vertical stacks let you tell SwiftUI where to put views relative to one another, while view modifiers give you additional control over things like spacing and alignment.\n\nIn this talk, I'm going to introduce some new tools that will make some common layouts even easier to build, and will make more complicated layouts possible. Along the way, I'll give you some tips for working with layout in SwiftUI. I'll start by showing you a new member of the grid family that's perfect for two-dimensional layouts when you have a static set of views to display. Next I'll talk about how you can create a custom view container type that lets you interact directly with the layout engine, using the new layout protocol. Then I'll talk about ViewThatFits, a container type that automatically selects from a collection of views for the one that, well, fits in the available space. And finally, I'll show you how to add seamless transitions between layout types using AnyLayout. To see all these new features in action, let's take a look at an app I've been working on.\n\nIn recent years, there's been some debate among some of my colleagues about who makes the best furry companion. I have my own opinion, but I was curious to see if we could come to some consensus, so I decided to make an app to take a poll. And I want to include folks with fur allergies, too, so I'm throwing in one extra option. Now, I like to do most of my interface design in SwiftUI, because it's so easy to prototype using previews, but as a starting point, I drew a quick sketch of what I'm aiming for. I expect the voting to go on over a period of time, so I want a leaderboard in the middle showing the current standings. I'll put buttons for voting at the bottom. And at the top, I'll display some images of what folks are voting for.\n\nOkay, the first thing I want to do is to build the leaderboard. So let's take a closer look at that. The leaderboard is a two-dimensional grid of elements with rows for each contender, and columns that show names, percentages, and a vote count. I have a couple of specific things I want to achieve here. First, I want the two text columns to be only as wide as they need to be to accommodate the widest cell in each case because I want the progress views that represent percentages to get as much space as they can. And this needs to be true no matter how big the counts get for my friends that speak other languages or for anyone who uses different text sizes on their devices. Second, I want the names to be leading edge aligned, but the amounts to be trailing edge aligned. Now, SwiftUI already has lazy grids, which are great for scrollable content. These containers are very efficient when you have a lot of views, because they only load views that are visible, or about to be visible. On the other hand, that means the container can't automatically size its cells in both dimensions.\n\nFor example, the LazyHGrid can figure out how wide to make each column, because it can measure all the views in a column before drawing them. But it can't measure every view in a row to figure out the row's height. To make this work, the lazy grids need you to provide information about one of their dimensions at initialization time.\n\nFor a closer look at lazy grids and other existing SwiftUI layout container types, see the Stacks, grids, and outlines talk from 2020. But in my case, I don't need scrolling, and I'd like to let SwiftUI figure out both the height and the width for each cell. For this kind of layout, SwiftUI now offers a Grid view. Unlike the lazy grid, the grid loads all of its views at once, so it can automatically size and align its cells across both its columns and rows. Let's take a look at the code for this.\n\nHere's a basic version of my leaderboard written as a Grid. This particular grid view contains three GridRow instances. Within a row, each view corresponds to a column. So in this example, the first text view in each row corresponds to the first column, the progress view is in the second column, and the last text view is the third column. Notice that the grid allocates as much space to each row and column as it needs to hold its largest view. So the first text column is wide enough for the longest name, but no wider. Flexible views like the progress indicator take as much space as the grid offers, which in this case is whatever is left over after allocating space for the text columns. I want to adjust this a bit, but first, let me create a basic data model to give me somewhere to store vote counts.\n\nI'll need more logic to manage and share the data across the network, but while I'm prototyping the interface, I just need a simple structure like this. I'll include Identifiable conformance, because that'll make it easier to use this type in a ForEach, and Equatable conformance to make it possible to animate changes.\n\nAnd I'll create a set of example data to use in my previews while I prototype. Going back to my grid, I can create a state variable and initialize it with my example data. And using that data, I can now create rows with a ForEach. Notice that the rendered output hasn't changed because it's still displaying the same data. That's already pretty close, but I need to fix the cell alignment. Right now, all the cells are center aligned, which is the default for a grid, but if you remember, I want the names to be leading edge aligned, and the values to be trailing edge aligned.\n\nTo do that, I'll initialize the grid with leading edge alignment. The value I use here applies to all the cells in the grid. That works fine for my first two columns, but what about the last? To affect the alignment of a single column, I can apply the gridColumnAlignment view modifier to any one cell in that column. So I'll do that with the text view in the last column. Okay, it's getting there, but now that I'm looking at it, I feel like it would be better with a divider between each row. If I just add a new row to the ForEach with a divider, this isn't exactly what I want, but notice that this shows a couple of interesting things. First, because the divider is a flexible view, it's causing the first column to take more space. Basically, the grid is now giving the last column what it needs, and dividing the remaining space between the first two columns. Second, for a grid row that doesn't have as many views as other grid rows, the missing views just create empty cells in the later columns. But what I really want is to have the divider span all the columns of the grid, and SwiftUI has a new view modifier that lets me do that.\n\nBy adding the gridCellColumns modifier to a view, I can tell a single view to span some number of columns; in this case, all three. And actually, for the case where the view should span the entire grid, I can simplify this by just writing the view by itself, outside of a grid row. Okay, my leaderboard is in pretty good shape so let me take a look at the buttons used for voting next.\n\nAt first glance, there's nothing too fancy here. However, I do have one special requirement. On the one hand, I don't want to bias my participants with smaller buttons for certain choices. But I also don't want the buttons to grow as large as their container, which could be very large on iPad or Mac. Instead, the buttons should all have widths equal to the widest button text. So what happens if I try to build this with an Hstack? What I find is that each button sizes itself to fit its text label, and the HStack packs these together horizontally. This default stack behavior is exactly what you want in a lot of cases, but it doesn't quite meet my spec for this project.\n\nFor a refresher on layout fundamentals in SwiftUI, see the Building custom views with SwiftUI talk from 2019. Using concepts from that talk, let's take a look at this view hierarchy to see what I can change to get the behavior I want.\n\nFirst, the stack's container proposes a size to the stack. Based on this, the stack proposes a size to its three buttons, and then each button passes that size through to its text label. The text views calculate the size they actually want, which depends on the string they contain and report this to the button. The button passes the information back through. The stack sizes itself with this information, places the buttons in its space, and then reports its own size to its container. Okay, so if the buttons take the size of their text, what if I wrap each text view in a flexible frame and allow it to grow? The text hasn't changed, but the button sees a flexible subview, which takes as much space as the HStack offers. The stack then distributes its space equally among the views that it contains. So the buttons are all the same size now, which is great, but their actual size depends on the stack's container. The stack will expand to fill whatever space the container offers, and that's not what I want. What I really want is a custom stack type that asks for the ideal size of each button, finds the widest, and then offers that amount of space to each one. Fortunately, SwiftUI has a new tool that lets me do just that. Using the Layout protocol, I can define a custom layout container that participates directly in the layout process with behavior that's tailored to my use case. Let's see how this works.\n\nLooking at the HStack again, let me change it to an EqualWidthHStack a type that I'm going to define to solve my specific problem. This type is going to allocate width to the buttons equally, in an amount that's as wide as the widest button's ideal width. I'll keep the flexible frames so that buttons with narrower text can expand to fill the space that the stack offers. But the buttons will still have an ideal size that I can measure, which is the width of their text. So let's see how I can implement MyEqualWidthHStack.\n\nI start by creating a type that conforms to the Layout protocol. For a basic layout, all I need are the two required methods. Let's add stubs for those. The first method is sizeThatFits, where I'll calculate and report how large my layout container is.\n\nI get a proposed view size input, which is a size proposal from my layout's own container view. And I can propose sizes to my layout's subviews using the Subviews parameter.\n\nNotice that I can't access the subviews directly. Instead, the subviews input is a collection of proxies that let me interact in specific ways with the subviews, like proposing a size. Each proxy returns a concrete size based on the proposal that I’ve made. I'll collect all those responses and use them to do some calculations and then return a concrete size for the EqualWidthHStack to its container.\n\nThe second method that I have to implement is placeSubviews. I'll use this to tell my layout's subviews where to appear. This method takes the same size proposal and subviews inputs, and it also takes a bounds input that represents the region that I need to place my subviews into. Bounds is a rectangle that has the size that I asked for in my sizeThatFits implementation. Remember, views pick their own size in SwiftUI, so my layout container will get the size that it asks for. The origin of the region is at the top left, with positive X to the right, and positive Y down. You can assume this for all your placement calculations, even in right to left language environments, because the framework automatically flips the x position of each view when laying out views in that direction. However, don't assume that the rectangle's origin has the value (0,0). Among other things, allowing for a non-zero origin enables layout composition, where the placeSubviews method of one layout calls into the same method of another. To make it a little easier to work with, the rectangle provides properties for accessing important parts of the region, like the minimum, center, and maximum points in each dimension.\n\nNow, before I move on, notice one other parameter that these methods both have: a bidirectional cache that I could use to share the results of intermediate calculations across method calls. For many simple layouts, you won't need this, and I'm just going to ignore the cache for now. However, if profiling your app with Instruments shows that you need to improve the efficiency of your layout code, you can look into adding one. Check out the documentation for more information about that.\n\nOkay, let's implement sizeThatFits. Remember, I want to return a size for my container that fits all of the buttons arranged horizontally, all at the same width. So first, I'll ask each button for its size, which I do by proposing a size and seeing what comes back. To measure the flexibility of a subview, I can make multiple measurements using special proposals for minimum, maximum, and ideal sizes, or I can propose a specific size. In this case, I use the unspecified size proposal to ask for the ideal size.\n\nThen I'll find the largest value in each dimension for all the sizes that I get back. In this case, the goldfish button sets the width, and the heights are all the same. Now let me refactor that into a method, because I'll need it again when I place my subviews. Next, I need to account for the spacing between views. I could just use a constant spacing, like 10 points, but the layout protocol lets me do better. In SwiftUI, all views have spacing preferences that indicate the amount of space the view prefers to have between itself and the next view. These preferences are stored in a ViewSpacing instance that's available to layout containers. The view might prefer different values on different edges, and even different values for different kinds of adjacent views. For example, a view might want more or less space between itself and a text view than it wants between itself and an image. And the values can vary by platform as well. You can ignore these preferences if it makes sense for your layout, which is essentially what's happening when you initialize a built-in stack with a custom spacing, but respecting these preferences in your own layouts is a good way to get results that automatically follow Apple's interface guidelines, and as a result, match the look of the rest of the system. Now, every view has preferences on all edges, and when I bring two views together, the preferences on a common edge might not match. To resolve this, a built-in layout container uses the larger of the two preferences. And I can do the same thing in my own layout.\n\nThe subview proxies give me a way to ask for each button's preferred spacing to some other button along a given axis. So let me create an array of values by scanning through the subviews and calling the distance method on each proxy's spacing instance to get the spacing to the next view's spacing instance along the horizontal axis. This call takes into account the preferences of both views on their common edge. The first element in this array tells me how much space the cat button wants horizontally to the goldfish button, and the next tells me how much the goldfish button wants to the dog button. I'll force the last element in the array to be zero because there aren't any more buttons to compare against. Okay, let me refactor that into a method for later too. Now I can combine the spacing values to find the total spacing and use that that with the width and height measurements to return a size value. This is the size that my layout needs, given the ideal sizes of its subviews and each subview's preferred spacing. The other method that I need to implement is placeSubviews. As I mentioned before, I get both the bounds of the container, and the collection of subview proxies that I can use to direct the buttons. First, I calculate maxSize and the spacing array just like I did in sizeThatFits method, because I'll need those values here too. Then I'll create a size proposal that I can use for each of my subviews, this time based on the size that I want them to have, rather than their ideal size. I only need one proposal, because I want all the buttons to the be the same size. And I'll find a starting position in the horizontal dimension for my first subview, calculated as the leading edge of my bounds, plus half the width of a button. Notice I'm not relying on the origin to be zero, but instead starting with the minX value instead. Finally, I can go through each of the subview proxies and call its place method with a point, a statement of what that point represents in terms of the button, and the size proposal. Each time through the loop, I update the horizontal position by the width of a view, plus the spacing for the next view pair, to get ready for the next iteration. And that's it. Now let's see what happens when I use this new view layout type.\n\nAnd there it is. I instantiate my own custom layout container just like I would a built-in HStack, and the buttons are arranged horizontally, all at the same width. Now, I want to pause here for a moment and talk about how the Layout protocol solves a problem that you might have tried to use geometry reader for in the past. Geometry reader is, after all, a tool for measuring view sizes. However, it's not the best choice in this case. And that's because a geometry reader is designed to measure its container view, and report the that size to its subview. The subview then uses the information to draw its own content. Notice that for the intended use of a geometry reader, the information flows downward. The measurement that the reader makes has no effect on the layout of its own container.\n\nThis is great for things like drawing a path that scales with its container. The geometry reader tells the path logic how much space it has to work with, and the path logic inside the subview adjusts accordingly. If the container changes size, so does the path, because the geometry reader passes along the new size. However, for my buttons, and I'll just focus on one here to make it easier to see, I need to measure the text view, and then use that to decide how to set a frame that's the text view's container. So I could add a geometry reader in an overlay to the text view– remember, it measures its container– and then somehow send the measurement data back up to the frame, outside of the normal flow. But notice that if I do this, I'm bypassing the layout engine, which might result in a loop. The reader measures the layout and changes the frame, which might change the layout, which could require another measurement, and so on. Now it is possible to make this work, but if I'm not careful, I could end up crashing my app. As a result, this strategy isn't recommended. Fortunately, the layout protocol gives you a better way to solve this problem, by letting you work within the layout engine.\n\nOkay, let's look at the buttons again. There's something else I want to do here. First, to make this a little easier to read, I'll refactor the buttons into their own subview. Now, I happen to know that one of my colleagues uses larger type on their device. My app automatically supports Dynamic Type because I've used default fonts, so I should mostly get the right behavior for free. Let's see what happens if I increase the type size. Uh-oh, the buttons don't fit anymore. Remember that my custom stack doesn't constrain the button widths, but just lets them have their ideal size, which in this case exceeds the width of the display. So what can I do? Well, I could modify the layout to do something more complicated when the views don't fit, taking into account the size proposal from the layout's container. But for this case, I can use the new ViewThatFits container to do most of the work for me. This new type picks the first view that fits in the available space from a list of views that I give it.\n\nBy wrapping my custom stack in a ViewThatFits structure, and then adding a vertical stack version of the same content, I can let SwiftUI figure out when the buttons need to be arranged differently. Of course, the built-in VStack doesn't have the equal width property that my custom horizontal stack does, so I've gone ahead and implemented a vertical version of the custom stack too. It's very similar to the one I already described, except that it places equal width items along the vertical axis instead of the horizontal axis.\n\nAnd of course, when I remove the dynamic type size override, it goes back to the horizontal layout. Now, there's one last piece of the app I need to build, and that's the images at the top. I could do something simple, like just show a group of profile pictures, but I thought I'd have a little fun with it. So I made another custom layout type that draws views in a circular arrangement and then rotates the arrangement according to rankings. So this configuration shows goldfish in first place, and the other two tied for second. And then if dog pulls ahead of cat, I can rotate a bit to show that. Or I can show a slightly more realistic result, all by rotating a radial layout. Creating this layout is actually quite straightforward with the layout protocol. Like before, I just need two methods. For size that fits, I want my view to fill the available space, so I'll return whatever size the container view proposes. I'll convert the proposal into a concrete size using the replacing-unspecified-dimensions method. That method automatically handles nil values that could be present if the container asks for an ideal size. Then inside place subviews method, I'll offset each subview from the middle by some radius that's based on the size of the layout region, and apply a rotation that depends on the index of the view. As a baseline, this places the views at 0, 1, and two-thirds of the way around a circle. To reflect the current rankings, I'll also apply an offset that affects all the views equally. But where do I get the rankings? Remember, my layout can only access the subview proxies, and not the views, let alone my data model. Well, it turns out that the layout protocol has another trick up its sleeve. It lets you store values on each subview, and read the values from inside the layout protocol methods. Let's see how I can use that to communicate the rank information. First, I declare a new type that conforms to the LayoutValueKey protocol, and give it a default value. In addition to providing a value for a view when you don't explicitly set one, the default value establishes the associated value's type, which is an integer in this case. Then, I create a convenience method on View to set the value using the layoutValue view modifier. Now in my view hierarchy, I can apply my convenience rank modifier to the views in my layout. Here, I calculate the rank of each pet and add it to the pet's corresponding avatar view inside my radial layout. Finally, back in my place subviews method, I can add some code to read the values from each subview by using the layout value key as an index. And I can use the ranks to calculate an offset. I won't go through that logic here, but it basically produces an appropriate angle for any possible set of rankings. Well, all except one. What happens if there's a three-way tie? There's no way to rotate the layout to get all the views in a line, so I'd have to substitute completely different layout logic for that case. However, there is already a layout type that does this, and that's the built-in HStack. So what I'd really like is to transition to an HStack when I detect a three-way tie. And it turns out that there's a new tool for that, too. The AnyLayout type lets you apply different layouts to a single view hierarchy, so that you maintain the identity of the views as you transition from one layout type to another.\n\nSo here I have the radial layout that we saw before, and all I have to do is replace that with a new layout type that depends on whether there's a three-way tie. Because the isThreeWayTie property is derived from state, SwiftUI notices when it changes and recognizes that it needs to redraw this view. But because the structural identity of the view hierarchy always remains the same, SwiftUI sees this as a view that changes, rather than as a new view. As a result, with only one more line, I can create smooth transitions between layout types. And in fact, by adding the animation view modifier, I also get animations between all the different states of the radial layout, because the configuration of the radial layout depends on the same data. And here's what all that looks like in action. As I tap on different buttons to change the vote counts, you can see how the avatars move around smoothly to reflect the current standings.\n\nSo those are some of the new tools that SwiftUI has for composing your app's view layouts. You can use the Grid type to build highly customizable, two-dimensional layouts of static information. You can use the Layout protocol to define your own general purpose, reusable layouts, or layouts that are highly targeted to a particular use case. You can use ViewThatFits when you want to let SwiftUI pick from a group of views to best fit in the available space. And you can seamlessly transition between layout types using AnyLayout. Thanks for joining me today, and I hope you have as much fun playing with these new layout tools as I have.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:28",
+      "title": "Grid with explicit rows",
+      "language": "swift",
+      "code": "struct Leaderboard: View {\n    var body: some View {\n        Grid {\n            GridRow {\n                Text(\"Cat\")\n                ProgressView(value: 0.5)\n                Text(\"25\")\n            }\n            GridRow {\n                Text(\"Goldfish\")\n                ProgressView(value: 0.2)\n                Text(\"9\")\n            }\n            GridRow {\n                Text(\"Dog\")\n                ProgressView(value: 0.3)\n                Text(\"16\")\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "5:16",
+      "title": "Data model",
+      "language": "swift",
+      "code": "struct Pet: Identifiable, Equatable {\n    let type: String\n    var votes: Int = 0\n    var id: String { type }\n\n    static var exampleData: [Pet] = [\n        Pet(type: \"Cat\", votes: 25),\n        Pet(type: \"Goldfish\", votes: 9),\n        Pet(type: \"Dog\", votes: 16)\n    ]\n}"
+    },
+    {
+      "timestamp": "5:41",
+      "title": "Final Leaderboard",
+      "language": "swift",
+      "code": "struct Leaderboard: View {\n    var pets: [Pet]\n    var totalVotes: Int\n\n    var body: some View {\n        Grid(alignment: .leading) {\n            ForEach(pets) { pet in\n                GridRow {\n                    Text(pet.type)\n                    ProgressView(\n                        value: Double(pet.votes),\n                        total: Double(totalVotes))\n                    Text(\"\\(pet.votes)\")\n                        .gridColumnAlignment(.trailing)\n                }\n\n                Divider()\n            }\n        }\n        .padding()\n    }\n}"
+    },
+    {
+      "timestamp": "10:53",
+      "title": "Layout protocol stubs for required methods",
+      "language": "swift",
+      "code": "struct MyEqualWidthHStack: Layout {\n    func sizeThatFits(\n        proposal: ProposedViewSize,\n        subviews: Subviews,\n        cache: inout Void\n    ) -> CGSize {\n        // Return a size.\n    }\n\n    func placeSubviews(\n        in bounds: CGRect,\n        proposal: ProposedViewSize,\n        subviews: Subviews,\n        cache: inout Void\n    ) {\n        // Place child views.\n    }\n}"
+    },
+    {
+      "timestamp": "13:44",
+      "title": "Maximum size helper method",
+      "language": "swift",
+      "code": "private func maxSize(subviews: Subviews) -> CGSize {\n    let subviewSizes = subviews.map { $0.sizeThatFits(.unspecified) }\n    let maxSize: CGSize = subviewSizes.reduce(.zero) { currentMax, subviewSize in\n        CGSize(\n            width: max(currentMax.width, subviewSize.width),\n            height: max(currentMax.height, subviewSize.height))\n    }\n\n    return maxSize\n}"
+    },
+    {
+      "timestamp": "15:40",
+      "title": "Spacing helper method",
+      "language": "swift",
+      "code": "private func spacing(subviews: Subviews) -> [CGFloat] {\n    subviews.indices.map { index in\n        guard index < subviews.count - 1 else { return 0 }\n        return subviews[index].spacing.distance(\n            to: subviews[index + 1].spacing,\n            along: .horizontal)\n    }\n}"
+    },
+    {
+      "timestamp": "16:33",
+      "title": "Size that fits implementation",
+      "language": "swift",
+      "code": "func sizeThatFits(\n    proposal: ProposedViewSize,\n    subviews: Subviews,\n    cache: inout Void\n) -> CGSize {\n    // Return a size.\n    guard !subviews.isEmpty else { return .zero }\n\n    let maxSize = maxSize(subviews: subviews)\n    let spacing = spacing(subviews: subviews)\n    let totalSpacing = spacing.reduce(0) { $0 + $1 }\n\n    return CGSize(\n        width: maxSize.width * CGFloat(subviews.count) + totalSpacing,\n        height: maxSize.height)\n}"
+    },
+    {
+      "timestamp": "16:51",
+      "title": "Place subviews implementation",
+      "language": "swift",
+      "code": "func placeSubviews(\n    in bounds: CGRect,\n    proposal: ProposedViewSize,\n    subviews: Subviews,\n    cache: inout Void\n) {\n    // Place child views.\n    guard !subviews.isEmpty else { return }\n  \n    let maxSize = maxSize(subviews: subviews)\n    let spacing = spacing(subviews: subviews)\n\n    let placementProposal = ProposedViewSize(width: maxSize.width, height: maxSize.height)\n    var x = bounds.minX + maxSize.width / 2\n  \n    for index in subviews.indices {\n        subviews[index].place(\n            at: CGPoint(x: x, y: bounds.midY),\n            anchor: .center,\n            proposal: placementProposal)\n        x += maxSize.width + spacing[index]\n    }\n}"
+    },
+    {
+      "timestamp": "18:07",
+      "title": "Custom layout instantiation",
+      "language": "swift",
+      "code": "MyEqualWidthHStack {\n    ForEach($pets) { $pet in\n        Button {\n            pet.votes += 1\n        } label: {\n            Text(pet.type)\n                .frame(maxWidth: .infinity)\n        }\n        .buttonStyle(.bordered)\n    }\n}"
+    },
+    {
+      "timestamp": "20:12",
+      "title": "Buttons helper view",
+      "language": "swift",
+      "code": "struct Buttons: View {\n    @Binding var pets: [Pet]\n\n    var body: some View {\n        ForEach($pets) { $pet in\n            Button {\n                pet.votes += 1\n            } label: {\n                Text(pet.type)\n                    .frame(maxWidth: .infinity)\n            }\n            .buttonStyle(.bordered)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "21:08",
+      "title": "Final voting buttons view",
+      "language": "swift",
+      "code": "struct StackedButtons: View {\n    @Binding var pets: [Pet]\n\n    var body: some View {\n        ViewThatFits {\n            MyEqualWidthHStack {\n                Buttons(pets: $pets)\n            }\n            MyEqualWidthVStack {\n                Buttons(pets: $pets)\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "22:30",
+      "title": "Radial size that fits",
+      "language": "swift",
+      "code": "func sizeThatFits(\n    proposal: ProposedViewSize,\n    subviews: Subviews,\n    cache: inout Void\n)  -> CGSize {\n    // Take whatever space is offered.\n    return proposal.replacingUnspecifiedDimensions()\n}"
+    },
+    {
+      "timestamp": "22:52",
+      "title": "Radial place subviews without offsets",
+      "language": "swift",
+      "code": "func placeSubviews(\n    in bounds: CGRect,\n    proposal: ProposedViewSize,\n    subviews: Subviews,\n    cache: inout Void\n) {\n    let radius = min(bounds.size.width, bounds.size.height) / 3.0\n    let angle = Angle.degrees(360.0 / Double(subviews.count)).radians\n    let offset = 0 // This depends on rank...\n\n    for (index, subview) in subviews.enumerated() {\n        var point = CGPoint(x: 0, y: -radius)\n            .applying(CGAffineTransform(\n                rotationAngle: angle * Double(index) + offset))\n\n        point.x += bounds.midX\n        point.y += bounds.midY\n\n        subview.place(at: point, anchor: .center, proposal: .unspecified)\n    }\n}"
+    },
+    {
+      "timestamp": "23:42",
+      "title": "Rank value",
+      "language": "swift",
+      "code": "private struct Rank: LayoutValueKey {\n    static let defaultValue: Int = 1\n}\n\nextension View {\n    func rank(_ value: Int) -> some View {\n        layoutValue(key: Rank.self, value: value)\n    }\n}"
+    },
+    {
+      "timestamp": "24:21",
+      "title": "Radial place subviews with offsets",
+      "language": "swift",
+      "code": "func placeSubviews(\n    in bounds: CGRect,\n    proposal: ProposedViewSize,\n    subviews: Subviews,\n    cache: inout Void\n) {\n    let radius = min(bounds.size.width, bounds.size.height) / 3.0\n    let angle = Angle.degrees(360.0 / Double(subviews.count)).radians\n\n    let ranks = subviews.map { subview in\n        subview[Rank.self]\n    }\n    let offset = getOffset(ranks)\n\n    for (index, subview) in subviews.enumerated() {\n        var point = CGPoint(x: 0, y: -radius)\n            .applying(CGAffineTransform(\n                rotationAngle: angle * Double(index) + offset))\n        point.x += bounds.midX\n        point.y += bounds.midY\n        subview.place(at: point, anchor: .center, proposal: .unspecified)\n    }\n}"
+    },
+    {
+      "timestamp": "25:18",
+      "title": "Final profile view",
+      "language": "swift",
+      "code": "struct Profile: View {\n    var pets: [Pet]\n    var isThreeWayTie: Bool\n\n    var body: some View {\n        let layout = isThreeWayTie ? AnyLayout(HStackLayout()) : AnyLayout(MyRadialLayout())\n\n        Podium() // Creates the background that shows ranks.\n            .overlay(alignment: .top) {\n                layout {\n                    ForEach(pets) { pet in\n                        Avatar(pet: pet)\n                            .rank(rank(pet))\n                    }\n                }\n                .animation(.default, value: pets)\n            }\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "AnyLayout",
+        "url": "https://developer.apple.com/documentation/SwiftUI/AnyLayout"
+      },
+      {
+        "title": "Composing custom layouts with SwiftUI",
+        "url": "https://developer.apple.com/documentation/swiftui/composing_custom_layouts_with_swiftui"
+      },
+      {
+        "title": "Grid",
+        "url": "https://developer.apple.com/documentation/SwiftUI/Grid"
+      },
+      {
+        "title": "Layout",
+        "url": "https://developer.apple.com/documentation/SwiftUI/Layout"
+      },
+      {
+        "title": "Layout containers",
+        "url": "https://developer.apple.com/documentation/swiftui/layout-fundamentals"
+      },
+      {
+        "title": "ViewThatFits",
+        "url": "https://developer.apple.com/documentation/SwiftUI/ViewThatFits"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10056/5/F52141E2-6868-4629-A64D-83E618CD6CD5/downloads/wwdc2022-10056_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10056/5/F52141E2-6868-4629-A64D-83E618CD6CD5/downloads/wwdc2022-10056_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10032",
+      "year": "2023",
+      "title": "Meet Assistive Access",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10032"
+    },
+    {
+      "id": "10110",
+      "year": "2022",
+      "title": "Build global apps: Localization by example",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10110"
+    },
+    {
+      "id": "10050",
+      "year": "2022",
+      "title": "Complications and widgets: Reloaded",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10050"
+    },
+    {
+      "id": "10052",
+      "year": "2022",
+      "title": "What's new in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10052"
+    },
+    {
+      "id": "110931",
+      "year": "2022",
+      "title": "WWDC22 Day 3 recap",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110931"
+    },
+    {
+      "id": "10031",
+      "year": "2020",
+      "title": "Stacks, Grids, and Outlines in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10031"
+    },
+    {
+      "id": "237",
+      "year": "2019",
+      "title": "Building Custom Views with SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/237"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:53:54.132Z"
+}

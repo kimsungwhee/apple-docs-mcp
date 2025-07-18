@@ -1,0 +1,136 @@
+{
+  "id": "10093",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10093/",
+  "title": "Bring your iOS or iPadOS game to visionOS",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Graphics & Games"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello. I'm Olivier, a Software Engineer on RealityKit and visionOS. In this video I will show you how you can transform your iOS or iPadOS game to be an even more immersive experience on visionOS.\n\nFor example, the game Wylde Flowers is a cozy life and farming simulator. Here is the iPad version of the game.\n\nAnd here is the same iPad version running on visionOS as a compatible app, in a window. The latest version of Wylde Flowers that you can get from the visionOS App store has many enhancements specific to the platform.\n\nFor example, there is a 3D frame around the window. And this frame changes based on the gameplay: for example, when the player interacts with the garden, the frame shows a 3D model of the garden and additional UI.\n\nThere is also an immersive background around the game, with dandelions falling or a humming bird flying around.\n\nFinally, the game view is rendered in stereoscopy, to add more depth to the scene.\n\nThose enhancements make playing Wylde Flowers on visionOS even better; and in this video, I will show you how you can do the same for your iOS or iPadOS game.\n\nI'll first talk about the rendering technologies available on visionOS. Then I'll show you how to convert your iOS app to a native visionOS app. I'll show you how to add a RealityKit frame and a background to your game. And finally, I'll show you how to enhance the Metal rendering of your game with stereoscopy, head tracking and VRR.\n\nFirst, let’s go over the rendering technologies available on visionOS. You can do 3D rendering on visionOS with RealityKit and Metal.\n\nRealityKit is a framework that you can use directly in Swift or indirectly through technologies like Unity PolySpatial. It enables multiple apps in the same Shared Space, on visionOS. For example, you can use RealityKit to render content in a volumetric window, like the games Game Room and LEGO Builder’s Journey. Or you can use RealityKit to render content in an ImmersiveSpace, like Super Fruit Ninja and Synth Riders. You can also render directly with Metal on visionOS, which you might choose if you need a custom rendering pipeline or if it would not be practical for you to port your game to RealityKit.\n\nThere are two main modes for rendering with Metal on visionOS.\n\nYou can run your game as a compatible app in a window, where your app behaves very similarly to how it would on an iPad. This is the case of the iPad version of Wylde Flowers, running as a compatible app on visionOS.\n\nA big advantage of having your app in a window is that it can run along side other apps, in the Shared Space. For example, you can play the game at the same time as using Safari or sending messages to friends.\n\nYou can also use CompositorServices to run your game as a fully immersive app where the game's camera is controlled by the player's head. For example, the sample from the video \"Render Metal with passthrough in visionOS” is rendered using CompositorServices. Learn more by watching the video.\n\nIt is very easy to run your iPad app as a compatible app on visionOS; whereas making your game an immersive app with CompositorServices makes the app much more vivid, but might require a big redesign and rework since the player has full control of the camera and can look anywhere in the scene.\n\nIn this video, I will present a set of techniques that are in-between those two modes: I will you show how you can start with a compatible app and progressively add features to increase the immersion and leverage the capabilities of Vision Pro.\n\nThe first and easiest step is to run your game as a compatible app on visionOS. I'll use the Metal Deferred Lighting sample as an example of an iOS game. This video shows the sample running on iPad.\n\nYou can download the iOS version of this sample on the developer website at developer.apple.com.\n\nLet’s start by compiling the app with the iOS SDK and run it on visionOS as a compatible app.\n\nCompatible apps will run in a window on visionOS.\n\nNote that both touch controls and game controllers are available on visionOS, giving a uniform experience across all platforms, out of the box.\n\nYou can find more information about game inputs in the video “Explore game input in visionOS”. Compatible apps work great on visionOS, but let’s convert the app to a native app to start using the visionOS SDK. Go in the Build Settings of the app and select the iOS target. Currently, it is marked as Designed for iPad because it uses the iOS SDK on visionOS.\n\nLet’s add Apple Vision as a supported destination, to compile the app with the visionOS SDK.\n\nYou might get a few compilation errors but if the app was made for iOS, most of the code should compile.\n\nFor example, you have several options to display the content of your Metal iOS game on visionOS. You can render to a CAMetalLayer, which can easily be integrated into UI Views. Or you can render directly to a RealityKit texture with the new LowLevelTexture API.\n\nYou can start with a CAMetalLayer if it is easier, but I recommend moving to a LowLevelTexture to get the most control.\n\nIf you want to render to a CAMetalLayer, you can create a View that contains it.\n\nAnd you can create a CADisplayLink to get a callback every frame.\n\nHere is what the code looks like. The UIView declares a CAMetalLayer as its layerClass. It then creates a CAMetalDisplayLink to get a render callback. And finally, it renders the CAMetalLayer in the callback, every frame.\n\nYou can use LowLevelTextures in a similar way. You can create a LowLevelTexture from a given pixel format and resolution. You can then create a TextureResource from the LowLevelTexture, and use it anywhere in a RealityKit scene. And you can use a CommandQueue to draw to the LowLevelTexture, through an MTLTexture.\n\nHere is how you can do it in code. It creates a LowLevelTexture. Then creates a TextureResource from it, to be used anywhere in the RealityKit scene.\n\nAnd then draws into the texture every frame.\n\nFor more details about LowLevelTexture, see the video “Build a spatial drawing app with RealityKit”. Now that we have converted our game to a native visionOS app, we can add visionOS specific features. For example we can increase the immersion of the app by adding a frame around the game view and a background in an ImmersiveSpace.\n\nThe game Cut The Rope 3 has a dynamic frame around its window.\n\nThe frame is rendered with RealityKit and the game is rendered with Metal.\n\nYou can achieve this by using a ZStack that has the Metal view rendering the game to a texture, like I have shown earlier, and you can create the frame with a RealityView that loads a 3D model around the game.\n\nThe frame can be dynamic, by using a @State variable. For example, in Cut The Rope 3, the frame changes depending on the level. You can also add an immersive background behind your game. The game Void-X is a good example of that. Most of the gameplay takes place in the window, but Void-X adds rain and lightning in the background and bullets flying all over your room in 3D, to increase immersion.\n\nYou can create the background with an ImmersiveSpace in SwiftUI.\n\nAnd you can put your iOS game in a WindowGroup.\n\nYou can also have shared @State between the window and ImmersiveSpace, by using a SwiftUI @State object.\n\nI've shown you how to add elements around your game. I'll now take you through some techniques you can use to enhance the Metal rendering of your game. First, I'll show you how to add stereoscopy, to add depth to your game. Then how to add head tracking, to make your game look like a physical window into another world. And finally, I'll show you how to add VRR to your game, to improve the performance.\n\nYou can add stereoscopy to your game, to add more depth to the scene, similar to how stereoscopic movies work.\n\nHere's the scene from the Deferred Lighting sample rendered with stereoscopy. For illustrative purposes, I'll show the stereoscopy in anaglyph, with red and cyan tints; but on the Vision Pro, each eye would see a different image.\n\nStereoscopy essentially works by showing a different image to each eye. You can achieve this on visionOS by using a RealityKit ShaderGraph, and more specifically the CameraIndex node.\n\nAnd you can provide a different image to each eye, to achieve stereoscopy.\n\nThe depth effect from stereoscopy comes from the distance between the views of an object in each image, which is called parallax.\n\nThis parallax will make your eyes converge more or less, depending on the distance between you and the object. Your eyes will be parallel when looking at infinity and will converge when looking at something close, which is one of the cues that your brain will use to judge distances. This is how stereoscopy can bring depth to your scene, as if it was a physical miniature in front of you or a physical window into another world.\n\nObjects with negative parallax appear in front of the image. Objects without parallax, which means that the two images overlap, appear on the image plane, just like in a 2D image. And objects with positive parallax appear behind the image plane.\n\nAnd this is just a representation of what stereoscopy feels like, when viewed from the front.\n\nIn practice, if you look from the side, you cannot see anything coming out of the window, since the content is simply displayed on a rectangle.\n\nIf you want objects to come out of the bounds of the rectangle, you can render them with RealityKit and APIs such as the new portal-crossing API. See the video “Discover RealityKit APIs for iOS, macOS and visionOS” for an example of portal-crossing.\n\nAnd if you don’t use the player’s head position, then the scene will look projected when viewed from the side. I will present later on how to use the head position. Here is a diagram showing how stereoscopy works. The object is perceived at the intersection between the two rays. The perceived depth varies depending on the parallax between the two images. As the parallax changes, the position of the intersection point also changes.\n\nAlso note that for a given stereoscopic image, the perceived depth varies depending on the size and position of the window, even if the images do not change.\n\nThe video \"Build compelling spatial photo and video experiences” goes over more details about creating stereoscopic content for Vision Pro.\n\nOne of the main situations that I recommend avoiding, is having content rendering beyond infinity. When looking at content, your eyes should either converge or be parallel. Content will go beyond infinity if the parallax becomes bigger than the distance between the viewer’s eyes: the rays will diverge and there will be no intersection point. That situation never happens when looking at real content, and it is very uncomfortable for the viewer. One way to solve this is to display the stereoscopic image on an infinitely far plane. For example, here is an image rendering on the window plane. Some content appears behind the image plane and some content appears in front of the image plane. By rendering the content on an infinitely far image plane, for example through a portal like Spatial Photos do, content with a parallax of 0 will appear at infinity, and everything else will appear in front of it, with a negative parallax. This way, you can guarantee that all the content will appear in front of infinity.\n\nI also recommend adding a slider to the settings of your game, for the player to adjust the intensity of the stereoscopy to their comfort, which you can implement by changing the distance between the two virtual cameras. In order to generate the stereoscopic images, you will need to update your game loop to render to each eye. The game loop of the Deferred Lighting sample on iOS looks something like this.\n\nThe sample updates the game state and the animations. The sample then does offscreen renders, such as shadow maps. And then it renders to the screen. Finally, the sample presents the render.\n\nFor stereoscopy, you will need to duplicate the screen rendering for each eye. And for the best performance, you can use Vertex Amplification to render both eyes with the same draw calls.\n\nThere's an article about Vertex Amplification on the developer documentation.\n\nFor example, here is how I adapted the code of the Deferred Lighting Sample. It starts by encoding the shadow passes, once. Then, it goes over each view and sets the appropriate camera matrices. And finally, it encodes the rendering commands to the color and depth textures of that view.\n\nStereoscopy adds depth to the scene, similar to a stereoscopic movie or a Spatial photo. To make your game look even more like a window into another world, you can also add head tracking. For example, here is the Deferred Lighting sample with head tracking. The camera moves as my head moves.\n\nYou can get the position of the player’s head by opening an ImmersiveSpace and using ARKit. You can then get the head position from ARKit every frame and pass it to your renderer to control the camera.\n\nHere is what the code looks like. It first imports ARKit. It then creates an ARKitSession and a WorldTrackingProvider. And, every frame, it queries the head transform.\n\nAlso note that windows and ImmersiveSpaces have their own coordinate spaces on visionOS. The head transform from ARKit is in the coordinate space of the ImmersiveSpace. To use it in a window, you can convert the position to the window’s coordinate space.\n\nHere is how you can do it in code. You can get the head position in the coordinate space of the ImmersiveSpace, from ARKit. You can then get the transformMatrix of an Entity in your window, relative to the ImmersiveSpace, using this new API from visionOS 2.0.\n\nYou can invert this matrix and convert the head position to the window space. Finally, you can set this camera position to your renderer.\n\nTo get the best results, make sure to do prediction of the head position. Because it takes time for the rendering to happen and for the render to be displayed, use an estimate of that time and predict the head position, so that the render matches the final head position as best as possible. ARKit will do the head prediction if you give it an estimated render time for your app. In the sample, I used 33 milliseconds for the estimated presentationTime, which corresponds to 3 frames at 90fps. To make your game look like it is rendered through a physical window, you will also need to build an asymmetric projection matrix. If you use a fixed projection matrix, it will not match the shape of the window. You have to make the camera frustum go through the window. For example, you can use the vectors to the left and right sides of the window to build the projection matrix. One advantage of building the projection matrix this way is that you can use a near clipping plane that is aligned with the window, to prevent objects from intersecting with the sides of the window.\n\nHere is what the code looks like. You start with the position of the camera and the 3D bounds of the viewport. The camera is facing towards -Z, at the given position. You then compute the distances to each side of the viewport. And you use those distances to build an asymmetric projection matrix. This is how you can use head tracking to make your game look like a physical window into another world. Stereoscopy increases the immersion of your game. But it also increases the cost of the rendering, since your game needs to render twice as many fragments. You can offset some of this by using Variable Rasterization Rates to improve the rendering efficiency of your game. Variable Rasterization Rates is a feature of Metal to render with a variable resolution across the screen.\n\nYou can use it to lower the resolution at the periphery and increase the resolution at the center. If you are using head tracking, you can build a VRR map from the head transform since you can know whether a pixel is at the center of the field of view or at the periphery. If you are in Shared Space, you don’t have access to the head position, but you can still build a VRR map by using the AdaptiveResolutionComponent and placing the components in a 2D grid over your game viewport.\n\nThe AdaptiveResolutionComponent gives you an approximation of the size in pixels that a 1 meter cube would take on the screen at this 3D location. For example, here, the values go from 1024 to 2048 pixels.\n\nThis video shows how the values on the AdaptiveResolutionComponent change as the camera gets further and closer.\n\nYou can extract a horizontal and a vertical VRR map from the 2D grid. For smoother results, you can interpolate each VRR map and you can finally pass them to your Metal renderer. Finally, once your content is rendered with VRR, you will have to re-map it to the display by inverting the VRR map. This is how you can use Variable Rasterization Rates to improve the performance of your game by adjusting the rendering resolution to the camera transform. With all those enhancements, you can make your game even better on visionOS, just like how the game Wylde Flowers was transformed for visionOS.\n\nIn this video, we have seen how you can bring your iOS game to visionOS. And how you can add a frame and an ImmersiveSpace to increase the immersion of your game. How you can add stereoscopy and head tracking to your Metal renderer, to make your game look like a window into another world. And how you can use VRR to optimize performance. I hope that those techniques will help you make your iOS games even better on visionOS. And I’m looking forward to play your games on my Vision Pro.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "5:44",
+      "title": "Render with Metal in a UIView",
+      "language": "swift",
+      "code": "// Render with Metal in a UIView.\n\nclass CAMetalLayerBackedView: UIView, CAMetalDisplayLinkDelegate {\n\n    var displayLink: CAMetalDisplayLink!\n\n    override class var layerClass : AnyClass { return CAMetalLayer.self }\n\n    func setup(device: MTLDevice) {\n        let displayLink = CAMetalDisplayLink(metalLayer: self.layer as! CAMetalLayer)\n        displayLink.add(to: .current, forMode: .default)\n        self.displayLink.delegate = self\n    }\n\n    func metalDisplayLink(_ link: CAMetalDisplayLink,\n              needsUpdate update: CAMetalDisplayLink.Update) {\n        let drawable = update.drawable\n        renderFunction?(drawable)\n    }\n}"
+    },
+    {
+      "timestamp": "6:20",
+      "title": "Render with Metal to a RealityKit LowLevelTexture",
+      "language": "swift",
+      "code": "// Render Metal to a RealityKit LowLevelTexture.\n\nlet lowLevelTexture = try! LowLevelTexture(descriptor: .init(\n    pixelFormat: .rgba8Unorm,\n    width: resolutionX,\n    height: resolutionY,\n    depth: 1,\n    mipmapLevelCount: 1,\n    textureUsage: [.renderTarget]\n))\n\nlet textureResource = try! TextureResource(\n    from: lowLevelTexture\n)\n// assign textureResource to a material\n\nlet commandBuffer: MTLCommandBuffer = queue.makeCommandBuffer()!\nlet mtlTexture: MTLTexture = texture.replace(using: commandBuffer)\n// Draw into the mtlTexture"
+    },
+    {
+      "timestamp": "7:06",
+      "title": "Metal viewport with a 3D RealityKit frame around it",
+      "language": "swift",
+      "code": "// Metal viewport with a 3D RealityKit frame \n// around it.\n\nstruct ContentView: View {\n\n    @State var game = Game()\n\n    var body: some View {\n        ZStack {\n           CAMetalLayerView { drawable in\n                             game.render(drawable) }\n\n           RealityView { content in\n                content.add(try! await \n                            Entity(named: \"Frame\"))\n            }.frame(depth: 0)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "7:45",
+      "title": "Windowed game with an immersive background",
+      "language": "swift",
+      "code": "// Windowed game with an immersive background\n\n@main\nstruct TestApp: App {\n\n    @State private var appModel = AppModel()\n\n    var body: some Scene {\n        WindowGroup {\n            // Metal render\n            ContentView(appModel)\n        }\n\n        ImmersiveSpace(id: \"ImmersiveSpace\") {\n            // RealityKit background\n            ImmersiveView(appModel)\n        }.immersionStyle(selection: .constant(.progressive),                                     in: .progressive)\n    }\n}"
+    },
+    {
+      "timestamp": "13:11",
+      "title": "Render to multiple views for stereoscopy",
+      "language": "swift",
+      "code": "// Render to multiple views for stereoscopy.\n\noverride func draw(provider: DrawableProviding) {\n\n    encodeShadowMapPass()\n\n    for viewIndex in 0..<provider.viewCount {\n        scene.update(viewMatrix: provider.viewMatrix(viewIndex: viewIndex),\n               projectionMatrix: provider.projectionMatrix(viewIndex: viewIndex))\n        var commandBuffer = beginDrawableCommands()\n        if let color = provider.colorTexture(viewIndex: viewIndex, for: commandBuffer),\n           let depthStencil = provider.depthStencilTexture(viewIndex: viewIndex,\n                                                                 for: commandBuffer)\n        {\n            encodePass(into: commandBuffer, color: color, depth: depth)\n        }\n        endFrame(commandBuffer)\n    }\n}"
+    },
+    {
+      "timestamp": "13:55",
+      "title": "Query the head position from ARKit every frame",
+      "language": "swift",
+      "code": "// Query the head position from ARKit every frame.\n\nimport ARKit\n\nlet arSession = ARKitSession()\nlet worldTracking = WorldTrackingProvider()\n\ntry await arSession.run([worldTracking])\n\n// Every frame\n\nguard let deviceAnchor = worldTracking.queryDeviceAnchor(\n    atTimestamp: CACurrentMediaTime() + presentationTime\n) else { return }\n\nlet transform: simd_float4x4 = deviceAnchor\n    .originFromAnchorTransform"
+    },
+    {
+      "timestamp": "14:22",
+      "title": "Convert the head position from the ImmersiveSpace to a window",
+      "language": "swift",
+      "code": "// Convert the head position from the ImmersiveSpace to a window.\n\nlet headPositionInImmersiveSpace: SIMD3<Float> = deviceAnchor\n    .originFromAnchorTransform\n    .position\n\nlet windowInImmersiveSpace: float4x4 = windowEntity\n    .transformMatrix(relativeTo: .immersiveSpace)\n\nlet headPositionInWindow: SIMD3<Float> = windowInImmersiveSpace\n    .inverse\n    .transform(headPositionInImmersiveSpace)\n\nrenderer.setCameraPosition(headPositionInWindow)"
+    },
+    {
+      "timestamp": "15:47",
+      "title": "Build the camera and projection matrices",
+      "language": "swift",
+      "code": "// Build the camera and projection matrices.\n\nlet cameraPosition: SIMD3<Float>\nlet viewportBounds: BoundingBox\n\n// Camera facing -Z\nlet cameraTransform = simd_float4x4(AffineTransform3D(translation: Size3D(cameraPosition)))\n\nlet zNear: Float = viewportBounds.max.z - cameraPosition.z\nlet l /* left */: Float = viewportBounds.min.x - cameraPosition.x\nlet r /* right */: Float = viewportBounds.max.x - cameraPosition.x\nlet b /* bottom */: Float = viewportBounds.min.y - cameraPosition.y\nlet t /* top */: Float = viewportBounds.max.y - cameraPosition.y\n\nlet cameraProjection = simd_float4x4(rows: [\n    [2*zNear/(r-l),             0, (r+l)/(r-l),      0],\n    [            0, 2*zNear/(t-b), (t+b)/(t-b),      0],\n    [            0,             0,           1, -zNear],\n    [            0,             0,           1,      0]\n])"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Forum: Graphics & Games",
+        "url": "https://developer.apple.com/forums/topics/graphics-and-games?cid=vf-a-0010"
+      },
+      {
+        "title": "Rendering a windowed game in stereo",
+        "url": "https://developer.apple.com/documentation/RealityKit/rendering-a-windowed-game-in-stereo"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10093/4/5B27E6E6-BA2A-4D7E-99D7-E3B10B2074D2/downloads/wwdc2024-10093_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10093/4/5B27E6E6-BA2A-4D7E-99D7-E3B10B2074D2/downloads/wwdc2024-10093_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10104",
+      "year": "2024",
+      "title": "Build a spatial drawing app with RealityKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10104"
+    },
+    {
+      "id": "10166",
+      "year": "2024",
+      "title": "Build compelling spatial photo and video experiences",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10166"
+    },
+    {
+      "id": "10103",
+      "year": "2024",
+      "title": "Discover RealityKit APIs for iOS, macOS, and visionOS",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10103"
+    },
+    {
+      "id": "10094",
+      "year": "2024",
+      "title": "Explore game input in visionOS",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10094"
+    },
+    {
+      "id": "10092",
+      "year": "2024",
+      "title": "Render Metal with passthrough in visionOS",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10092"
+    },
+    {
+      "id": "10080",
+      "year": "2023",
+      "title": "Build spatial experiences with RealityKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10080"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:29:30.735Z"
+}

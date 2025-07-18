@@ -1,0 +1,146 @@
+{
+  "id": "10149",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10149/",
+  "title": "Discover Observation in SwiftUI",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Philippe: Hi, my name is Philippe. I am really pleased to present a magical new feature in Swift: Observation. This feature lets you define your models using standard Swift syntax and use those types to have UI respond to changes to that model. This makes developing with SwiftUI seamless and intuitive. Today we will be covering a few topics: An overview of what Observation is, a set of handy rules on when to use the property wrappers from SwiftUI, then we'll cover a few of the more advanced usages of observable. And we'll wrap up with some examples on how to update code from using ObservableObject to the new @Observable macro.\n\nObservation is a new Swift feature for tracking changes to properties. It works with normal Swift types and transforms them with magic of macros. We often write data model types, and they have a number of properties that eventually, we'll want to use in SwiftUI. What if I told you adding @Observable is all you need to make UI respond to changes in your data models? New in Swift 5.9 you can make models simpler than ever. This uses the new macro system in Swift. The \"@Observable\" tells the Swift compiler to transform your code from what you wrote to an expanded form that makes the type able to be observed. You can use observable types to power your SwiftUI views. And the amazing part is that they don't need any sort of property wrapper to work. I have some tasty samples from our donut food truck app, so let's dive right in. Here we have a simple view showing donuts. SwiftUI knows that the model accesses specific properties when executing the body call. In this case it can detect that the property 'donuts' is accessed when executing the body of the donut menu view. When body is executed, SwiftUI tracks all access to properties used from 'Observable' types. It then takes that tracking information and uses it to determine when the next change to any of those properties on those specific instances will change. Here, if we change the donuts array by clicking the add donut button, it will invalidate the donut menu view and the UI is updated accordingly. What's neat, is that if, say an order is added, the view won't be invalidated because that property isn't part of the tracked properties it determined when executing the body of the view. Let's next cover what happens when you use a computed property. Adding in a computed property follows those same rules as before. When a property that is used changes, the UI updates. In the newly added content, the model's orderCount is called, which that accesses the orders property. So that means, in this example if the orders change, that text will be updated because the orderCount accesses the order's property. Using the \"@Observable\" macro expands your types so they can support Observation. This lets SwiftUI track access to those properties and observe when the next property will change out of that Observation. Tracking things like that let your UI only recalculate the body of views when those specific properties change, which we've seen some really fantastic performance improvements from that. If you wanna dive deep into macros, make sure to check out the \"Write Swift macros\" and \"Expand on Swift macros\" sessions. With Observable, the property wrappers for SwiftUI are even easier than ever. State, environment, and bindable are the three primary property wrappers for working with SwiftUI. We've already covered the case where you don't need any property wrappers to interface with observable types with SwiftUI, but let's dive into the cases where you do. Starting off with @State. When the view needs to have its own state stored in a model, use the @State property. Here we have the observable model object Donut being used in a sheet presentation. When the sheet is presented, the donutToAdd state variable is used to bind values to the editable fields. The \"donutToAdd\" property is managed by the lifetime of the view it's contained in. Next up, @Environment. Environment lets values be propagated as globally accessible values. This lets things be shared in many places. Observable types work fantastically here since the updates created by them are based upon access. When invoking the body of the food truck menu view, the property userName of the account object is accessed. So when the userName will change, the menu view updates. The newest of the family of property wrappers is '@Bindable'. The bindable property wrapper is really lightweight. All it does is allow bindings to be created from that type. Getting binding out of a bindable wrapped property is really easy. Just use the $ syntax to get the binding to that property. Most often, this will be bindings to observable types. For the donut view, we have the name being displayed with Text. But in reality, we want to be able to edit that name. So instead of a Text, we can use a TextField. That TextField takes a binding. It reads from the binding to populate the value of the TextField, but it also writes back to the binding when the user changes the value. To make bindings to the donut, all we need to do is use the '@Bindable' property wrapper on the donut property. The property wrapper annotation allows us to use the '$donut.name' syntax and creates a binding when used. To wrap up the wrappers, there are only three questions you need to answer for using observable models in SwiftUI. Does this model need to be state of the view itself? If so, use '@State'. Does this model need to be part of the global environment of the application? If so, use '@Environment'. Does this model just need bindings? If so, use the new '@Bindable'. And if none of these questions have the answer as yes, just use the model as a property of your view. So far, we've covered properties that start off in your model as stored. Observable can do a lot more. Because SwiftUI tracks access to fields per instance, it means that you can use arrays, optionals, or for that matter, any type that contains your observable models. The donut list view has an array of donut models. Each model itself is '@Observable'. When any of the names of those donuts change, SwiftUI detects the access to that property on that specific instance and tracks it to know when to invalidate the view. So here, when the donut name is changed via the randomize button, the view updates accordingly. This lets you build your models how you want. You can have arrays of models being observed, or even model types that contain other observable model types. The general rule is for Observable, if a property that is used changes, the view will update. There is a case where that rule does not fully apply. If a computed property does not have any stored property it is comprised with, then two extra steps need to be taken to make it work with Observation. This only needs to be done when the property that would be observed is not changed via some sort of composition of stored properties in the observable type. In this case, all that needs to be done is tell Observation when the property is accessed and when the property changes. This is how Observation synthesizes access to properties normally, except here we've rewritten those custom access points manually so that the non-observable location can be read and store the name. Most of the time, these type of manual cases are not needed, because most of the time, properties of the models in question are composed from other stored properties. But in the rare cases where you need that advanced capability, Observation is flexible enough but easy enough to do on your own. SwiftUI can identify changes in composition since it tracks observable types by access to those properties. This means that if a computed property is composed from other stored properties, then the Observation will just work. However, in the few cases where that's not true, you can use Observation directly to manually add those calls to flag access and mutation. Previously in the Food Truck app, we used ObservableObject to achieve some of the same things we did with the new @Observable macro. If you have an app that uses SwiftUI today, you might be in a very similar situation. The Observable macro can simplify your code and chances are, you might see a decent performance boost too. Before the change, the FoodTruckModel type had an ObservableObject conformance, and it had a number of properties that were marked with the @Published property wrapper. Changing over to the @Observable macro was pretty easy. All we needed to do is remove the conformance to ObservableObject, remove the '@Published', and mark it with the '@Observable' macro. When it comes to the views, there were a number of '@ObservedObject' and '@EnvironmentObject' property wrappers. In all cases of the '@ObservedObject' wrappers, either disappeared or needed just the bindings and changed to the new '@Bindable'. The '@EnvironmentObject' wrappers got transformed into just '@Environment'. Changing from ObservableObject to the new '@Observable' macro was mostly just deleting annotations. Or simplifying them down to the three primary property wrappers; @State, @Environment, and @Bindable. Which makes writing new features easier to reason about since there are fewer options that need to be considered. Observation has just the right level of magic. It lets you get started easily and lets you work with your data models directly by using the @Observable macro. When you need, it lets you write the manual versions for advanced use cases. For new development, using Observable is the easiest way to get started. And for existing applications, using Observable can simplify your models and improve performance when adding new features. I encourage you to try it out and harness that magic yourself. ♪ ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:26",
+      "title": "Using @Observable",
+      "language": "swift",
+      "code": "@Observable class FoodTruckModel {    \n    var orders: [Order] = []\n    var donuts = Donut.all\n}"
+    },
+    {
+      "timestamp": "2:12",
+      "title": "SwiftUI property tracking",
+      "language": "swift",
+      "code": "@Observable class FoodTruckModel {    \n  var orders: [Order] = []\n  var donuts = Donut.all\n}\n\nstruct DonutMenu: View {\n  let model: FoodTruckModel\n    \n  var body: some View {\n    List {\n      Section(\"Donuts\") {\n        ForEach(model.donuts) { donut in\n          Text(donut.name)\n        }\n        Button(\"Add new donut\") {\n          model.addDonut()\n        }\n      }\n    }\n  }\n}"
+    },
+    {
+      "timestamp": "3:12",
+      "title": "SwiftUI computed property tracking",
+      "language": "swift",
+      "code": "@Observable class FoodTruckModel {    \n  var orders: [Order] = []\n  var donuts = Donut.all   var orderCount: Int { orders.count }\n}\n\nstruct DonutMenu: View {\n  let model: FoodTruckModel\n    \n  var body: some View {\n    List {\n      Section(\"Donuts\") {\n        ForEach(model.donuts) { donut in\n          Text(donut.name)\n        }\n        Button(\"Add new donut\") {\n          model.addDonut()\n        }\n      }\n      Section(\"Orders\") {\n        LabeledContent(\"Count\", value: \"\\(model.orderCount)\")\n      }\n    }\n  }\n}"
+    },
+    {
+      "timestamp": "4:41",
+      "title": "Using @State",
+      "language": "swift",
+      "code": "struct DonutListView: View {\n    var donutList: DonutList\n    @State private var donutToAdd: Donut?\n\n    var body: some View {\n        List(donutList.donuts) { DonutView(donut: $0) }\n        Button(\"Add Donut\") { donutToAdd = Donut() }\n            .sheet(item: $donutToAdd) {\n                TextField(\"Name\", text: $donutToAdd.name)\n                Button(\"Save\") {\n                    donutList.donuts.append(donutToAdd)\n                    donutToAdd = nil\n                }\n                Button(\"Cancel\") { donutToAdd = nil }\n            }\n    }\n}"
+    },
+    {
+      "timestamp": "5:14",
+      "title": "Using @Environment",
+      "language": "swift",
+      "code": "@Observable class Account {\n  var userName: String?\n}\n\nstruct FoodTruckMenuView : View {\n  @Environment(Account.self) var account\n\n  var body: some View {\n    if let name = account.userName {\n      HStack { Text(name); Button(\"Log out\") { account.logOut() } }\n    } else {\n      Button(\"Login\") { account.showLogin() }\n    }\n  }\n}"
+    },
+    {
+      "timestamp": "6:27",
+      "title": "Using @Bindable",
+      "language": "swift",
+      "code": "@Observable class Donut {\n  var name: String\n}\n\nstruct DonutView: View {\n  @Bindable var donut: Donut\n\n  var body: some View {\n    TextField(\"Name\", text: $donut.name)\n  }\n}"
+    },
+    {
+      "timestamp": "7:53",
+      "title": "Storing @Observable types in Array",
+      "language": "swift",
+      "code": "@Observable class Donut {\n  var name: String\n}\n\nstruct DonutList: View {\n  var donuts: [Donut]\n  var body: some View {\n    List(donuts) { donut in\n      HStack {\n        Text(donut.name)\n        Spacer()\n        Button(\"Randomize\") {\n          donut.name = randomName()\n        }\n      }\n    }\n  }\n}"
+    },
+    {
+      "timestamp": "9:18",
+      "title": "Manual Observation",
+      "language": "swift",
+      "code": "@Observable class Donut {\n  var name: String {\n    get {\n      access(keyPath: \\.name)\n      return someNonObservableLocation.name \n    }\n    set {\n      withMutation(keyPath: \\.name) {\n        someNonObservableLocation.name = newValue\n      }\n    }\n  } \n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10149/4/F4769BC3-3B47-49AF-B11B-6957B0A25574/downloads/wwdc2023-10149_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10149/4/F4769BC3-3B47-49AF-B11B-6957B0A25574/downloads/wwdc2023-10149_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10154",
+      "year": "2023",
+      "title": "Build an app with SwiftData",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10154"
+    },
+    {
+      "id": "10160",
+      "year": "2023",
+      "title": "Demystify SwiftUI performance",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10160"
+    },
+    {
+      "id": "10196",
+      "year": "2023",
+      "title": "Dive deeper into SwiftData",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10196"
+    },
+    {
+      "id": "10167",
+      "year": "2023",
+      "title": "Expand on Swift macros",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10167"
+    },
+    {
+      "id": "10187",
+      "year": "2023",
+      "title": "Meet SwiftData",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10187"
+    },
+    {
+      "id": "10189",
+      "year": "2023",
+      "title": "Migrate to SwiftData",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10189"
+    },
+    {
+      "id": "10195",
+      "year": "2023",
+      "title": "Model your schema with SwiftData",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10195"
+    },
+    {
+      "id": "10148",
+      "year": "2023",
+      "title": "What’s new in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10148"
+    },
+    {
+      "id": "10166",
+      "year": "2023",
+      "title": "Write Swift macros",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10166"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:52:28.993Z"
+}

@@ -1,0 +1,176 @@
+{
+  "id": "10137",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10137/",
+  "title": "What’s new in SwiftData",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello, I am Rishi Verma, and I am an engineer on the SwiftData Team. I am excited to share with you today all that is new in SwiftData.\n\niOS 17 introduced SwiftData — a framework that allows you to model and persist your app’s data in Swift across all of Apple’s platforms. It lets you write code that is fast, efficient, and safe by harnessing modern Swift language features, like macros. In this video, we’ll start with a quick re-introduction to the SwiftData framework, and dive into what’s new, starting with how to avoid duplicate models with a new Schema Macro! Then, we’ll cover new ways you can set up and configure model containers.\n\nAnd lastly, a deep dive into how to optimize queries with complex filters and harness a new macro to improve performance! First, let’s take a quick tour of SwiftData. SwiftData is a framework that makes it easy to build your app’s model layer and persist it across launches of your app.\n\nThe framework not only provides persistence, but modeling and migration of your schema, Graph management, synchronization with CloudKit and so much more! To show you how easy it is to adopt SwiftData in your app, let me show you an app that me and team have been working on — Trips! Trips is an app written in SwiftUI, and keeps track of all the different vacation ideas I’m thinking about.\n\nTo use SwiftData with the models in this app, I just needed to import the framework, and decorate each model with the @Model macro - this is the powerhouse of SwiftData! And in the app’s definition, the modelContainer modifier on the WindowGroup tells the entire view hierarchy about the model Trip.\n\nWith this in place, my views can remove static data, and instead populate the view using @Query. This will fetch Trip models from the model container and return an array of Trips. And that is it! The app now persists all of the trips that I create, and fits perfectly into my SwiftUI views.\n\nThe first step was adding the @Model macro and that was just the beginning of how to customize the Schema.\n\nThe @Model macro is powerful and jump starts the persistence experience. By simply decorating all of my persistable classes with the macro, the Trip class and related models will have their stored properties persisted.\n\nAnd you can go even further to customize the schema with the macros for @Attributes and @Relationships and the ability to mark a stored property as @Transient to avoid persisting that data.\n\nAnd this year, there is a new schema macro that allows you to construct a compound constraint on persistent models! You can use the new #Unique macro to tell SwiftData which combinations of your model’s properties must always remain unique in the model data. When two model instances share the same unique values, SwiftData will perform an upsert on collision with an existing model! For example, in the Trips app, I can use the #Unique macro to ensure trips are unique across their name, startDate, and endDate. This lets my app have multiple trips with the same name, but only if they have different start or end dates. This makes it really easy to avoid duplicates in the data, since SwiftData has more information to reason about which models actually represent duplicates, and performs updates to the data instead.\n\nAnd because these #Unique properties help ensure these @Models are not duplicated, they also represent the identity of this model. You can also use the @Attribute macro to decorate these properties with preserveValueOnDeletion. This will ensure these identity values will be available when using the history API in SwiftData.\n\nSwiftData history provides a way for your app to know what models have been inserted, updated, or deleted over time. When models are deleted, values marked to be preserved are kept in the history information as tombstone values, giving your app the information it may need to process those changes. It also works seamlessly with custom data stores built to support it. To learn more, watch the video “Track model changes with SwiftData history”.\n\nTailoring the model container allows an app to fine tune its data location and how it is used throughout the app.\n\nThe modelContainer modifier is the easiest way to get started with SwiftData. Just by providing the model types to persist, SwiftData sets up a container for you. The modelContainer modifier also lets you customize some of the properties of the container.\n\nFor example, it can keep data in memory, rather than on disk, it can enable or disable autosave, and, it can have undo-redo support turned on or off.\n\nTo customize the modelContainer even more, like changing where it is saved on disk, you can build your own modelContainer instance, separately. Let me do this for the Trip’s app.\n\nInstead of using the modelContainer modifier to construct a container, I will create one of my own, by using a property called container.\n\nIn the property’s closure, I will create a configuration for my model and pass the schema. This is where I will customize the URL of the data on disk, as well.\n\nThen, I will pass this configuration to the ModelContainer initializer and return it.\n\nIn iOS 18, SwiftData lets you customize your modelContainer even further with fully custom data stores. The default data store provides a robust persistence backend supporting all of SwiftData’s features. But now, you can create your own data store, which uses its own implementation to persist data across the container.\n\nFor example, in the Trips app, I’ve implemented my own custom document format made of JSON files. To use it in the app, I just need to swap out the model configuration with one provided by the custom data store — in this example, JSONStoreConfiguration.\n\nCustom data stores let you use familiar SwiftData APIs, like the @Model and @Query macros, no matter what format the data needs to be persisted with. It also provides a way for data stores to adopt features incrementally, so you can get started quickly. To learn more, watch the video “Create a custom data store with SwiftData”.\n\nYou can also create custom containers for use with Xcode previews. Previews are the perfect companion when developing your app with SwiftUI, and work great with SwiftData.\n\nI want to create great previews for every view in the Trips app. I will start by using preview traits.\n\nTo do this, I will create a new struct called SampleData that conforms to PreviewModifier which has these two functions I need to fill out. One for setting up a shared context for the preview and another to apply the shared context to a view. For my Trips previews, I will vend a ModelContainer as the shared context for the sampleData.\n\nSince a preview doesn’t need to store anything to disk, I will create a ModelConfiguration that stores data in memory only, and set up the ModelContainer.\n\nI will then call a method I created earlier which creates an assortment of sample trips, and saves them into the model container. Since trips are now unique by name and dates, this code doesn’t need to de-duplicate any data — SwiftData does it for me! Finally, I will return the container. Next, I will need to implement a method which adds this modelContainer to whichever view this sampleData is used for. To do that, I will just apply the container using the modelContainer modifier.\n\nFinally, I will add an extension to PreviewTrait so that I can easily access this sampleData. This creates a new static property, called sampleData(), which will apply this SampleData() structure as a modifier.\n\nAnd now, when I declare a preview for any of my SwiftUI views, I can use .sampleData with the traits parameter. This will create an in-memory model container, load the sampleData, and modify my preview to use it in its SwiftUI views.\n\nHaving great sample data available makes it easy to work on any of my app’s views using SwiftData queries.\n\nBut some of the app’s views might not include queries, because they rely on models being passed to them. Now, you can use the @Previewable macro to make great previews for these, too.\n\nFor example, in Trips, the BucketListItemView takes a single trip as a parameter. With my sampleData, the bucketListItemView now has a model container with some sampleData, but it hasn’t queried for the data yet! Now, you can use the @Previewable macro to create a query right in the preview declaration. This provides an array of trips that can be passed to the BucketListItemView to create a preview with sampleData.\n\nFinally, let’s talk about creating rich and optimized queries for SwiftData. Query drives your SwiftUI Views with an array of Models that can be sorted and filtered with ease, and it automatically reacts to changes made to the ModelContainer! #Predicate facilitates filtering, and can be evaluated during the data queries, rather than with large in memory data sets! Let’s look at a few ways I can filter for Trips! If I add a search bar to the Trips app, the searchText can be used to build a predicate for filtering my queries or even a fetch! Building a predicate is easy, I take the user provided searchText and see if a Trip’s name contains that text! But the text might apply to more than just a Trip’s name.\n\nSo I will build a compound predicate to also check the destination property on a Trip! That was all it took to build a compound predicate, but I can also make my predicates do so much more! New in iOS 18 is the ability to use Foundation’s new #Expression macro to build complex predicates easily! Expressions allow for reference values that do not produce true or false but instead allow for arbitrary types.\n\nExpressions can be used to represent complex evaluations using a model’s properties and composed within predicates to tailor the results of queries even further! In the Trips app, I want create a query that fetches any ongoing trip where there is still some sights left to see! These are modeled by BucketListItems on the trip whose isInPlan property is still false. I will start by building a predicate.\n\nIn the predicate, I will specify that the trip should be ongoing, so the current date falls within the start and end.\n\nBut I also need to specify at least one of the BucketListItems on the trip has the isInPlan property set to false. Predicate alone doesn’t let me express this, because there’s no property that counts how many unplanned BucketListItems there are. To do this, I can construct an expression that builds this logic into the predicate.\n\nThis expression will count the number of bucket list items that I haven’t yet planned. It takes an array of bucket list items, and returns the number of items that meet the filter criteria.\n\nNow, I can evaluate this expression as part of my predicate with the provided trip’s bucketList items. Then, my predicate can check whether the result of the expression is greater than zero. Expressions make the predicate macro an even more powerful and expressive tool to write queries, that efficiently fetch the data needed for your app. But there is one more way that I can make these queries performant, and that is with an all new schema macro, #Index! The new #Index macro adds the ability to create a single or compound index on your model. Like a table of contents in a book, an index represents additional metadata which SwiftData generates and saves in the container. This metadata makes queries for specified key paths faster and more efficient.\n\nTo get these benefits, you’ll declare which properties that SwiftData should create an index for. Consider those properties that most frequently occur in sorting and filtering of queries.\n\nIn the Trips app, trips are frequently queried with filters and sorts that utilize the name, start and end date properties. To make these queries even faster, I can add the #Index macro and specify key paths for the name, start and end dates, and a compound index of the three. For a large data set, like my extensive vacation ideas, this makes filtering and sorting substantially faster. Queries are easy to use in SwiftUI with the predicate macro, and become more powerful with expressions. Now with the #Index macro, you can make them even more performant in your app.\n\nUse the power of SwiftData to build your app’s model layer. Consider adding #Unique constraints to your schema to make it easier to avoid duplicate models. And speed up your queries by adding the new #Index macro.\n\nUse the new history API to track changes to your app’s models. And with custom data stores, you can now harness the power of SwiftData with your own document format or persistence backend.\n\nThank you! It has been an honor and we look forward to the amazing things you will make!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:32",
+      "title": "SampleTrips models decorated with @Model",
+      "language": "swift",
+      "code": "// Trip Models decorated with @Model\nimport Foundation\nimport SwiftData\n\n@Model\nclass Trip {\n    var name: String\n    var destination: String\n    var startDate: Date\n    var endDate: Date\n    \n    var bucketList: [BucketListItem] = [BucketListItem]()\n    var livingAccommodation: LivingAccommodation?\n}\n\n@Model\nclass BucketListItem {...}\n\n@Model\nclass LivingAccommodation {...}"
+    },
+    {
+      "timestamp": "1:43",
+      "title": "SampleTrips using modelContainer scene modifier",
+      "language": "swift",
+      "code": "// Trip App using modelContainer Scene modifier\nimport SwiftUI\nimport SwiftData\n\n@main\nstruct TripsApp: App {\n    var body: some Scene {\n        WindowGroup {\n            ContentView\n        }\n        .modelContainer(for: Trip.self)\n    }\n}"
+    },
+    {
+      "timestamp": "1:53",
+      "title": "SampleTrips using @Query",
+      "language": "swift",
+      "code": "// Trip App using @Query\nimport SwiftUI\nimport SwiftData\n\nstruct ContentView: View {\n    @Query\n    var trips: [Trip]\n    var body: some View {\n        NavigationSplitView {\n            List(selection: $selection) {\n                ForEach(trips) { trip in\n                    TripListItem(trip: trip)\n                }\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "2:16",
+      "title": "SampleTrips models decorated with @Model",
+      "language": "swift",
+      "code": "// Trip Models decorated with @Model\nimport Foundation\nimport SwiftData\n\n@Model\nclass Trip {\n    var name: String\n    var destination: String\n    var startDate: Date\n    var endDate: Date\n\n    var bucketList: [BucketListItem] = [BucketListItem]()\n    var livingAccommodation: LivingAccommodation?\n}\n\n@Model\nclass BucketListItem {...}\n\n@Model\nclass LivingAccommodation {...}"
+    },
+    {
+      "timestamp": "3:08",
+      "title": "Add unique constraints to avoid duplication",
+      "language": "swift",
+      "code": "// Add unique constraints to avoid duplication\nimport SwiftData\n\n@Model \nclass Trip {\n    #Unique<Trip>([\\.name, \\.startDate, \\.endDate])\n    \n    var name: String\n    var destination: String\n    var startDate: Date\n    var endDate: Date\n    \n    var bucketList: [BucketListItem] = [BucketListItem]()\n    var livingAccommodation: LivingAccommodation?\n}"
+    },
+    {
+      "timestamp": "3:36",
+      "title": "Add .preserveValueOnDeletion to capture unique columns",
+      "language": "swift",
+      "code": "// Add .preserveValueOnDeletion to capture unique columns\nimport SwiftData\n\n@Model \nclass Trip {\n    #Unique<Trip>([\\.name, \\.startDate, \\.endDate])\n    \n    @Attribute(.preserveValueOnDeletion)\n    var name: String\n    var destination: String\n\n    @Attribute(.preserveValueOnDeletion)\n    var startDate: Date\n\n    @Attribute(.preserveValueOnDeletion)\n    var endDate: Date\n    \n    var bucketList: [BucketListItem] = [BucketListItem]()\n    var livingAccommodation: LivingAccommodation?\n}"
+    },
+    {
+      "timestamp": "4:35",
+      "title": "SampleTrips using modelContainer scene modifier",
+      "language": "swift",
+      "code": "// Trip App using modelContainer Scene modifier\nimport SwiftUI\nimport SwiftData\n\n@main\nstruct TripsApp: App {   \n    var body: some Scene {\n        WindowGroup {\n            ContentView()\n        }\n        .modelContainer(for: Trip.self)\n   }\n}"
+    },
+    {
+      "timestamp": "4:52",
+      "title": "Customize a model container in the app",
+      "language": "swift",
+      "code": "// Customize a model container in the app\nimport SwiftUI\nimport SwiftData\n\n@main\nstruct TripsApp: App {   \n    var body: some Scene {\n        WindowGroup {\n            ContentView()\n        }\n        .modelContainer(for: Trip.self,\n                        inMemory: true,\n                        isAutosaveEnabled: true,\n                        isUndoEnabled: true)\n   }\n}"
+    },
+    {
+      "timestamp": "5:13",
+      "title": "Add a model container to the app",
+      "language": "swift",
+      "code": "// Add a model container to the app\nimport SwiftUI\nimport SwiftData\n\n@main\nstruct TripsApp: App {\n    var container: ModelContainer = {\n        do {\n            let configuration = ModelConfiguration(schema: Schema([Trip.self]), url: fileURL)\n            return try ModelContainer(for: Trip.self, configurations: configuration)\n        }\n        catch { ... }\n    }()\n    \n   var body: some Scene {\n        WindowGroup {\n            ContentView()\n        }\n        .modelContainer(container)\n   }\n}"
+    },
+    {
+      "timestamp": "5:59",
+      "title": "Use your own custom data store",
+      "language": "swift",
+      "code": "// Use your own custom data store\nimport SwiftUI\nimport SwiftData\n\n@main\nstruct TripsApp: App {\n    var container: ModelContainer = {\n        do {\n            let configuration = JSONStoreConfiguration(schema: Schema([Trip.self]), url: jsonFileURL)\n            return try ModelContainer(for: Trip.self, configurations: configuration)\n        }\n        catch { ... }\n    }()\n    \n   var body: some Scene {\n        WindowGroup {\n            ContentView()\n        }\n        .modelContainer(container)\n   }\n}"
+    },
+    {
+      "timestamp": "6:58",
+      "title": "Make preview data using traits",
+      "language": "swift",
+      "code": "// Make preview data using traits\n\nstruct SampleData: PreviewModifier {\n    static func makeSharedContext() throws -> ModelContainer {\n        let config = ModelConfiguration(isStoredInMemoryOnly: true)\n        let container = try ModelContainer(for: Trip.self, configurations: config)\n        Trip.makeSampleTrips(in: container)\n        return container\n    }\n    \n    func body(content: Content, context: ModelContainer) -> some View {\n        content.modelContainer(context)\n    }\n}\n\nextension PreviewTrait where T == Preview.ViewTraits {\n    @MainActor static var sampleData: Self = .modifier(SampleData())\n}"
+    },
+    {
+      "timestamp": "8:15",
+      "title": "Use sample data in a preview",
+      "language": "swift",
+      "code": "// Use sample data in a preview\n\nimport SwiftUI\nimport SwiftData\n\nstruct ContentView: View {\n    @Query\n    var trips: [Trip]\n\n    var body: some View {\n        ...\n    }\n}\n\n#Preview(traits: .sampleData) {\n    ContentView()\n}"
+    },
+    {
+      "timestamp": "8:50",
+      "title": "Create a preview query using @Previewable",
+      "language": "swift",
+      "code": "// Create a preview query using @Previewable\n\nimport SwiftUI\nimport SwiftData\n\n#Preview(traits: .sampleData) {\n    @Previewable @Query var trips: [Trip]\n    BucketListItemView(trip: trips.first)\n}"
+    },
+    {
+      "timestamp": "9:55",
+      "title": "Create a predicate to find a Trip based on search text",
+      "language": "swift",
+      "code": "// Create a Predicate to find a Trip based on Search Text\n\nlet predicate = #Predicate<Trip> {\n    searchText.isEmpty ? true : $0.name.localizedStandardContains(searchText)\n}"
+    },
+    {
+      "timestamp": "10:06",
+      "title": "Create a Compound Predicate to find a Trip based on Search Text",
+      "language": "swift",
+      "code": "// Create a Compound Predicate to find a Trip based on Search Text\n\nlet predicate = #Predicate<Trip> {\n    searchText.isEmpty ? true :\n    $0.name.localizedStandardContains(searchText) ||\n    $0.destination.localizedStandardContains(searchText)\n}"
+    },
+    {
+      "timestamp": "10:46",
+      "title": "Build a predicate to find Trips with BucketListItems that are not in the plan",
+      "language": "swift",
+      "code": "// Build a predicate to find Trips with BucketListItems that are not in the plan\n\nlet unplannedItemsExpression = #Expression<[BucketListItem], Int> { items in\n    items.filter {\n        !$0.isInPlan\n    }.count\n}\n\nlet today = Date.now\nlet tripsWithUnplannedItems = #Predicate<Trip>{ trip\n    // The current date falls within the trip\n    (trip.startDate ..< trip.endDate).contains(today) &&\n\n    // The trip has at least one BucketListItem\n    // where 'isInPlan' is false\n    unplannedItemsExpression.evaluate(trip.bucketList) > 0\n}"
+    },
+    {
+      "timestamp": "12:41",
+      "title": "Add Index for commonly used KeyPaths or combination of KeyPaths",
+      "language": "swift",
+      "code": "// Add Index for commonly used KeyPaths or combination of KeyPaths\nimport SwiftData\n\n@Model \nclass Trip {\n    #Unique<Trip>([\\.name, \\.startDate, \\.endDate\n    #Index<Trip>([\\.name], [\\.startDate], [\\.endDate], [\\.name, \\.startDate, \\.endDate])\n\n    var name: String\n    var destination: String\n    var startDate: Date\n    var endDate: Date\n    \n    var bucketList: [BucketListItem] = [BucketListItem\n    var livingAccommodation: LivingAccommodation\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Adopting SwiftData for a Core Data app",
+        "url": "https://developer.apple.com/documentation/CoreData/adopting-swiftdata-for-a-core-data-app"
+      },
+      {
+        "title": "Forum: Programming Languages",
+        "url": "https://developer.apple.com/forums/topics/programming-languages-topic?cid=vf-a-0010"
+      },
+      {
+        "title": "SwiftData",
+        "url": "https://developer.apple.com/documentation/SwiftData"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10137/4/44213251-C991-4280-BBF1-5CA6AFCA5222/downloads/wwdc2024-10137_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10137/4/44213251-C991-4280-BBF1-5CA6AFCA5222/downloads/wwdc2024-10137_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10138",
+      "year": "2024",
+      "title": "Create a custom data store with SwiftData",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10138"
+    },
+    {
+      "id": "10075",
+      "year": "2024",
+      "title": "Track model changes with SwiftData history",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10075"
+    },
+    {
+      "id": "10187",
+      "year": "2023",
+      "title": "Meet SwiftData",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10187"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:12:33.757Z"
+}

@@ -1,0 +1,98 @@
+{
+  "id": "10047",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10047/",
+  "title": "Enable encrypted DNS",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "System Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello, and welcome to WWDC.\n\nHi. I'm Tommy Pauly. Encrypted DNS is a key technology for improving internet privacy. And it's supported natively on Apple platforms as an underlying technology that you as a developer can enable for users.\n\nIf you provide a public DNS service, you can write an app, or a configuration profile, to let people use your encrypted DNS server.\n\nYou can also opt in to encrypted DNS for specific connections within your own apps. Before we dive into how you use encrypted DNS on Apple platforms, let's talk about what DNS is, and why it matters for privacy. DNS is the domain name system. It's what takes a name that you see for a web page in Safari, and turns it into the actual IP addresses of servers on the internet. Your devices are using DNS every time you access the internet. When your app accesses a website, the system asks a question, a DNS query, to turn that name into a set of addresses. Generally, the question is sent to a DNS server configured by your local network. So where does privacy come into the picture? One concern is that DNS questions and answers are usually sent over an unencrypted transport, UDP. That means that other devices on the network can not only see what names you're looking up, but they can even interfere with the answers. The other privacy concern is that you may not trust the DNS resolver on your local network. If you've joined a public Wi-Fi network, your internet usage could be tracked or blocked. So how does encrypted DNS improve this situation? Encrypted DNS, simply put, is using encryption to protect your DNS questions and answers.\n\nAnd if you don't trust the network you're on, it can also involve sending your questions to a DNS server that you do trust.\n\nStarting this year, Apple platforms natively support encrypted DNS. There are two supported protocols. DNS over TLS, also called DoT, and DNS over HTTPS, also called DoH. Both of these use TLS to encrypt DNS messages. DoH additionally uses HTTP to improve performance.\n\nThere are two ways that encrypted DNS can be enabled. The first way is to choose a single DNS server as the default resolver for all apps on the system. If you provide a public DNS server, you can now write a NetworkExtension app that configures the system to use your server.\n\nOr, if you use mobile device management, MDM, to configure enterprise settings on devices, you can push down a profile to configure encrypted DNS settings for your networks. The second way to enable encrypted DNS is to opt in directly from an app. If you want your app to use encrypted DNS, even if the rest of the system isn't yet, you can select a specific server to use for some or all of your app's connections.\n\nLet's start by looking at how the system-wide DNS settings work. System DNS settings can be configured either by a NetworkExtension app that uses NEDNSSettingsManager, or an MDM profile that contains a DNSSettings payload.\n\nBoth of these methods allow you to specify the same content.\n\nA DNS server configuration that identifies which server to use, and which protocol the server supports, and a set of Network Rules that allows you to customize when your DNS settings should apply.\n\nLet's look at how you specify the server configuration using NetworkExtension.\n\nUse the shared NEDNSSettingsManager object to first load in any existing configuration.\n\nNext, you can define settings for either a DNS over HTTPS server, or a DNS over TLS server. In this example, we're using DoH. You can provide the server's IP addresses, which are optional, and the server URL, which is required. You set this object into the \"dnsSettings\" property.\n\nYou then call saveToPreferences to apply the configuration to the system. At this point, a user can enable your DNS server in the settings app.\n\nNext, let's look at the Network Rules part of the configuration. Specifying Network Rules allows you to ensure that your DNS settings are compatible with different networks. Encrypted DNS can be great for privacy, but a public DNS server isn't able to resolve private names that are only known to local networks. For example, only a DNS server on an enterprise Wi-Fi network can resolve certain private names that are accessed by employees. Some aspects of compatibility are handled for you automatically. For these, you don't need to specify Network Rules. Captive network detection, like when someone logs on to a café network is automatically granted an exception. Similarly, if a VPN is active, resolution within the VPN tunnel will use the VPN's DNS settings and not your system-wide settings.\n\nHowever, handling cases like private names on enterprise Wi-Fi networks requires setting up Network Rules. Your Network Rules can define behavior for specific network types, like Wi-Fi or cellular, and specific Wi-Fi SSIDs. On matching networks, you can disable your DNS settings entirely, or only grant exceptions for specific private domains. Here's how to set up some Network Rules in your app. Your app should allow users to configure these kinds of rules.\n\nTo create an exception for a work network, define a rule for a Wi-Fi network with a particular SSID. The list of connection rules defines a domain, in this case, enterprise.example.net, that should not use your DNS settings.\n\nOverall, this rule says that your DNS settings should be used on the work Wi-Fi network for everything other than the private enterprise domain.\n\nYou can also set up rules to disable your DNS settings on an entire category of networks using a Disconnect rule. Here, we're disabling DNS settings on all cellular networks.\n\nThe last rule you should set should always be a catchall. In this case, let's make sure your DNS settings are on by default by using a Connect rule.\n\nYou store your Network Rules as an ordered list, and then can save the configuration.\n\nNow we're ready to see a DNS Settings app in action.\n\nHere's an example project that configures the system-wide DNS settings. In our app, we use NEDNSSettingsManager. Here, we can define the server configuration, and we can also set up the Network Rules based on the user preferences. This particular app supports enabling or disabling on both cellular and Wi-Fi networks.\n\nBefore we run the app, we need to make sure that the DNS Settings capability is enabled in Xcode. To check this, go to your Project Settings, and then over to Signing & Capabilities.\n\nThe DNS Settings capability is one of the NetworkExtension capabilities. And since we're configuring a protocol that's supported by the system, we don't need to implement an extension point. We only need to build an app.\n\nLet's look at that app now.\n\nWhen we run the app, the configuration is installed, but not active immediately.\n\nWe can enable or disable our settings on Wi-Fi or cellular, and then enable the entire configuration in the settings app.\n\nWe go to Settings, General, and look at VPN & Network. Here, there's a section for DNS where your app will show up once you've installed your configuration. If you select your settings, they will be automatically applied to the whole system. And if you go back to your app, you can now see that the configuration is active.\n\nThat's all you have to do. At this point, your DNS settings will apply to all apps on the system.\n\nBe aware that some networks may block using your encrypted DNS server by policy. These networks might be trying to filter traffic by looking at DNS queries. If this occurs, a Wi-Fi network is marked with a privacy warning. Connections in apps will fail rather than compromise your privacy.\n\nIf you don't provide a DNS service that the entire system can use, but you still want to use encrypted DNS in your app, you can enable encrypted DNS throughout your app, or for specific connections. This approach works no matter what system APIs you use: URLSessionTasks, Network framework connections, or POSIX APIs like getaddrinfo. Let's take a look at enabling encrypted DNS with Network framework. You select your options with a PrivacyContext. You create one PrivacyContext for every set of connections that share DNS settings.\n\nWhen you require encryption, you can provide a DNS server configuration to use as a fallback. That means that any system-wide DNS configuration will take precedence, but your app's fallback will kick in otherwise. Here, we use the URL of a DoH server.\n\nWhen you create parameters for your connections, set the PrivacyContext you created earlier.\n\nThen, start your connections, and they will use encrypted DNS.\n\nYou can also check whether encrypted DNS was used on a given connection.\n\nOnce a connection is ready, request an EstablishmentReport.\n\nThis report has a list of resolution steps. You can check which protocol was used for DNS: HTTPS, TLS, UDP, or TCP. Note that answers that came from a cache may not have any protocol set. If you want to use encrypted DNS throughout your app, you can configure the default PrivacyContext. This applies your configuration to every DNS resolution initiated by your app, either when you use URLSessionTasks, or when you use lower-layer APIs like getaddrinfo.\n\nNow you're ready to try out encrypted DNS. If you provide a public DNS service, write an app that uses NEDNSSettingsManager to deliver your settings.\n\nIf you have an enterprise MDM solution, use profiles to enable encrypted DNS on your networks.\n\nAnd if you want to opt in directly from your app, adopt PrivacyContexts in Network framework. For more information on this topic, please visit the following session URL. And thanks for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:16",
+      "title": "Create a DNS configuration",
+      "language": "swift",
+      "code": "// Create a DNS configuration\n\nimport NetworkExtension\n\nNEDNSSettingsManager.shared().loadFromPreferences { loadError in\n    if let loadError = loadError {\n        // ...handle error...\n        return\n    }\n    let dohSettings = NEDNSOverHTTPSSettings(servers: [ \"2001:db8::2\" ])\n    dohSettings.serverURL = URL(string: \"https://dnsserver.example.net/dns-query\")\n    NEDNSSettingsManager.shared().dnsSettings = dohSettings\n    NEDNSSettingsManager.shared().saveToPreferences { saveError in\n        if let saveError = saveError {\n            // ...handle error...\n            return\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "6:40",
+      "title": "Apply network rules",
+      "language": "swift",
+      "code": "// Apply network rules\n\nlet workWiFi = NEOnDemandRuleEvaluateConnection()\nworkWiFi.interfaceTypeMatch = .wiFi\nworkWiFi.ssidMatch = [\"MyWorkWiFi\"]\nworkWiFi.connectionRules =\n    [ NEEvaluateConnectionRule(matchDomains: [\"enterprise.example.net\"],\n                               andAction: .neverConnect) ]\n\nlet disableOnCell = NEOnDemandRuleDisconnect()\ndisableOnCell.interfaceTypeMatch = .cellular\n\nlet enableByDefault = NEOnDemandRuleConnect()\n\nNEDNSSettingsManager.shared().onDemandRules = [\n    workWiFi,\n    disableOnCell,\n    enableByDefault\n]"
+    },
+    {
+      "timestamp": "10:47",
+      "title": "Use encrypted DNS with NWConnection",
+      "language": "swift",
+      "code": "// Use encrypted DNS with NWConnection\n\nimport Network\n\nlet privacyContext = NWParameters.PrivacyContext(description: \"EncryptedDNS\")\nif let url = URL(string: \"https://dnsserver.example.net/dns-query\") {\n    let address = NWEndpoint.hostPort(host: \"2001:db8::2\", port: 443)\n    privacyContext.requireEncryptedNameResolution(true,\n        fallbackResolver: .https(url, serverAddresses: [ address ]))\n}\n\nlet tlsParams = NWParameters.tls\ntlsParams.setPrivacyContext(privacyContext)\n\nlet conn = NWConnection(host: \"www.example.com\", port: 443, using: tlsParams)\nconn.start(queue: .main)"
+    },
+    {
+      "timestamp": "11:35",
+      "title": "Validate which DNS protocol was used",
+      "language": "swift",
+      "code": "// Validate which DNS protocol was used\n\nimport Network\n\nconn.requestEstablishmentReport(queue: .main) { report in\n    if let report = report {\n        for resolution in report.resolutions {\n            switch resolution.dnsProtocol {\n            case .https, .tls:\n                print(\"Used encrypted DNS!”)\n            case .udp, .tcp:\n                print(\"Used unencrypted DNS\")\n            default:\n                // Ignore unknown protocols\n       }\n    }\n}"
+    },
+    {
+      "timestamp": "12:07",
+      "title": "Use encrypted DNS for other APIs",
+      "language": "swift",
+      "code": "// Use encrypted DNS for other APIs\n\nimport Network\n\nif let url = URL(string: \"https://dnsserver.example.net/dns-query\") {\n    let address = NWEndpoint.hostPort(host: \"2001:db8::2\", port: 443)\n    NWParameters.PrivacyContext.default.requireEncryptedNameResolution(true,\n        fallbackResolver: .https(url, serverAddresses: [ address ]))\n}\n\nlet task = URLSession.shared.dataTask(with: ...)\ntask.resume()\n\ngetaddrinfo(...)"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10047/4/01915145-ACB0-4244-86DA-2FBCCFEC9B58/wwdc2020_10047_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10047/4/01915145-ACB0-4244-86DA-2FBCCFEC9B58/wwdc2020_10047_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10053",
+      "year": "2023",
+      "title": "What’s new in privacy",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10053"
+    },
+    {
+      "id": "10079",
+      "year": "2022",
+      "title": "Improve DNS security for apps and servers",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10079"
+    },
+    {
+      "id": "10111",
+      "year": "2020",
+      "title": "Boost performance and security with modern networking",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10111"
+    },
+    {
+      "id": "10676",
+      "year": "2020",
+      "title": "Build trust through better privacy",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10676"
+    }
+  ],
+  "extractedAt": "2025-07-18T11:03:22.680Z"
+}

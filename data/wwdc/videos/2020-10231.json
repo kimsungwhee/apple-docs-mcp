@@ -1,0 +1,72 @@
+{
+  "id": "10231",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10231/",
+  "title": "Reduce latency with HLS Blocking Playlist Reload",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": false,
+  "transcript": {
+    "fullText": "♪ Hello, and welcome to WWDC.\n\nRoger Pantos: Hello, and welcome to this year's WWDC.\n\nMy name is Roger Pantos and I'm going to tell you about HLS Blocking Playlist Reload.\n\nTo start with, what is Blocking Playlist Reload? Well, a fundamental aspect of HLS is that clients are discovering new segments constantly by reloading the playlist.\n\nThe original approach was just to reload the same playlist URL every target duration.\n\nNow that's nice and simple, but it doesn't work well with low-latency because if a client just misses a playlist update, it'll take another target duration before it finally notices it.\n\nAnd so for Low-Latency HLS, we introduced the notion of delivery directives which are a way for the client to ask the server to perform some kind of service for it by adding query parameters to its GET requests.\n\nFor Blocking Playlist Reload, clients can use a delivery directive to tell a server, \"Hold onto this Playlist request until the Playlists you see contains a segment that I haven't seen yet.\" Once that playlist updates with that segment, the server will unblock and send it to the client.\n\nSo let's take a look at how that works in detail.\n\nFirst of all, Blocking Playlist Reloads are optional so the server needs to indicate that it supports them.\n\nAnd it does that by adding a CAN-BLOCK-RELOAD attribute to its server control tag.\n\nNext, a client will load a playlist for the first time.\n\nIt doesn't supply any query parameters because at this point it just wants whatever's current on the server.\n\nAs soon as it gets the playlist, it will immediately turn around and issue a reload request.\n\nAnd now, it will use the _HLS_msn delivery directive to specify the first new segment that it hasn't seen yet.\n\nIf it's a low-latency playlist then it will also specify the next partial segment that it expects to see.\n\nThe server will then hold on to that request until it has a playlist that's new enough.\n\nNow let's see how that looks graphically.\n\nHere, we have an HLS client to the left and a server to the right.\n\nThe client asks for a playlist that contains Partial Segment 2, for example.\n\nThe server doesn't have Partial Segment 2 yet so it blocks.\n\nEventually, Partial Segment 2 will appear and will get added to the playlist.\n\nNow the server can unblock the client request and send it the updated playlist as the response.\n\nLet's take a look at an actual example.\n\nWe'll start with a regular playlist, not a low-latency one.\n\nHere is a regular, live HLS Playlist.\n\nThe first thing to notice is that the server is advertising that it supports Blocking Playlist Reload in its server control tag.\n\nNext, the media sequence number is 19 and that refers to the first segment in the playlist which here is segmentA.\n\nNow if you count four segments down all the way to the bottom to segmentE, you'll see that it has a Media Sequence Number of 23.\n\nAnd that means that the next time a playlist is updated with a new segment, that new segment will be Media Sequence Number 24.\n\nSo to ask for that update, the client will use the _HLS_msn=24 delivery directive.\n\nWhen it receives this request, the server will block until the playlist is updated and then it will return the newer version of the playlist.\n\nAnd at the end, it now contains segmentF, also known a Media Sequence Number 24.\n\nSo that's the flow of Blocking Playlist Reload for regular segments.\n\nNow let's see what happens for low-latency.\n\nIn this example, we'll see how the client asks for the next playlist when it contains partial segments as well.\n\nSo here we have a live low-latency playlist.\n\nYou can see that the segments have a target duration of 6 seconds while the partial segments have a part target duration of 2 seconds.\n\nAt the end of the playlist are the first two parts of segment 7 part 0 and part 1.\n\nGiven that the last thing in this playlist right now is Media Sequence 7 part 1, to get the next playlist, the client will need to ask for Media Sequence 7 part 2.\n\nAnd so that request looks like this.\n\nThe server will hold onto it until playlist updates again and then send back this response.\n\nAnd now we can see that there is a new partial segment which has Media Sequence Number 7 part 2.\n\nNow, you may be wondering if the client is always asking for the next part of the current media sequence number, what happens at the end of the segment? Well let's go back to our earlier playlist.\n\nHere, the next playlist request will be for segment 7 part 3.\n\nNow the server will translate any request for a part that goes beyond the end of the parent segment into a request for part 0 of the segment that follows it.\n\nSo in this case, the server will block until it returns this playlist, where it now contains part 0 of Segment 8 at the end.\n\nThere are a few other exceptional cases to know about for Blocking Playlist Reload.\n\nFirst, the media sequence number and part delivery directives only apply for live playlists.\n\nThat means they're ignored if the playlist has an ENDLIST tag.\n\nNext, if a client asks for a particular playlist update and the server already has it, it returns the latest playlist right away.\n\nThat's also true even if the playlist is newer than what the client has asked for, if it's advanced ahead by a couple of partial segments.\n\nAnd in fact, to take it to the greatest extreme, if the segment the client asks for has already rolled out of the playlist completely, the server will still unblock immediately and return the current playlist.\n\nThe rule is that the origin always returns the current version of a playlist as long as it's new enough.\n\nFinally, if the server has to wait too long for the playlist to update -- if it has to wait more than three target durations -- it will return an error.\n\nNow that should only happen if there's a serious problem with the backend production.\n\nAnother interesting area to talk about is how Blocking Playlist Reload interacts with CDNs and other HTTP caches.\n\nThe good news here is that Blocking Playlist Reload actually works a lot better with caches even than traditional live HLS.\n\nA big reason for that is having a unique URL for each individual Playlist update allows each request to be cached independently.\n\nSo the update requests a response for msn=23, for example, can live in the same cache alongside the request and response for msn=24.\n\nNow this has a couple of useful consequences.\n\nFirst, a new request will effectively bust through the cache because it will present a combination of query parameters that the cache has never seen before.\n\nSo the cache knows to send the request right along to the origin.\n\nSecond, each response has a longer useful lifetime in the cache because it doesn't have to compete with itself.\n\nYou no longer have to expire every playlist response at a half target duration the way you do with regular live HLS Playlists.\n\nAnd in fact, we recommend a lifetime of six target durations for successful playlist responses.\n\nThe other thing worth saying is that with Blocking Playlist Reload and other delivery directives, you have to configure your CDN to coalesce duplicate edge requests into a single request to the origin.\n\nBecause, when you have an active origin, you want to do everything you can to help reduce its load.\n\nSo to summarize Blocking Playlist Reload.\n\nIt's a new mechanism in HLS that allows clients to discover new segments as soon as they become available on the server.\n\nClients request them by using the _HLS_ msn and _HLS_part delivery directives.\n\nBlocking Playlists Reload works better with CDNs both in a positive sense of enabling more caching and also in a negative sense of explicitly busting that cache for new requests.\n\nThis helps out with regular live HLS streams and it's required for low-latency streams.\n\nWe encourage you to adopt Blocking Playlist Reload to improve the delivery of HLS to your users.\n\nThank you very much.\n\n♪",
+    "segments": []
+  },
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10231/3/2F8E5799-0623-407E-A395-57E1DE70D4D0/wwdc2020_10231_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10231/3/2F8E5799-0623-407E-A395-57E1DE70D4D0/wwdc2020_10231_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10232",
+      "year": "2020",
+      "title": "Adapt ad insertion to Low-Latency HLS",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10232"
+    },
+    {
+      "id": "10229",
+      "year": "2020",
+      "title": "Discover HLS Blocking Preload Hints",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10229"
+    },
+    {
+      "id": "10225",
+      "year": "2020",
+      "title": "Improve stream authoring with HLS Tools",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10225"
+    },
+    {
+      "id": "10230",
+      "year": "2020",
+      "title": "Optimize live streams with HLS Playlist Delta Updates",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10230"
+    },
+    {
+      "id": "10228",
+      "year": "2020",
+      "title": "What's new in Low-Latency HLS",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10228"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:24:43.648Z"
+}

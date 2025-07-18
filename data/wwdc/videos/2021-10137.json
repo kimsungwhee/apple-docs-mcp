@@ -1,0 +1,109 @@
+{
+  "id": "10137",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10137/",
+  "title": "Improve MDM assignment of Apps and Books",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Store, Distribution & Marketing",
+    "Business & Education"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Hello and welcome to WWDC. I'm Austin, and I work on the Apps and Books Management API. I'll be sharing with you improvements we have brought to a new API version, enabling your MDM solution to manage Apps and Books in a faster and more scalable way than ever before. You're likely already using the Apps and Books Management API to enable organizations using your product to manage their owned apps and books.\n\nThe organization may have acquired these assets through either Apple School Manager or Apple Business Manager. And the API allows for you to assign these owned apps and books to the organization's managed users and devices. We've introduced a lot of changes this year to the new Apps and Books API. We'll cover many of these throughout this session but focus on the two enhancements that will most improve your workflows: Real-time notifications and Asynchronous processing. For an in-depth look at the other changes, see the new developer documentation within the Device Management section on developer.apple.com and in the references for this session. Let's get started with Real-time notifications.\n\nWe now support Real-time notifications for state changes to assignments, assets, and registered users. You need to opt-in to these notifications, and you will only receive notifications for the types you subscribe to in client config.\n\nReal-time notifications finally remove the need for you to continually sync state. Let's discuss the notification types a little more in-depth. The first notification type is for assignments.\n\nAn assignment is when an asset is allocated to either a user or device managed by an organization.\n\nIf you have to wait for confirmation that entire groups of assignments have been performed successfully, that will lead to delays in installing the content that users need. Now, with assignment notifications, you'll know in real-time exactly what assignments have successfully been performed and to which devices.\n\nYou subscribe to the asset management notification type in client config to receive these.\n\nApple will then proceed to notify you when assignment states are altered by either an associate, disassociate, or revoke assets event.\n\nYou may now rely on these notifications to provide users and devices faster access to content as they are assigned. Let's look at an example of this notification. When an assignment occurs, you get this notification. The example here was triggered by an associate assets call.\n\nApple posts these notifications with a shared secret in the authorization header provided by you in client config. The notification contains a payload, which is specific to a given notification type.\n\nThe type is denoted here, which for this notification is asset management. In our notification payload, we can see the assignments whose state has attempted to be altered, event ID, the unique identifier for this MDM-triggered asynchronous event. We'll get into more detail regarding the asynchronous nature of our new API in a bit.\n\nHere is the result of the state change, whether it succeeded or failed.\n\nAnd the type of change to assignment state, which here is an associate. The next notification type is for assets.\n\nAssets are apps and books that an organization has purchased in either Apple School Manager or Apple Business Manager. That organization is not able to manage and assign the assets until your MDM knows that they own the content. With asset notifications, you're notified in real-time when changes to assets occur from purchases, transfers, or refunds, and your MDM can always know the current available count of each asset. You subscribe to the asset count notification type in client config to receive these.\n\nApple will then proceed to notify you when an asset state changes due to either a buy, transfer, or refund event.\n\nThese notifications will allow you to quickly provide users with their recently purchased assets. Let's also take a look at an example of this notification with the context of what the state of assets looked like before. To get the current state of assets, we call the \"get assets\" endpoint.\n\nThis is the new asset sync endpoint, which you can note by both the proper HTTP request method of GET and the versioned URI. Here, we are querying with the query parameters of adamId and pricingParam to receive the state of a single asset.\n\nWe are now requiring that the server token or sToken is provided in the authorization header of all new API requests in this bearer token format. We see in the assets array of this response for the asset we are interested in, there are 10,000 available for assignment and 15,000 in total. When a buy happens, you will get this notification. We see in the payload, the adamId for the asset that was purchased.\n\nThen the delta, which in this case is a positive integer. This could either denote a buy or a transfer. You'd use this delta to update your counts without making another call to the asset sync endpoint. The last notification types are for registered users. Most deployments rely on device-based assignments, but when you need to assign content to users, creating registered users is the first step.\n\nAssociating these users to either personal or managed Apple IDs is then necessary for deployment. For a user's personal Apple ID to be associated to a registered user for a given sToken, the user must accept an invitation to associate their Apple ID. Now, with registered user notifications, you'll be updated in real-time with the latest state of users, both for their initial creation and subsequent invitation acceptance. You subscribe to the user management and user associated notification types in client config to receive these. Then Apple will notify you when user states are altered by either create, associate, update, or retire user events.\n\nThe user associated notifications specifically allow you to better track when a user has accepted an invitation to associate their Apple ID. Let's take a look at an example of these notifications with the context of what the state of users looked like prior. In order to get the current state of users, we call the get users endpoint. This is the new users sync endpoint. Here, filtering only for the user we are interested in by the clientUserId query parameter. This will limit the response size to only one user. Here, we have some common pagination fields found across our sync API, indicating the current page index, size, or in this context, the number of user objects in the current page, and the total pages in the provided query.\n\nIn our users array, we can see the only user we are interested in, in this case, with a status of registered, as opposed to associated, and an invitation code. This user has clearly yet to be associated to an Apple ID. All our sync API also include a version identifier, which will change whenever a write occurs to the underlying data. This can be extremely useful when traversing large responses to indicate when data on prior pages may have changed. You can associate a managed Apple ID to a registered user using the new update users endpoint. This results in a registered user notification as seen here. In our notification payload, we see users whose state has attempted to be altered, unique identifier for this MDM triggered asynchronous event, the result of the state change, whether it succeeded or failed, the type of change to user state, which here is an update. Looking at the users array, we see the clientUserId for the user's state we are interested in, containing an idHash and status of associated, concluding that the managed Apple ID association was successful. You use this to update your state of this user without making another call to the user sync endpoint. Instead of you associating, it is instead possible that you provide the user with an invitation link to associate their own Apple ID to the registered user. Here, we are looking at that associated user notification. We see in the notification payload the user object containing the information regarding the associated user including but not limited to their clientUserId, an idHash indicating an associated Apple ID, the invite code they accepted, and status denoting associated. You use this to update your state of this user without making another call to the user sync endpoint.\n\nLet's talk about how you enroll to receive these notifications. You must opt in via client config for each sToken you manage.\n\nYou provide a shared secret for authentication with the notificationAuthToken and the notificationUrl to post these to. The token is used to verify that these notifications are, in fact, coming from Apple, and this can be updated anytime via client config.\n\nProvide an HTTP 200-level response when you receive notifications in order to let Apple know that they've been delivered successfully. Apple will attempt to retry the notification if a non-200 response is returned or a timeout occurs. Apple will provide a best-effort delivery. This attempt to reach you will be made a few times before discarding the notification. This means if you are unable to receive notifications for any period of time, you will need to poll for the latest state. Sync only for what you know to be in a potentially stale state as a result of the missed notifications.\n\nThe second major enhancement brought to this new API is asynchronous processing.\n\nIn the initial version of the API, all management was performed synchronously. You make a request to manage some assets, and Apple performs the management while you wait for a synchronous response. This meant you handled parallelism, whereas asynchronous processing enables server-enforced parallelism on Apple's end. This results in processing optimizations, which leads to larger requests being fulfilled more quickly.\n\nOrdered processing reduces the amount of intermittent failures and subsequent retries due to your specific request patterns.\n\nAnd this ultimately leads to stress-free large deployments, and, for education, easier back-to-school seasons. Apple has already benefited from asynchronous processing for Apps and Books, purchases, and transfers in both Apple School Manager and Apple Business Manager, allowing organizations to see inventory on hand in minutes rather than hours.\n\nLet's look at how this all comes together to make for a great new Apps and Books management experience.\n\nSay there's an organization that you manage with 10,000 users, each with their own device.\n\nAnd you're asked to assign 25 apps that are critical for their daily tasks to each device.\n\nYou're looking at performing 250,000 assignments. Let's look at how you would have done this previously.\n\nYour server makes a request to Apple to manage licenses. Apple returns a response to you synchronously. This response would contain the licenses assigned to requested devices.\n\nThis single request manages only one app up to a maximum of ten devices, resulting in only ten assignments.\n\nThis requires a minimum of 25,000 requests to perform the 250,000 assignments. With the new API, this 25,000 minimum requests becomes just 10 requests, all possible by moving to asynchronous processing. Let's look at how you achieve this.\n\nOn the left, we now have the addition of your notification server. Process still starts with you making a request to Apple to manage assets. In the request, you provide the sToken in the authorization header. You can now provide us with multiple assets in a single request, up to 25 currently. This dynamic limit is exposed in service config and provide up to 1,000 devices to perform assignment to, another dynamic limit also exposed in service config. Apple will return a response synchronously to you.\n\nIn this response, we have the HTTP status code, which is important to this new API. We return appropriate non-200 status codes for errors, so you should initially interrogate the response to ensure it is a 200 before proceeding. Then, most importantly, we have the unique identifier for this asynchronous event whose status can either be gotten from calling our new event status endpoint or by waiting for matching assignment notifications. As the assignments complete, assuming you are subscribed, Apple will post notifications to you. In each of these notifications, we have a subset of the requested assignments listed in our notification payload, the metadata regarding the assignments, indicating whether it was a success or a failure, the type, and the corresponding event ID. You should wait for these successful assignment notifications to then proceed with sending install commands to the devices listed. Another advantage of our new management endpoints is Ordering. Let's say you get a request to reassign some assets from one group of users to another. This can be achieved by you sequentially firing off a disassociate followed by an associate request. First, you post the disassociate request. Apple then responds with the event ID for the disassociate. Then, you post the subsequent associate request. Apple responds with another event ID, but this time, for the associate. Assuming you are subscribed, Apple will post notifications to you as the disassociations complete. Then, Apple will post notifications to you as the associations complete. Big changes to our API, like notifications, allow you to keep your state in-sync with Apple, removing the need to continually make requests to ensure you have the latest state.\n\nAsynchronous processing allows for everyone to have a better experience, whether it be employees or students getting access to the content they need, IT admins performing large deployments rapidly, or you effectively managing an organization's assets.\n\nThe legacy API will continue to be supported at this time. Note that using the new and legacy API versions in conjunction for the same token will not be officially supported.\n\nThis new API is the way forward for Apps and Books Management and is available today. We look forward to you testing and integrating with this new API as soon as possible, providing your users with the best possible Apps and Books Management experience.\n\nFor more insight, please check out our updated developer documentation. Thank you for your time, and hope you enjoy the rest of WWDC. [ethereal percussion music]",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:43",
+      "title": "Asset Management Notification",
+      "language": "swift",
+      "code": "{\n    \"notification\": {\n        \"assignments\": [\n            {\n                \"adamId\": \"408709785\",\n                \"pricingParam\": \"STDQ\",\n                \"serialNumber\": \"C02Y402HLCM6\"\n            },\n            ...\n        ],\n        \"eventId\": \"87cbc650-16cc-4f9e-a833-e622f377a9f7\",\n        \"result\": \"SUCCESS\",\n        \"type\": \"ASSOCIATE\"\n    },\n    \"notificationId\": \"ba8bbb23-44c2-44f6-a928-eff6ba5ffac3\",\n    \"notificationType\": \"ASSET_MANAGEMENT\",\n    \"uId\": \"2049025000431439\"\n}"
+    },
+    {
+      "timestamp": "4:39",
+      "title": "Get Assets Response",
+      "language": "swift",
+      "code": "{\n    \"assets\": [\n        {\n            \"adamId\": \"408709785\",\n            \"pricingParam\": \"STDQ\",\n            \"assignedCount\": 5000,\n            \"availableCount\": 10000,\n            \"totalCount\": 15000,\n            ...\n        }\n    ],\n    \"currentPageIndex\": 0,\n    \"size\": 1,\n    \"totalPages\": 1,\n    ...\n}"
+    },
+    {
+      "timestamp": "5:09",
+      "title": "Asset Count Notification",
+      "language": "swift",
+      "code": "{\n    \"notification\": {\n        \"adamId\": \"408709785\",\n        \"countDelta\": 50,\n        \"pricingParam\": \"STDQ\"\n    },\n    \"notificationId\": \"4a7801be-53f0-42e1-9505-81c0d1dc9da3\",\n    \"notificationType\": \"ASSET_COUNT\",\n    \"uId\": \"2049025000431439\"\n}"
+    },
+    {
+      "timestamp": "6:51",
+      "title": "Get Users Response",
+      "language": "swift",
+      "code": "{\n    \"currentPageIndex\": 0,\n    \"size\": 1,\n    \"totalPages\": 1,\n    \"users\": [\n        {\n            \"clientUserId\": \"client-100\",\n            \"email\": \"client-100@example.com\",\n            \"inviteCode\": \"f551b37da07146628e8dcbe0111f0364\",\n            \"status\": \"Registered\"\n        }\n    ],\n    \"versionId\": \"58507d60-9cd1-11eb-b916-1926dea207f9\",\n    ...\n}"
+    },
+    {
+      "timestamp": "7:49",
+      "title": "User Management Notification",
+      "language": "swift",
+      "code": "{\n    \"notification\": {\n        \"users\": [\n            {\n                \"clientUserId\": \"client-100\",\n                \"idHash\": \"leSKk3IaE2vk2KLmv2k3/200D3=\",\n                \"status\": \"Associated\",\n                ...\n            },\n            ...\n        ],\n        \"eventId\": \"e0def1f8-9158-4343-9c52-8dd32da50b9b\",\n        \"result\": \"SUCCESS\",\n        \"type\": \"UPDATE\"\n    },\n    \"notificationId\": \"4c0bbb9b-d5a6-4860-83ef-5cf362783c1e\",\n    \"notificationType\": \"USER_MANAGEMENT\",\n    \"uId\": \"2049025000431439\"\n}"
+    },
+    {
+      "timestamp": "8:33",
+      "title": "User Associated Notification",
+      "language": "swift",
+      "code": "{\n    \"notification\": {\n        \"associatedUsers\": [\n            {\n                \"clientUserId\": \"client-100\",\n                \"idHash\": \"leSKk3IaE2vk2KLmv2k3/200D3=\",\n                \"inviteCode\": \"f551b37da07146628e8dcbe0111f0364\",\n                \"status\": \"Associated\",\n                ...\n            }\n        ]\n    },\n    \"notificationId\": \"90b83144-fb93-4837-9c52-0ae147bdc421\",\n    \"notificationType\": \"USER_ASSOCIATED\",\n    \"uId\": \"2049025000431439\"\n}"
+    },
+    {
+      "timestamp": "12:25",
+      "title": "Associate Assets Request",
+      "language": "swift",
+      "code": "{\n    \"assets\": [\n      {\n        \"adamId\": \"361309726\",\n        \"pricingParam\": \"STDQ\"\n      },\n      ...\n    ],\n    \"serialNumbers\": [\n      \"serial-1\",\n      ...\n      \"serial-1000\"\n    ]\n}"
+    },
+    {
+      "timestamp": "12:51",
+      "title": "Associate Assets Response",
+      "language": "swift",
+      "code": "{\n    \"eventId\": \"92467a8e-8a50-4df9-9b30-f7ff4a99dea7\",\n    \"tokenExpirationDate\": \"2021-07-06T14:12:10+0000\",\n    \"uId\": \"2049025000431439\"\n}"
+    },
+    {
+      "timestamp": "13:24",
+      "title": "Asset Management Notification",
+      "language": "swift",
+      "code": "{\n    \"notification\": {\n        \"assignments\": [\n            {\n                \"adamId\": \"361309726\",\n                \"pricingParam\": \"STDQ\",\n                \"serialNumber\": \"serial-1\"\n            },\n            ...\n        ],\n        \"eventId\": \"92467a8e-8a50-4df9-9b30-f7ff4a99dea7\",\n        \"result\": \"SUCCESS\",\n        \"type\": \"ASSOCIATE\"\n    },\n    ...\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "App and Book Management",
+        "url": "https://developer.apple.com/documentation/DeviceManagement/app-and-book-management"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10137/7/FB724053-0CDB-4228-A9A7-CA326DC41FBE/downloads/wwdc2021-10137_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10137/7/FB724053-0CDB-4228-A9A7-CA326DC41FBE/downloads/wwdc2021-10137_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10130",
+      "year": "2021",
+      "title": "What’s new in managing Apple devices",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10130"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:20:02.041Z"
+}

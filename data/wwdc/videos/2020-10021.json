@@ -1,0 +1,86 @@
+{
+  "id": "10021",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10021/",
+  "title": "Build Metal-based Core Image kernels with Xcode",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video",
+    "Developer Tools",
+    "Graphics & Games"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nWelcome, everyone. My name is David Hayward, and I'm an engineer on the Core Image team. I'll be giving a short presentation today that will show you everything you need to do to build Metal-Based Core Image kernels in Xcode. First off, why do you want to write custom CIKernels in Metal? In addition to the usual features of CIKernels, such as automatic tiling and concatenation, by writing them in Metal, you will reduce runtime compile times by shifting that work to when your app is built, give your kernels access to high-performance features such as gather-reads, group-writes, and half-float math, and make your life easier as a developer by syntax highlighting as you type and syntax checking when you build.\n\nSo now that you know these benefits, let me show you step-by-step how to add Metal Core Image kernels to your application. There are five simple steps. First, add custom build rules to your project, then add .ci.metal sources to your project, write your kernel, initialize your CIKernel objects, and apply your kernel to create a new CIImage. Unlike conventional Metal compute and graphics shaders, Core Image Metal code needs to be compiled and linked with special flags. I recommend adding two custom build rules to your project targets that will make using these flags automatic.\n\nFirst we'll go to the project's target settings and add a build rule for files that end in .ci.metal. For files with this extension, we will run a one-line script that calls the Metal compiler with the required -fcikernel flag. This build rule will produce an output binary that will end in .ci.air. Next, we will add a second rule for files that end in .ci.air.\n\nFor files with this extension, we will run another one-line script that calls the Metal linker with the required -cikernel flag.\n\nThis build rule will produce an output in your apps resources directory that will end in .ci.metallib.\n\nNow that we have added the custom build rules, all we need to do is add a .ci.metal source to your project. To do that, all you need to do is go to the file menu and select New, File, and select that you want to add a Metal file, and then create a file name that ends in .ci so that the new file in your project will end in .ci.metal. For today's session, I will demonstrate this with a kernel that is shown in another great presentation on Edit and Playback HDR Video With AVFoundation.\n\nThe kernel from that presentation applies an animated zebra-stripe effect that highlights the bright, extended range portions of an HDR video.\n\nTo write a custom CIKernel for this effect is really easy. First, at the top of the source, you will include CoreImage.h header so that you get access to all the normal Metal classes as well as the additional classes that Core Image provides.\n\nNext you will declare the function for the kernel, which must be extern \"C\". The example is a CIColorKernel, so the function must return a float4 pixel and take some arguments.\n\nHere, the first argument is a Core Image sample_t that represents a pixel from an input image. This pixel is a linear premultiplied RGBA float4, which is suitable for either SDR or HDR images.\n\nThe last argument is a Core Image destination that provides the coordinate of the pixel to return.\n\nIn the implementation of this kernel, we use the dest.coord x and y values to determine which diagonal line we are on. Then we use some simple math to calculate if we should be on a zebra stripe or not.\n\nIf we are on a zebra stripe, and the current pixel sample is brighter than the normal Standard Dynamic Range white of 1, then we will return a bright red pixel. Otherwise we return the input sample unchanged.\n\nFor detailed documentation on Metal Shader Language for Core Image kernels, I recommend you go to developer.apple.com and download this reference PDF.\n\nIt documents the Metal Core Image kernel classes and also describes more advanced features like gather-reads and group-writes.\n\nThe final steps I will describe today are in the Swift code that loads your kernel and applies it to create a new image. Kernels are typically used by CIFilter subclasses which will have input properties such inputImage and other parameters.\n\nWe recommend that your filter instantiate its CIKernel object using a static property. This way, the work of loading the compiled metallib resource is done only once when it is first needed.\n\nLastly, CIFilter subclass must override the output image property. In this getter, you will take the kernel from the static property and use its apply method to create a new image.\n\nSo that concludes my step-by-step description on how to build Metal Core Image kernels in Xcode. I have shown you how to add custom build rules to your project, how to write a kernel and add it to your project, and how to initialize and apply your kernel object to create a new image. I hope this allows you to add great visual effects to your app's images and videos. Thank you very much,\nand enjoy the rest of WWDC 2020.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:08",
+      "title": "Put your kernels in .ci.metal sources",
+      "language": "swift",
+      "code": "// MyKernels.ci.metal\n#include <CoreImage/CoreImage.h> // includes CIKernelMetalLib.h\nusing namespace metal;\n\nextern \"C\" float4 HDRZebra (coreimage::sample_t s, float time, coreimage::destination dest) \n{\n\tfloat diagLine = dest.coord().x + dest.coord().y;\n\tfloat zebra = fract(diagLine/20.0 + time*2.0);\n\tif ((zebra > 0.5) && (s.r > 1 || s.g > 1 || s.b > 1))\n\t\treturn float4(2.0, 0.0, 0.0, 1.0);\n\treturn s;\n}"
+    },
+    {
+      "timestamp": "4:58",
+      "title": "Loading your kernel and applying it to create a new image",
+      "language": "swift",
+      "code": "class HDRZebraFilter: CIFilter {\n    var inputImage: CIImage?\n\tvar inputTime: Float = 0.0\n\n    static var kernel: CIColorKernel = { () -> CIColorKernel in \n\t    let url = Bundle.main.url(forResource: \"MyKernels\", \n                                withExtension: \"ci.metallib\")!\n\t\tlet data = try! Data(contentsOf: url)\n\t\treturn try! CIColorKernel(functionName: \"HDRzebra\",                            fromMetalLibraryData: data)\n\t}()\n\n  \toverride var outputImage : CIImage? {\n\t\tget {\n\t\t\tguard let input = inputImage else {return nil}\n\t\t\treturn HDRZebraFilter.kernel.apply(extent: input.extent, \n\t\t\t\t\t\t\t\t\t\t\t arguments: [input, inputTime])\n\t\t}\n\t}\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Core Image",
+        "url": "https://developer.apple.com/documentation/CoreImage"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10021/7/91A7268C-8211-46D3-B08E-9F554CE138A1/wwdc2020_10021_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10021/7/91A7268C-8211-46D3-B08E-9F554CE138A1/wwdc2020_10021_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10160",
+      "year": "2021",
+      "title": "Capture and process ProRAW images",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10160"
+    },
+    {
+      "id": "10159",
+      "year": "2021",
+      "title": "Explore Core Image kernel improvements",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10159"
+    },
+    {
+      "id": "10089",
+      "year": "2020",
+      "title": "Discover Core Image debugging techniques",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10089"
+    },
+    {
+      "id": "10008",
+      "year": "2020",
+      "title": "Optimize the Core Image pipeline for your video app",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10008"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:25:16.683Z"
+}

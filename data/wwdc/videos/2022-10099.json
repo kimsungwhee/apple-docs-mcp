@@ -1,0 +1,186 @@
+{
+  "id": "10099",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10099/",
+  "title": "What’s new in Safari Web Extensions",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Safari & Web"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Kiara Rose: Hi, my name is Kiara Rose, and I work as a Safari Extensions Engineer. Today I'm very excited to be speaking to you all about what's new in Safari Web Extensions this year. Before we dive into today's presentation, I'd like to take a moment to thank all of you for submitting your iOS, iPadOS, and macOS extensions to the App Store. Moving forward, our goal is to continue to implement new features and APIs so that you can deliver even better experiences for your users. And today, I'm going to highlight some of the exciting new features that we've implemented over the past year, such as a new Manifest version for extensions, updated APIs, and syncing extensions across multiple devices. Let's get started with Manifest version 3.\n\nManifest version 3 is the next iteration of the web extension platform. It introduces performance and security improvements and consolidates popular extension APIs. For those of who have already updated your extension to use version 3, your extension will now work in Safari 15.4 and onwards. For those of you who haven't, there's no need to worry, because we will continue to support extensions using Manifest version 2 in Safari. One of the key new features in Manifest version 3 is that your extension can use a service worker instead of a background page. If you're a web developer, you're likely familiar with service workers. These are event driven pages where you can register listeners using the addEventListener API. These pages are also compatible with other browsers that support Manifest version 3. If you prefer to keep using background pages for your extension, you're more than welcome to do so, but they must be non-persistent. Another improvement in version 3 is that the APIs for executing JavaScript and styling on a web page have moved from the tabs API to the new scripting API.\n\nMost of the functionality of these methods remain the same, but there are some new, additional features that scripting provides, such as new ways to inject code on a webpage, more options for which frames on the page the code should be executed in, and the ability to decide which execution environment the code should run in. Let's take a look at how the code for the new scripting API differs from the tabs API. In this code snippet, I'm using the tabs.executeScript API to change the background color of a webpage to blue. And with this API, I can only inject code that's contained in a string, by passing along the \"code\" property, But now, with the new scripting API, I can pass along a function object containing this code. And like any other function, it can contain arguments that can be passed in. This is a much more improved way of executing a script because you're not confined to writing code in a string. And note that with scripting, there's a new property called target. This property is used to specify where the script should run. In order to execute a script, you have to specify the ID of the tab you want to script to execute in. This API will return an error if the tab ID isn't specified. Then, if you'd like to select which frames of the webpage to inject the code, you can specify the frame IDs. Note that with the tabs API, you can only specify one ID. But with scripting, you can specify multiple IDs. But let's say I have a lot more code and it would look much cleaner if I could contain it in multiple files. In the tabs.executeScript API, I can only specify one file, but in scripting.executeScript, I can specify multiple files. Similarly, the same can be done for insertCSS, where you can inject styling on a webpage, and the same for removeCSS where you can remove injected styling from a webpage. These APIs are available to use in both Manifest versions 2 and 3. However, the tabs.executeScript APIs are not available in version 3. In addition to the new scripting API, there have been some slight modifications to a few other APIs as well. One of these modifications is for web_accessible_resources.\n\nIn Manifest version 2, if you want to include resources, you'd do so by passing along an array of files you'd like a webpage to have access to. But this can be problematic since it'd give any webpage access to all the resources you specify in the Manifest.\n\nWith the new format in version 3, you're in control of which resources are available on any given site. Let's take a look at an example. Previously, the cookie and pie images were available on every site the extension had access to. But now, with version 3, I can make the pie image available only on apple.com URLs, and the cookie image just on webkit.org pages. Now let's take a look at the modifications to the browser_action and page_action APIs.\n\nIn Manifest version 2, the actions were specified distinctly like this. But since these APIs fulfill similar roles, they've been consolidated to use just one API in version 3, which is action.\n\nWe've also made updates to how you declare content security policies for your extension. In version 2, an extension's policy was defined using a string. However, in version 3, the policy is defined using an object with the key \"extension_pages\". It's important to note that remote sources for scripts are no longer allowed for version 3. The final API change has been to the deprecated browser.extension.getURL API. This API is no longer supported in version 3. Instead, use the equivalent API in browser.runtime. So I've talked about the new features introduced in Manifest version 3, now let's step through the process of updating your extensions so that you can use these new features.\n\nI'll update the Sea Creator extension from last year's presentation to use Manifest version 3. This extension replaces all occurrences of the word fish with an emoji. The first thing I'll do is change the version number from 2 to 3.\n\nAnd even though I can still use a non-persistent background page for version 3, I'll update this to use a service worker so that my extension will be compatible with Chrome.\n\nLastly, I'll change browser_action to action.\n\nAnd in terms of the structure of the Manifest, these are the key changes I'll need to make to have this extension be compatible with the new specifications in version 3. So to test this out, I'll build the extension, and enable it in Safari.\n\nThen I'll navigate to a webkit.org blog page where I'll use this extension to replace every instance of the word fish with a fish emoji.\n\nBut it looks like something went wrong. As you can see, none of the words on this page have been replaced with an emoji. Let's inspect the popover to see if there are any error messages.\n\nIn the console tab, I see that there is an error message stating that browser.tabs.executeScript is undefined. That's because this API is no longer available in version 3, so I should update my extension to use the new scripting API instead. In Xcode, I'll go back to the popup.js file, and then I'll change this line to use scripting instead.\n\nI'll add the target property, which is used to specify where the script should be injected into.\n\nAnd with the new scripting API, I'll have to specify the ID of the tab. I can do this by using the tabs.getCurrent API to get an object containing the information of the current tab.\n\nThen I can use that object to retrieve the tab ID.\n\nNext, I'll add the file containing the script to run.\n\nFinally, the last change I'll make is to add the scripting permission in the Manifest.\n\nI'll go ahead and build the extension and use these changes in Safari. And as you can see, this extension now works in Safari, using the new features in Manifest version 3. So that's how simple it is to upgrade your extension. But if you're not yet comfortable with these new changes, a lot of the features such as scripting and services workers are also available to use in version 2. Now let's take a look at some of the APIs we've updated this year, starting with declarative net request. Declarative net request is a content blocking API that provides web extensions with a fast and privacy preserving way to block or modify network requests using rulesets. This API allows you to delegate all the work of intercepting and modifying requests off to Safari and all you have to do is specify the content blocking rules that should be applied. You can specify a ruleset in the Manifest.\n\nHere I've added the declarative net request permission, and I've used the declarative_net_request key to add one ruleset that should applied to all pages. Previously, I could only declare up to 10 rulesets in the Manifest. But now with the new updates to this feature, you can declare up to 50 rulesets, which means your extension can be more customizable. But keep in mind that only 10 of these rulesets can be enabled at once. For more information on how to create rulesets, check out last year's presentation on Safari Web Extensions, where we go into more depth on this API. Let's move on to some of the new features for declarative net request. Previously, you could only declare rulesets in the Manifest, but now we've implemented the following two APIs that will allow you to update your rules dynamically. The first API is updateSessionRules, which will allow you to add or remove rules for your extension. But it's important to note that these rules will not persist across browser sessions or extension updates. If you would like to update rules that will persist, use the updateDynamicRules API instead. This will allow you to update your blocking rules without updating your entire extension. Let's take a look at how we can use one of these APIs to make modifications to our rulesets. I'm going to block some content on webpages using the sea creator extension, and then, I'll use the new APIs to unblock content on select pages. In the extensions Manifest, the first thing I'll do is add the declarative net request permission.\n\nThen, I'll use the declarative net request key to add a ruleset.\n\nThe rule that's being applied is located in the rules.json file. In this file, I've declared one rule which blocks all images on all URLs. Let's build the extension and see how this rule is applied in Safari.\n\nAs you can see, the image on this page has disappeared. Which is exactly what we expected. This shows that Safari has successfully applied our content blocking rule. And if I navigate to this Wikipedia page on fish, I'll see that the image on this site has been blocked as well. But let's say we want to update our rules to block images on all pages expect webkit.org blog pages. Using one of the updated APIs for declarative net request, we can do just that. Let's go back to Xcode and make some changes. In the popup.js file, I'll declare a function to update our content blocking rules.\n\nI'll set the rule to allow images on webkit.org/blog-files pages. Then, I'll use the updateSessionRules API to add this rule to our ruleset. Lastly, I'll build the extension and test our changes in Safari.\n\nAs you can see, the image on this blog post has loaded, showing that our new rule to allow images on this site has worked. And if I go to the Wikipedia site, we'll see that the images on this page are still blocked, showing that the new rule wasn't applied to this page. So that's how you can use the new declarative net request APIs to update your content blocking rules.\n\nNow, let's take a look at how your extension can communicate with a webpage. This awesome feature allows websites to create custom behavior if the user has your extension enabled. The API is called externally_connectable. To use it, you declare match patterns in the Manifest. These match patterns determine which pages can communicate with your extension.\n\nAnd an important thing to note is that this feature only works using the browser namespace. And lastly, the user has to grant your extension access to the page before it can send or receive messages. Let's take a look at the code you'd add in the web page to use this feature. First, you'll need to get the extensionID. It's the bundle identifier of the extension and the team identifier in this format. You can find your team identifier on developer.apple.com, in the membership tab in your account settings. Then you'll use the send message API to post a message to the extension. You can handle the response you'll receive from the extension by passing along a function. Now let's take a look at the code your extension will have to receive messages. Your extension can receive messages from the webpage by listening to the event called onMessageExternal. The extension can send a message back to the web page using the method passed to the event listener. Because there are different extension web stores for different browsers, extensions can have many different identifiers. So you'll need to determine the correct one to use to make sure you're messaging a Safari web extension, and not a Chrome or Edge extension. To do this, you can use the browser.runtime.sendMessage API with a call to Promise.all. Next, let's look at some example code that will help you do this. From the webpage, you can broadcast multiple messages using multiple extension IDs. You'll get exactly one response from an extension and that'll let you know which extension ID to use for further communication. Here, I have a function called determineExtensionID. This function sends a message to the extension using the browser.runtime.sendMessage API. If you have multiple IDs and you want to determine the correct one to use, then you can use Promise.all to make multiple calls using the determineExtensionID function. Promise.all takes an array of promises and then returns a single promise with an array of all of the resolved values. You can use this array to find the extension that the user has installed. In the extension's background page, you'll need to listen for a message from the web page. When you receive the message, you'll need to send one back to tell the web page that your extension is installed. So that's how you can use the new externally_connectable API to allow your extension to communicate with a web page. The next feature we've updated is a personal favorite of mine, and that is unlimitedStorage. And I'm so happy to announce that unlimitedStorage is actually unlimited! Given that this feature was so highly requested by you, we're excited to share that your extension will no longer have a 10 MB quota. You are free to use as much data as you see fit. Although, it's important to note that users have the ability to clear the data being used by your extension at any given time. So be sure to only store data that's strictly necessary so users don't feel inclined to clear your data. To use this feature, simply claim the storage and unlimitedStorage permission in the Manifest, and you're good to go. So those were all of the APIs we've updated for web extensions this past year. Lastly, let's talk about a new feature that will easily allow your users to get your extension on all of their devices. In Safari 16, we've made the experience of using extensions more seamless. If a user turns on your extension on one of their devices, it'll be turned on on all of their devices. On top of this, we've made the process of downloading your extension much simpler. Let's take a look at how this works. Let's say a user has one of your extensions enabled on their Mac. In Extension Settings on any of their other devices, they'll be given the option to download your extension. Once it's downloaded, it'll automatically be enabled on their device, improving their user experience. Now, let's dive into how you can set this up for web extensions and content blockers. First, we recommend that you list your extension for iOS, iPadOS, and macOS when submitting to the App Store. This way, your extension will be available across all of your users' devices. Then, to allow your extension to sync across their devices, you'll need to use one of the following two methods. The simplest and recommended way, is to adopt universal purchase. Universal purchase allows your users to enjoy your extension across all platforms, by only purchasing it once. If you use this method, you're all set. Your users will get all of the features I've shown after they download your extension once. To set up universal purchase, you'll need to use a single bundle identifier across your extensions so that it can be associated with the same app record in App Store Connect. For more information on how to do this, check out our documentation on how to set up universal purchase for your extensions. But if you choose not to set up universal purchase, you can manually link your apps. To do this, you'll use Xcode to add bundle identifiers in the info plist for the apps and extensions you'd like to sync. To sync your iOS app and extension with the macOS ones, you'll need to use specific keys in the info plist. You'll put this key in your macOS app plist, and this key in the macOS extension plist. Similarly, you'll follow the same process for syncing your macOS app. By adding this key to the iOS app plist and this key to the iOS extension plist. Let's see how this works in Xcode. In Xcode, the first thing we'll need to do is update the settings for each target to include the bundle identifiers of the extensions and apps we want to sync. I'll start by adding the bundle identifier for the corresponding macOS app in the info plist for the iOS app.\n\nAnd as you can see, I've done the same process for the macOS app by adding the iOS app bundle identifier. And similarly for iOS extension by adding the macOS extension bundle identifier. And lastly, for the macOS extension by adding the iOS extension bundle identifier. And that's how simple it is to link your apps and extensions so that your users can use them everywhere. To recap, you can make this feature available for your users by either setting up universal purchase or by adding bundle identifiers for each iOS and macOS app and extension in Xcode. Today we discussed Manifest version 3, the APIs we've updated, and syncing extensions across multiple devices. I hope you're as excited as I am about these all these new features for Safari Web Extensions. Feel free to download the sample project containing the code from today's session and to play around with some of the APIs we featured. Next, we'd love to know what you think. Use Feedback Assistant to file bugs or chat with us on the Safari Developer Forums to provide feedback on how we can make developing extensions better for you. No, really. We want to know what you think! Consider joining the WebExtensions community group to shape the future of web extensions. Finally, check out our WWDC presentation on creating web inspector extensions. Thanks for tuning in to this session, and have a great rest of your WWDC.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:43",
+      "title": "Executing script on webpages",
+      "language": "swift",
+      "code": "// Manifest version 2\nbrowser.tabs.executeScript(1, {\n  frameId: 1,\n  code: \"document.body.style.background = 'blue';\"\n});"
+    },
+    {
+      "timestamp": "3:00",
+      "title": "scripting.executeScript API",
+      "language": "swift",
+      "code": "// Manifest version 3\nfunction changeBackgroundColor(color) {\n  document.body.style.background = color;\n};\n\nbrowser.scripting.executeScript({\n  target: { tabId: 1, frameIds: [ 1 ] },\n  func: changeBackgroundColor,\n  args: [ \"blue\" ]\n});"
+    },
+    {
+      "timestamp": "4:02",
+      "title": "tabs.executeScript file",
+      "language": "swift",
+      "code": "// Manifest version 2\nbrowser.tabs.executeScript({ 1,\n  file: \"file.js\"\n});"
+    },
+    {
+      "timestamp": "4:09",
+      "title": "scripting.executeScript API files",
+      "language": "swift",
+      "code": "// Manifest version 3\nbrowser.scripting.executeScript({\n  target: { tabId: 1 },\n  files: [ \"file.js\", \"file2.js\" ]\n});"
+    },
+    {
+      "timestamp": "4:15",
+      "title": "scripting.insertCSS",
+      "language": "swift",
+      "code": "// Add styling\nbrowser.scripting.insertCSS({\n  target: { tabId: 1, frameIds: [ 1, 2, 3 ] },\n  files: [ \"file.css\", \"file2.css\" ]\n});"
+    },
+    {
+      "timestamp": "4:21",
+      "title": "scripting.removeCSS",
+      "language": "swift",
+      "code": "// Remove styling\nbrowser.scripting.removeCSS({\n  target: { tabId: 1, frameIds: [ 1, 2, 3 ] },\n  files: [ \"file.css\", \"file2.css\" ]\n});"
+    },
+    {
+      "timestamp": "5:08",
+      "title": "Manifest version 3 web_accessible_resources",
+      "language": "swift",
+      "code": "// Manifest version 3\n\"web_accessible_resources\": [\n    {\n      \"resources\": [ \"pie.png\" ],\n      \"matches\": [ \"*://*.apple.com/*\" ]\n    },\n    {\n      \"resources\": [ \"cookie.png\" ],\n      \"matches\": [ \"*://*.webkit.org/*\" ]\n    }\n]"
+    },
+    {
+      "timestamp": "5:42",
+      "title": "Manifest version 3 action",
+      "language": "swift",
+      "code": "// Manifest version 3\n\"action\": {\n  \"default_icon\": {\n    \"16\": \"Images/icon16.png\"\n  },\n  \"default_title\": \"defaultTitle\"\n}"
+    },
+    {
+      "timestamp": "5:57",
+      "title": "Manifest version 2 content_security_policy",
+      "language": "swift",
+      "code": "// Manifest version 2\n\n\"content_security_policy\" : \"script-src 'unsafe-eval' https://*apple.com 'self'\""
+    },
+    {
+      "timestamp": "6:08",
+      "title": "Manifest version 3 content_security_policy",
+      "language": "swift",
+      "code": "// Manifest version 3\n\n\"content_security_policy\" : { \"extension_pages\" : \"script-src 'unsafe-eval' 'self'\" }"
+    },
+    {
+      "timestamp": "10:31",
+      "title": "Specifying a ruleset",
+      "language": "swift",
+      "code": "// manifest.json\n\n\"permissions\": [ \"declarativeNetRequest\" ],\n\n\"declarative_net_request\": {\n  \"rule_resources\": [\n    {\n      \"id\": \"my_ruleset\",\n      \"enabled\": true,\n      \"path\": \"rules.json\"\n    }\n  ]\n}"
+    },
+    {
+      "timestamp": "11:44",
+      "title": "updateSessionRules",
+      "language": "swift",
+      "code": "// Rules that won't persist\n\nbrowser.declarativeNetRequest.updateSessionRules({ addRules: [ rule ] });\n\n// Rules that will persist\n\nbrowser.declarativeNetRequest.updateDynamicRules({ addRules: [ rule ] });"
+    },
+    {
+      "timestamp": "14:33",
+      "title": "externally connectable",
+      "language": "swift",
+      "code": "// In the webpage\nlet extensionID = \"com.apple.Sea-Creator.Extension (GJT7Q2TVD9)\";\n\nbrowser.runtime.sendMessage(extensionID, { greeting: \"Hello!\" },\n function(response) {\n    console.log(\"Received response from the background page:\");\n    console.log(response.farewell);\n});"
+    },
+    {
+      "timestamp": "15:33",
+      "title": "Message from webpage to extension (in the background page)",
+      "language": "swift",
+      "code": "// In the background page\nbrowser.runtime.onMessageExternal.addListener(function(message, sender, sendResponse) {\n    console.log(\"Received message from the sender:\");\n    console.log(message.greeting);\n    sendResponse({ farewell: \"Goodbye!\" });\n});"
+    },
+    {
+      "timestamp": "16:17",
+      "title": "Determining the correct identifier",
+      "language": "swift",
+      "code": "// Determining the correct identifier\n\nfunction determineExtensionID(extensionID) {\n  return new Promise((resolve) => {\n    try {\n      browser.runtime.sendMessage(extensionID, { action: 'determineID' }, function(response) {\n        if (response)\n          resolve({ extensionID: extensionID, isInstalled: true, response: response });\n        else \n          resolve({ extensionID: extensionID, isInstalled: false });\n      });\n    }\n  });\n};"
+    },
+    {
+      "timestamp": "17:09",
+      "title": "background.js",
+      "language": "swift",
+      "code": "// background.js\n\nbrowser.runtime.onMessageExternal.addListener(function(message, sender, sendResponse) {\n  if (message.action == \"determineID\") {\n    sendResponse({ \"Installed\" });\n  }\n});"
+    },
+    {
+      "timestamp": "18:07",
+      "title": "Unlimited storage",
+      "language": "swift",
+      "code": "// manifest.json\n\n\"permissions\": [ \"storage\", \"unlimitedStorage\" ]"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Developing a Safari Web Extension",
+        "url": "https://developer.apple.com/documentation/SafariServices/developing-a-safari-web-extension"
+      },
+      {
+        "title": "Messaging a Web Extension’s Native App",
+        "url": "https://developer.apple.com/documentation/SafariServices/messaging-a-web-extension-s-native-app"
+      },
+      {
+        "title": "Modernizing Safari Web Extensions",
+        "url": "https://developer.apple.com/documentation/SafariServices/modernizing-safari-web-extensions"
+      },
+      {
+        "title": "Safari web extensions",
+        "url": "https://developer.apple.com/documentation/SafariServices/safari-web-extensions"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10099/5/AE8329C9-B427-49CF-95BE-71C9B5F49627/downloads/wwdc2022-10099_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10099/5/AE8329C9-B427-49CF-95BE-71C9B5F49627/downloads/wwdc2022-10099_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10119",
+      "year": "2023",
+      "title": "What’s new in Safari extensions",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10119"
+    },
+    {
+      "id": "10100",
+      "year": "2022",
+      "title": "Create Safari Web Inspector Extensions",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10100"
+    },
+    {
+      "id": "10048",
+      "year": "2022",
+      "title": "What's new in Safari and WebKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10048"
+    },
+    {
+      "id": "10027",
+      "year": "2021",
+      "title": "Explore Safari Web Extension improvements",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10027"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:44:19.215Z"
+}

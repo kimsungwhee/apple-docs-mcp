@@ -1,0 +1,163 @@
+{
+  "id": "10156",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10156/",
+  "title": "Control training in Create ML with Swift",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Machine Learning & AI",
+    "Swift"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nHello. My name is Lizi, and I'm a machine learning manager on the Create ML team. Today I'm thrilled to introduce a set of new APIs for checkpointing and asynchronous training in Create ML. To make sure we're all on the same page, let's talk about the Create ML app and the Create ML framework. The Create ML app is great. If you want to easily create models without a single line of code, I encourage you to start there.\n\nUnder the hood, the app is powered by a rich and easy-to-use API: the Create ML framework. For macOS Big Sur, we're bringing you a set of powerful and flexible APIs for controlling your training workflow. These will enable you to customize the way you create machine learning models and leverage all the same technology that powers the app. With that, let's start by reviewing the training process.\n\nIf you want to train a model, the first thing you have to do is collect some data.\n\nYou also want to look at all the training options available to you. If you are using Create ML, you can always accept the default parameter settings, but it doesn't hurt to understand what the options mean.\n\nNext, preprocessing. Some tasks require extracting features or transforming data into the right structure. For example, raw audio may be transformed by taking its spectrogram or video may have keypoints extracted from every frame.\n\nThen, training. This is the fun part. And we'll spend some time looking at this in depth, so let's leave it at that for now.\n\nNext, we evaluate the model by presenting it with new data. Here, it's important to use a different set of data that the model hasn't seen during training. This will help you determine if your model is generalizing instead of memorizing training examples. At this point, you may realize that your model is not quite what you expect. Maybe it needs more data. Maybe it needs a different set of training parameters. Or maybe it just needs to train a bit longer. Model development is an iterative process, so you can return to setup or train until your model meets your needs.\n\nOnce you are satisfied, you can use your trained model to perform predictions. At this point, you're ready to deploy. With the training process in mind, let's talk about control. Training control is mainly having the ability to pause and resume, but also the ability to observe and alter the training process while it's happening.\n\nAnd you can stop training at any point.\n\nWhy is this important? Training a machine learning model takes time. In particular, training an object detection model can take five hours. Imagine you were training and after several hours, training stops because it reached the maximum number of iterations.\n\nBut then you realize that the loss was still decreasing, and there was still room to converge to a better model. Without training control, you would have to start from scratch and choose a larger number of maximum iterations. But now you can continue from where training stopped.\n\nAnother reason this is important is results are specific to what you are trying to achieve. Using a built-in mechanism to evaluate the model will not necessarily give the best results for your specific use-case. This is particularly true in Style Transfer where the quality of a model is subjective. For instance, here, the model is applying the fish mosaic style to the photo of the dancers. It's up to you to decide when this is good enough and stop training. Also, choosing when to stop is specific to your needs. Maybe you need a model for a prototype and don't want to spend too much time on it. Or maybe this is an important model and you are willing to spend extra time training to achieve the best result possible. Using training control, you can define custom stopping criteria, meaning you are not limited to the number of iterations. You may have a target accuracy for an image classifier, or you may have a specific amount of time you can allow for training.\n\nTraining control is available in the Create ML app. But with the API, you can customize this behavior to your needs. Let me show you.\n\nBefore, you would call a model constructor, time would stop, and a trained model would be returned.\n\nWith the new asynchronous API, you can now call the train method which returns a job.\n\nThe train method takes the usual training parameters as well as a sessionParameters argument which lets you specify the cadence of reports and total number of iterations. You can always omit the arguments to use the defaults.\n\nThe first argument to sessionParameters is the sessionDirectory. This directory will be created if it doesn't already exist. In subsequent invocations, the contents of the directory will be used to resume a previous session. If you want to start a new session, simply delete the directory or choose a new location.\n\nThe next two arguments control the cadence of progress reports and checkpoints. Smaller intervals will give more frequent updates, but may come at a performance cost.\n\nThe last argument is the total number of iterations. Training will stop at this iteration number. But don't worry, you can always increase this number in subsequent calls to train, and you can always stop before this number of iterations is reached.\n\nThe job returned from train is an instance of MLJob which represents an active training job. It contains a progress publisher, a checkpoint publisher and a result publisher.\n\nThese leverage the Combine framework, which you can learn more about in \"Introducing Combine\" and \"Combine in Practice\" from WWDC19.\n\nMLJob also provides a cancel method so you can stop training easily at any point. To give you an idea, here is how you would use the result publisher to get a trained model. First, you register a sink on the result publisher. Its first closure is invoked on completion and receives a success or failure result. It also receives an error in the failure case, so you should handle errors here.\n\nThe second closure receives the final model when training is complete.\n\nFinally, you store the subscription until you are done with it.\n\nYou can observe progress such as the fraction completed, the current training iteration, total number of iterations, and custom metrics such as the current loss or accuracy value.\n\nFor example, you can observe and print progress by accessing the progress publisher on MLJob. Note that this is the standard instance of Progress from Foundation. To access custom metrics, we first register a sink closure. As a precaution, we capture the job weakly to avoid retain cycles.\n\nNext, we ensure the job still exists and create an instance of MLProgress. The MLProgress helper type allows us to access custom metrics from an instance of Foundation Progress. Note that there may be cases where an instance of MLProgress cannot be initialized yet, such as when a new session is just created or a new phase is starting. We handle that by returning early.\n\nThen we can access all progress information like the current item and total number of items. In feature extraction, the item refers to the current file or record being processed. For training, it refers to the current iteration number. And finally, we can get training metrics. Metrics are only available in the training phase, and are specific to each task. Some tasks have accuracy while others have loss or other metrics. If you provided validation data, you may also be able to access validation metrics. Now let's take a look at how you can train a model using the new asynchronous APIs.\n\nI've been really interested in training a few Style Transfer models after watching \"Build Image and Video Style Transfer Models in Create ML,\" so I've started setting up my model creation workflow in Playgrounds. Here, I have a few different styles images I can use in my resource bundle and I also have some validation images of different artists that I'd like to stylize.\n\nBack in my Playground, I first specified URLs to the style image and validation image that I want to use.\n\nOne nice thing about Playgrounds is it allows me to visualize my data inline as I go. For example, I can see the style that I've designated and validation image that we'll use.\n\nThe next thing I'll do is specify a dataSource to define our training data and I'll pass list the styleImageURL and contentDirectory and then proceed to initialize parameters we need to set up our session.\n\nI'll first initialize MLTrainingSessionParameters that takes a sessionDirectory. I can also provide a reportInterval to specify the number of iterations between progress reports, a checkpointInterval to specify the number of iterations between checkpoints, and iterations to extend training.\n\nNext, I'll set up my model parameters.\n\nNow we're ready to begin training.\n\nTo start the training process, I'll call the train method on the type of model I want to create.\n\nHere, I'll provide my dataSource, trainingParameters...\n\nand sessionParameters.\n\nThis returns an instance of MLJob.\n\nMLJob contains a results publisher. We can use the results publisher to receive errors that occur during training and access the model once we're done.\n\nI can also use the job to control and observe training while it's happening. For example, if I want to access progress programmatically, I can do so by using the progress publisher. And since this is an instance of Foundation Progress, I'm going to specify that we want the fractionCompleted by providing a key path to that property.\n\nNext, I'll call sink which will return a cancellable that we can later use to terminate the subscription. Beyond the fractionCompleted, I can also access metrics specific to the ML model I am trying to train. To do this, I'll initialize an instance of MLProgress from the instance of Foundation Progress. I can then access specific metrics such as the style loss and content loss across iterations. And with the power of Xcode Playgrounds, when I hit \"train,\" I can visualize progress as it's happening.\n\nAnd in Playgrounds, I can view this as the latest value or a graph as it trains across iterations. Pretty cool.\n\nNew this release is also the ability to control the training process with pausing, resuming and extending. To stop, all I need to do is call cancel on the job.\n\nTo resume, it's as simple as calling train with the same session directory as I used before.\n\nIt's almost automatic. Now that you've seen how to train a model using the new asynchronous APIs, I want to introduce checkpoints. With checkpoints, you can capture the state of your model over time. You can use them to see how training progressed and easily compare against previous results. Also, if you decide that a checkpoint needs a bit more training, you can use it to resume where you left off.\n\nMLCheckpoint is the struct that represents either a training or feature extraction checkpoint.\n\nUnlike in other frameworks, MLCheckpoints are created automatically when using the new asynchronous APIs, and they're easy to resume from. All you need to do is provide a sessionDirectory where you are starting a new session or continuing an existing one. This is great in environments such as Playgrounds so you can iterate without losing progress.\n\nLet's go back to the training process for a moment. I want to zoom into two of these phases: preprocessing and training. These are the two phases where checkpoints are generated.\n\nLet's start with preprocessing.\n\nIn this phase, we take data elements, such as individual files or rows in a table, and process each one of them. Progress is measured by how many of these elements have been processed.\n\nEvery few elements, we store the current progress as a checkpoint. We only keep the last preprocessing checkpoint since this phase is strictly additive.\n\nThe training phase is also an iterative process. The model improves in discrete steps called iterations. An iteration consists of running a batch of data through the network, computing the loss and updating the weights.\n\nA training checkpoint is the state of the model at a particular iteration. Unlike preprocessing, training preserves all checkpoints you create. As training progresses, we also get metrics such as loss or accuracy. These metrics are stored along with the checkpoints to help you identify them.\n\nLet's look at some code. Here is an example of how you would use the checkpoints publisher. All checkpoints are automatically saved to the session folder. But this publisher gives you a chance of generating custom metrics, generating a model, or stopping training altogether. It's a chance for you to act on new checkpoints as they are created.\n\nFor instance, this is how you can generate a model from a checkpoint. Once you have a model, you can save it to disk or use it to make predictions.\n\nNote that you can only create a model from training checkpoints, not feature extraction checkpoints, so you should check its training phase.\n\nYou can make checkpoints during the feature extraction phase for image classification, sound classification and action classification. Training checkpoints are available for action classification, object detection, Style Transfer and activity classification. Now let's talk about sessions. Think of a session as the aggregate of all checkpoints and their metadata. This is represented by the MLTrainingSession type. It lets you query details like when the session was created, the current training phase, and the current iteration number.\n\nIf you want to access the session directly, you can use the restoreTrainingSession method on a model type.\n\nFrom that, you can do things like access the loss values. You can also remove checkpoints that you don't need anymore, freeing up disk space. Now let's take a look at checkpoints in action.\n\nWe already saw how you could observe progress and results from an instance of MLJob while training a Style Transfer model in Playgrounds. Back in our same Playground, we can see that MLJob contains a checkpoints publisher that we can use to observe checkpoints over time. For Style Transfer, I can access the stylized validation image on each checkpoint to help us visualize how our model is progressing as it trains.\n\nTo do this, I can use compactMap to transform the checkpoint into a form we need and then map the image URLs into NSImages.\n\nI'm then going to call sink to attach a subscriber to the checkpoints publisher and store the AnyCancellable return type to our subscriptions list.\n\nAnd now we can see our stylized validation image over time as the model trains, directly inline. But wouldn't it be great if we could take things even further? Well, now, using SwiftUI, we can easily render more in the Xcode Playgrounds Live View.\n\nThe first thing I'll do is to find a new view object and pass it images of our style image, stylized validation image and original validation so we can compare how our model is performing over time. And since we're using UI, I'll receive this on the main queue and then I'll set the Playground Live View so we can populate the results there.\n\nAnd the Live View comes to life! Now we can visualize our model as it trains along with our reference style and the validation image, thanks to the new checkpointing and asynchronous training APIs.\n\nLet's recap what we saw in this session. We learned how to train a model using the new asynchronous APIs available in Create ML. We learned about checkpoints and how to use them to generate models and resume training. And lastly, we saw how to use Combine publishers to get progress reports and handle results. So where do you go from here? I encourage you to leverage these new tools if you need to customize your training workflow. Training control allows you to control not just your model quality, but the entire training process, whether you are developing models, automating workflows or creating models on demand in your macOS apps. Thank you, and enjoy the rest of WWDC.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:39",
+      "title": "Synchronous training",
+      "language": "swift",
+      "code": "let model = try MLActivityClassifier(...)"
+    },
+    {
+      "timestamp": "4:47",
+      "title": "Asynchronous Training",
+      "language": "swift",
+      "code": "let job = try MLActivityClassifier.train(..., sessionParameters: sessionParameters)"
+    },
+    {
+      "timestamp": "4:58",
+      "title": "Setting up training parameters",
+      "language": "swift",
+      "code": "// Session parameters can be provided to `train` method.\nlet sessionParameters = MLTrainingSessionParameters(\n    sessionDirectory: sessionDirectory,\n    reportInterval: 10,\n    checkpointInterval: 100,\n    iterations: 1000\n)\n\nlet job = try MLActivityClassifier.train(..., sessionParameters: sessionParameters)"
+    },
+    {
+      "timestamp": "6:21",
+      "title": "Register a sink to receive model",
+      "language": "swift",
+      "code": "// Register a sink to receive the resulting model.\njob.result.sink { result in\n    // Handle errors\n}\nreceiveValue: { model in\n    // Use model\n}\n.store(in: &subscriptions)"
+    },
+    {
+      "timestamp": "7:07",
+      "title": "Getting training progress",
+      "language": "swift",
+      "code": "// Observing progress details\njob.progress.publisher(for: \\.fractionCompleted)\n    .sink { [weak job] fractionCompleted in\n        guard let job = job, let progress = MLProgress(progress: job.progress) else {\n            return\n        }\n        print(\"Progress: \\(fractionCompleted)\")\n        print(\"Iteration: \\(progress.itemCount) of \\(progress.totalItemCount ?? 0)\")\n        print(\"Accuracy: \\(progress.metrics[.accuracy] ?? 0.0)\")\n    }\n    .store(in: &subscriptions)"
+    },
+    {
+      "timestamp": "8:55",
+      "title": "Demo 1: Setup",
+      "language": "swift",
+      "code": "let style = NSImage(byReferencing: styleImageURL)\nlet validation = NSImage(byReferencing: validationImageURL)\n\nvar iterations = 500\nvar progressInterval = 5\nvar checkpointInterval = 5\nlet sessionDirectory = URL(fileURLWithPath: \"\\(NSHomeDirectory())/\\(experimentID)\")\n\nlet sessionParameters = MLTrainingSessionParameters(sessionDirectory: sessionDirectory,\n                                                    reportInterval: progressInterval,\n                                                    checkpointInterval: checkpointInterval,\n                                                    iterations: iterations)\n\nlet trainingParameters = MLStyleTransfer.ModelParameters(\n  \talgorithm: .cnn,\n    validation: .content(validationImageURL),\n    maxIterations: iterations,\n    textelDensity: 416,\n    styleStrength: 5)"
+    },
+    {
+      "timestamp": "10:03",
+      "title": "Demo 1: Training",
+      "language": "swift",
+      "code": "var subscriptions = [AnyCancellable]()\n\nlet job = try MLStyleTransfer.train(trainingData: dataSource,\n                                    parameters: trainingParameters,\n                                    sessionParameters: sessionParameters)\n\njob.result.sink { result in\n    print(result)\n}\nreceiveValue: { model in\n    try? model.write(to: sessionDirectory)\n}\n.store(in: &subscriptions)"
+    },
+    {
+      "timestamp": "10:51",
+      "title": "Demo 1: Progress",
+      "language": "swift",
+      "code": "job.progress\n    .publisher(for: \\.fractionCompleted)\n    .sink { completed in\n        \n        _ = completed\n        \n        guard let progress = MLProgress(progress: job.progress) else { return }\n        \n        if let styleLoss = progress.metrics[.styleLoss] { _ = styleLoss }\n        \n        if let contentLoss = progress.metrics[.contentLoss] { _ = contentLoss }\n        \n    }\n    .store(in: &subscriptions)"
+    },
+    {
+      "timestamp": "12:04",
+      "title": "Demo 1: Cancel & Resume",
+      "language": "swift",
+      "code": "job.cancel()\n\nlet resumedJob = try MLStyleTransfer.train(\n    trainingData: dataSource,\n    parameters: trainingParameters,\n    sessionParameters: sessionParameters)\n\nresumedJob.progress\n    .publisher(for: \\.fractionCompleted)\n    .sink { completed in\n        _ = completed\n        \n        guard let progress = MLProgress(progress: resumedJob.progress) else { return }\n        if let styleLoss = progress.metrics[.styleLoss] { _ = styleLoss }\n        if let contentLoss = progress.metrics[.contentLoss] { _ = contentLoss }\n    }\n    .store(in: &subscriptions)\n\nresumedJob.result.sink { result in\n    print(result)\n}\nreceiveValue: { model in\n    try? model.write(to: sessionDirectory)\n}\n.store(in: &subscriptions)"
+    },
+    {
+      "timestamp": "14:26",
+      "title": "Observing checkpoints",
+      "language": "swift",
+      "code": "let job = try MLActivityClassifier.train(..., sessionParameters: sessionParameters)\n\n// Register for receiving checkpoints.\njob.checkpoints.sink { checkpoint in\n    // Process checkpoint\n}\n.store(in: &subscriptions)"
+    },
+    {
+      "timestamp": "14:50",
+      "title": "Generating a model from a checkpoint",
+      "language": "swift",
+      "code": "// Generate a model from a checkpoint\nguard checkpoint.phase == .training else {\n    // Not a training checkpoint, can't create model yet.\n    return\n}\n\nlet model = try MLActivityClassifier(checkpoint: checkpoint)\ntry model.write(to: url)"
+    },
+    {
+      "timestamp": "15:40",
+      "title": "Working with a session",
+      "language": "swift",
+      "code": "let session = MLObjectDetector.restoreTrainingSession(sessionParameters: sessionParameters)\n\nlet losses = session.checkpoints.compactMap { $0.metrics[.loss] as? Double }"
+    },
+    {
+      "timestamp": "15:48",
+      "title": "Removing checkpoints from a session",
+      "language": "swift",
+      "code": "let session = MLObjectDetector.restoreTrainingSession(sessionParameters: sessionParameters)\n\n// Save space by removing some checkpoints\nsession.removeCheckpoints { $0.iteration < 500 }"
+    },
+    {
+      "timestamp": "16:13",
+      "title": "Demo 2: Visualizing Style Transfer Checkpoints",
+      "language": "swift",
+      "code": "job.checkpoints\n    .compactMap { $0.metrics[.stylizedImageURL] as? URL }\n    .map { NSImage(byReferencing: $0) }\n    .sink { image in\n        let _ = image\n    }\n    .store(in: &subscriptions)"
+    },
+    {
+      "timestamp": "16:24",
+      "title": "Demo 2: Visualizing Checkpoints with SwiftUI + Live View",
+      "language": "swift",
+      "code": "job.checkpoints\n    .compactMap { $0.metrics[.stylizedImageURL] as? URL }\n    .receive(on: DispatchQueue.main)\n    .map { NSImage(byReferencing: $0) }\n    .sink { image in\n        let _ = image\n        \n        let view = VStack {\n            Image(nsImage: image)\n                .resizable()\n                .aspectRatio(contentMode: .fit)\n            Image(nsImage: style)\n                .resizable()\n                .aspectRatio(contentMode: .fit)\n            Image(nsImage: validation)\n                .resizable()\n                .aspectRatio(contentMode: .fit)\n        }.frame(maxHeight: 1400)\n        \n        PlaygroundSupport.PlaygroundPage.current.setLiveView(view)  \n    }\n    .store(in: &subscriptions)"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Create ML",
+        "url": "https://developer.apple.com/documentation/CreateML"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10156/4/EA8484C6-7456-457B-B105-A9D03C7FB92B/wwdc2020_10156_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10156/4/EA8484C6-7456-457B-B105-A9D03C7FB92B/wwdc2020_10156_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10037",
+      "year": "2021",
+      "title": "Build dynamic iOS apps with the Create ML framework",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10037"
+    },
+    {
+      "id": "10043",
+      "year": "2020",
+      "title": "Build an Action Classifier with Create ML",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10043"
+    },
+    {
+      "id": "10642",
+      "year": "2020",
+      "title": "Build Image and Video Style Transfer models in Create ML",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10642"
+    },
+    {
+      "id": "430",
+      "year": "2019",
+      "title": "Introducing the Create ML App",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/430"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:40:55.181Z"
+}

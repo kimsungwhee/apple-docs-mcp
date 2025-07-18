@@ -1,0 +1,139 @@
+{
+  "id": "10168",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10168/",
+  "title": "Get started with Writing Tools",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Machine Learning & AI",
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi and welcome to \"Get started with Writing Tools\". I’m Liu Dongyuan. I work on text input and internationalization. Writing Tools is a new suite of features that’s available in text views across all kinds of apps. It helps users polish any text they are working on. In this session, I’m going to introduce Writing Tools; then talk about how Writing Tools interacts with native text views; how to control Writing Tools' behavior to better suit your app; how to protect ranges of text such as quotes and code blocks; and finally, how to support Writing Tools for your custom text views.\n\nNow, let’s get started with Writing Tools. Writing Tools helps users proofread, rewrite or transform text in text views in iOS, iPadOS and macOS. Suggestions appear right in line, so it’s easy to review and integrate changes quickly and seamlessly. In any native text views, Writing Tools appears on top of the keyboard when you select a piece of text. It also appears in the callout bar next to \"Cut\", \"Copy\" and \"Paste\".\n\nOn macOS, Writing Tools is available in the context menu and the Edit menu.\n\nWhen you hover over selected text in native text views, it shows up as an affordance to open the Writing Tools panel.\n\nThis is an easy way to invoke Writing Tools right from the text. Let’s take a closer look at what Writing Tools can do.\n\nIt can proofread your text and show you mistakes like misspellings and grammar errors. You can review the Writing Tools suggestions one by one.\n\nWriting Tools can rewrite your text or make the text more friendly, professional and concise.\n\nWriting Tools can summarize your text, make text into key points and even convert the text into lists or tables. Writing Tools also works with non-editable text. The results will be shown in the panel, and the user can copy or share the results. Now let me show you some of it in action. Let’s say we are throwing a release party for Writing Tools, and there is a rough invitation I wrote. Before sending, I’d like to make sure there are no mistakes.\n\nI can invoke Writing Tools in the callout bar and select \"Proofread\".\n\nWow! And once it’s done, I can see all the suggestions right in line. I can tap to review individual changes.\n\nIt all looks good to me, and I’ll tap \"Done\" to accept the changes. I also want to send a short message to my friends about the party. I can use Writing Tools to summarize the text to make it shorter.\n\nI can copy or share the summary.\n\nLastly, I want to prepare for the release party, and I asked some friends to bring some items. I want to make it a nice table. I’ll select the text, invoke Writing Tools and select \"Table\".\n\nAnd boom! Notice that all the bold text and the link are still there. Awesome, isn’t it! As you can see, Writing Tools is a powerful tool that brings more functionality to your text views. Writing Tools automatically appears when your app is running in a supported environment. Next up, let’s talk about how Writing Tools works with text views and how to get Writing Tools in your app. The good news is, if you are using a UITextView, NSTextView or WKWebView, it just works.\n\nKeep in mind that UITextView or NSTextView has to use TextKit 2 to support the full Writing Tools experience. If you are using TextKit 1, you will get a limited experience that just shows rewritten results in a panel.\n\nFor more information on TextKit 2, check out the linked sessions.\n\nSo, what happens under the hood when you invoke Writing Tools? First, we may expand user’s selection to full sentences to get better results from the tools. We may also use more text surrounding the selection to make sure the model is aware of the context of the text.\n\nSecondly, Writing Tools fully supports rich text by using attributed strings. The model preserves attributes like styles, links and attachments, as long as the relevant text is still in the rewritten text.\n\nLastly, for list and table transformations, if the text view supports lists and tables, we’ll send NSTextList and NSTextTable to the text storage. You can control if your text view wants to handle tables by using WritingToolsAllowedInputOptions. We’ll get to that later. As you’ve seen in the demo, when the model is busy processing the text, we show animations when a Writing Tools session is active. During the session, your app may want to pause syncing or avoid accidental editing. We’ve introduced new text view delegate methods for Writing Tools.\n\nIn textViewWritingToolsWillBegin, you can prepare your app states for Writing Tools. For example, you may want to pause syncing or anything that can directly manipulate the text storage.\n\nIn textViewWritingToolsDidEnd, you can restore your app states, like resume syncing.\n\nWe also provide a new isWritingToolsActive property on UITextView. When doing text operations, you may want to be aware if Writing Tools is also interacting with the text view.\n\nThe new delegate methods and property are available for both UITextView and NSTextView.\n\nWhen the text is long, the rewritten text may be delivered to the text view in separate chunks. We apply animations to the text being processed to indicate the model is working.\n\nAfter the model finishes processing, user may tap the \"Original\" button to switch between original and rewritten text.\n\nFor proofreading, the suggested changes are applied to the text view automatically. User can review and reject individual suggestions.\n\nYou may wonder what’s happening to your underlying text storage during Writing Tools operations. Well, they all actually alter your text storage, which means you should not persist text storage when Writing Tools is active. To allow the user to revert changes after the fact, Writing Tools changes are also pushed to the undo stack. You may want to customize Writing Tools behavior to better suit your app. We have some new text input traits API for you.\n\nBy default, the system offers Writing Tools with an in line experience whenever possible, and you don’t need to do anything. If it doesn’t fit your app, you can set the writingToolsBehavior to .limited for a panel experience, or .none to opt-out of Writing Tools completely for a text view.\n\nYou can also use writingToolsAllowedInputOptions to specify if your text view supports rich text or tables. If you don’t set it, we assume your text view can render plain text and rich text, but not tables. If your text view only accepts plain text or if it can handle tables, you can specify the options explicitly.\n\nLastly, we have similar APIs for WKWebView. You can specify the same enum via WKWebViewConfiguration. Keep in mind that the default behavior for WKWebViews is .limited. If you want the complete behavior you will need to set that explicitly.\n\nYou can check or observe the \"isWritingToolsActive\" property to know if a Writing Tools session is active. Now, let’s talk about how to provide ranges for Writing Tools to ignore.\n\nLet’s say you are implementing a note-taking app that can mark certain ranges as code blocks or you have a mail app that can have quoted contents. You may not want Writing Tools to rewrite those ranges. We’ve got you covered! We’ve added a new delegate method in both UITextViewDelegate and NSTextViewDelegate. Simply return the ranges you want to ignore, and Writing Tools will not propose changes within the ranges.\n\nFor WKWebView, tags like \"blockquote\" and \"pre\" will be ignored by Writing Tools automatically. Lastly, what if your app has a custom text view other than UITextView or NSTextView? The good news is, it’s easy to get a basic experience for free. The rewritten text will be shown in the panel, and the user can copy, share or apply the text into the text view.\n\nOn iOS and iPadOS, as long as your custom text view adopts UITextInteraction, you’ll get Writing Tools in the callout bar or context menu for free. If you can’t use UITextInteraction, you can also adopt UITextSelectionDisplayInteraction with UIEditMenuInteraction. Under the hood, Writing Tools relies on the UITextInput protocol to read and write the text and to anchor the popover.\n\nFor more about text interactions, check out some amazing previous WWDC talks.\n\nFor text views that don’t use text interactions, we’ve added a new optional property isEditable in UITextInput protocol. Adopt that to indicate if your text view supports editing.\n\nOn the Mac, we’ll show Writing Tools automatically in the context menu and the Edit menu for custom text views.\n\nMake sure your text view adopts NSServicesMenuRequestor, which is a protocol to allow the system to read contents from the view and to write contents back to the view.\n\nOverride validRequestor(forSendType:returnType:) in NSResponder. Then, as long as a context menu is added to the view, the Writing Tools menu item will be there for free.\n\nDoing these can also make your app available to all kinds of Services and Shortcuts. For that, check out \"What’s new in AppKit\" in WWDC21.\n\nLet me show you all of that in code. I have a simple view here with some text and a menu that provides the copy functionality. To get Writing Tools, you just need to override validRequestor(forSendType:returnType:), and implement at least the writeSelection method in NSServicesMenuRequestor. If your view is an editable text view, implement the readSelection method as well so that Writing Tools can send the rewritten text back to the text view.\n\nIn the validRequestor method, you can check sendType and determine if your text view wants to handle rich text. As long as all these are done, you will get both Writing Tools and Services in the context menu. That wraps up the session. What’s next? Try out Writing Tools with your app. In most cases you don’t need to do anything - it just works! Adopt the new delegate methods to control your app states during a Writing Tools session. If your app has special needs or capabilities, check out Writing Tools' behavior and allowed input options.\n\nIf you have a custom text view, you can start providing Writing Tools features with just a few steps. And lastly, enjoy writing! Thanks for watching!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "5:28",
+      "title": "Text view delegate methods for Writing Tools",
+      "language": "swift",
+      "code": "func textViewWritingToolsWillBegin(_ textView: UITextView) {\n    // Take necessary steps to prepare. For example, disable iCloud sync.\n}\n\nfunc textViewWritingToolsDidEnd(_ textView: UITextView) {\n    // Take necessary steps to recover. For example, reenable iCloud sync.\n}\n\nif !textView.isWritingToolsActive {\n    // Do work that needs to be avoided when Writing Tools is interacting with text view\n    // For example, in the textViewDidChange callback, app may want to avoid certain things\n       when Writing Tools is active\n}"
+    },
+    {
+      "timestamp": "7:11",
+      "title": "Opt-out of the full experience",
+      "language": "swift",
+      "code": "textView.writingToolsBehavior = .limited\n\ntextView.writingToolsBehavior = .none"
+    },
+    {
+      "timestamp": "7:31",
+      "title": "Specify accepted text formats",
+      "language": "swift",
+      "code": "textView.writingToolsAllowedInputOptions = [.plainText]\n\ntextView.writingToolsAllowedInputOptions = [.plainText, .richText, .table]"
+    },
+    {
+      "timestamp": "7:55",
+      "title": "WKWebView",
+      "language": "swift",
+      "code": "// For `WKWebView`, the `default` behavior is equivalent to `.limited`\n\nextension WKWebViewConfiguration {\n    @available(iOS 18.0, *)\n    open var writingToolsBehavior: UIWritingToolsBehavior { get set }\n}\n\nextension WKWebViewConfiguration {\n    @available(macOS 15.0, *)\n    open var writingToolsBehavior: NSWritingToolsBehavior { get set }\n}\n\nextension WKWebView {\n    /// @discussion If the Writing Tools behavior on the configuration is `.limited`, this will always be `false`.\n    @available(iOS 18.0, macOS 15.0, *)\n    open var isWritingToolsActive: Bool { get }\n}"
+    },
+    {
+      "timestamp": "8:48",
+      "title": "Protecting ranges",
+      "language": "swift",
+      "code": "// Returned `NSRange`s are relative to the substring of the textView’s textStorage from `enclosingRange`\nfunc textView(_ textView: UITextView, writingToolsIgnoredRangesIn\n        enclosingRange: NSRange) -> [NSRange] {\n    let text = textView.textStorage.attributedSubstring(from: enclosingRange)\n    return rangesInappropriateForWritingTools(in: text)\n}"
+    },
+    {
+      "timestamp": "9:58",
+      "title": "Indicate your text view supports editing",
+      "language": "swift",
+      "code": "protocol UITextInput {\n    @available(iOS 18.0, macOS 15.0, *)\n    optional var isEditable: Bool { get }\n}"
+    },
+    {
+      "timestamp": "10:58",
+      "title": "Simple view that supports Copy",
+      "language": "swift",
+      "code": "class CustomTextView: NSView, NSServicesMenuRequestor {\n    required init?(coder: NSCoder) {\n        super.init(coder: coder)\n        \n        self.menu = NSMenu()\n        self.menu?.addItem(NSMenuItem(title: \"Custom Text View\", action: nil,\n            keyEquivalent: \"\"))\n        self.menu?.addItem(NSMenuItem(title: \"Copy\", action: #selector(copy(_:)), \n            keyEquivalent: \"\"))\n    }\n  \n    override func draw(_ dirtyRect: NSRect) {\n        super.draw(dirtyRect)\n        \n        // Custom text drawing code...\n    }\n}"
+    },
+    {
+      "timestamp": "11:05",
+      "title": "View extension to support Writing Tools",
+      "language": "swift",
+      "code": "class CustomTextView: NSView, NSServicesMenuRequestor {\n    override func validRequestor(forSendType sendType: NSPasteboard.PasteboardType?, \n                                 returnType: NSPasteboard.PasteboardType?) -> Any? {\n        if sendType == .string || sendType == .rtf {\n            return self\n        }\n        return super.validRequestor(forSendType: sendType, returnType: returnType)\n    }\n    \n    nonisolated func writeSelection(to pboard: NSPasteboard,\n                                    types: [NSPasteboard.PasteboardType]) -> Bool {\n        // Write plain text and/or rich text to pasteboard\n        return true\n    }\n\n    // Implement readSelection(from pboard: NSPasteboard)\n       as well for editable view\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "AppKit",
+        "url": "https://developer.apple.com/documentation/AppKit"
+      },
+      {
+        "title": "Forum: UI Frameworks",
+        "url": "https://developer.apple.com/forums/topics/ui-frameworks?cid=vf-a-0010"
+      },
+      {
+        "title": "UIKit",
+        "url": "https://developer.apple.com/documentation/UIKit"
+      },
+      {
+        "title": "WKWebView",
+        "url": "https://developer.apple.com/documentation/WebKit/WKWebView"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10168/4/D8EBB581-CA62-4601-A3DF-BCF4C7805EBE/downloads/wwdc2024-10168_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10168/4/D8EBB581-CA62-4601-A3DF-BCF4C7805EBE/downloads/wwdc2024-10168_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10058",
+      "year": "2023",
+      "title": "What’s new with text and text interactions",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10058"
+    },
+    {
+      "id": "10090",
+      "year": "2022",
+      "title": "What's new in TextKit and text views",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10090"
+    },
+    {
+      "id": "10061",
+      "year": "2021",
+      "title": "Meet TextKit 2",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10061"
+    },
+    {
+      "id": "10054",
+      "year": "2021",
+      "title": "What's new in AppKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10054"
+    },
+    {
+      "id": "224",
+      "year": "2019",
+      "title": "Modernizing Your UI for iOS 13",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/224"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:39:22.627Z"
+}

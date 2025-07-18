@@ -1,0 +1,162 @@
+{
+  "id": "10185",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10185/",
+  "title": "Build multilingual-ready apps",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello, آداب (ādāb), नमस्ते (namaste), 大家好 (dàjiāhǎo). I’m Karan, and I’m really excited to tell you all about building great multilingual-ready apps. Most people in today’s world either grow up speaking more than one language or are exposed to multiple languages. So, whether you’re looking for a book to read in Vancouver, or having shave ice in Taipei, or taking the metro in Delhi, you are in a multilingual society and people all around you are talking, texting, reading, and listening in dozens of different languages. We use apps every day to talk to people, write journal entries, watch movies, read books, and we expect our apps to work well with all the languages that we use.\n\nSo, today, I’d like to share some tips on how you can make your app shine for multilingual users. Before we get to that, let me share some of what we have been busy working on here at Apple. This year, we’re introducing several new features that raise the bar for multilingual experiences and expanding existing features to support more languages.\n\nLet’s check out a few of these new features.\n\nFirst up, the new Multilingual Keyboard lets you type more than one language without needing to manually switch languages.\n\nIf you speak both Korean and English, with iOS 18, we’re introducing a unique multiscript typing experience.\n\nMany existing features are available in more languages, such as Live Text, which gains support for Arabic. And for personalizing the numerals on your Wallpapers and Watch Faces, we now have 10 additional Indian scripts. Lastly, I’m excited to share that the Magic Keyboard for the new M4 iPad Pro features a redesigned function row for Arabic, in which the volume and brightness keys are now mirrored exactly between hardware and software.\n\nThis is just one of many ways in which, at Apple, we blend software and hardware into a single, seamless experience. We’re excited for you to try out all these great new features. Now, let’s talk about building great multilingual-ready apps. I’ll walk through three sections today: Input, Display, and Localization. Let’s start our multilingual journey with Input. Helping us on our journey are three friends who are from different parts of the world and who speak different languages. With their help, we’ll be able to visualize some typical multilingual scenarios. We’re going to go from East to West. To talk about Input, let’s look at a day in the life of April. April lives in Singapore and speaks English and Chinese. She talks with her good friend Farah in English.\n\nAnd she talks with her partner in Chinese.\n\nAs April tapped into each of those conversations, the keyboard remembered which language she speaks with each of them. Let me show you how you can do this in your app. It’s really simple! All you need to do is to override textInputContextIdentifier, which is a method on UIResponder, and return a unique string identifier. Now, when April writes in Chinese using the handwriting keyboard, she often stretches the keyboard to make it taller since it’s easier to write. When she does this, the Messages app moves its UI up to make room.\n\nHere are two ways to do this. First, if you need to place a view directly above the keyboard, I recommend using inputAccessoryView, which docks the view above the keyboard. It also handles the case when a hardware keyboard is used for typing, by docking the view at the bottom of the screen. Another way to do this is to use keyboardLayoutGuide, which is helpful if you want to customize the placement of views in relation to the keyboard. Also, when you type in languages like Chinese or Japanese, the keyboard uses marked text. What is marked text? Let me show you. Marked text is the temporary text before you’ve chosen a suggestion, and it has an underlined appearance. Once a suggestion is confirmed, marked text disappears.\n\nHere, I’m showing a bug in which the app modifies the text on every keystroke and it interrupts the typing. Why would an app do this? Often, this is to provide autocompletions as you type. So, let’s see how we can show helpful inline completions while still allowing April to type in Chinese.\n\nThe key is to check to make sure that there isn’t any marked text before modifying the text. If markedTextRange returns an empty result, we can safely modify the text to show an inline autocompletion.\n\nNote that while marked text is present, you can still perform searches based on that text and show suggestions elsewhere, such as in a table view. In fact, that’s exactly what Spotlight does. You’ll see that as I type, the suggestions above update, and Spotlight only changes the inline text once I confirm the candidate. Thank you, April! Now, over to some examples from Raj to show us how we can build a great Search experience.\n\nRaj lives in India and speaks Hindi and English. When he searches in Hindi, sometimes he can’t find what he’s looking for. Let’s see why this happens and how we can fix it.\n\nEach language has rules for what are considered completely different spellings and what are related spellings.\n\nIn English, we expect that searching for apple with a lowercase a will match Apple with an uppercase A.\n\nThere are similar rules in other languages like German. In Raj’s case, he was typing in a spelling style that didn’t match exactly how the name was entered in his contacts. The good news is that we can fix this with a one-line code change, which is to use localizedStandardRange. localizedStandardRange is, you guessed it, the standard way to search that respects locale-specific conventions.\n\nThis year, we have also significantly upgraded how this API works such that it now supports matching across different spelling conventions in many more scripts as well as the ability to match numbers across scripts. With localizedStandardRange plus the new enhancements in iOS 18, Raj can type the way he prefers and easily find the contact he was looking for.\n\nThere’s one last problem that Raj sometimes encounters when he types in search fields. Let’s take a look.\n\nIn some apps, when Raj types in Hindi, the text looks broken up.\n\nThis is because of the way the app highlights the part of the text that he typed.\n\nIn Hindi and many other languages, vowels and other marks attach to letters. To show you, I’m going to type a word क्षितिज (kshitij), which means horizon, key-by-key. When I do that, notice how it changes.\n\nAs you saw, in Hindi, typing a key does not always insert a letter to the right; it can also modify an existing letter.\n\nBecause regular and bold weights are technically different fonts, and because a letter in one font cannot connect with a sign in another font, this is what causes the text to look broken. But the good news is that you can instead use a colour to highlight a part of the text. Here’s how we can add a colour attribute to an attributed string. While we’re on the topic, I also want to make a note about italicization. Here’s the word for hello in 10 languages. Now, I’m going to italicize all of them. Notice how only three of the ten changed because the rest do not have the concept of italicization and applying it resulted in no visual difference. So, use italicization with caution as the distinction may be lost in translation.\n\nOK, now that we are using a colour instead of bold text, Raj can read the search results and the differentiation still allows him to see which part of the word matches the text he typed. And with that, we wrap up on Input. Thank you, Raj and April! Now, let’s talk about how we display text. For display, let’s take a look at the world through Ismat’s eyes.\n\nIsmat lives in the U.S. and speaks English and Urdu.\n\nIsmat notices that while most apps display Urdu text perfectly fine, every now and then she encounters an app in which text appears so broken that it’s illegible. Here is the word نستعلیق (Nastālīq), the name of the Urdu script, rendered correctly on the left and incorrectly on the right. The solution here is simple: use TextKit 2, our next-generation text engine that ensures all scripts render correctly. And the good news is that when you use a label or text view in SwiftUI, AppKit, or UIKit, you’re already using it.\n\nHere, Ismat is revisiting a journal entry remembering bygone days.\n\nWhat’s great is that even though the Journal app is running in English, Urdu text is beautifully rendered thanks to TextKit 2. However, she notices that while Journal and most apps work well with Urdu text in some apps, lines of Urdu text are tightly squeezed together and it makes it difficult to read. Journal handles Urdu text appropriately even though it has zero Urdu-specific code because, like many apps, it uses text styles, which not only account for the app’s language, but as in Ismat’s case, they also consider all the user’s languages, so that text in any of their preferred languages can render correctly in any app. Using text styles is really easy. Here are the different ways to initialize text styles across SwiftUI, UIKit, and AppKit. Please also remember that clipsToBounds, which is off by default, should remain set to false for any labels or text views, because text in many languages needs to render outside the view bounds; otherwise, it can become illegible.\n\nNow, there may also be cases in which you’re displaying content in a specific language and want the best typesetting behaviour for that language. In such cases, you can specify typesettingLanguage.\n\nShown on the left is the default which takes all preferred languages into account, which, in Ismat’s case, includes Urdu, and on the right is the same view with typesettingLanguage set to English, which allows it to have less interline spacing.\n\nLastly, April, Raj, and Ismat would all like to emphasize how important it is to display names correctly. By using the formatted API, you can ensure that names in any language and script are shown correctly regardless of the language that your app is in. For example, showing just the given name is not appropriate in languages like Chinese and Japanese; instead, use the short style from the formatter, which will use the given name only when appropriate. For monograms, use the abbreviated style.\n\nWe now wave goodbye to April, Raj, and Ismat, and talk about some exciting enhancements to the tools you use every day to localize your app.\n\nFirst up is String Catalogs. String Catalogs are the foundation of localization in Xcode, and simplify the process of managing translations in your project by keeping strings in sync with code and offering powerful editing tools. Let’s see what’s new in String Catalogs.\n\nString Catalogs now detect common validation issues such as mismatched format specifiers, and even let you fix them with a single click.\n\nNext, you can now mark specific strings as “Don’t Translate”, which makes it easy for you to let your translators know that you’re still working on finalizing the content.\n\nAnd finally, you can now easily jump back and forth between the code and the catalog for a particular string. We hope that all of these enhancements to String Catalogs will help accelerate your development and localization workflows. Next, let’s talk about how you can make each string in your app shine by being more personalized and more inclusive.\n\nThanks to the powerful automatic grammatical agreement engine, your app can address people more personally by using their term of address from Language & Region settings.\n\nYour app can also refer to people using their pronouns.\n\nLastly, you can not only ensure that all the text in your app is grammatically correct, you can do so without needing to create dozens of string variations for a single piece of text, all thanks to the grammar engine. And this year, we are bringing the grammar engine to two additional languages. The first is Hindi. If you use your devices in Hindi, you can now specify a term of address in Language & Region settings and choose how you would like to be addressed.\n\nWe are also bringing the grammar engine to Korean, in which it will now be possible to inflect particles according to the word they follow. Now, if your app supports German, English, Spanish, French, Italian, Portuguese, Hindi or Korean, you can take advantage of automatic grammatical agreement.\n\nNext, let’s talk about numbers. English uses Arabic numbers and these numbers are also used by dozens of other languages. However, Arabic numbers are one of many different numbering systems in use around the world. For languages that support more than one kind, people can choose their preferred numbers in Language & Region settings. The good news is that when you use formatters, numbers automatically follow all locale-specific rules. Let me show some easy ways to format numbers that do not use a formatter. This text in the Weather app says 10-day forecast and typically you would have a localizable string that represents this.\n\nHere are two ways you could localize this. The first is by formatting the number in code using interpolation. Because it’s inside Text, numberOfDays will be automatically formatted for the current locale. This works well if the number will be determined at runtime and if all languages will use a number in this string.\n\nThis year, we’re also introducing a second way to format numbers: directly in strings. You can use this in all the same situations as you would when formatting in code. The biggest benefit, however, is that it allows you to easily format numbers within localized strings with zero code.\n\nIn this first example, we can use this approach to localize the 10-day forecast string. In this example, the source string is in English and the translated string in Hindi uses formatNumber, which ensures that the correct numbering system will be used at runtime respecting the numbers setting in Language & Region settings.\n\nIn addition to the numbering system, it can also handle other aspects of number formatting such as decimal separators, this means that for Spanish, a single string can be used for both Spain and the US.\n\nFor apps that support multiple localizations, if the user has more than one language in their Language & Region settings, the language setting is automatically shown and it allows people to choose an app-specific language independently of the overall device language. This feature is very, very popular among multilingual users who often use different apps in different languages. For your app, if you want to always have the language option be visible in Settings as opposed to only when the user has more than one preferred language, you can specify UIPrefersShowingLanguageSettings as yes in the InfoPlist.\n\nYou can also add an affordance, like a button, to jump directly to the settings for your app, if needed. Finally, I wanted to mention that SF Symbols are an important tool in your toolchest when it comes to localization, since these symbols are localized into a wide variety of languages and scripts. All the commonly-used symbols in Apple’s apps use SF Symbols, such as textformat, which is used on buttons that bring up formatting controls. Even symbols with whimsical elements like signature have been tailored to look natural in each language, and SF Symbols support both right-to-left languages as well as different numbering systems. So, whenever you’re looking for symbols to use in your app, be sure to check out the huge library of SF Symbols as the first step.\n\nWraping up, in today’s multilingual world, people will use any of their languages in your app and you can make sure that they have a great experience by checking that keyboard input and display works well in any language. Also, you can greatly accelerate your development and localization workflow by taking advantage of tools like String Catalogs.\n\nI can’t wait to see your multilingual-ready app! Thank you, شکریہ (shukriyā), धन्यवाद (dhanyavād), 謝謝 (xièxiè)",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:18",
+      "title": "Specify textInputContextIdentifier",
+      "language": "swift",
+      "code": "override var textInputContextIdentifier: String? {\n    uniqueID\n}"
+    },
+    {
+      "timestamp": "3:41",
+      "title": "Place a view directly above the keyboard",
+      "language": "swift",
+      "code": "textView.inputAccessoryView = viewAboveKeyboard"
+    },
+    {
+      "timestamp": "4:00",
+      "title": "Use keyboardLayoutGuide to adapt to keyboard",
+      "language": "swift",
+      "code": "view.keyboardLayoutGuide.topAnchor.constraint(equalToSystemSpacingBelow: textView.bottomAnchor, multiplier: 1.0).isActive = true"
+    },
+    {
+      "timestamp": "4:42",
+      "title": "Check for marked text before modifying",
+      "language": "swift",
+      "code": "if textView.markedTextRange.empty {\n    // Perform actions involving editing text\n}"
+    },
+    {
+      "timestamp": "5:58",
+      "title": "Use localizedStandardRange when searching",
+      "language": "swift",
+      "code": "let range = text.localizedStandardRange(of: search)"
+    },
+    {
+      "timestamp": "7:24",
+      "title": "Use color differences to highlight text",
+      "language": "swift",
+      "code": "attributedString[range].foregroundColor = highlightColor"
+    },
+    {
+      "timestamp": "9:39",
+      "title": "Text Styles",
+      "language": "swift",
+      "code": "// Text Styles\n\n// SwiftUI\nText(\"Hello, world!\") // uses .body Text Style by default\nText(\"Hello, world!\").font(.title)\n\n// UIKit\nlet label = UILabel()\nlabel.text = \"Hello, world!\"\nlabel.font = UIFont.preferredFont(forTextStyle: .body)\n\n// AppKit\nlet textField = NSTextField(labelWithString: \"Hello, world!\")\ntextField.font = NSFont.preferredFont(forTextStyle: .body)\n\n// Keep clipsToBounds off\nclipsToBounds = false"
+    },
+    {
+      "timestamp": "10:03",
+      "title": "Typesetting language",
+      "language": "swift",
+      "code": "// Typesetting language\n\n// SwiftUI\nText(verbatim: \"Hello, world!\").typesettingLanguage(.init(languageCode: .english))\n\n// UIKit\nlet label = UILabel()\nlabel.text = \"Hello, world!\"\nlabel.traitOverrides.typesettingLanguage = Locale.Language(languageCode: .english)"
+    },
+    {
+      "timestamp": "10:29",
+      "title": "Formatting names",
+      "language": "swift",
+      "code": "// Formatting names\n\nlet nameComponents = PersonNameComponents\n  (givenName: \"瑗珺\", familyName: \"汪\", nickname: \"珺珺\")\n\n// Short Name (respects settings like “Prefer Nicknames”)\nlet shortName =   nameComponents.formatted(.name(style: .short)) // 珺珺\n\n// Abbreviated Name (can be used for monograms)\nlet monogram =   nameComponents.formatted(.name(style: .abbreviated)) // 汪"
+    },
+    {
+      "timestamp": "12:20",
+      "title": "Examples of personalizing text",
+      "language": "swift",
+      "code": "\"^[Nuestro %@](inflect: true) está ^[hecho](agreeWithArgument: 1) de %@.\"\n\"अगर आप पहुँच नहीं ^[पाते हैं](inflect: true)\"\n\"예: ‘^[%@을](inflect: true) 켤 때’\""
+    },
+    {
+      "timestamp": "13:43",
+      "title": "Format numbers using Text",
+      "language": "swift",
+      "code": "Text(\"\\(numberOfDays)-day forecast\")"
+    },
+    {
+      "timestamp": "14:21",
+      "title": "Format numbers using AttributedString",
+      "language": "swift",
+      "code": "AttributedString(localized: \"10-day forecast\")\nAttributedString(localized: \"0.5× zoom\")"
+    },
+    {
+      "timestamp": "15:23",
+      "title": "Launch to your app’s settings",
+      "language": "swift",
+      "code": "// Launch to your app’s settings\nif let url =\nURL(string: UIApplication.openSettingsURLString) {\n   await UIApplication.shared.open(url)\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Forum: UI Frameworks",
+        "url": "https://developer.apple.com/forums/topics/ui-frameworks?cid=vf-a-0010"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10185/4/B7C5A64E-515C-41CE-A821-E441DE74E0A1/downloads/wwdc2024-10185_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10185/4/B7C5A64E-515C-41CE-A821-E441DE74E0A1/downloads/wwdc2024-10185_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10188",
+      "year": "2024",
+      "title": "What’s new in SF Symbols 6",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10188"
+    },
+    {
+      "id": "10155",
+      "year": "2023",
+      "title": "Discover String Catalogs",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10155"
+    },
+    {
+      "id": "10153",
+      "year": "2023",
+      "title": "Unlock the power of grammatical agreement",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10153"
+    },
+    {
+      "id": "10061",
+      "year": "2021",
+      "title": "Meet TextKit 2",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10061"
+    },
+    {
+      "id": "10259",
+      "year": "2021",
+      "title": "Your guide to keyboard layout",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10259"
+    },
+    {
+      "id": "10160",
+      "year": "2020",
+      "title": "Formatters: Make data human-friendly",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10160"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:11:31.889Z"
+}

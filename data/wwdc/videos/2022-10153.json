@@ -1,0 +1,117 @@
+{
+  "id": "10153",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10153/",
+  "title": "What's new in web accessibility",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Accessibility & Inclusion",
+    "Essentials"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Tyler: Hi, my name is Tyler, and I'm an engineer on the WebKit accessibility team. In today's session, we're going to take a tour of modern web accessibility, beginning with a brief overview of assistive technologies like screenreaders.\n\nThen, we'll talk about ways you can build rich, accessible web apps with tools like custom controls, speech synthesis markup language, or SSML, in the Web Speech API, and the dialog element.\n\nSo let's begin by talking about assistive technologies.\n\nApproximately one in seven people worldwide have a disability that affects the way they interact with the world, their devices, and the web.\n\nPeople can experience disabilities at any age, for any duration, and at varying levels of severity. Apple has built a variety of tools to enable users to interact with their devices in a way that works best for them. These tools include VoiceOver, Switch Control, Voice Control, and Full Keyboard Access, all of which provide alternate means of device usage. To learn more about these tools and some others, check out last year's session, titled: \"Support Full Keyboard Access in your iOS app.\" To get a feel for what this is like on a real webpage, let's use VoiceOver to navigate a sample quiz assessment website. On my iPad, I'll triple-press the top button to activate VoiceOver.\n\nSiri: VoiceOver on. Safari, Show Sidebar, Button.\n\nTyler: And now, with VoiceOver active, I'll tap the page heading to focus it... Siri: Pop Quiz, Heading level 1. Tyler: And swipe right to move through the elements on this page. Siri: One of six: How many slices are in 1/4 of a pizza with eight total slices? Two slices, radio button, unchecked, one of four, Three slices-- Four slices-- Six slices-- Next question. Button.\n\nTyler: As a web developer, you have many tools at your disposal for making your pages accessible to users of technologies like VoiceOver. For example, Safari has built-in accessibility support for semantic HTML elements like button, h1 through h6, table elements, list elements, and many more. Using these semantic HTML elements should be your default, as this will guarantee a consistent, accessible experience for your users across all browsers. However, sometimes you may have a need not completely fulfilled by semantic HTML, and need to create custom components with JavaScript. If this is the case, you'll likely also need to supplement your components with ARIA attributes so that their semantics are properly conveyed to assistive technologies. This brings us to our second topic of the day, custom controls. Let's say we wanted to make the pizza quiz question more engaging. One thing we could do is replace the radio buttons with a custom control that allows users to add and remove slices from a pizza tray with a tap.\n\nOur markup for this custom control might start with a div and an ID .\n\nIn order to make this component operable for users interacting with a tap or click, we'll need to add a click event listener. Let's create a new PizzaControl class with a constructor that accepts the ID of an element.\n\nWe'll get that element by ID, and then add a click event listener for it.\n\nThis listener will compute the new number of slices based on the tapped position and then pass that value to a function called update to re-render the control. This will work great for some users, but not all.\n\nFor example, what about our users with visual disabilities, who won't know where to click or tap? When building custom components, we must always consider how users of assistive technologies of all types will interact with our component. With that in mind, the first step to making our component accessible is to give it a role attribute with a value of \"slider\". Our control maps quite nicely to the model of a slider. There is a minimum value, zero slices, a maximum value, eight slices, and a current value, four slices.\n\nWe'll also need to add a tabindex of zero to ensure our component is focusable for users of keyboards and other non-touch interfaces.\n\nWe'll also need to add a few ARIA attributes.\n\nAria-valuemin and aria-valuemax inform assistive technologies of the minimum and maximum values for this slider.\n\nThese attributes are similar to the min and max attributes that you can use on native range type inputs.\n\nNext, let's add aria-valuenow to convey the current value of the control.\n\nWe'll also use aria-valuetext to provide a more useful description of the current value, which is four slices.\n\nNow that we've established our control as a focusable slider, we need to handle updates to the control's value from assistive technologies. On iOS, VoiceOver facilitates the adjustment of sliders with a single finger swipe up to increment the slider, and a swipe down to decrement the slider. Safari provides an easy way to handle these gestures. When a VoiceOver user swipes up with a slider in focus, Safari automatically simulates an arrow-key right event. And similarly, if a VoiceOver user swipes down with a slider in focus, an arrow key left event will be simulated. These simulated events behave the same as real keypresses, meaning they can be handled by key event listeners. With this new knowledge in our tool belt, let's add a keydown listener to our pizza control. If the activated key is a right arrow or up arrow, we'll update our control with the current amount of slices plus one. And similarly, if the activated key is a left arrow or down arrow, we'll update our control with the current amount of slices minus one. Adding this key event listener not only benefits VoiceOver users, but also users of Full Keyboard Access, who may heavily or entirely rely on your web app being keyboard accessible. With both of our event listeners established, we probably now also want to define our update function. First, we'll clamp the value we're given to ensure it's within bounds, between zero and eight, and update our stored slice count state to this value. Next, we need to ensure we update both the visual and ARIA representations of our control. When building custom components, a good rule is that if you're updating the visual representation of your component, you also need to think about how you'll be updating the ARIA representation.\n\nIn this case, we need to update both the aria-valuenow and aria-valuetext attributes to inform users of assistive technologies of the new control state.\n\nWe'll begin by setting aria-valuenow to be the current slice count.\n\nNext, we'll set aria-valuetext to be the more human-friendly description of the slice count, plus either the word \"slice\" or \"slices\".\n\nOkay, now that all that's in place, let's go back to our quiz assessment web app to see what the experience is like with VoiceOver. I'll begin by tapping the pizza control to focus it.\n\nSiri: Four slices, adjustable. Swipe up or down with one finger to adjust the value.\n\nTyler: We heard that VoiceOver read the initial value of the slider, four slices, and told us that it's adjustable. Following VoiceOver's prompt, we can swipe up to increase the number of slices selected... Siri: Five slices. Six slices. Tyler: And swipe down to decrease the number of slices selected. Siri: Five slices. Four slices. Tyler: With these changes in place, our custom slider component is now much more accessible.\n\nNow, let's talk about how you can use SSML in the Web Speech API to build more rich experiences for all of your users.\n\nThe Web Speech API is made up of two primary JavaScript interfaces: SpeechRecognition for audio input, and SpeechSynthesis for text-to-speech audio output.\n\nWeb Speech gives you the capabilities to provide a voice-assisted or voice-only interface for your web app.\n\nThis can be beneficial for users with motor disabilities, who may have trouble using other means of control, like a mouse, keyboard, or touchscreen.\n\nNew to SpeechSynthesis on Safari is the ability to use SSML to manipulate the way your text is spoken.\n\nSSML has tons of capabilities. For example, you can use the break element to insert pauses in speech with a time of your choosing.\n\nYou may want to ask your users to breathe in... and breathe out.\n\nUsing the phoneme element, you can control the pronunciation of words, like \"tomayto\" versus \"tomahto.\" The prosody element allows you to manipulate the pitch, rate, and volume of your spoken text. And these only scratch the surface of SSML's capabilities. To learn more, check out the SSML specification on w3.org.\n\nLet's put our newfound knowledge of SSML to use. For the final question of our quiz, we ask our students to choose a radio button with the correct Spanish translation of the phrase, \"the water.\" We can make this question more engaging by allowing users to press a button to read the question and answers with text-to-speech, using SSML to read the Spanish phrases in a Spanish-locale voice.\n\nLet's begin by creating our button, ensuring to wrap the speaker emoji in a span with aria-hidden set to true, since this emoji's description is not particularly useful here.\n\nNext, let's create a helper JavaScript function called wrapWithSSML , which takes a phrase to speak and a voice-locale to speak it in.\n\nWe'll begin building our SSML string with the break element to insert a short pause before each phrase to build emphasis.\n\nWith the prosody element, we'll specify that we want our phrase spoken at 80% of the default rate.\n\nAnd finally, we can use the lang element to choose the locale-specific voice we want our phrase to be spoken in.\n\nAnd now we'll add a click event listener to our read question button and build our SSML string inside. We begin by wrapping the entire string in a speak element.\n\nSpeak is important because it indicates to synthesis processors that anything within should be considered SSML.\n\nNext, we include our question: How do you say \"the water\" in Spanish? We can use our wrapWithSSML helper function to give emphasis to the phrase being translated and ensure it's read in a U.S. English locale-voice.\n\nWe'll also use wrapWithSSML for all four of our potential answers, providing emphasis and requesting that they be read in a Spanish locale-voice.\n\nFinally, we can create a new SpeechSynthesisUtterance object with our SSML string, and pass that to the window SpeechSynthesis speak method to read it out.\n\nWith all of that in place, let's see what the experience is like on our web app. On the page with the final question, I'll tap the \"Read question\" button, and listen. Siri: How do you say \"the water\" in Spanish? El agua. La abuela. La abeja. El árbol. Tyler: Thanks to SSML, we've created a much more engaging experience for our students.\n\nAnother common design pattern on the web is the modal.\n\nYou may use this on your web apps as a sign-in or sign-up form, for confirmation dialogs, and more.\n\nOne way to provide an accessible modal experience is the aria-modal attribute. With aria-modal=\"true\", Safari will consider all accessible elements outside the modal to be ignored. Recently, Safari has also added support for the dialog element.\n\nDialog makes providing an accessibility-friendly modal experience much easier with standard focus interactions, out-of-the box handling of modal closing gestures, like the Escape key and the scrub gesture on iOS, and more.\n\nTo see this in action, let's change the \"Show score\" button on our quiz assessment web app to open a dialog with our results.\n\nFirst things first, we'll need to create our dialog element. The markup could look something like this. We give the dialog an ID so it can be referenced later by our show score button. We also wrap the dialog's contents in a form with method dialog.\n\nBy doing so, any submit type controls, like our button, will cause the dialog to close. We'll also need a bit of JavaScript to open the modal. Let's add a click event listener to our Show Score button that calls showModal() on our dialog element.\n\nAnd now we're ready to try this out. With VoiceOver active, I'll tap the \"Show score\" button to focus it.\n\nSiri: Show score. Button.\n\nTyler: Then, I'll double-tap with a single finger anywhere on the screen to press the button.\n\nSiri: Show score. Web dialog. Close button. Tyler: And now we have our modal. I can swipe left to move through the modal's contents to hear my score. Siri: You got all six question correct. Great work! Tyler: And when I'm done, I can move back to the close button by swiping right... Siri: Close button. Tyler: And double tap to close the modal. Siri: Unchecked. Tyler: As I mentioned previously, the dialog element handles the iOS scrub gesture for modal closure out of the box. To demonstrate, I'll re-open the modal with a double-tap... Siri: Show score, button. Web dialog. Close, button. Tyler: And then perform the scrub gesture by quickly moving two fingers right, left, and right across the screen.\n\nSiri: Show score. Button. Tyler: Okay, so we have a functional modal, but we can still do better. Did you notice that when we opened the modal, VoiceOver only read \"web dialog, close, button\"? In this situation, it would probably make sense to use an aria-label or aria-labelledby attribute to provide more information for users of assistive technologies. Since our modal content is short, simply informing users of how many answers they got correct, let's use that for our label. First, we'll wrap the modal content in a span with an ID. Then, we can add the aria-labelledby attribute to our dialog pointing to the modal-content ID.\n\nLet's also explicitly set the initial modal focus element to be the close button with the autofocus attribute.\n\nWhile this was already the default behavior for this simple modal, that may not have been the case if our modal had more content or was more complex, with lots of controls.\n\nFor example, in a modal with a lot of content, it may have made more sense to place autofocus on a top-level heading. As the modal author, you'll know best as to what will provide a great experience for your users.\n\nWith our new attributes in place, let's again see what the experience is like in VoiceOver. I'll first tap the Show score button once to focus it...\n\nSiri: Show score, button.\n\nTyler: And then double-tap to press it. Siri: You got all six questions correct. Great work! Web dialog, close button.\n\nTyler: That's a much better experience. A VoiceOver user immediately hears their score thanks to aria-labelledby, and is already focused on the close button, and therefore can double-tap to leave the modal. And with that, it's time to wrap up today's session. I hope you've learned some techniques to build rich, accessible web apps, ensuring you provide a great experience to all of your users.\n\nPlease try these features out in the latest Safari, and file any bugs you find to the WebKit bug tracker at bugs.webkit.org.\n\nThanks for joining me on today's whirlwind tour of modern web accessibility. Have an amazing WWDC!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:06",
+      "title": "PizzaControl class with click event listener",
+      "language": "swift",
+      "code": "class PizzaControl {\n  constructor(id) {\n    this.control = document.getElementById(id);\n    this.sliceCount = 4;\n    \n    this.control.addEventListener(\"click\", (event) => {\n      const newSliceCount = this.computeSliceCount(event);\n      this.update(newSliceCount);\n    });\n  }\n}"
+    },
+    {
+      "timestamp": "4:23",
+      "title": "PizzaControl HTML markup",
+      "language": "swift",
+      "code": "<div id=\"pizza-input\" \n     role=\"slider\" tabindex=\"0\"\n     aria-valuemin=\"0\" aria-valuemax=\"8\"\n     aria-valuenow=\"4\" aria-valuetext=\"4 slices\">\n</div>"
+    },
+    {
+      "timestamp": "5:15",
+      "title": "PizzaControl class with keydown event listener",
+      "language": "swift",
+      "code": "class PizzaControl {\n  constructor(id) {\n    this.control = document.getElementById(id);\n    this.sliceCount = 4;\n\n    // …click event listener…\n    \n    this.control.addEventListener(\"keydown\", (event) => {\n      const key = event.key;\n      if (key === \"ArrowRight\" || key === \"ArrowUp\")\n        this.update(this.sliceCount + 1);\n      else if (key === \"ArrowLeft\" || key === \"ArrowDown\")\n        this.update(this.sliceCount - 1);\n    });\n  }\n}"
+    },
+    {
+      "timestamp": "5:41",
+      "title": "PizzaControl class update function",
+      "language": "swift",
+      "code": "class PizzaControl {\n  // …constructor…\n  \n  update(newSliceCount) {\n    this.sliceCount = Math.max(0, Math.min(newSliceCount, 8));\n\n    // Visually re-render `this.sliceCount` slices\n    // …\n\n    // Update the ARIA representation of the control\n    this.control.setAttribute(\"aria-valuenow\", this.sliceCount);\n    const sliceModifier = this.sliceCount === 1 ? \"slice\" : \"slices\";\n    this.control.setAttribute(\"aria-valuetext\", `${this.sliceCount} ${sliceModifier}`);\n  }\n}"
+    },
+    {
+      "timestamp": "7:52",
+      "title": "SSML examples",
+      "language": "swift",
+      "code": "<speak>\n  Breathe in <break time=\"3s\"/> and breathe out.\n</speak>\n\n<speak>\n  <phoneme alphabet=\"ipa\" ph=\"təˈmeɪtoʊ\">tomato</phoneme>\n  <phoneme alphabet=\"ipa\" ph=\"təˈmɑːtəʊ\">tomato</phoneme>\n</speak>\n\n<speak>\n  <prosody pitch=\"-2st\" rate=\"slow\" volume=\"loud\">\n    Hello world!\n  </prosody>\n</speak>"
+    },
+    {
+      "timestamp": "8:45",
+      "title": "\"Read question\" button HTML markup",
+      "language": "swift",
+      "code": "<button id=\"read-question-btn\">\n  Read question<span aria-hidden=\"true\">🔊</span>\n</button>"
+    },
+    {
+      "timestamp": "8:57",
+      "title": "wrapWithSSML JavaScript function",
+      "language": "swift",
+      "code": "function wrapWithSSML(phrase, locale) {\n  return `\n    <break time=“100ms\"/>\n    <prosody rate=“80%\">\n      <lang xml:lang=\"${locale}\">\n        ${phrase}\n      </lang>\n    </prosody>\n  `;\n}"
+    },
+    {
+      "timestamp": "9:24",
+      "title": "Read question button click event listener",
+      "language": "swift",
+      "code": "const readQuestionButton =\n  document.getElementById(\"read-question-btn\");\n\nreadQuestionButton.addEventListener(\"click\", () => {\n  const ssml = `\n    <speak>\n      How do you say\n        ${wrapWithSSML(\"the water\", \"en-US\")}\n      in Spanish?\n      ${wrapWithSSML(\"El agua\", \"es-MX\")}\n      ${wrapWithSSML(\"La abuela\", \"es-MX\")}\n      ${wrapWithSSML(\"La abeja\", \"es-MX\")}\n      ${wrapWithSSML(\"El árbol\", \"es-MX\")}\n    </speak>\n  `;\n  const utterance = new SpeechSynthesisUtterance(ssml);\n  window.speechSynthesis.speak(utterance);\n});"
+    },
+    {
+      "timestamp": "11:33",
+      "title": "Show score dialog HTML markup",
+      "language": "swift",
+      "code": "<dialog id=\"show-score-modal\">\n  <form method=\"dialog\">\n    You got all six questions correct. Great work!\n    <button type=\"submit\">Close</button>\n  </form>\n</dialog>"
+    },
+    {
+      "timestamp": "11:51",
+      "title": "JavaScript to open show score dialog",
+      "language": "swift",
+      "code": "const showScoreButton =\n  document.getElementById(\"show-score-btn\");\n\nshowScoreButton.addEventListener(\"click\", () => {\n  document\n    .getElementById(\"show-score-modal\")\n    .showModal();\n});"
+    },
+    {
+      "timestamp": "13:23",
+      "title": "Show score dialog with autofocus and aria-labelledby attribute",
+      "language": "swift",
+      "code": "<dialog id=\"show-score-modal\" aria-labelledby=\"modal-content\">\n  <form method=\"dialog\">\n    <span id=\"modal-content\">\n      You got all six questions correct. Great work!\n    </span>\n    <button type=\"submit\" autofocus>Close</button>\n  </form>\n</dialog>"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10153/6/390C5399-8CDD-4D3E-8701-29B14E042A94/downloads/wwdc2022-10153_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10153/6/390C5399-8CDD-4D3E-8701-29B14E042A94/downloads/wwdc2022-10153_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10120",
+      "year": "2021",
+      "title": "Support Full Keyboard Access in your iOS app",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10120"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:08:18.040Z"
+}

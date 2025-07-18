@@ -1,0 +1,92 @@
+{
+  "id": "10291",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10291/",
+  "title": "Explore the catalog with the Apple Music API",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Bass music playing ♪  ♪ Graham Seyffert: Hello and welcome to WWDC 2021.\n\nMy name is Graham Seyffert, and I’m a MusicKit engineer.\n\nOver the past few years, we’ve enhanced the ability of developers to fetch new, enriched data from the Apple Music catalog.\n\nToday we’re excited to introduce some of those improvements to you.\n\nIn this presentation, we’ll be going over enhancements to the search functionality in the API, as well as new ways to request data by relating resources, extending attributes, and requesting relationship views for resources in your responses.\n\nFinally, we’ll go over some new enhancements to the Charts API.\n\nBefore going over some of the search enhancements, I’d like to quickly recap the current /search/hints endpoint.\n\nYou might already use this endpoint today to fetch a list of suggested search terms.\n\nAs an example, here’s some results you might get back for the search term “taylor”.\n\nToday, we’re introducing the /search/suggestions endpoint which replaces the /search/hints endpoint.\n\nThis endpoint provides access to the same terms as the /search/hints endpoint, and you can continue to fetch these by specifying kinds=terms on your request.\n\nHowever, you can see that the response from this endpoint is a bit different.\n\nsuggested results now indicate their kind, which will match one of the kinds specified on the request.\n\nIt also differentiates the term that should be used for the search query from the term that should be displayed to the user.\n\nMore importantly, this endpoint now also allows access to the top suggested search results -- ideal for powering typeahead results.\n\nThese may be requested by specifying kinds=topResults on the request, as well as some resource types that you’re interested in fetching results for.\n\nResources for topResults kinds can be found under the content key.\n\nIt’s worth noting that the results you’ll get from this endpoint might be noticeably different from the results you’d get from a regular search, as this response prioritizes speed over breadth.\n\nAs such, this is not intended to be a replacement for the regular /search endpoint, but rather a complement to it.\n\nBefore going into how to modify resources, I’d like to reintroduce what a resource is for those that may not be familiar.\n\nAll resources have what we call a “resource identifier,” which is the minimal amount of information you’d need in order to look a resource up in the API.\n\nResource identifiers will include a resource’s ID, its type, and its href.\n\nThe complete representation of a resource will also include that resource’s attributes, such as its name, and potentially relationships if they’ve been requested using the include parameter.\n\nRelationships are collections of related resources, such as a song’s genres or a playlist’s tracks.\n\nWith that, I’d like to now introduce the concept of relating resources.\n\nRelationships requested with relate are different from relationships requested with include in that they only return the aforementioned Resource Identifiers for the resources in that relationship.\n\nThis means that relating a relationship results in a faster response if all you need access to is a resource's reference.\n\nYou can relate a relationship by using the relate query parameter and classifying it with the resource type you’re targeting, followed by a list of relationship names you’re interested in getting back.\n\nFor example, on the /search /suggestions endpoint, you may decide that when a user selects a song result that you want to pop out to the album page for that song.\n\nIn this case, all you need is the href for that song’s album in order to navigate there, so we can specify relate=albums in order to get that data.\n\nAfter doing that, we can see that song results in our response now include the resource identifiers for their respective albums.\n\nSo relate is great to use when we want to quickly reference additional related content, but what if we want to learn more about the resources we’re already getting back in our responses? As mentioned previously, every resource today has a default set of attributes -- things like its name, its artwork, et cetera.\n\nBut resources may also have extended attributes.\n\nExtended attributes are either more expensive to calculate or are less frequently needed, such that including them by default might either slow down responses noticeably or bloat the object model.\n\nSimilar to what we just saw with the relate query param, you can request extended attributes on resources by using the extend query param, classifying it with a resource type, and following it with a list of attribute names that you’re interested in.\n\nBuilding on our /suggestions request, we might decide that, for song results, we also want to allow users the ability to link out to that artist’s page on Apple Music.\n\nIn order to do this, you could simply append extend=artistUrl to your request.\n\nIndeed, after doing this, we can see the songs resources in our responses now include the artistUrl attribute.\n\nNow I’d like to introduce the concept of relationship views.\n\nCompared to relationships, views are more loosely coupled to their resource.\n\nThey don’t necessarily represent some ground truth about a resource like relationships do.\n\nThis makes views ideally suited for driving product page experiences, such as an album page.\n\nCompare this to relationships which may be useful to use on, for instance, search result pages.\n\nAdditionally, views may have attributes -- like a title -- as well as data.\n\nViews are also only requestable on direct resource fetches.\n\nThis means that there are two different ways you can fetch them.\n\nYou can either use the views query parameter and specify a list, or a single one via /view/{viewName} right after the resource’s ID in the request path.\n\nIn this response, we have an example of what it might look like to include the Top Songs view on an artist resource.\n\nOther examples include Top Music Videos or an artist’s singles.\n\nThe full list of supported views for a given resource type can of course be found in the official Apple Music API documentation.\n\nFinally, let’s take a look at the updates to the Charts API.\n\nToday, Apple Music supports chart playlists for the world, storefronts, and more recently, specific cities.\n\nUsers can add these chart playlists to their libraries, which will update automatically.\n\nYou can now fetch these directly from the /charts endpoint by specifying types=playlists and using the \"with\" query parameter to indicate which sets you’d like -- either dailyGlobalTopCharts or cityCharts, or both.\n\nAnd here we have an example of how a chart’s response with those query parameters might look.\n\nSo in summary, today we went over enhancements to the search and charts endpoints, and looked at new ways to fetch data for resources in our responses.\n\nIf you’d like to learn more about the Apple Music API, I’d highly suggest this year’s session on how to Cross reference content on the Apple Music API, or 2017’s Introducing MusicKit presentation, which goes over some of the API’s core concepts in even greater detail.\n\nThanks so much for watching, and we hope you enjoy this year’s WWDC.\n\n♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:25",
+      "title": "Search Suggestions Terms Request",
+      "language": "swift",
+      "code": "/v1/catalog/us/search/suggestions?term=taylor&kinds=terms"
+    },
+    {
+      "timestamp": "2:09",
+      "title": "Search Suggestions Top Results Request",
+      "language": "swift",
+      "code": "/v1/catalog/us/search/suggestions?term=taylor&kinds=topResults&types=artists,songs"
+    },
+    {
+      "timestamp": "3:47",
+      "title": "Search Suggestions Relate Albums Request",
+      "language": "swift",
+      "code": "/v1/catalog/us/search/suggestions?term=taylor&kinds=topResults&types=artists,albums,songs&relate[songs]=albums"
+    },
+    {
+      "timestamp": "5:03",
+      "title": "Search Suggestions Extend artistUrl Request",
+      "language": "swift",
+      "code": "/v1/catalog/us/search/suggestions?term=taylor&kinds=topResults&types=artists,albums,songs&relate[songs]=albums&extend[songs]=artistUrl"
+    },
+    {
+      "timestamp": "6:16",
+      "title": "Artist Top Songs View Request",
+      "language": "swift",
+      "code": "/v1/catalog/us/artists/159260351?views=top-songs"
+    },
+    {
+      "timestamp": "6:59",
+      "title": "Top Charts Request",
+      "language": "swift",
+      "code": "/v1/catalog/us/charts?types=playlists&with=dailyGlobalTopCharts,cityCharts"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10291/3/F3E513AE-7D59-4677-BA86-19148C5DE3E4/downloads/wwdc2021-10291_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10291/3/F3E513AE-7D59-4677-BA86-19148C5DE3E4/downloads/wwdc2021-10291_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10148",
+      "year": "2022",
+      "title": "Meet Apple Music API and MusicKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10148"
+    },
+    {
+      "id": "10294",
+      "year": "2021",
+      "title": "Meet MusicKit for Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10294"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:23:24.516Z"
+}

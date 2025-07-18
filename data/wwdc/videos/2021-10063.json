@@ -1,0 +1,160 @@
+{
+  "id": "10063",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10063/",
+  "title": "Customize and resize sheets in UIKit",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Hello! My name is Russell, and I'm an engineer on the UIKit team. In iOS 13, we introduced a refined appearance for sheets, bringing them to Phone and adding a universal pull-to-dismiss gesture. To learn more about this, watch the video Modernizing Your UI for iOS 13, specifically the section about Presentations starting 9 minutes and 45 seconds in. In iOS 15, we've built on that foundation by adding a bunch of customization options to sheets, so you can now use them in fun new ways like never before. We've added support for a medium detent, which allows you to create a vertically resizable sheet that only covers half the screen.\n\nYou can also now remove the dimming view, which will allow you to build a nonmodal UI where the user can interact with content behind the sheet while the sheet is presented. Next, I'll cover some new visual options, including how to get a non-full-screen appearance on phones in landscape. And finally, I'll show how to set up a UI that seamlessly adapts between a popover in regular size classes and a customized sheet in compact size classes.\n\nTo explore all of this, we've made a sample app for creating digital postcards, and it's available with this video. For each postcard, I can customize the picture as well as the text and the font. Now, before I can customize a sheet, first I have to get one. A sheet is an instance of a new UIPresentationController subclass called UISheetPresentationController, and all of the customization options are exposed as properties on this class. The typical way to get an instance of this class is to read the sheetPresentationController property on a view controller before you present it. This method returns a non-nil instance as long the view controller's modalPresentationStyle is form sheet or page sheet, which it is by default.\n\nFrom here, you can then set various properties on the instance to customize it. This is the same pattern as getting a view controller's popoverPresentationController and setting its properties. And with that, let's jump into detents.\n\nWhat are detents? A detent is a height where a sheet naturally rests, and these are defined as a fraction of the fully expanded sheet frame. The fully expanded frame is visualized on an iPhone and iPad here, and it should be familiar if you've used sheets before. We've exposed two system-defined detents in iOS 15: a medium detent, which is about half of a sheet's full height, and a large detent, which is the height of a fully expanded sheet.\n\nTo specify which detents you want a sheet to support, simply set an array of the detents you want on the detents property. The default value of this property is an array of just the large detent, which is why if you don't set it at all, you get a standard full height sheet.\n\nIf you set this to an array of the medium and large detents, you get a sheet that is resizable between medium and large. But you can also set this to an array of just the medium detent, which gives you a sheet that presents at medium height and cannot be resized to full height. Let's apply this to the sample app. I'm starting with some code that targets the iOS 14 SDK to present the system image picker in a standard sheet. When a button is tapped, this first function is called, which creates an image picker, sets the picker's delegate to self, and then presents the picker.\n\nThen when an image is chosen, the picker didFinishPicking delegate method is called, which then sets the chosen image on the image view and dismisses the picker.\n\nLet's run it. When I tap the photo button, the photo picker covers the whole app. Notice my traveling has recently been very virtual. And when I pick a photo, the photo picker dismisses, revealing the photo I picked in the postcard. But what if I want to pick a different picture? I have to go through this whole flow again. And it would be really nice if I could show my library of photos and my postcard at the same time. And with a medium detent, I can.\n\nHere's the same code as before but with a few changes. Before I present the picker, I access its sheetPresentationController and set its detents to medium and large. Also in the picker didFinishPicking delegate callback, I removed the line that dismisses the photo picker, because now I don't want the photo picker to dismiss when selecting a picture.\n\nNow when I run this and tap the photo button, my library comes up at half height, I can pick a photo, and voila. I can see it in my postcard with the library still below. And if I want to try a different photo, it's as simple as one tap. Also, because my detents array includes the large detent, I can drag the bar to resize this sheet to full height.\n\nIn addition, because the scroll view is scrolled to top, scrolling the scroll view will also expand the sheet. For a sheet of actions like the system Share Sheet, this is a great feature that progressively discloses more advanced actions at the bottom of the list. But for this photo library example, I might prefer that scrolling not expand the sheet so the postcard is always visible unless I explicitly resize the sheet by dragging from the bar. To get this alternate behavior, I just have to set one additional property: PrefersScrollingExpands- WhenScrolledToEdge. By default, this property is true, so setting it to false prevents scrolling from expanding the sheet.\n\nNow the photo picker doesn't resize when scrolled, but I can still drag the bar to get a better view of my photo library.\n\nBut now when I tap a photo, it's not obvious that anything happened. This is in contrast to the earlier behavior, where tapping a photo dismissed the photo picker, clearly indicating my selection was received.\n\nWhat I'd like is to have the sheet resize to the medium detent when I tap a photo, both to indicate my selection was received and to make my selection visible in the postcard. And I can achieve this by programmatically changing the selected detent. So if I go back to the image picker delegate method that is called whenever a photo is tapped, I can add some code here to get the sheetPresentationController and set the selectedDetentIdentifier to medium. Let's try this. Notice the transition when I tap a photo.\n\nWhoa! That transition was so fast, I almost lost my eyebrows. It actually didn't animate at all. I can easily animate this transition by wrapping the setting of the property in a sheet.animateChanges block. This will animate the sheet down to the medium detent if needed with a standard animation curve and animate other sheets in the stack as well, such as the root sheet scaling back up.\n\nButtery smooth. One more nice thing would be to remove the dimming view to show the selected photo in full color. To do that, there's one more property to look at called smallestUndimmed- DetentIdentifier. By default, this property is nil, which means all of the detents are dimmed, but if you want to remove dimming, set it to the identifier of the smallest detent where you don't want dimming. In this case, I'll set it to medium.\n\nNotice there's no dimming at the medium detent when I bring up the picker. Ta-da! But dimming still fades in if I resize to the large detent.\n\nMore than visually removing the dimming, this property also allows you to build advanced nonmodal experiences, since I can now interact not only with the content in the sheet but also with the content outside of the sheet.\n\nThis is even more profound with the font picker, where I've built a UI that allows me to select a range of text while the font picker is up, apply a font to just that range, adjust my selection, and apply a font again. Download the sample app for details on how this is achieved.\n\nIt's also worth noting that medium height sheets support automatic keyboard avoidance, so if I search for a font here, the sheet grows automatically to account for the keyboard, and when the keyboard dismisses, the sheet automatically collapses back down.\n\nSo that was a lot of information about detents, but now I'd like to turn our attention to some other new visual customization options for sheets, starting with a new optional appearance for sheets on iPhone in landscape. In iOS 13, we made all sheets full screen in landscape, and now we've made available an alternate appearance where sheets are only attached to the screen at their bottom edge.\n\nTo get this new appearance, simply set prefersEdgeAttached- InCompactHeight to true. Now just setting this will always give you a sheet that is as wide as the safe area. If you'd like a sheet whose width follows the presentedViewControllers preferredContentSize, set widthFollows- PreferredContentSize- WhenEdgeAttached to true. This will make the sheet a narrower default width, and you can set preferredContentSize to further customize this width. Besides these properties, there is also a property to show a grabber if you like. A grabber often isn't necessary, but in cases where it might be less obvious that a sheet is resizable, such as when scrolling doesn't resize the sheet, displaying the grabber can be a helpful indicator of resizability. Now notice the corners of the sheet. Another option we've exposed is the ability to customize the corner radius. If your app has a more rounded appearance, you may want to match that aesthetic. Note that the system will keep stacked corners looking consistent, so if this photo picker expands to push back the root sheet, the root sheet will have larger corners to match. Finally, although it's possible to create a sheet with detents on iPad, often a popover is wanted instead that adapts to a sheet in compact, potentially customized with things like detents. Let's take this approach with the sample app. To get a popover for the image picker on iPad, I need to make a few small modifications. First, I'll set the modalPresentationStyle of the picker to popover. Then, instead of grabbing the sheetPresentationController, because this will now return nil, since the modalPresentationStyle is not a sheet, I'll get the popoverPresentationController. I'll set the popover's source to be our barButtonItem, and then I'll grab a new property on the popover called the adaptiveSheet- PresentationController. This property returns an instance of the sheet that the popover will adapt to in compact size classes, and then I'll configure it just as I did the sheet before.\n\nNow when I tap a photo button, the photo picker appears in the popover, and if I resize the scene, it adapts to a medium height sheet. It works! And if I expand the picker, and select a photo-- oh, no! It didn't automatically resize to medium height like we implemented before. Hmm. Let's go back to the picker didFinishPicking delegate method.\n\nAh! To get the adaptive sheet, I need to read the adaptiveSheet- PresentationController on the popoverPresentationController here in the code as well. Now notice when I select a photo. Hooray! It resizes back to medium again.\n\nNow, I've talked about a lot of stuff here that will enable you to easily build new types of UIs with sheets that could not be easily built before. Review your own apps for areas that would benefit from medium height sheets or nonmodal experiences. If you have any half height custom cards in your apps today, replace them with these newly enhanced UIKit sheets. Thank you for watching, and I look forward to seeing all of the cool new things\nyou build with sheets.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "0:01",
+      "title": "Get a sheet",
+      "language": "swift",
+      "code": "if let sheet = viewController.sheetPresentationController {\n    // Customize the sheet\n}\npresent(viewController, animated: true)"
+    },
+    {
+      "timestamp": "0:02",
+      "title": "Detents (large only)",
+      "language": "swift",
+      "code": "if let sheet = picker.sheetPresentationController {\n    sheet.detents = [.large()]\n}\npresent(picker, animated: true)"
+    },
+    {
+      "timestamp": "0:03",
+      "title": "Detents (medium and large)",
+      "language": "swift",
+      "code": "if let sheet = picker.sheetPresentationController {\n    sheet.detents = [.medium(), .large()]\n}\npresent(picker, animated: true)"
+    },
+    {
+      "timestamp": "0:04",
+      "title": "Detents (medium only)",
+      "language": "swift",
+      "code": "if let sheet = picker.sheetPresentationController {\n    sheet.detents = [.medium()]\n}\npresent(picker, animated: true)"
+    },
+    {
+      "timestamp": "0:05",
+      "title": "Present image picker in a standard sheet",
+      "language": "swift",
+      "code": "func showImagePicker() {\n    let picker = PHPickerViewController()\n    picker.delegate = self\n    present(picker, animated: true)\n}\n\nfunc picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {\n    // assign result to imageView.image\n    dismiss(animated: true)\n}"
+    },
+    {
+      "timestamp": "0:06",
+      "title": "Present at medium detent, and don’t dismiss automatically",
+      "language": "swift",
+      "code": "func showImagePicker() {\n    let picker = PHPickerViewController()\n    picker.delegate = self\n    if let sheet = picker.sheetPresentationController {\n        sheet.detents = [.medium(), .large()]\n    }\n    present(picker, animated: true)\n}\n\nfunc picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {\n    // assign result to imageView.image\n}"
+    },
+    {
+      "timestamp": "0:07",
+      "title": "Prevent scrolling from expanding the sheet",
+      "language": "swift",
+      "code": "func showImagePicker() {\n    let picker = PHPickerViewController()\n    picker.delegate = self\n    if let sheet = picker.sheetPresentationController {\n        sheet.detents = [.medium(), .large()]\n        sheet.prefersScrollingExpandsWhenScrolledToEdge = false\n    }\n    present(picker, animated: true)\n}\n\nfunc picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {\n    // assign result to imageView.image\n}"
+    },
+    {
+      "timestamp": "0:08",
+      "title": "Select medium detent when a photo is picked",
+      "language": "swift",
+      "code": "func showImagePicker() {\n    let picker = PHPickerViewController()\n    picker.delegate = self\n    if let sheet = picker.sheetPresentationController {\n        sheet.detents = [.medium(), .large()]\n        sheet.prefersScrollingExpandsWhenScrolledToEdge = false\n    }\n    present(picker, animated: true)\n}\n\nfunc picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {\n    // assign result to imageView.image\n    if let sheet = picker.sheetPresentationController {\n        sheet.selectedDetentIdentifier = .medium\n    }\n}"
+    },
+    {
+      "timestamp": "0:09",
+      "title": "Animate selection of medium detent",
+      "language": "swift",
+      "code": "func showImagePicker() {\n    let picker = PHPickerViewController()\n    picker.delegate = self\n    if let sheet = picker.sheetPresentationController {\n        sheet.detents = [.medium(), .large()]\n        sheet.prefersScrollingExpandsWhenScrolledToEdge = false\n    }\n    present(picker, animated: true)\n}\n\nfunc picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {\n    // assign result to imageView.image\n    if let sheet = picker.sheetPresentationController {\n        sheet.animateChanges {\n            sheet.selectedDetentIdentifier = .medium\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "0:10",
+      "title": "Remove dimming at medium detent",
+      "language": "swift",
+      "code": "func showImagePicker() {\n    let picker = PHPickerViewController()\n    picker.delegate = self\n    if let sheet = picker.sheetPresentationController {\n        sheet.detents = [.medium(), .large()]\n        sheet.prefersScrollingExpandsWhenScrolledToEdge = false\n        sheet.smallestUndimmedDetentIdentifier = .medium\n    }\n    present(picker, animated: true)\n}\n\nfunc picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {\n    // assign result to imageView.image\n    if let sheet = picker.sheetPresentationController {\n        sheet.animateChanges {\n            sheet.selectedDetentIdentifier = .medium\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "0:11",
+      "title": "iPhone in landscape",
+      "language": "swift",
+      "code": "if let sheet = fontPicker.sheetPresentationController {\n    sheet.prefersEdgeAttachedInCompactHeight = true\n    sheet.widthFollowsPreferredContentSizeWhenEdgeAttached = true\n}\npresent(fontPicker, animated: true)"
+    },
+    {
+      "timestamp": "0:12",
+      "title": "Show a grabber",
+      "language": "swift",
+      "code": "if let sheet = fontPicker.sheetPresentationController {\n    sheet.prefersGrabberVisible = true\n}\npresent(fontPicker, animated: true)"
+    },
+    {
+      "timestamp": "0:13",
+      "title": "Customize the corner radius",
+      "language": "swift",
+      "code": "if let sheet = fontPicker.sheetPresentationController {\n    sheet.preferredCornerRadius = 20.0\n}\npresent(fontPicker, animated: true)"
+    },
+    {
+      "timestamp": "0:14",
+      "title": "Adapt a popover to a customized sheet",
+      "language": "swift",
+      "code": "func showImagePicker(_ sender: UIBarButtonItem) {\n    let picker = PHPickerViewController()\n    picker.delegate = self\n    picker.modalPresentationStyle = .popover\n    if let popover = picker.popoverPresentationController {\n        popover.barButtonItem = sender\n\n        let sheet = popover.adaptiveSheetPresentationController\n        sheet.detents = [.medium(), .large()]\n        sheet.prefersScrollingExpandsWhenScrolledToEdge = false\n        sheet.smallestUndimmedDetentIdentifier = .medium\n    }\n    present(picker, animated: true)\n}"
+    },
+    {
+      "timestamp": "0:15",
+      "title": "Be consistent when using adaptiveSheetPresentationController",
+      "language": "swift",
+      "code": "func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {\n    // assign result to imageView.image\n    if let sheet = picker.popoverPresentationController?.adaptiveSheetPresentationController {\n        sheet.animateChanges {\n            sheet.selectedDetentIdentifier = .medium\n        }\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Customizing and resizing sheets in UIKit",
+        "url": "https://developer.apple.com/documentation/UIKit/customizing-and-resizing-sheets-in-uikit"
+      },
+      {
+        "title": "UIKit",
+        "url": "https://developer.apple.com/documentation/UIKit"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10063/8/0D794296-1707-4A1D-8CBB-B2CAFEA82AAC/downloads/wwdc2021-10063_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10063/8/0D794296-1707-4A1D-8CBB-B2CAFEA82AAC/downloads/wwdc2021-10063_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10068",
+      "year": "2022",
+      "title": "What's new in UIKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10068"
+    },
+    {
+      "id": "10046",
+      "year": "2021",
+      "title": "Improve access to Photos in your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10046"
+    },
+    {
+      "id": "224",
+      "year": "2019",
+      "title": "Modernizing Your UI for iOS 13",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/224"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:54:57.095Z"
+}

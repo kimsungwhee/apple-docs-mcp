@@ -1,0 +1,154 @@
+{
+  "id": "10181",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10181/",
+  "title": "Ultimate application performance survival guide",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, everyone. My name is Shefali Saboo, and I'm a performance tools engineer here at Apple.\n\nI'll be your guide as we navigate application performance together. Today's journey will be a thrilling tour through the world of performance. Your apps play a significant role in the overall software experience on our devices. Continuing to optimize your apps and improve performance means your users will use your app more often, stay more engaged, and will use your app for a longer period of time. Optimizing for performance can seem like a daunting task with many metrics to track and tools to use. But fear not. This survival guide will get you up to speed on tooling, metrics, and paradigms that can help take your development to the next level and ensure the best possible customer experience. I'm so excited to be your guide as we walk through our performance tools and the great things that you can do with them. There will be five major tools that we'll be covering today: the Xcode Organizer, MetricKit, Instruments, XCTest, and the App Store Connect API. We'll start with a quick introduction of the key metrics.\n\nThen step through some common problems in each domain area and ways to resolve and prevent them.\n\nAnd finally, we'll end with some next steps. Performance optimization is like a long river with many stops. There are a few different tools needed for navigation, and at each of the stops, there's something new to learn. Let's take a trip down the river. First, a quick introduction. Let's take a look at the different performance metrics we'll cover today. There are currently eight key things to track for application performance: Battery Usage, Launch Time, Hang Rate, Memory, Disk Writes, Scrolling, Terminations, and MXSignposts. All of these can be tracked through our toolset.\n\nI'm a developer for an app called MealPlanner that allows users to track their meals for the week and save cool recipes.\n\nHere's an example of a poor user experience within my app, specifically in the form of scroll hitches. Notice the slow, skipping, and jittery scroll? On the flip side, here's the same application with a seamless user experience and no hitches.\n\nWe can already see that there's quite a difference between the two experiences, and this smooth scroll is what we want to help you achieve through performance optimizations. Each performance metric has its own unique set of paradigms and common tooling. Let's jump right into some common problems in each domain area and ways to resolve and prevent them. Our first stop along the river is battery usage.\n\nIf your app is draining a lot of battery, here's what a user will see on their end. This is the Battery UI. It shows users how much of their overall battery drain an app on their device contributed towards, as well as its foreground and background activity. Why should you care about improving battery life? Easy. Users prioritize using apps that allow them to use their devices throughout the day without needing to recharge. By optimizing for battery life, users can use their devices and your app for a longer period of time. That, in and of itself, is a win. There are many different subsystems to pay attention to when it comes to optimizing battery life. The top three to make note of are CPU, Networking, and Location. I can track and triage the battery life of my app using a few different tools during development or after a version has already released. While I'm developing and testing a new feature at my desk, I'll build and run my code through Xcode, and click on the Debug navigator, which looks like a little spray bottle, to see the various gauges Xcode has to offer. The one I'll pay close attention to is the Energy Gauge. The Energy Gauge allows me to track my CPU usage as I'm testing my app and shows me regions of high CPU utilization and CPU Wake Overhead. High CPU utilization is when CPU use is greater than 20%, and CPU Wake Overhead is regions where the CPU wakes from an idle state, and there's an incurred energy cost. It's common to see a spike in CPU when my app is drawing the user interface, processing data from the network, or performing calculations, but once those tasks are complete and my app is waiting for the user to perform their next action, I should see the CPU usage be at, or near, zero. From here, I can also click Time Profile to profile my app in Instruments and see the thermal state, CPU usage, and active call stacks for the profiled duration. I can also use the Location Energy Model to measure the impact of Core Location and make sure my app isn't using the location when it shouldn't be. Occasionally, there might be a bug in a beta or released version of my app that's tough to reproduce at my desk or may need more logging and context to debug. MetricKit, which operates on-device as an all-in-one performance telemetry framework, can help me narrow down the root cause and provide me valuable insights into problems my customers are facing. To use MetricKit, all I need to do is add and implement a custom class called AppMetrics in my app and conform this new class to the MXMetricManagerSubscriber protocol.\n\nI can then add a reference to my custom class to the manager. And remove a reference to my custom class on deinit, which is a recommended best practice.\n\nI can process this data in the corresponding didReceive methods. If done strategically, I can augment much of the same data I'll find in the Organizer, such as the energy logs and CPU metrics, with contextual data from MetricKit about what may have been going wrong when the problem occurred. A simple version of this data is available to you, with no extra effort, thanks to our on-device analytics pipeline. As users use your app, we collect performance data from consented devices. This data is then aggregated on our servers and sent back to you through one of our many tools, like the Xcode Organizer. Accessing the Xcode Organizer to see performance data for a version of my app that's already in the app store is as easy as navigating to the menu bar while Xcode is open, going to window, and clicking Organizer to launch.\n\nOnce I'm here, I can click on the battery usage metric to view aggregated data for my app across the last 16 app versions, as well as a detailed breakdown by major subcomponent to the right of the chart.\n\nIf the newest version of my app has a major regression, I'll know about it right after a version shows up in the Organizer, if I navigate to the Regression pane, which is new in Xcode 13. This new regressions pane isolates all the metrics that have increased significantly in the most recent version of my app so I can see all the things I need to focus on in one place. To determine what areas of my app caused the issues, I can also use Energy Organizer under Reports to view regions of high CPU use and logs that were collected from consented user devices. This provides a more detailed look into what was happening in my app. I can get all of this data by querying the App Store Connect API as well and running my own analysis on the JSON payload that is returned with my requested data. All of these tools will make it easy for me to catch and resolve a lot of the battery usage regressions in my app. To learn more about battery life optimizations, check out the \"Improving Battery Life and Performance\" talk from 2019, and to learn more about using Instruments, check out the \"Analyze HTTP Traffic in Instruments\" talk this year. Our next stop is Hang Rate and Scrolling, two metrics that convey that my app wasn't responsive. A hang is when the app is unresponsive to user input or actions for at least 250 milliseconds. Hangs in the app can lead customers to force quit the application from the app switcher and are a major impediment to the user's experience in your app and should be prioritized.\n\nStuttering scrolls occur when new content isn't ready for the next screen refresh. These will lead to an unenjoyable user experience and overall frustration, resulting in users spending less time in your app. As an app developer, the goal is to maximize the amount of user engagement, so this is a great place to start optimizing.\n\nRemember that smooth scroll we showed you earlier? Aiming for this is in the best interest of your users. I can track hangs and my scrolling metrics in the Xcode Organizer by navigating to their respective views. A sign that I need to pay close attention to what my app is doing is if I notice either of the charts trending upwards or, in the case of scrolling, if I notice that the graph is showing more yellow and red bars instead of green ones, like in this graph here. According to the key to the right of the chart, the red bar is indicative of the poor scroll experience we saw in the video earlier and should be fixed immediately. This data is now also available through the App Store Connect API. I can use Instruments to detect the cause of my hangs by using the Thread State or System Call Traces. The Thread State Trace instrument shows a timeline of the thread's state and when the OS has scheduled the thread to run. I can see how long a thread was blocked for in the details section.\n\nThe System Call Trace shows a narrative that details the system calls entered and how long they took. To verify that I'm not releasing app versions with bugs that will affect my users' scroll experience, I can write a performance test with XCTest that launches and scrolls through my app. In this test, I'm specifying that I want to measure the scrollDeceleration submetric, and in the body of the measure block, I'm swiping up with the scroll velocity I expect in my app. Since this measure block runs five times by default, I'll reset the application state between runs by using the XCTMeasureOptions. I can pass this into my measure block, stop measuring, and then reset my application state. Sometimes, reproducing responsiveness issues in forced test cases may not be easy. Luckily, MetricKit, when deployed in my production application, can allow me to collect telemetry and diagnostics for these issues at the time they occur. In the case of hangs, in iOS 14, MetricKit would deliver these diagnostics to me at a 24-hour cadence. New in iOS 15 and macOS 12, I will now receive all diagnostics, including hangs, in my app immediately after an issue occurs. Using these instant diagnostics in conjunction with my own telemetry, I can quickly root cause and resolve the most pressing responsiveness problems. In the case of scroll hitches, iOS 15 introduces a new API within MetricKit to tag custom animations using MXSignpost. MXSignpost is a wrapper API shipped with MetricKit that allows me to mark critical code sections for telemetry.\n\nUsing the MXSignpostAnimation- IntervalBegin API, I'll be able to strategically mark the beginning of custom animations. Using the MXSignpost end API, I can mark the end of the animation and collect hitch-rate telemetry during that interval. These two functions will not only capture granular performance data for this interval, but will also capture any hitches that occur. To learn more about how to understand and eliminate hangs, I recommend checking out the \"Understand and Eliminate Hangs from your App\" talk this year. For in-depth details on how to identify scroll hitch issues, I recommend checking out the \"Eliminate Hitches Using XCTest\" talk and the \"Explore UI Animation Hitches and the Render Loop\" tech talks from 2020. We're approaching the halfway mark now as we now move on to discussing Disk Writes. Writing to disk can wear out my users' NAND, which will lead to poor device health. Writes also take a lot of time and can lead to poor user experience and slow performance if done frequently, so it's important to batch these writes.\n\nBefore releasing my app version, I can profile my app using the File Activity template in Instruments. This records file system use in the form of system calls, so I can easily identify places in my app's code where I'm accessing the file system. There are many ways to be good citizens of the system and limit writing to disk. Some common ones are batching your write operations, using Core Data for frequently-changing data, and avoiding rapid file creation and deletion. In addition to profiling my app, I can also write performance tests with XCTest to measure the disk usage of my app to prevent code with excessive Disk Writes from running on user devices. This is as simple as passing an instance of XCTStorageMetric to the measureWithMetric API and then invoking the code that writes to disk. The test measures the amount of data written to disk by the code in the block and shows me the result within Xcode itself. I can set a baseline of the amount of data I expect to be written to disk so that the test fails if the code in the block exceeds that. This will help me ensure that I'm not putting out any buggy code.\n\nIf I've already released a version of my app with high Disk Writes, I can use the Organizer to track its performance on user devices. The Disk Writes metric shows me the trend of how many writes the current version of my app is doing compared to the previously released versions. Spikes in the graph can indicate that my app has bugs that are causing a high amount of writes. I should identify the top sources of these writes, understand them, and look for ways reduce them.\n\nI can look for the sources of these writes by taking a look at the Disk Writes Reports. These are a collection of exception reports that are generated when my app writes more than 1 GB in a 24-hour period. The stack trace shows me where in my code I was doing excessive writes, and, new in Xcode 13, I can also get additional details called Insights, which point me to some easy optimizations I can make to be a good citizen of the system and reduce some of the writes in my app. All of this data is now also available to me through the App Store Connect API. I can also obtain these reports in MetricKit at the time they occur in my application. If I'm using MetricKit to monitor my app's disk usage, I can book-end critical Disk Write paths with MXSignpost intervals to collect more granular telemetry, which can help me discover opportunities for optimization. To learn more about how to seamlessly identify and resolve Disk Write issues, be sure to tune in to the \"Diagnose Power and Performance Regressions in your App\" talk this year. As we approach the next stop, we'll be discussing launch time and terminations. Launch time is the amount of time between when the user taps your app icon and when the first frame gets rendered in your app.\n\nIf your user spends a long time waiting for your app to launch, that can lead to unintentional frustration for the user, and extended launch times can lead to the system terminating your app. When the system terminates your app, your user will experience the entire launch flow from the beginning, which takes much longer than resuming from a background running state.\n\nProcess exits can happen for many different reasons, like hitting and exceeding the system memory limit or timing out on launch.\n\nEvery time your app terminates for one of these reasons, it goes through the full launch flow the next time your user taps your app icon, and that not only takes a long time, but is also a frustrating experience, especially if it's happening frequently.\n\nIf you're not restoring state, this can also add to the frustration of a user having to find their place again or recreate lost work.\n\nI just released a new version of my app with a feature that allows my users to add pictures and detailed recipes for their meals. Let's see what the launch time for my app looks like with this new feature and what it looked like before.\n\nThis is what the user will see when they try to launch my app now that it has the new feature in it. Notice how much time was spent attempting to render the first frame? My app was suspended before we even had a chance to use it. In comparison, here's what the launch looked like before that feature was added. It's almost like my app anticipated a launch and had the first frame ready to display. From these two examples, I already know that the first incredibly slow launch is not what I want my users to remember when they think of my app. So I'll need to fix this as soon as possible. Since the launch issue is already in a version of my app that users are using, I can start by going to the Organizer and taking a look at the Launch Time and new Terminations panes. Looking at launch times will give me an idea of what the average \"time to first frame\" of my app is over the last 16 versions, so I can see how fast it was before my new feature was added. I can also go to the Terminations pane to see how frequently my app is being terminated by the system because of how long it's taking to launch.\n\nAfter looking at the Organizer, it actually looks like this is a pretty bad bug that was introduced with my new feature, and it's hitting a lot of my users. Let's take a look at how I can go about fixing this. I can test this issue at my desk by using the App Launch template in Instruments to profile my app's launch time. This template runs my app for five seconds, during which it gathers a time profile and Thread State Trace of what was going on while the app was launching, so I can figure out why the threads were blocked and fix that. I can also measure launch times in a performance XCTest by using the XCTApplicationsLaunchMetric in a measure block similar to what we saw earlier. If I want to do my own analytics, with MetricKit implemented in my app, I'll receive termination telemetry as part of the daily metric payload by default. For more information on state restoration to avoid data loss when your app is terminated, check out the \"Why is my App Getting Killed?\" talk from 2020. Yay, we've done it. We're at our final stop before we wrap up our journey. Our final stop is Memory. Memory is a shared resource between apps, the OS, and kernel. If your app exceeds the memory limit, it will be terminated by the system, and the next time the user goes to launch it, it'll launch from the beginning, which takes much longer than resuming from a background running state. The new feature in my app allows developers to add pictures and descriptions to their meals, which means that there's a chance that the memory use gets a little high. If this happens, there's a chance that my app can get terminated for exceeding the memory limit, so I should keep an eye on the Memory and Terminations metrics in the Organizer to make sure that isn't the case. It looks like it's not being terminated, but there's a large spike in memory use in this new version of my app, according to the peak memory and memory at suspension charts in the Organizer.\n\nI can profile the memory use of my app by using the Leaks, Allocations, and VM Tracker templates in Instruments. Leaks will examine my process's heap and check for leaked memory. Allocations will analyze the memory life cycle of my app. And VM Tracker will show the virtual memory space of my app over time. I can also use MetricKit to get the same information and run my own analysis on it. In addition to using my daily metric payloads that contain termination and memory telemetry, I can also instrument MXSignposts around critical code sections to capture more granular telemetry about memory usage.\n\nTo learn more about detecting and understanding how to resolve memory regressions before they make it into your application, check out the \"Detect and Diagnose Memory Issues\" talk this year. Before I send you on your way, let's wrap up what we've seen here today and go over some next steps. We understand how challenging it can be to identify performance optimizations. Over the last few years, developers have used these same tools that we provide to you to make significant performance optimizations.\n\nA great example is Snapchat, an app that millions of people use every day. Snapchat has a long-standing dedication to improving the launch experience of their app and driving down terminations.\n\nIn the last year, we've seen a 99% reduction in undesirable terminations for Snapchat. We think that's incredible, and using the performance tools and data we've discussed here today, you can accomplish this too.\n\nIf you're new to performance tools, I recommend taking a moment to check out the \"Diagnose Performance Issues with the Xcode Organizer\" and \"What's New in MetricKit\" talks from 2020, as well as the \"Identify Trends with the Power and Performance API\" talk from 2020 and the \"Getting Started with Instruments\" talk from 2019. After digging into all of these metrics and tools, we're hoping that you're well equipped with the resources you'll need to ship the most performant apps in the App Store. Your users will thank you for this as they enjoy a seamless user experience. There was a lot of material covered here, so as a fun exercise, I recommend you use the Xcode Organizer to see trending data on your app's performance. Explore and play with the different templates offered in Instruments. Challenge yourself to write XCTests to catch issues before they're released. And broaden the scope of your analytics with MetricKit.\n\nThere's so much our tools have to offer when it comes to optimizing for performance, so don't hesitate to get your hands dirty and explore all that comes with them. Thank you for joining me on today's journey, and I hope you have a wonderful time at this year's conference. [upbeat music]",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "5:46",
+      "title": "Using MetricKit",
+      "language": "swift",
+      "code": "class AppMetrics: MXMetricManagerSubscriber {\n\tinit() {\n\t\tlet shared = MXMetricManager.shared\n\t\tshared.add(self)\n\t}\n\n\tdeinit {\n\t\tlet shared = MXMetricManager.shared\n\t\tshared.remove(self)\n\t}\n\n\t// Receive daily metrics\n\tfunc didReceive(_ payloads: [MXMetricPayload]) {\n\t\t// Process metrics\n\t}\n\n\t// Receive diagnostics\n\tfunc didReceive(_ payloads: [MXDiagnosticPayload]) {\n\t\t// Process metrics\n\t}\n}"
+    },
+    {
+      "timestamp": "10:29",
+      "title": "Testing Scroll performance",
+      "language": "swift",
+      "code": "func testScrollingAnimationPerformance() throws {\n        \n    app.launch()\n    app.staticTexts[\"Meal Planner\"].tap()\n    let foodCollection = app.collectionViews.firstMatch\n\n    let measureOptions = XCTMeasureOptions()\n    measureOptions.invocationOptions = [.manuallyStop]\n        \n    measure(metrics: [XCTOSSignpostMetric.scrollDecelerationMetric],\n    options: measureOptions) {\n        foodCollection.swipeUp(velocity: .fast)\n        stopMeasuring()\n        foodCollection.swipeDown(velocity: .fast)\n    }\n}"
+    },
+    {
+      "timestamp": "11:53",
+      "title": "Using mxSignpostAnimationIntervalBegin",
+      "language": "swift",
+      "code": "func startAnimating() {\n\t// Mark the beginning of animations\n\tmxSignpostAnimationIntervalBegin(\n\t\tlog: MXMetricManager.makeLogHandle(category: \"animation_telemetry\"), \n\t\tname: \"custom_animation”)\n\t}\n\n\tfunc animationDidComplete() {\n\t// Mark the end of the animation to receive the collected hitch rate telemetry\n\tmxSignpost(OSSignpostType.end, \n\t\tlog: MXMetricManager.makeLogHandle(category: \"animation_telemetry\"), \n\t\tname: \"custom_animation\")\n}"
+    },
+    {
+      "timestamp": "13:51",
+      "title": "Using XCTest to Measure Disk Usage",
+      "language": "swift",
+      "code": "// Example performance XCTest\n\nfunc testSaveMeal() {\n\tlet app = XCUIApplication()\n\tlet options = XCTMeasureOptions()\n\toptions.invocationOptions = [.manuallyStart]\n\n\tmeasure(metrics: [XCTStorageMetric(application: app)], options: options) {\n\t\tapp.launch()\n\t\tstartMeasuring()\n\n\t\tlet firstCell = app.cells.firstMatch\n\t\tfirstCell.buttons[\"Save meal\"].firstMatch.tap()\n\n\t\tlet savedButton = firstCell.buttons[\"Saved\"].firstMatch\n\t\tXCTAssertTrue(savedButton.waitForExistence(timeout: 2))\n\t}\n}"
+    },
+    {
+      "timestamp": "21:19",
+      "title": "Collect memory telemetry",
+      "language": "swift",
+      "code": "// Collect memory telemetry\n\nfunc saveAppAssets() {\n\tmxSignpost(OSSignpostType.begin, \n\t\tlog: MXMetricManager.makeLogHandle(category: \"memory_telemetry\"), \n\t\tname: \"custom_memory\")\n\n\t// save app metadata\n\n\tmxSignpost(OSSignpostType.end, \n\t\tlog: MXMetricManager.makeLogHandle(category: \"memory_telemetry\"), \n\t\tname: \"custom_memory\")\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Analyzing the performance of your shipping app",
+        "url": "https://developer.apple.com/documentation/Xcode/analyzing-the-performance-of-your-shipping-app"
+      },
+      {
+        "title": "App Store Connect API",
+        "url": "https://developer.apple.com/documentation/AppStoreConnectAPI"
+      },
+      {
+        "title": "Improving app responsiveness",
+        "url": "https://developer.apple.com/documentation/Xcode/improving-app-responsiveness"
+      },
+      {
+        "title": "MetricKit",
+        "url": "https://developer.apple.com/documentation/MetricKit"
+      },
+      {
+        "title": "XCTest",
+        "url": "https://developer.apple.com/documentation/XCTest"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10181/11/A69D2FCC-21C3-4392-B857-552EF73E7714/downloads/wwdc2021-10181_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10181/11/A69D2FCC-21C3-4392-B857-552EF73E7714/downloads/wwdc2021-10181_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10100",
+      "year": "2023",
+      "title": "Optimize app power and performance for spatial computing",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10100"
+    },
+    {
+      "id": "10180",
+      "year": "2021",
+      "title": "Detect and diagnose memory issues",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10180"
+    },
+    {
+      "id": "10087",
+      "year": "2021",
+      "title": "Diagnose Power and Performance regressions in your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10087"
+    },
+    {
+      "id": "10203",
+      "year": "2021",
+      "title": "Triage TestFlight crashes in Xcode Organizer",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10203"
+    },
+    {
+      "id": "10258",
+      "year": "2021",
+      "title": "Understand and eliminate hangs from your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10258"
+    },
+    {
+      "id": "10076",
+      "year": "2020",
+      "title": "Diagnose performance issues with the Xcode Organizer",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10076"
+    },
+    {
+      "id": "10077",
+      "year": "2020",
+      "title": "Eliminate animation hitches with XCTest",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10077"
+    },
+    {
+      "id": "10057",
+      "year": "2020",
+      "title": "Identify trends with the Power and Performance API",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10057"
+    },
+    {
+      "id": "10081",
+      "year": "2020",
+      "title": "What's new in MetricKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10081"
+    },
+    {
+      "id": "411",
+      "year": "2019",
+      "title": "Getting Started with Instruments",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/411"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:43:38.568Z"
+}

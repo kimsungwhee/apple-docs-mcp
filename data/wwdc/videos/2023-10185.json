@@ -1,0 +1,152 @@
+{
+  "id": "10185",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10185/",
+  "title": "Update Live Activities with push notifications",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Jeff: Hi, I'm Jeff, an engineer on the Live Activities team. It's my pleasure to be able to share with you updating Live Activities with push notifications. Live Activities are a great way to display glanceable information to someone about an ongoing activity. ActivityKit enables your app to start, update, and end Live Activities. Then, by utilizing WidgetKit and SwiftUI, you can build the UI that displays the information to the user.\n\nIf you would like to learn more about these technologies, check out Can's \"Meet ActivityKit\" session. In the \"Meet ActivityKit\" session, Can added a new Live Activity to Emoji Rangers to display status of a hero's adventure. But I think it'll be more fun if the hero has some companions. So I want to add a new feature that allows multiple users to form parties with their heroes and send them on adventures together. To provide the best user experience, I will update the Live Activity to show events for all heroes in the party.\n\nTo achieve this, I will introduce a server to keep track of the adventure, instead of doing it on the device. The server will be responsible for keeping the Live Activities up to date. And since calculations are done on the server, the app should not need foreground runtime to update the Live Activity. This will lower the amount of impact on the user's battery life. I think updating Live Activities with ActivityKit push notifications is a great way to implement this feature. In this session, the first thing I will cover are the preparations you need to make to enable updating your Live Activities with push updates. Then I will take you through sending your first push update from your computer. Third, we will discuss the differences between update priorities and how to alert your users. Lastly, I will go through additional enhancements you can make to your push updates to take them to the next level.\n\nLet's get started with preparations. Before you start updating your Live Activities with push updates, it's helpful to understand how your app and your server interact with Apple Push Notification service. It all starts with your app. When a new Live Activity is started, ActivityKit will obtain a push token from Apple Push Notification service, or APNs for short. This push token is unique for each Live Activity you request. That's why your app needs to send it to your server before it can start sending push updates. Then, whenever you need to update the Live Activity, your server sends the push request using the token to APNs. Finally, APNs will send the payload to the device, and it will wake your widget extension to render the UI.\n\nTo support this new feature, APNs introduced a new liveactivity push type. This push type is only available to servers with token-based connection to APNs. To learn more about sending push requests, refer to the \"Sending Notification Requests to APNs\" documentation. For more information on token-based connections, refer to \"Establishing a token-based connection to APNs.\" The next step is to modify your app so that your Live Activities are configured to receive push updates. In Xcode, go to your app target. Under the “Signing & Capabilities” tab, add the push notifications capability. This will allow ActivityKit to request push tokens on your app's behalf. I will now dive into code. Here is the snippet of code in Emoji Rangers that requests a Live Activity. I give the Activity request method the attributes of the adventure and the initial content state. In order to support receiving push updates, add the pushType parameter to the method and set its value to \"token.\" This will let ActivityKit know to request a push token for your Live Activity upon its creation. Once the activity has been created, your app needs to send the push token to your server. There is a pushToken property on the Activity type that will allow you to access the push token synchronously. However, do not access it immediately after the activity's creation. The value you get will be nil most of the time. This is because requesting a push token is an asynchronous process. Also, it is possible for the system to update the push token throughout the lifetime of the activity. So your app needs to handle to that accordingly.\n\nThe way to properly handle push tokens is to first create an asynchronous Task. Then start a for-await loop observing the values from the activity's pushTokenUpdates async sequence. The code inside the for loop will be executed whenever there is a new push token for the Live Activity. It's important to use an asynchronous for loop here because it will be able to handle not only the first push token, but also subsequent push token updates. Once you receive the token, convert it to a hexadecimal string, and log it to the debug console. This will come in handy during the testing in the next section. Then finally, send the push token to your server alongside any other data that is required for your app. Push tokens are unique for each activity, so it's important to keep track of them for each Live Activity the user starts. Also, when the system requests a new push token for an existing activity, your app will be given foreground runtime to handle it accordingly. It's important to send the new push token to your server and invalidate the old one, so subsequent push updates are sent correctly. Now that the preparations are complete, it's time to send your first push update. To send a push update, you must send an HTTP request to APNs. The request consists of two parts, the APNs headers and the APNs payload. There are three headers you need to provide in addition to the normal HTTP headers. The first is apns-push-type. The value is liveactivity. The next is apns-topic, which is your app's bundle ID, followed by .push-type.liveactivity. The third is apns-priority, which can be a value of 5 or 10.\n\n5 indicates that this push request is low priority, whereas 10 indicates high priority. I'll be using high priority during testing because it makes the Live Activity update immediately. For the first APNs payload, you will send one that consists of three fields. The first is \"timestamp,\" which is the time interval in seconds since 1970. The system uses timestamp to make sure it's always rendering the latest content state. The second is \"event.\" It's the action you want to perform on the Live Activity. Its value is either \"update\" or \"end.\" It should be set to \"update\" for this initial APNs request. The third field is \"content-state.\" This is the JSON object that can be decoded into your activity's content state type. To ensure you get the content state in the correct format, you can use Foundation's JSONEncoder type from within your app. Here, I create an instance of the Live Activity's ContentState. Then I instantiate a JSONEncoder. Finally, I encode the content state into JSON data and log its string representation to the console. This JSON output with camel cased keys looks just like what I expected. Your content state JSON will always be decoded using a JSONDecoder with default decoding strategies. So when encoding your content state, do not set any custom encoding strategies. Otherwise, your JSON will be mismatched, and the system will fail to update your Live Activity. Now that you know what is entailed in the push request, the next step is to test sending one. I'm a big fan of being able to iterate quickly during development. So I like testing Live Activity push notifications without needing to modify my server. I can achieve this by sending the push request to APNs directly from my terminal. To set up your command line to do this, refer to the \"Sending push notifications using command-line tools\" article. Make sure you are following the instructions in the section called \"Send a Push Notification Using a Token.\" You can quickly verify that you have everything set up correctly by printing the authentication token variable. The next piece of information you need is the push token. In the previous section, I added code to log the push token to the console. So that's where I will get it from. If you took the same approach, go ahead and deploy your app to the device and start your Live Activity. Your app will be logging the push token shortly after the activity has started. Copy the push token and set it as the activity push token variable in your terminal. To send the APNs request, you will be executing a curl command. Here is one I've constructed for the adventure Live Activity. The \"apns-topic\" header is set to the app's bundle ID followed by the push type suffix. Then the \"apns-push-type\" header is set to liveactivity. Third, \"apns-priority\" is set to 10, so my request will be delivered immediately. The final HTTP header, \"authorization,\" is set to \"bearer\" followed by the authentication token variable. As for the data, it contains the entire APNs payload. I'm using the date command to automatically create the timestamp to ensure the number is accurate down to the second. Finally, for the URL, make sure you are using HTTP2. And at the end of the URL, I reference the activity push token variable set up in the previous step. And that's it. When you execute this curl command, your Live Activity will be updated with the new content state provided in the payload. Sometimes, you may see situations where your Live Activity didn't update when you expected it to. The first thing to make sure is that there are no error responses when executing the curl command. An error might indicate an incorrect field in the request, or there was an issue when setting up your environment. If APNs returned a successful response, but your Live Activity still didn't update, then you can utilize the Console app to view device logs and try to triage the issue. Processes that might have relevant logs are liveactivitiesd, apsd, and chronod. Once you are happy with how your live activity is updating with push notifications, it will be time for you to modify your server to start sending real push updates. And that takes me to a crucial part of designing your user experience, priority and alerts. To ensure the best user experience, it's important you choose the correct push priority for each update. The priority you should always consider using first is low priority. Low priority updates are delivered opportunistically, which lowers the impact on the user's battery life. However, this means the Live Activities might not be updated immediately when the push request is sent. So you should use low priority for updates that are less time-sensitive. For my adventure Live Activity, updates like finding common loot or heroes healing a few health points don't require the user's immediate attention. That's why they are great candidates for using low priority updates. Another benefit of using low priority is that there is no limit on how many updates you can send. In order to take advantage of this, you should be using low priority for the majority of your Live Activity updates. On the other hand, certain updates require the user's immediate attention, like when a hero is knocked down or when a major boss is defeated. In these cases, I will choose high priority updates. High priority updates are delivered immediately. That's why they're perfect for time-sensitive updates. However, due to their impact on the user's battery life, the system imposes a budget depending on the device condition. If your app exceeds its budget, the system will throttle your push updates, and it will dramatically impact your user experience. You know your app best, so it's important for you to carefully consider which priority you should use for which updates. In Emoji Rangers, I'm introducing a special type of adventure where the party fights one major boss right after another. To provide the best user experience for this intensive Live Activity, I need the server to send high-priority pushes frequently to keep it up to date. To support this, I will enable the Live Activities frequent updates feature for the app. Enabling this feature will allow my app to get a higher update budget, so my Live Activity updates are less likely to get throttled. To adopt this feature, all I have to do is add a new key to the Info plist called NSSupportsLiveActivitiesFrequentUpdates and set its value to YES. Users can disable frequent updates independently of Live Activities in Settings. So you can detect the status of the frequent updates feature by accessing the ActivityAuthorizationInfo frequentPushesEnabled property.\n\nYour server should adjust its update frequency according to this value, so make sure you are sending it to your server before it starts sending push updates. You only need to check this value once after an activity has started. If this value changes, the system will end all ongoing activities, so your server doesn't need to worry about frequent updates being toggled during the lifetime of an activity. In the adventure live activity, when a hero gets knocked down, in addition to updating immediately, I would also like to catch the user's attention, so they can promptly go into the app and use a healing potion. In order to do this, I will add an additional \"alert\" object with three fields to the payload.\n\nThe \"title\" will be the title of the notification. The \"body\" will be a short message about the update. The \"sound\" will indicate the sound that gets played when the alert is triggered. Emoji Rangers has support for multiple languages, so only sending alerts in English is not ideal, but handling localization on my server is very tricky. Thankfully, there's another way to set the \"title\" and \"body\" fields of the alert object. Instead of passing a string, I can set it as a localized string object. The \"loc-key\" field will be the localization key that can be found in your app's localization files. The \"loc-args\" field will be a list of values that will be inserted into the localized string. Now the device will automatically localize your notifications depending on the user's locale. To add a final touch to the alert, I would like to add custom sounds for different updates. To achieve this, first, I need to add the sound files to my app's target as a resource. Then set the \"sound\" field of the alert object to my sound's file name. And that's it. Now my alert looks and sounds great. Now I'm going to make enhancements to really polish the Live Activity user experience. When the adventure is over, I want to end the Live Activity and dismiss it after a certain amount of time. I will do this by sending a push payload with the event set to end. I provide a custom \"dismissal-date\" because I want to control when the Live Activity should be removed from the lock screen. You can leave out this field to let the system decide when to dismiss your Live Activity. The value for \"dismissal-date\" should be the time interval in seconds since 1970. I'm also providing the final content state to give the Live Activity a final update. This is also optional, and if left out, the activity will just continue to display the previous content state until it's dismissed. Sometimes, the user's device can fail to receive push notifications. And the adventure Live Activity might still be displaying an out of date health value. In these scenarios, I would like to warn the user in the Live Activity UI that it might be displaying inaccurate information. To achieve this, I add a \"stale-date\" field to the payload. The system will use this date to decide when to render your stale view. I can provide my stale view from the ActivityConfiguration declared in the widget extension. All I have to do is make my view react to the value of the isStale property on ActivityViewContext. When there are multiple adventure Live Activities at the same time, I want to make sure they're ordered correctly on the Lock Screen. The ones with more important updates should be near the top, and the most important one should be in the Dynamic Island. I can arrange this by providing the optional \"relevance-score\" field. Higher the number indicates higher the relevance.\n\nNow that you know how to update your Live Activities with push notifications, it's time to add it to your app. The first thing to do is configure your server and your app to support ActivityKit push notifications. Then test sending push updates from your terminal to iterate quickly. Once you're happy with that, start implementing the end to end support on your server. Meanwhile, you should keep in mind your user experience, use the appropriate priorities, and alert the user if necessary. I hope you enjoyed learning about Live Activities with me. I can't wait to see all the creative ideas you will bring to the Dynamic Island and the Lock Screen.\n\nThanks for watching. ♪ ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:53",
+      "title": "Enabling push updates",
+      "language": "swift",
+      "code": "func startActivity(hero: EmojiRanger) throws {\n    let adventure = AdventureAttributes(hero: hero)\n    let initialState = AdventureAttributes.ContentState(\n        currentHealthLevel: hero.healthLevel,\n        eventDescription: \"Adventure has begun!\"\n    )\n\n    let activity = try Activity.request(\n        attributes: adventure,\n        content: .init(state: initialState, staleDate: nil),\n        pushType: .token\n    )\n\n    Task {\n        for await pushToken in activity.pushTokenUpdates {\n            let pushTokenString = pushToken.reduce(\"\") { $0 + String(format: \"%02x\", $1) }\n            \n            Logger().log(\"New push token: \\(pushTokenString)\")\n            \n            try await self.sendPushToken(hero: hero, pushTokenString: pushTokenString)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "6:54",
+      "title": "APNs push payload: Updating",
+      "language": "swift",
+      "code": "{\n    \"aps\": {\n        \"timestamp\": 1685952000,\n        \"event\": \"update\",\n        \"content-state\": {\n            \"currentHealthLevel\": 0.941,\n            \"eventDescription\": \"Power Panda found a sword!\"\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "7:37",
+      "title": "Printing content state JSON",
+      "language": "swift",
+      "code": "let contentState = AdventureAttributes.ContentState(\n    currentHealthLevel: 0.941,\n    eventDescription: \"Power Panda found a sword!\"\n)\n\nlet encoder = JSONEncoder()\nencoder.outputFormatting = .prettyPrinted\n\nlet json = try! encoder.encode(contentState)\nLogger().log(\"\\(String(data: json, encoding: .utf8)!)\")"
+    },
+    {
+      "timestamp": "9:18",
+      "title": "Terminal: Constructing an APNs request with curl",
+      "language": "swift",
+      "code": "curl \\\n  --header \"apns-topic: com.example.apple-samplecode.Emoji-Rangers.push-type.liveactivity\" \\\n  --header \"apns-push-type: liveactivity\" \\\n  --header \"apns-priority: 10\" \\\n  --header \"authorization: bearer $AUTHENTICATION_TOKEN\" \\\n  --data '{\n      \"aps\": {\n          \"timestamp\": '$(date +%s)',\n          \"event\": \"update\",\n          \"content-state\": {\n              \"currentHealthLevel\": 0.941,\n              \"eventDescription\": \"Power Panda found a sword!\"\n          }\n      }\n  }' \\\n  --http2 https://api.sandbox.push.apple.com/3/device/$ACTIVITY_PUSH_TOKEN"
+    },
+    {
+      "timestamp": "14:21",
+      "title": "APNs push payload: Alerting",
+      "language": "swift",
+      "code": "{\n    \"aps\": {\n        \"timestamp\": 1685952000,\n        \"event\": \"update\",\n        \"content-state\": {\n            \"currentHealthLevel\": 0.0,\n            \"eventDescription\": \"Power Panda has been knocked down!\"\n        },\n        \"alert\": {\n            \"title\": \"Power Panda is knocked down!\",\n            \"body\": \"Use a potion to heal Power Panda!\",\n            \"sound\": \"default\"\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "14:56",
+      "title": "APNs push payload: Alert localization",
+      "language": "swift",
+      "code": "{\n    \"aps\": {\n        \"timestamp\": 1685952000,\n        \"event\": \"update\",\n        \"content-state\": {\n            \"currentHealthLevel\": 0.0,\n            \"eventDescription\": \"Power Panda has been knocked down!\"\n        },\n        \"alert\": {\n            \"title\": {\n                \"loc-key\": \"%@ is knocked down!\",\n                \"loc-args\": [\"Power Panda\"]\n            },\n            \"body\": {\n                \"loc-key\": \"Use a potion to heal %@!\",\n                \"loc-args\": [\"Power Panda\"]\n            },\n            \"sound\": \"HeroDown.mp4\"\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "15:52",
+      "title": "APNs push payload: Dismissal",
+      "language": "swift",
+      "code": "{\n    \"aps\": {\n        \"timestamp\": 1685952000,\n        \"event\": \"end\",\n        \"dismissal-date\": 1685959200,\n        \"content-state\": {\n            \"currentHealthLevel\": 0.23,\n            \"eventDescription\": \"Adventure over! Power Panda is taking a nap.\"\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "16:44",
+      "title": "APNs push payload: Stale date",
+      "language": "swift",
+      "code": "{\n    \"aps\": {\n        \"timestamp\": 1685952000,\n        \"event\": \"update\",\n        \"stale-date\": 1685959200,\n        \"content-state\": {\n            \"currentHealthLevel\": 0.79,\n            \"eventDescription\": \"Egghead is in the woods and lost connection.\"\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "16:54",
+      "title": "Displaying a stale Live Activity UI",
+      "language": "swift",
+      "code": "struct AdventureActivityConfiguration: Widget {\n    \n    var body: some WidgetConfiguration {\n        \n        ActivityConfiguration(for: AdventureAttributes.self) { context in\n            AdventureLiveActivityView(\n                hero: context.attributes.hero,\n                isStale: context.isStale,\n                contentState: context.state\n            )\n            .activityBackgroundTint(Color.gameWidgetBackground)\n        }  dynamicIsland: { context in\n            // ...\n        }\n        \n    }\n    \n}"
+    },
+    {
+      "timestamp": "17:19",
+      "title": "APNs push payload: Relevance score",
+      "language": "swift",
+      "code": "{\n    \"aps\": {\n        \"timestamp\": 1685952000,\n        \"event\": \"update\",\n        \"relevance-score\": 100,\n        \"content-state\": {\n            \"currentHealthLevel\": 0.941,\n            \"eventDescription\": \"Power Panda found a sword!\"\n        }\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "ActivityKit",
+        "url": "https://developer.apple.com/documentation/ActivityKit"
+      },
+      {
+        "title": "Establishing a token-based connection to APNs",
+        "url": "https://developer.apple.com/documentation/UserNotifications/establishing-a-token-based-connection-to-apns"
+      },
+      {
+        "title": "Human Interface Guidelines: Live Activities",
+        "url": "https://developer.apple.com/design/human-interface-guidelines/live-activities"
+      },
+      {
+        "title": "Sending notification requests to APNs",
+        "url": "https://developer.apple.com/documentation/UserNotifications/sending-notification-requests-to-apns"
+      },
+      {
+        "title": "Sending push notifications using command-line tools",
+        "url": "https://developer.apple.com/documentation/UserNotifications/sending-push-notifications-using-command-line-tools"
+      },
+      {
+        "title": "Starting and updating Live Activities with ActivityKit push notifications",
+        "url": "https://developer.apple.com/documentation/ActivityKit/starting-and-updating-live-activities-with-activitykit-push-notifications"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10185/4/1867F512-50A9-4907-A90A-34A7E198BDB7/downloads/wwdc2023-10185_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10185/4/1867F512-50A9-4907-A90A-34A7E198BDB7/downloads/wwdc2023-10185_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10069",
+      "year": "2024",
+      "title": "Broadcast updates to your Live Activities",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10069"
+    },
+    {
+      "id": "10028",
+      "year": "2023",
+      "title": "Bring widgets to life",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10028"
+    },
+    {
+      "id": "10194",
+      "year": "2023",
+      "title": "Design dynamic Live Activities",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10194"
+    },
+    {
+      "id": "10184",
+      "year": "2023",
+      "title": "Meet ActivityKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10184"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:13:01.757Z"
+}

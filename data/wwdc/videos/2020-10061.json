@@ -1,0 +1,167 @@
+{
+  "id": "10061",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10061/",
+  "title": "Expand your SiriKit Media Intents to more platforms",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services",
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello, and welcome to WWDC.\n\nHi. I'm Danny Mandel, and welcome to \"Expand Your SiriKit Media Intents to More Platforms.\" We've got an exciting mix of SiriKit Media new features and experiences for you this year. We've got a lot to talk about. We're putting a particular emphasis on SiriKit Media Intents in the home this year. As part of that, we'll be opening up to new platforms. Additionally, we have some new features to discuss.\n\nFinally, we'll finish up with some new ways to make your SiriKit Media experience even faster. So let's dive right in to the new SiriKit Media platforms. Last year, we made a great experience for you on the go, and this year we're bringing that same great experience to one of the places you listen to music the most-- in the home.\n\nOn HomePod, we're using the same media intents and a new cloud playback API to take advantage of the unique characteristics of the HomePod in the Apple Home. You'll want to check out the full developer program details at developer.apple.com/siri.\n\nWe're happy to announce that SiriKit Media Intents also now work on Apple TV. In addition to your iOS apps, we know many of you have custom Apple TV experiences, and we wanted to open up SiriKit Media to those apps as well. Now I'll hand it over to my colleague Ryan Klems to give us a demo of the new Apple TV functionality in action. Last year, in iOS 13 and watchOS 6, we introduced SiriKit Media Intent handling for your media applications. This year, we're happy to announce that we've brought that same functionality to tvOS 14. Now you can add Siri support to your applications on the big screen. SiriKit Media Intents allow you to add a wide variety of natural language queries to your application. You can do simple searches: Play music on ControlAudio.\n\nYou can ask to play a band: Play the band Khruangbin on ControlAudio.\n\nYou can ask to play a song by an artist: Play the song \"Be Kind\" by Marshmello and Halsey on ControlAudio...\n\nand many more. So how do you do that? Adding SiriKit Media Intent handling to your tvOS application is done the same way you would add the support to iOS. Please see the 2019 WWDC session, \"Introducing SiriKit Media Intents,\" for more information on the steps to add the extension target to your application. Now, let's do a quick recap of how we handle natural language requests in SiriKit Media apps.\n\nThe intent handler is the key class in handling SiriKit Media requests, and the key method to implement is resolveMediaItems. resolveMediaItems is where you evaluate the INPlayMediaIntent object that is received by your application and perform a search to turn it into the concrete media item that you want your app to play. After you resolve the media item, your handler will be called, and this will cause your application to be launched so you can begin playback. One difference with tvOS is that the customer is generally only interacting with one application at a time, and as a result, a foreground app launch is likely the more preferred interaction. Unlike on iOS where a background launch is more likely the preferred interaction.\n\nYou control this by returning continueInApp from your handle method instead of handleInApp. So, with the same few short steps that we showed you last year, you can add the ability for your application to play audio content through Siri on tvOS. We were very excited to see all the great adoptions of SiriKit Media Intents last year on iOS and watchOS and are looking forward to seeing what you do on tvOS this year. Thanks for that awesome demo, Ryan. Now I want to switch from platforms to new features that make the experience of asking Siri to listen to music even easier. As we work through these examples, we'll be using our example app, ControlAudio, which was introduced at WWDC19. So let's talk about the new Siri alternatives UI.\n\nSo, let's take a look at the current SiriKit Media experience in the new compact Siri UI. We ask to play a song from the album New Me, Same Us. ControlAudio chose a single song to play, and playback begins. There isn't a way to present more information than this, so we're only able to play that one song. We all know that sometimes we want something slightly different than what starts playing. So we've made it easier to make tweaks on the fly, without having to open the app and disrupt whatever you're doing while on the go.\n\nWe do so with the new alternatives UI in SiriKit Media. We can see that someone asked to play that same song, and Siri started playing it for them.\n\nHowever, we can now also see this new menu that says \"Maybe You Wanted,\" and if we tap on it, we are taken to the following UI.\n\nAnd as you can see here, there are a number of different songs from the same album that someone might have wanted instead of the one that ControlAudio chose. Now we can tap on any one of those options to start playing that instead of the first choice. And that is the new SiriKit Media Alternatives UI. So how do we make this work? It ends up being quite simple.\n\nIn your current resolveMediaItems method, you're probably calling the success with resolvedMediaItem method on INMediaItemResolutionResult. Now, that method is going to return a single media item resolution result.\n\nIn order to return multiple items, all you need to do is switch over to the new plural version, successes with resolvedMediaItems, and anything after the first item in the list will show up as an alternative.\n\nSo the next question you may ask is how do you handle the taps when someone chooses one of the alternatives? All that happens when someone taps on one of the alternatives is that the media item they've tapped on is set as the media item in the INPlayMediaIntent that is passed to handle. What this means is that you can handle this just as you handle any other INPlayMediaIntent today.\n\nLet's see the code change we need to make in order to get SiriKit Media alternatives working. The first thing we're gonna do is open our intent handler in our sample project, ControlAudio.\n\nAnd we'll navigate to our resolveMediaItems method.  Currently, we're calling the singular version of the method success with: So let's run the app and see what it does.\n\nPlay a song from New Me, Same Us on ControlAudio.\n\nHere's \"Where You Belong\" by Little Dragon on ControlAudio. All right, we can see that it started playback, but there are no alternatives.\n\nSo let's go back to Xcode, kill the process, and update the method to return multiple media items instead of just a single one.  So now we're calling the plural version of the method successes with: Let's run the app and see what it does this time.\n\nPlay a song from\n\n\"Where You Belong\" by Little Dragon now playing on ControlAudio. All right now we have alternatives. Let's go play one.\n\nAnd I'll play \"New Fiction.\" And we can see that it started playing. It's just that easy to get the new alternative support hooked up in SiriKit Media. Now let's talk about some performance improvements that are new to SiriKit Media this year.\n\nLast year, when we launched SiriKit Media Intents, we required the use of an intents extension to adopt your SiriKit Media functionality.\n\nThis year, there's a new way to handle SiriKit Media Intents-- in-app intent handling.\n\nIn-app intent handling moves all the intent handling stages into your app rather than in an extension. An advantage here is that it avoids a process launch, as you don't need to launch your intents extension and your app to start a background audio session. You only need to launch your app.\n\nHowever, because it's launching your full app, this could potentially mean a slower Siri response time during the resolve phase. Intents extensions are small, lightweight processes optimized for quick launching, so you will definitely need to tune your full app launch experience to get the same quick response out of it.\n\nOne other benefit you could see is that you can start the player warming phase much earlier in your app, since you'll be implementing resolve there. So, if you know you need to kick off network requests to fetch credentials, you can start that at the beginning of resolve and ensure that the player is 100% initialized by the time you get to handle the intent. I refer you to the presentation, \"Integrate Intents with Your App,\" to get the full details on in-app intent handling.\n\nFor those of you with existing extension-based implementations, we also have a performance boost this year via app pre-warming.\n\nLooking at your existing SiriKit Media implementation, we go through the standard resolve, confirm and handle phases, and then once all those are complete, we issue a background app launch for your app to begin playback. This does provide for a nice separation of concerns in that the extension can contain all the intent handling logic, and the app can handle the playback logic. However, it can delay important app concerns such as playback engine setup or credential fetching until much later than they need to be.\n\nWith app pre-warming, SiriKit will get your app fired up earlier and have playback ready to go once your extension is complete. It's important to note that app pre-warming does require some additional work in your app, so you'll want to work with us to make sure you get it working properly. And last, there are benefits and drawbacks to both in-app intent handling and app pre-warming, so you're going to need to evaluate the pros and cons for your particular implementation to see what works best for you. We wanted to let everyone in the developer community know that, as the saying goes, we're eating our own dog food.\n\nWe're thrilled to have a common framework for our bug fixes, new features, and performance improvements that both you and the Siri team at Apple can benefit from. Thank you, and we hope you enjoy giving people great, new\nSiriKit Media experiences this year.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:45",
+      "title": "resolveMediaItems method",
+      "language": "swift",
+      "code": "func resolveMediaItems(for intent: INPlayMediaIntent, with completion: @escaping ([INPlayMediaMediaItemResolutionResult]) -> Void) {\n}"
+    },
+    {
+      "timestamp": "3:03",
+      "title": "handle with .continueInApp",
+      "language": "swift",
+      "code": "func handle(intent: INPlayMediaIntent, completion: (INPlayMediaIntentResponse) -> Void) {\n  completion(INPlayMediaIntentResponse(code: .continueInApp, userActivity: nil))\n}"
+    },
+    {
+      "timestamp": "5:24",
+      "title": "Singular successWithResolvedMediaItem call",
+      "language": "swift",
+      "code": "INPlayMediaMediaItemResolutionResult.success(with: mediaItems[0])"
+    },
+    {
+      "timestamp": "5:40",
+      "title": "Plural successesWithResolvedMediaItems call",
+      "language": "swift",
+      "code": "INPlayMediaMediaItemResolutionResult.successes(with: mediaItems)"
+    },
+    {
+      "timestamp": "6:07",
+      "title": "handle with .handleInApp",
+      "language": "swift",
+      "code": "func handle(intent: INPlayMediaIntent, completion: (INPlayMediaIntentResponse) -> Void) {\n  completion(INPlayMediaIntentResponse(code: .handleInApp, userActivity: nil))\n}"
+    },
+    {
+      "timestamp": "6:37",
+      "title": "ControlAudio resolveMediaItems",
+      "language": "swift",
+      "code": "func resolveMediaItems(for intent: INPlayMediaIntent, with completion: @escaping ([INPlayMediaMediaItemResolutionResult]) -> Void) {\n    let mediaSearch = intent.mediaSearch\n    resolveMediaItems(for: mediaSearch) { optionalMediaItems in\n        guard let mediaItems = optionalMediaItems else {\n            return\n        }\n        completion(INPlayMediaMediaItemResolutionResult.successes(with: mediaItems))\n    }\n}"
+    },
+    {
+      "timestamp": "10:24",
+      "title": "App prewarming background appLaunch",
+      "language": "swift",
+      "code": "func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {\n    // Locate any app prewarming logic in this method -- fetch credentials, get audio player ready, etc.\n    return true\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Managing Audio with SiriKit",
+        "url": "https://developer.apple.com/documentation/SiriKit/managing-audio-with-sirikit"
+      },
+      {
+        "title": "Providing Hands-Free App Control with Intents",
+        "url": "https://developer.apple.com/documentation/SiriKit/providing-hands-free-app-control-with-intents"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10061/7/0C05700A-690E-443C-9984-6792A466E6CA/wwdc2020_10061_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10061/7/0C05700A-690E-443C-9984-6792A466E6CA/wwdc2020_10061_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10190",
+      "year": "2020",
+      "title": "Create quick interactions with Shortcuts on watchOS",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10190"
+    },
+    {
+      "id": "10074",
+      "year": "2020",
+      "title": "Decipher and deal with common Siri errors",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10074"
+    },
+    {
+      "id": "10086",
+      "year": "2020",
+      "title": "Design for intelligence: Apps, evolved",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10086"
+    },
+    {
+      "id": "10088",
+      "year": "2020",
+      "title": "Design for intelligence: Discover new opportunities",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10088"
+    },
+    {
+      "id": "10087",
+      "year": "2020",
+      "title": "Design for intelligence: Make friends with \"The System\"",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10087"
+    },
+    {
+      "id": "10200",
+      "year": "2020",
+      "title": "Design for intelligence: Meet people where they are",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10200"
+    },
+    {
+      "id": "10060",
+      "year": "2020",
+      "title": "Design high quality Siri media interactions",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10060"
+    },
+    {
+      "id": "10073",
+      "year": "2020",
+      "title": "Empower your intents",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10073"
+    },
+    {
+      "id": "10071",
+      "year": "2020",
+      "title": "Evaluate and optimize voice interaction for your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10071"
+    },
+    {
+      "id": "10084",
+      "year": "2020",
+      "title": "Feature your actions in the Shortcuts app",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10084"
+    },
+    {
+      "id": "10083",
+      "year": "2020",
+      "title": "Integrate your app with Wind Down",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10083"
+    },
+    {
+      "id": "10068",
+      "year": "2020",
+      "title": "What's new in SiriKit and Shortcuts",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10068"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:17:01.346Z"
+}

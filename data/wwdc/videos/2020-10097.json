@@ -1,0 +1,114 @@
+{
+  "id": "10097",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10097/",
+  "title": "Advances in UICollectionView",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nWelcome. My name is Steve Breen, and I'm an engineer on the UIKit team. In this video, we're going to chat a bit about advances in UICollectionView for iOS 14.\n\nBefore we dive into our content, I'm gonna highlight a portion of the companion sample project for this video, entitled Emoji Explorer.\n\nThis sample has a lot of interesting components baked in to its design. In this first section, there's a horizontally scrolling grid of emoji. This is a pretty common design element in today's applications. Now, this middle section of Emoji Explorer is especially novel. It's an expandable-collapsible outline, which is new in iOS 14.\n\nAnd finally, in this last section, there's a design that looks suspiciously like a UITableView right here, camped out in the middle of our UICollectionView.\n\nOkay, so that's Emoji Explorer. And we'll be referring back to this throughout the video.\n\nThe APIs that comprise UICollectionView can be slotted into three distinct categories-- Data, Layout and Presentation. One of the novel concepts UICollectionView was built on was the separation of concerns between the data, or the \"what,\" from the layout, the \"where\" content is being rendered. This distinction is at the core of what makes UICollectionView so flexible.\n\nWhen UICollectionView was first released back in iOS 6, data was managed via an indexPath-based protocol, UICollectionViewDataSource.\n\nFor layout we had an abstract class, UICollectionViewLayout, and we shipped a concrete subclass, UICollectionViewFlowLayout.\n\nAnd on the presentation side, we published two view types-- UICollectionViewCell and UICollectionReusableView.\n\nBack in iOS 13, we introduced two new components for Data and Layout respectively with Diffable Data Source and Compositional Layout. These are APIs to use for building apps with UICollectionViews today.\n\nFor iOS 14, we built on these modern APIs and introduced new features across all three of these API categories with enhancements to Diffable Data Sources, Compositional Layout and cells.\n\nFirst up, let's chat about enhancements to Diffable Data Source.\n\nDiffable Data Source, introduced in iOS 13, greatly simplifies the management of UI State through the addition of the new snapshot data type.\n\nSnapshots encapsulate the entire UI State via the use of unique section and item identifiers.\n\nWhen updating a UICollectionView, we first create a new snapshot, populate it with the current UI State and then apply it to the data source.\n\nDiffable Data Source computes the differences and generates animations automatically without requiring any additional work from you.\n\nSo we covered this API in detail in the WWDC 2019 video \"Advances in UI Data Sources.\" And I encourage you to check out that video to learn more.\n\nFor iOS 14, we're adding a new snapshot type we call section snapshots. And as the name implies, section snapshots encapsulates the data for a single section in a UICollectionView. There are two reasons for this enhancement-- first, to allow data sources to be more composable into section-sized chunks of data...\n\nand second, to allow modeling of hierarchical data, which is needed to support rendering outline-style UIs, a common visual design found all throughout iOS 14. So let's go back to Emoji Explorer and see how section snapshots are used to build out this sample app. First, in our horizontally scrolling section, we see we're using a single section snapshot to completely model the content found here.\n\nAnd next in our second section, where we see this expandable-collapsible outline style, a second section snapshot is used to model this hierarchical data. And finally in our list section, we again model this section's content with a third section snapshot. So for Emoji Explorer, we have composed our Diffable Data Source into three distinct section snapshots, each representing a single section's content. That's a brief overview of the new section snapshots we've added to UICollectionView's Diffable Data Source for iOS 14. But there's more. We've also added new reordering APIs. To take a deeper dive into these new APIs, please check out the video \"Advances in Diffable Data Sources.\" Next up, let's talk about some advances in Compositional Layout for iOS 14.\n\nCompositional Layout was introduced back in iOS 13, and it allows us to build rich, complex layouts by composing smaller, easy-to-reason bits of layout together. Compositional Layout is fast because you describe what you want the layout to look like instead of how the layout ought to work. Compositional Layout also includes the ability to have section-specific layouts to help you build more sophisticated UIs. And there's even support for orthogonal scrolling sections. To learn more about Compositional Layout, check out the WWDC 2019 video \"Advances in Collection View Layout.\" Okay, so for iOS 14, we've built on the foundation of Compositional Layout with a new feature we call Lists.\n\nLists allow you to include UITableView-like sections right in to any UICollectionView.\n\nAnd these lists are rich with features you've come to expect from UITableView, like swipe actions and many common cell layouts. Creating a list-style layout is simple.\n\nSince Lists is built on top of Compositional Layout, we can easily mix and match Lists with other kinds of layout on a per-section basis. Let's check out a code snippet to see just how easy it is to create a list-styled layout with Compositional Layout.\n\nAs you can see, it's quite simple-- just two lines of code.\n\nIn this example, we're creating a UICollectionView layout where every section in our CollectionView is a list with an insetGrouped appearance.\n\nAnd here's what that layout would look like.\n\nSo that's just a brief tour of Compositional Layout lists. But there's a lot more to Lists. There's a new concrete UICollectionViewListCell, header and footer support, and also a new Sidebar appearance we see in many iPadOS system apps.\n\nFor a deeper dive, please check out the video \"Lists in UICollectionView.\" Finally, let's chat a little bit about UICollectionView and modern cells.\n\nFor iOS 14, we have a brand-new way to configure cells with a new API we call cell registrations.\n\nCell registrations are a simple, reusable way to set up a cell from a view model.\n\nCell registrations eliminate the extra step of registering a cell class or nib to associate it with a reuse identifier.\n\nWe instead use a generic registration type which incorporates a configuration closure for setting up a new cell from a view model. Let's take a look at this API in action. First, we create our cell registration, which is generic over the cell class-- in this case MyCell-- and our ViewModel class.\n\nNotice the registration takes a closure, which is called whenever a new cell is constructed. This is where we configure the cell's content from our ViewModel. With cell registrations, we no longer need the extra step of calling register. We simply use the cell registration from our Diffable Data Source cell provider with the new API dequeueConfiguredReusableCell using registration. So that's cell registrations.\n\nNext up, cell content configurations. Cell content configurations provide standardized layouts for cells similar to what is seen in UITableView standard cell types.\n\nThese configurations can be used with any cell, or even a generic UIView. They're very flexible. Let's check out a few visual examples to get a taste of how these work. Here we can see a simple case of an image and some text in a very standard-looking cell layout. And here's the valueCell variant, where the second text is on the trailing side of the cell.\n\nAnd finally we have the subtitleCell, which has the secondary text underneath the main text.\n\nNote here-- these content configuration types are very lightweight and simply describe what the content should look like. The framework takes care of all the layout considerations and automatically optimizes for performance.\n\nAnd finally, background configurations. These are quite similar to content configurations but apply to any cell's background with the ability to adjust properties such as color, border styles and more.\n\nSo we've barely scratched the surface with modern cell configuration. For a deeper dive, please check out the video \"Modern Cell Configuration.\" That wraps up this overview of advances in CollectionView for iOS 14. Go download the sample app to see these APIs in action. And use our code as a basis for adding these features to your apps.\n\nAnd to learn more, go check out the related videos.\n\nAnd thanks for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "6:15",
+      "title": "UICollectionViewCompositionalLayout Lists",
+      "language": "swift",
+      "code": "let configuration = UICollectionLayoutListConfiguration(appearance: .insetGrouped)\nlet layout = UICollectionViewCompositionalLayout.list(using: configuration)"
+    },
+    {
+      "timestamp": "7:33",
+      "title": "Cell Registration",
+      "language": "swift",
+      "code": "// Example of using new iOS 14 cell registration\n\nlet reg = UICollectionView.CellRegistration<MyCell, ViewModel> { cell, indexPath, model in\n   // configure cell content \n}\n\nlet dataSource = UICollectionViewDiffableDataSource<S,I>(collectionView: collectionView) {\n                     collectionView, indexPath, item -> UICollectionViewCell in\n   return collectionView.dequeueConfiguredReusableCell(using: reg, for: indexPath, item: item)\n}"
+    },
+    {
+      "timestamp": "8:32",
+      "title": ".cell Content Configuration",
+      "language": "swift",
+      "code": "var contentConfiguration = UIListContentConfiguration.cell()\ncontentConfiguration.image = UIImage(systemName:\"hammer\")\ncontentConfiguration.text = \"Ready. Set. Code\"\ncell.contentConfiguration = contentConfiguration"
+    },
+    {
+      "timestamp": "8:38",
+      "title": ".valueCell Content Configuration",
+      "language": "swift",
+      "code": "var contentConfiguration = UIListContentConfiguration.valueCell()\ncontentConfiguration.image = UIImage(systemName:\"hammer\")\ncontentConfiguration.text = \"Ready. Set. Code.\"\ncontentConfiguration.secondaryText = \"#WWDC20\"\ncell.contentConfiguration = contentConfiguration"
+    },
+    {
+      "timestamp": "8:44",
+      "title": ".subtitleCell Content Configuration",
+      "language": "swift",
+      "code": "var contentConfiguration = UIListContentConfiguration.subtitleCell()\ncontentConfiguration.image = UIImage(systemName:\"hammer\")\ncontentConfiguration.text = \"Ready. Set. Code.\"\ncontentConfiguration.secondaryText = \"#WWDC20\"\ncell.contentConfiguration = contentConfiguration"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Implementing modern collection views",
+        "url": "https://developer.apple.com/documentation/UIKit/implementing-modern-collection-views"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10097/3/CE693EFF-2BF8-4B42-B483-04F69015A601/wwdc2020_10097_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10097/3/CE693EFF-2BF8-4B42-B483-04F69015A601/wwdc2020_10097_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10252",
+      "year": "2021",
+      "title": "Make blazing fast lists and collection views",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10252"
+    },
+    {
+      "id": "10105",
+      "year": "2020",
+      "title": "Build for iPad",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10105"
+    },
+    {
+      "id": "10026",
+      "year": "2020",
+      "title": "Lists in UICollectionView",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10026"
+    },
+    {
+      "id": "10027",
+      "year": "2020",
+      "title": "Modern cell configuration",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10027"
+    },
+    {
+      "id": "215",
+      "year": "2019",
+      "title": "Advances in Collection View Layout",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/215"
+    },
+    {
+      "id": "220",
+      "year": "2019",
+      "title": "Advances in UI Data Sources",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/220"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:57:23.087Z"
+}

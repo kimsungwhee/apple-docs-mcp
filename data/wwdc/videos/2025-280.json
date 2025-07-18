@@ -1,0 +1,211 @@
+{
+  "id": "280",
+  "year": "2025",
+  "url": "https://developer.apple.com/videos/play/wwdc2025/280/",
+  "title": "Code-along: Cook up a rich text experience in SwiftUI with AttributedString",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Swift",
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, I'm Max, an Engineer on the SwiftUI team, and I’m Jeremy, an engineer on the Swift standard libraries team! We’re both delighted to share how you can build rich text-editing experiences using the power of SwiftUI and AttributedString. Together with Jeremy’s help, I’ll cover all the important aspects of rich text experiences in SwiftUI: first, I’ll discuss upgrading TextEditor to support rich text using AttributedString. Then, I’ll build custom controls, enhancing my editor with unique features. And finally, I’ll create my own text formatting definition so my editor - and its contents - always look great! Now, while I may be an engineer by day, I am also… a home cook on a mission to make the perfect croissant! So recently, I’ve been cooking up a little recipe editor to keep track of all my attempts! It has a list of recipes to the left, a TextEditor for editing the recipe text in the middle, and a list of ingredients in the inspector to the right. I’d love to make the most important parts of my recipe text stand out so I can easily catch them at a glance while cooking. Today I’ll make that possible by upgrading this editor to support rich text! Here is the editor view, implemented using SwiftUI’s TextEditor API. As indicated by the type of my text state, String, it currently only supports plaintext. I can just change String into AttributedString, dramatically increasing the view’s capabilities.\n\nNow that I have support for rich text, I can use the system UI for toggling boldness and applying all kinds of other formatting, such as increasing the font size.\n\nI can now also insert Genmoji from the keyboard, and thanks to the semantic nature of SwiftUI’s Font and Color attributes, the new TextEditor can support Dark Mode and Dynamic Type as well! In fact, TextEditor supports boldness, italics, underline, strikethrough, custom fonts point size, foreground and background colors, kerning, tracking, baseline offset, Genmoji, and… important aspects of paragraph styling! Line height, text alignment, and base writing direction are available as separate independent AttributedString attributes for SwiftUI as well.\n\nAll these attributes are consistent with SwiftUI’s non-editable Text, so you can just take the content of a TextEditor, and display it with Text later! Just like with Text, TextEditor substitutes the default value calculated from the environment for any AttributedStringKeys with a value of nil. Jeremy, I got to be honest here… I've managed my way through working with AttributedStrings so far, but I could really use a refresher to make sure all my knowledge is super solid before I get into building controls. Also, I really gotta make that croissant dough for later, so would you mind sharing a refresher while I do that? Sure thing Max! While you get started on preparing the croissant dough, I’ll take a moment to discuss some AttributedString basics that will come in handy when working with rich text editors. In short, AttributedStrings contain a sequence of characters and a sequence of attribute runs. For example, this AttributedString stores the text, “Hello! Who’s ready to get cooking?” It also has three attribute runs: a starting run with just a font, a run with an additional foreground color applied, and a final run with just the font attribute. The AttributedString type fits right in alongside other Swift types you use throughout your apps. It’s a value type, and just like String from the standard library, it stores its contents using the UTF-8 encoding. AttributedString also provides conformances to many common Swift protocols such as Equatable, Hashable, Codable, and Sendable. The Apple SDKs ship with a variety of pre-defined attributes - like those Max shared earlier - grouped into attribute scopes. AttributedString also supports custom attributes that you define in your app for styling personalized to your UI.\n\nI’ll create my AttributedString from earlier using a few lines of code. First, I create an AttributedString with the start of my text. Next, I create the string “cooking,” set its foreground color to orange, and append it to the text. Then, I complete the sentence with the ending question mark. Lastly I set the entire text’s font to the largeTitle font. Now, I’m ready to display it in my UI on my device! For more on the basics of creating AttributedStrings, as well as creating and using your own custom attributes and attribute scopes, check out the What’s new in Foundation session from WWDC 2021.\n\nMax, it looks like you’re done making the dough! Are you ready to dive into the details of using AttributedString in your recipe app? For sure, Jeremy, that sounds like just what I… kneaded. I’ve really been wanting to offer better controls connecting my text editor to the rest of my app. I want to build a button that allows me to add ingredients to the list in the inspector to the right, but without having to type out the name of the ingredient manually again. For example, I just want to be able to select the word “butter” that is already in my recipe, and mark it as an ingredient with a single press of a button.\n\nMy inspector already defines a preference key that I can use in my editor to suggest a new ingredient for the list.\n\nThe value I pass to the preference view modifier will bubble up the view hierarchy and can be read via the name “NewIngredientPreferenceKey” by any view that uses my recipe editor.\n\nLet me define a computed property for this value below my view body.\n\nAll I need to provide for the suggestion is the name, as an AttributedString. Of course, I don’t just want to suggest the entire text that is in my editor. Instead, I want to suggest the text that is currently selected, like I showed with \"butter.\" TextEditor communicates what is selected via the optional selection argument.\n\nLet me bind that to a local state of type AttributedTextSelection.\n\nOk, now that I have all the context I need available in my view, let me head back to the property computing the ingredient suggestion.\n\nNow, I need to get the text that is selected.\n\nLet me try subscripting text with the result of this indices function on selection.\n\nHmm, that doesn’t seem to be the right type.\n\nIt returns AttributedTextSelection.Indices. Let me look that up.\n\nOh, that’s interesting, I just have one selection, but the Indices type’s second case, is represented by a set of ranges.\n\nJeremy can you explain why that is while while I get to folding my croissant dough? Ha, that’s funny. I’m also folding - under the anticipation of these tasty croissants. But no worries Max, I’ll explain why this API doesn’t use the Range type you expected. To explain why this API uses a RangeSet and not a single Range, I’ll dive into AttributedString selections. I’ll discuss how multiple ranges can form selections and demonstrate how to use RangeSets in your code. You’ve likely used a single range in AttributedString APIs or other collection APIs before. A single range allows you to slice a portion of an AttributedString and perform an action over that single chunk. For example, AttributedString provides APIs that allow you to quickly apply an attribute to a portion of text all at once. I’ve used the .range(of:) API to find the range of the text “cooking” in my AttributedString. Next I use the subscript operator to slice the AttributedString with that range to make the entire word “cooking” orange. However, an AttributedString sliced with just one range isn’t enough to represent selections in a text editor that works for all languages. For example, I might use this recipe app to store my recipe for Sufganiyot that I plan to cook during the holidays which includes some Hebrew text. My recipe says to, “Put the Sufganiyot in the pan,” which uses English text for the instructions and Hebrew text for the traditional name of the food. In the text editor, I’ll select a portion of the word “Sufganiyot” and the word “in” with just one selection. However, this is actually multiple ranges in the AttributedString! Since English is a left-to-right language, the editor lays out the sentence visually from the left side to the right side. However, the Hebrew portion, Sufganiyot, is laid out in the opposite direction since Hebrew is a right-to-left language. While the bidirectional nature of this text affects the visual layout on the screen, the AttributedString still stores all text in a consistent ordering. This ordering breaks apart my selection into two ranges: the start of the word “Sufganiyot” and the word “in,” excluding the end of the Hebrew text. This is why the SwiftUI text selection type uses multiple ranges rather than a single range.\n\nTo learn more about localizing your app for bidirectional text, check out the Get it right (to left) session from WWDC 2022 and this year’s Enhance your app’s multilingual experience session.\n\nTo support these types of selections, AttributedString supports slicing with a RangeSet, the type Max noticed earlier in the selection API. Just like you can slice an AttributedString with a singular range, you can also slice it with a RangeSet to produce a discontiguous substring. In this case I’ve created a RangeSet using the .indices(where:) function on the character view to find all uppercase characters in my text. Setting the foreground color to blue on this slice will make all uppercase characters blue, leaving the other characters unmodified. SwiftUI also provides an equivalent subscript that slices an AttributedString with a selection directly. Hey Max, if you finished folding that beautiful croissant dough, I think using the subscript API that accepts a selection might resolve the build error in your code! Let me give that a try! I can just subscript text with the selection directly, and then transform the discontiguous AttributedSubstring into a new AttributedString.\n\nThat’s awesome! Now, when I run this on device, and select the word “butter,\" SwiftUI automatically calls my property newIngredientSuggestion to compute the new value, which bubbles up to the rest of my app. My inspector then automatically adds the suggestion at the bottom of the ingredient list. From there, I can commit it to the ingredient list with a single tap! Features like that can elevate an editor, to a beautiful experience! I’m really happy with this addition, but with everything Jeremy has shown me so far, I think I can go even further! I want to better visualize the ingredients in the text itself! The first thing I need for that is a custom attribute that marks a range of text as an ingredient. Let me define this in a new file.\n\nThis attribute’s Value will be the ID of the ingredient it refers to. Now, I’ll head back to the property computing the IngredientSuggestion in the RecipeEditor file.\n\nIngredientSuggestion allows me to provide a closure as a second argument.\n\nThis closure gets called when I press the plus button and the ingredient is added to the list. I will use that closure to mutate the editor text, marking up occurrences of the name with my Ingredient attribute. I get the ID of the newly created ingredient passed into the closure.\n\nNext, I need to find all the occurrences of the suggested ingredient name in my text.\n\nI can do this by calling ranges(of:) on AttributedString’s characters view.\n\nNow that I have the ranges, I can just update the value of my ingredient attribute for each range! Here, I’m using a short name for the IngredientAttribute I had already defined.\n\nLet’s give it a try! I don’t expect anything new here, after all, my custom attribute doesn’t have any formatting associated with it. Let me select “yeast” and press the plus button! Wait, what is that?! My cursor was at the top, not at the end! Let me try again! I select \"salt,\" press the plus button, and my selection jumps to the end! Jeremy, I have to roll out my croissant dough, so I can’t debug this right now… do you know why my selection is getting reset? That’s definitely not an experience we want for the cooks using your app! Why don’t you get started on rolling out the dough, and I’ll dive into this unexpected behavior.\n\nIn order to demonstrate what’s happening here and how to fix it, I’ll explain the details of AttributedString indices which form the ranges and text selections used by a rich TextEditor.\n\nAttributedString.Index represents a single location within your text. To support its powerful and performant design, AttributedString stores its contents in a tree structure, and its indices store paths through that tree. Since these indices form the building blocks of text selections in SwiftUI, the unexpected selection behavior in the app stems from how AttributedString indices behave within these trees. You should keep two key points in mind when working with AttributedString indices. First, any mutation to an AttributedString invalidates all of its indices, even those not within the bounds of the mutation. Recipes never turn out well when you use expired ingredients, and I can assure you that you’ll feel the same way about using old indices with an AttributedString. Second, you should only use indices with the AttributedString from which they were created.\n\nNow I’ll explore indices from the example AttributedString I created earlier to explain how they work! Like I mentioned, AttributedString stores its contents in a tree structure, and here I have a simplified example of that tree. Using a tree allows for better performance and avoids copying lots of data when mutating your text. AttributedString.Index references text by storing a path through the tree to the referenced location. This stored path allows AttributedString to quickly locate specific text from an index, but it also means that the index contains information about the layout of the entire AttributedString’s tree. When you mutate an AttributedString, it might adjust the layout of the tree. This invalidates any previously recorded paths, even if the destination of that index still exists within the text.\n\nAdditionally, even if two AttributedStrings have the same text and attribute content, their trees may have different layouts making their indices incompatible with each other.\n\nUsing an index to traverse these trees to find information requires using the index within one of AttributedString’s views. While indices are specific to a particular AttributedString, you can use them in any view from that string. Foundation provides views over the characters, or grapheme clusters, of the text content, the individual Unicode scalars that make up each character, and the attribute runs of the string. To learn more about the differences between the character and Unicode scalar views, check out Apple’s developer documentation for the Swift Character type. You might also want to access lower level contents when interfacing with other string-like types that don’t use Swift’s Character type, such as NSString. AttributedString now also provides views into both the UTF-8 scalars and the UTF-16 scalars of the text. These two views still share the same indices as all of the existing views.\n\nNow that I’ve discussed the details of indices and selections, I’ll revisit the problem that Max encountered with the recipe app. The onApply closure in the IngredientSuggestion mutates the attributed string, but it doesn’t update the indices in the selection! SwiftUI detects that these indices are no longer valid and moves the selection to the end of the text to prevent the app from crashing. To fix this, use AttributedString APIs to update your indices and selections when mutating text. Here, I have a simplified example of code that has the same problem as the recipe app. First, I find the range of the word \"cooking\" in my text. Then, I set the range of “cooking” to an orange foreground color and I also insert the word “chef” into my string to add some more recipe theming.\n\nMutating my text can change the layout of my AttributedString’s tree. Using the cookingRange variable after I’ve mutated my string is not valid. It might even crash the app. Instead, AttributedString provides a transform function which takes a Range, or an array of Ranges, and a closure which mutates the provided AttributedString in-place. At the end of the closure, the transform function will update your provided range with new indices to ensure you can correctly use the range in the resulting AttributedString. While the text may have shifted in the AttributedString, the range still points to the same semantic location - in this case, the word “cooking.” SwiftUI also provides an equivalent function that updates a selection instead of a range.\n\nWow, Max, those croissants are really shaping up great! If you’re ready to get back to your app, I think using this new transform function will help get your code into shape too! Thank you! That sounds like just what I was looking for! Let me see if I can apply this in code. First, I shouldn’t loop over the ranges like that. By the time I reach the last range, the text has been mutated many times, and the indices are outdated. I can avoid that problem entirely by first converting my Ranges to a RangeSet.\n\nThen I can just slice with that and remove the loop.\n\nThis way everything is one change, and I don’t need to update the remaining ranges after each mutation.\n\nSecond, next to the ranges I want to change, there is also the selection representing my cursor position. I need to always make sure it matches the transformed text. I can do that using SwiftUI’s transform(updating:) overload on AttributedString.\n\nNice, now my selection is updated right as the text gets mutated! Let’s see if that worked! I can select “milk,” it appears in the list, and - when I add it - my selection remains intact! To double-check, when I press Command+B on the keyboard now, I can see the word “milk” turning bold - just as expected! Now that I have all the information in my recipe text, I want to emphasize the ingredients with some color! Thankfully, TextEditor provides a tool for that: the attributed text formatting definition protocol. A custom text formatting definition is all structured around which AttributedStringKeys your text editor responds to, and what values they might have. I already declared a type conforming to the AttributedTextFormattingDefinition protocol here. By default, the system uses the SwiftUIAttributes scope, with no constraints on the attributes’ values.\n\nIn the scope for my recipe editor, I only want to allow foreground color, Genmoji, and my custom ingredient attribute.\n\nBack on my recipe editor, I can use the attributedTextFormattingDefinition modifier to pass my custom definition to SwiftUI’s TextEditor.\n\nWith this change, my TextEditor will allow any ingredient, any Genmoji, and any foreground color.\n\nAll of the other attributes now will assume their default value. Note that you can still change the default value for the entire editor by modifying the environment. Based on this change, TextEditor has already made some important changes to the system formatting UI. It no longer offers controls for changing the alignment, the line height, or font properties, since the respective AttributedStringKeys are not in my scope. However, I can still use the color control to apply arbitrary colors to my text, even if those colors don’t necessarily make sense.\n\nOh no, the milk is gone! I really only want ingredients to be highlighted green, and everything else to use the default color. I can use SwiftUI’s AttributedTextValueConstraint protocol to implement this logic.\n\nLet me head back to the RecipeFormattingDefinition file and declare the constraint.\n\nTo conform to the AttributedTextValueConstraint protocol, I first specify the scope of the AttributedTextFormattingDefinition it belongs to, and then the AttributedStringKey I want to constrain, in my case the foreground color attribute. The actual logic for constraining the attribute lives in the constrain function. In that function, I set the value of the AttributeKey - the foreground color - to what I consider valid.\n\nIn my case, the logic all depends on whether the ingredient attribute is set.\n\nIf so, the foreground color should be green, otherwise it should be nil This indicates TextEditor should substitute the default color.\n\nNow that I have defined the constraint, I just need to add it to the body of the AttributedTextFormattingDefinition.\n\nFrom here, SwiftUI takes care of all the rest. TextEditor automatically applies the definition and its constraints to any part of the text before it appears on screen.\n\nAll the ingredients are green now! Interestingly, TextEditor has disabled its color control, despite foreground color being in my formatting definition’s scope. This makes sense considering the IngredientsAreGreen constraint I added. The foreground color now solely depends on whether text is marked with the ingredient attribute. TextEditor automatically probes AttributedTextValueConstraints to determine if a potential change is valid for the current selection. For example, I could try to set the foreground color of “milk” to white again. Running my IngredientsAreGreen constraint afterwards would change the foreground color back to green, so TextEditor knows this is not a valid change and disables the control. My value constraint will also be applied to text I paste into my editor. When I copy an ingredient using Command+C and paste it again using Command+V, my custom ingredient attribute is preserved. With CodableAttributedStringKeys, this can even work across TextEditors in different apps as long as both apps list the attribute in their AttributedTextFormattingDefinition.\n\nThis is pretty great, but there are still some things to improve: with my cursor at the end of the ingredient \"milk,\" I can delete characters or continue typing and it just behaves like regular text. This makes it feel like it is just green text, and not an ingredient with a certain name. To make this feel right, I want the ingredient attribute not to expand as I type at the end of its run. And I would like the foreground color to reset for the entire word at once if I modify it.\n\nJeremy, if I promise I’ll give you an extra croissant later, will you help me getting that implemented? Hmm… I’m not sure one's gonna be enough, but make it a few and you’ve got a deal, Max! While you go get those croissants in the oven, I’ll explain what APIs might help with this problem. With the formatting definition constraints that Max demonstrated, you can constrain which attributes and which specific values each text editor can display. To help with this new issue with the recipe editor, the AttributedStringKey protocol provides additional APIs to constrain how attribute values are mutated across changes to any AttributedString. When attributes declare constraints, AttributedString always keeps the attributes consistent with each other and the text content to avoid unexpected state with simpler and more performant code. I’ll dive into a few examples to explain when you might use these APIs for your attributes. First, I’ll discuss attributes whose values are coupled with other content in the AttributedString, such as a spell checking attribute.\n\nHere, I have a spell checking attribute that indicates the word “ready” is misspelled via a dashed, red underline. After performing spell checking on my text, I need to make sure that the spell checking attribute remains only applied to the text that I have already validated. However, if I continue typing in my text editor, by default all attributes of the existing text are inherited by inserted text. This isn’t what I want for a spell checking attribute, so I’ll add a new property to my AttributedStringKey to correct this. By declaring an inheritedByAddedText property on my AttributedStringKey type with a value of \"false,\" any added text will not inherit this attribute value.\n\nNow, when adding new text to my string, the new text will not contain the spell checking attribute since I have not yet checked the spelling of those words. Unfortunately, I found another issue with this attribute. Now, when I add text to the middle of a word that was marked as misspelled, the attribute shows an awkward break in the red line underneath the added text. Since my app hasn’t checked if this word is misspelled yet, what I really want is for the attribute to be removed from this word to avoid stale information in my UI. To fix this problem, I’ll add another property to my AttributedStringKey type: the invalidationConditions property. This property declares situations when a run of this attribute should be removed from the text. AttributedString provides conditions for when the text changes and when specific attributes change, and attribute keys can invalidate upon any number of conditions. In this case, I need to remove this attribute whenever the text of the attribute run changes so I’ll use the “textChanged” value. Now, inserting text into the middle of an attribute run will invalidate the attribute across the entire run, ensuring that I avoid this inconsistent state in my UI. I think both of those APIs might help keep the ingredient attribute valid in Max’s app! While Max is finishing up with the oven, I’ll demonstrate one more category of attributes: attributes that require consistent values across sections of text. For example, a paragraph alignment attribute. I can apply different alignments to each paragraph in my text, however just a single word cannot use a different alignment than the rest of the paragraph. To enforce this requirement during AttributedString mutations, I’ll declare a runBoundaries property on my AttributedStringKey type. Foundation supports limiting run boundaries to paragraph edges or the edges of a specified character. In this case, I’ll define this attribute as constrained to paragraph boundaries to require that it has a consistent value from the start to the end of a paragraph. Now, this situation becomes impossible. If I apply a left alignment value to just one word in a paragraph, AttributedString automatically expands the attribute to the entire range of the paragraph. Additionally, when I enumerate the alignment attribute AttributedString enumerates each individual paragraph, even if two consecutive paragraphs contain the same attribute value. Other run boundaries behave the same: AttributedString expands values from one boundary to the next and ensures enumerated runs break on every run boundary.\n\nWow Max, those croissants smell delicious! If the croissasnts are all set in the oven, do you think some of these APIs might complement your formatting definition to achieve the behavior you want for your custom attribute? That sounds like just the secret ingredient I needed! The croissants are all set in the oven, so I can try this out right away! In my custom IngredientAttribute here, I will implement the optional inheritedByAddedText requirement to have the value false, that way if I type after an ingredient, it won’t expand.\n\nSecond, let me implement invalidationConditions with textChanged, so when I delete characters in an ingredient it will no longer be recognized! Let’s give it a try! When I add a “y” at the end of “milk,” the “y” is no longer green, and when I delete a character of “milk,” the ingredient attribute gets removed from the entire word at once. Based on my AttributedTextFormattingDefinition, the foreground color attribute continues to follow my custom ingredient attribute’s behavior perfectly! Thank you Jeremy, this app really turned out great! No problem! Now, about those croissants you promised… Don’t worry, they’re almost ready. Why don’t you guard the oven though, since I’m slightly worried Luca might steal them away from us! Ah, THE Luca, I’ve heard of him, lover of all things widgets and croissants. I’m on it chef! Now, before I go join Jeremy, let me give you some final tips: You can download my app as a sample project where you can learn more about using SwiftUI’s Transferable Wrapper for lossless drag and drop or export to RTFD, and persisting AttributedString with Swift Data. AttributedString is part of Swift’s open source Foundation project. Find its implementation on GitHub to contribute to its evolution or get in touch with the community on the Swift forums! With the new TextEditor, it has also never been easier to add support for Genmoji input into your app, so consider doing that now! I just can’t wait to see how you will use this API to upgrade text editing in your apps. Just a little sprinkle can make it pop! Mmm, so delicious! No, so RICH!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:15",
+      "title": "TextEditor and String",
+      "language": "swift",
+      "code": "import SwiftUI\n\nstruct RecipeEditor: View {\n    @Binding var text: String\n\n    var body: some View {\n        TextEditor(text: $text)\n    }\n}"
+    },
+    {
+      "timestamp": "1:45",
+      "title": "TextEditor and AttributedString",
+      "language": "swift",
+      "code": "import SwiftUI\n\nstruct RecipeEditor: View {\n    @Binding var text: AttributedString\n\n    var body: some View {\n        TextEditor(text: $text)\n    }\n}"
+    },
+    {
+      "timestamp": "4:43",
+      "title": "AttributedString Basics",
+      "language": "swift",
+      "code": "var text = AttributedString(\n  \"Hello 👋🏻! Who's ready to get \"\n)\n\nvar cooking = AttributedString(\"cooking\")\ncooking.foregroundColor = .orange\ntext += cooking\n\ntext += AttributedString(\"?\")\n\ntext.font = .largeTitle"
+    },
+    {
+      "timestamp": "5:36",
+      "title": "Build custom controls: Basics (initial attempt)",
+      "language": "swift",
+      "code": "import SwiftUI\n\nstruct RecipeEditor: View {\n    @Binding var text: AttributedString\n    @State private var selection = AttributedTextSelection()\n\n    var body: some View {\n        TextEditor(text: $text, selection: $selection)\n            .preference(key: NewIngredientPreferenceKey.self, value: newIngredientSuggestion)\n    }\n\n    private var newIngredientSuggestion: IngredientSuggestion {\n        let name = text[selection.indices(in: text)] // build error\n\n        return IngredientSuggestion(\n            suggestedName: AttributedString())\n    }\n}"
+    },
+    {
+      "timestamp": "8:53",
+      "title": "Slicing AttributedString with a Range",
+      "language": "swift",
+      "code": "var text = AttributedString(\n  \"Hello 👋🏻! Who's ready to get cooking?\"\n)\n\nguard let cookingRange = text.range(of: \"cooking\") else {\n  fatalError(\"Unable to find range of cooking\")\n}\n\ntext[cookingRange].foregroundColor = .orange"
+    },
+    {
+      "timestamp": "10:50",
+      "title": "Slicing AttributedString with a RangeSet",
+      "language": "swift",
+      "code": "var text = AttributedString(\n  \"Hello 👋🏻! Who's ready to get cooking?\"\n)\n\nlet uppercaseRanges = text.characters\n  .indices(where: \\.isUppercase)\n\ntext[uppercaseRanges].foregroundColor = .blue"
+    },
+    {
+      "timestamp": "11:40",
+      "title": "Build custom controls: Basics (fixed)",
+      "language": "swift",
+      "code": "import SwiftUI\n\nstruct RecipeEditor: View {\n    @Binding var text: AttributedString\n    @State private var selection = AttributedTextSelection()\n\n    var body: some View {\n        TextEditor(text: $text, selection: $selection)\n            .preference(key: NewIngredientPreferenceKey.self, value: newIngredientSuggestion)\n    }\n\n    private var newIngredientSuggestion: IngredientSuggestion {\n        let name = text[selection]\n\n        return IngredientSuggestion(\n            suggestedName: AttributedString(name))\n    }\n}"
+    },
+    {
+      "timestamp": "12:32",
+      "title": "Build custom controls: Recipe attribute",
+      "language": "swift",
+      "code": "import SwiftUI\n\nstruct IngredientAttribute: CodableAttributedStringKey {\n    typealias Value = Ingredient.ID\n\n    static let name = \"SampleRecipeEditor.IngredientAttribute\"\n}\n\nextension AttributeScopes {\n    /// An attribute scope for custom attributes defined by this app.\n    struct CustomAttributes: AttributeScope {\n        /// An attribute for marking text as a reference to an recipe's ingredient.\n        let ingredient: IngredientAttribute\n    }\n}\n\nextension AttributeDynamicLookup {\n    /// The subscript for pulling custom attributes into the dynamic attribute lookup.\n    ///\n    /// This makes them available throughout the code using the name they have in the\n    /// `AttributeScopes.CustomAttributes` scope.\n    subscript<T: AttributedStringKey>(\n        dynamicMember keyPath: KeyPath<AttributeScopes.CustomAttributes, T>\n    ) -> T {\n        self[T.self]\n    }\n}"
+    },
+    {
+      "timestamp": "12:56",
+      "title": "Build custom controls: Modifying text (initial attempt)",
+      "language": "swift",
+      "code": "import SwiftUI\n\nstruct RecipeEditor: View {\n    @Binding var text: AttributedString\n    @State private var selection = AttributedTextSelection()\n\n    var body: some View {\n        TextEditor(text: $text, selection: $selection)\n            .preference(key: NewIngredientPreferenceKey.self, value: newIngredientSuggestion)\n    }\n\n    private var newIngredientSuggestion: IngredientSuggestion {\n        let name = text[selection]\n\n        return IngredientSuggestion(\n            suggestedName: AttributedString(name),\n            onApply: { ingredientId in\n                let ranges = text.characters.ranges(of: name.characters)\n\n                for range in ranges {\n                    // modifying `text` without updating `selection` is invalid and resets the cursor \n                    text[range].ingredient = ingredientId\n                }\n            })\n    }\n}"
+    },
+    {
+      "timestamp": "17:40",
+      "title": "AttributedString Character View",
+      "language": "swift",
+      "code": "text.characters[index] // \"👋🏻\""
+    },
+    {
+      "timestamp": "17:44",
+      "title": "AttributedString Unicode Scalar View",
+      "language": "swift",
+      "code": "text.unicodeScalars[index] // \"👋\""
+    },
+    {
+      "timestamp": "17:49",
+      "title": "AttributedString Runs View",
+      "language": "swift",
+      "code": "text.runs[index] // \"Hello 👋🏻! ...\""
+    },
+    {
+      "timestamp": "18:13",
+      "title": "AttributedString UTF-8 View",
+      "language": "swift",
+      "code": "text.utf8[index] // \"240\""
+    },
+    {
+      "timestamp": "18:17",
+      "title": "AttributedString UTF-16 View",
+      "language": "swift",
+      "code": "text.utf16[index] // \"55357\""
+    },
+    {
+      "timestamp": "18:59",
+      "title": "Updating Indices during AttributedString Mutations",
+      "language": "swift",
+      "code": "var text = AttributedString(\n  \"Hello 👋🏻! Who's ready to get cooking?\"\n)\n\nguard var cookingRange = text.range(of: \"cooking\") else {\n  fatalError(\"Unable to find range of cooking\")\n}\n\nlet originalRange = cookingRange\ntext.transform(updating: &cookingRange) { text in\n  text[originalRange].foregroundColor = .orange\n  \n  let insertionPoint = text\n    .index(text.startIndex, offsetByCharacters: 6)\n  \n  text.characters\n    .insert(contentsOf: \"chef \", at: insertionPoint)\n}\n\nprint(text[cookingRange])"
+    },
+    {
+      "timestamp": "20:22",
+      "title": "Build custom controls: Modifying text (fixed)",
+      "language": "swift",
+      "code": "import SwiftUI\n\nstruct RecipeEditor: View {\n    @Binding var text: AttributedString\n    @State private var selection = AttributedTextSelection()\n\n    var body: some View {\n        TextEditor(text: $text, selection: $selection)\n            .preference(key: NewIngredientPreferenceKey.self, value: newIngredientSuggestion)\n    }\n\n    private var newIngredientSuggestion: IngredientSuggestion {\n        let name = text[selection]\n\n        return IngredientSuggestion(\n            suggestedName: AttributedString(name),\n            onApply: { ingredientId in\n                let ranges = RangeSet(text.characters.ranges(of: name.characters))\n\n                text.transform(updating: &selection) { text in\n                    text[ranges].ingredient = ingredientId\n                }\n            })\n    }\n}"
+    },
+    {
+      "timestamp": "22:03",
+      "title": "Define your text format: RecipeFormattingDefinition Scope",
+      "language": "swift",
+      "code": "struct RecipeFormattingDefinition: AttributedTextFormattingDefinition {\n    struct Scope: AttributeScope {\n        let foregroundColor: AttributeScopes.SwiftUIAttributes.ForegroundColorAttribute\n        let adaptiveImageGlyph: AttributeScopes.SwiftUIAttributes.AdaptiveImageGlyphAttribute\n        let ingredient: IngredientAttribute\n    }\n\n    var body: some AttributedTextFormattingDefinition<Scope> {\n\n    }\n}\n\n// pass the custom formatting definition to the TextEditor in the updated `RecipeEditor.body`:\n\n        TextEditor(text: $text, selection: $selection)\n            .preference(key: NewIngredientPreferenceKey.self, value: newIngredientSuggestion)\n            .attributedTextFormattingDefinition(RecipeFormattingDefinition())"
+    },
+    {
+      "timestamp": "23:50",
+      "title": "Define your text format: AttributedTextValueConstraints",
+      "language": "swift",
+      "code": "struct IngredientsAreGreen: AttributedTextValueConstraint {\n    typealias Scope = RecipeFormattingDefinition.Scope\n    typealias AttributeKey = AttributeScopes.SwiftUIAttributes.ForegroundColorAttribute\n\n    func constrain(_ container: inout Attributes) {\n        if container.ingredient != nil {\n            container.foregroundColor = .green\n        } else {\n            container.foregroundColor = nil\n        }\n    }\n}\n\n// list the value constraint in the recipe formatting definition's body:\n    var body: some AttributedTextFormattingDefinition<Scope> {\n        IngredientsAreGreen()\n    }"
+    },
+    {
+      "timestamp": "29:28",
+      "title": "AttributedStringKey Constraint: Inherited by Added Text",
+      "language": "swift",
+      "code": "static let inheritedByAddedText = false"
+    },
+    {
+      "timestamp": "30:12",
+      "title": "AttributedStringKey Constraint: Invalidation Conditions",
+      "language": "swift",
+      "code": "static let invalidationConditions:\n  Set<AttributedString.AttributeInvalidationCondition>? =\n  [.textChanged]"
+    },
+    {
+      "timestamp": "31:25",
+      "title": "AttributedStringKey Constraint: Run Boundaries",
+      "language": "swift",
+      "code": "static let runBoundaries:\n  AttributedString.AttributeRunBoundaries? =\n  .paragraph"
+    },
+    {
+      "timestamp": "32:46",
+      "title": "Define your text format: AttributedStringKey Constraints",
+      "language": "swift",
+      "code": "struct IngredientAttribute: CodableAttributedStringKey {\n    typealias Value = Ingredient.ID\n\n    static let name = \"SampleRecipeEditor.IngredientAttribute\"\n\n    static let inheritedByAddedText: Bool = false\n\n    static let invalidationConditions: Set<AttributedString.AttributeInvalidationCondition>? = [.textChanged]\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "AttributedTextFormatting",
+        "url": "https://developer.apple.com/documentation/SwiftUI/AttributedTextFormatting"
+      },
+      {
+        "title": "AttributedTextSelection",
+        "url": "https://developer.apple.com/documentation/SwiftUI/AttributedTextSelection"
+      },
+      {
+        "title": "Building rich SwiftUI text experiences",
+        "url": "https://developer.apple.com/documentation/SwiftUI/building-rich-swiftui-text-experiences"
+      },
+      {
+        "title": "Character",
+        "url": "https://developer.apple.com/documentation/Swift/Character"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/280/5/3596f3d4-e661-4414-a6ba-79128adcc8e6/downloads/wwdc2025-280_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/280/5/3596f3d4-e661-4414-a6ba-79128adcc8e6/downloads/wwdc2025-280_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "222",
+      "year": "2025",
+      "title": "Enhance your app’s multilingual experience",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/222"
+    },
+    {
+      "id": "10107",
+      "year": "2022",
+      "title": "Get it right (to left)",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10107"
+    },
+    {
+      "id": "10109",
+      "year": "2021",
+      "title": "What's new in Foundation",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10109"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:46:06.193Z"
+}

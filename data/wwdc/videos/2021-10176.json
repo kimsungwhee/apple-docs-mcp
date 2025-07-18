@@ -1,0 +1,104 @@
+{
+  "id": "10176",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10176/",
+  "title": "Craft search experiences in SwiftUI",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Hi, I'm Harry, an engineer on the SwiftUI team. Welcome to \"Craft search experiences in SwiftUI.\" Search is all-new in SwiftUI this year, and I'm excited to show you how to start using these features. Sometimes, you want to find something specific within an app, but many apps contain large collections of data, which can make it difficult to find exactly what you're looking for. Whether it's finding the latest app trend, your next favorite song, or the right podcast for your morning commute, implementing search helps do just that. The best search experience will vary based on the structure and content of the app. But, in general, all experiences will include a search field that defines a search query. Now, you can implement search directly in SwiftUI. Let's take a look. In this talk, I'll introduce the new searchable modifier that forms the foundation of all search features in SwiftUI. I'll showcase how a navigation view integrates with the searchable modifier. Finally, I'll cover extending the functionality of searchable modifiers by adding search suggestions. Searchable is a new view modifier in SwiftUI available on all platforms. It allows you to mark view content as being, well, searchable. The content will define exactly what that means. Throughout this talk, I'll explore examples of this modifier on each platform. Now, to better understand this modifier, let's talk about the weather! A great example of search on iOS can be found in the new Weather app. When viewing your list of cities, you can start typing into the search bar, which will search for a new city to add to your list. To illustrate how Weather uses a searchable modifier to power this feature, let's break down the structure of their UI. Weather starts with a navigation view, which provides a navigation bar. Weather adds a custom list as the navigation view's content. And inside of that list, it adds a ForEach over its cells. Finally, Weather adds the searchable modifier to its navigation view. At the core of all searchable modifiers is the configuration of a search field. The searchable modifier takes the configured search field and passes that down, through the environment, for other views to use in the best way for each platform. Here, the navigation view understands that search field and will render it as a search bar. If no views use the configured search field, the searchable modifier provides a default implementation of rendering the search field in the toolbar. Now, a search field is often not the only piece of search-related UI. Displaying some form of search results is a common design pattern. Weather follows this pattern, and whenever it sees a non-empty search query, it switches its custom list to display another list containing the results of the current query. Let's see how Weather can use information vended by the searchable modifier to achieve this UI. Here's Weather's custom list. Searchable modifiers set up a new environment property, called isSearching, that Weather uses to dynamically change the view being displayed, based on whether a user is actively searching. Weather queries the isSearching environment property and the text of the search to conditionally show its results view. When rendering your own results, consider using an overlay so that the state of your main UI is unchanged after a user returns from their search interaction. Let's talk a little bit more about how a navigation view integrates with the new searchable modifier. To do that, I'd like to introduce an app I've been working tirelessly on. I call it Colors. This app lets users manage a library of their favorite sets of colors, called Palettes. Maybe you wanna play with different paints for your room, themes for your app, or just get help picking the color of your new M1 iMac. No matter your desire, Colors is the app for you. The basic structure of Colors is a double-column navigation view, where the first column, the root view, is a sidebar on iPadOS and macOS, or the root of a navigation stack on other platforms. In the sidebar, you can see my library of color palettes. In the detail view, you can see the currently selected color palette, as well as how those colors might appear to users with visual differences. As people started using the app, I began to notice something. People love colors. They're adding colors to their library constantly, but as a library gets large, it becomes difficult to find a specific color palette, as people have to scroll through their whole library to find it. At this point, I've decided it’s time to add search functionality. I'd like this feature to follow platform conventions so that people using my app immediately understand it. Let's take a look at how I can use the searchable modifier to implement this feature.\n\nHere I have the navigation view I built as part of the Colors app. To implement search, I'll add the searchable modifier to my navigation view. Just like before, I'll provide it with a binding to the state backing the search query. Again, this will be rendered as a search bar on iOS and iPadOS. When a navigation view is the searchable modifier's content, it associates the search field with one of its columns. Which column it uses is dependent on the number of columns provided to the navigation view. Since I have a two-column navigation view, the search bar is associated with the sidebar column on both iOS and iPadOS. If you want the search field associated with a column other than the default, you can place the searchable modifier on your desired column, like you would with the existing toolbar modifier. For this app, I'll keep searchable on the navigation view. Just like with Weather, I'll use the isSearching environment property to dynamically display my search results over the sidebar. The same placement of the searchable modifier on macOS will render the search field placed in the most trailing position of the toolbar, with behaviors expected on that platform, like automatically collapsing as a window shrinks. Here, I'll render my search results in the detail pane of the app for a more typical experience on macOS. watchOS behaves similarly to iOS in that it, too, places a search field at the top of the view in the toolbar. Here, SwiftUI chooses the first column to associate the search field with. Notice how I didn't change where I placed the searchable modifier to produce these different behaviors across the platforms. The structure of my app didn't change across these platforms and remained a double-column navigation view. SwiftUI understands this structure and the different platform conventions, so it handled implementing them on my behalf. When I look at tvOS, I realize that the structure of my app on the other platforms could be made more appropriate. tvOS typically renders search as a tab in a tab view, but my app has no tab view. With just a few tweaks to my app, I can fix that. Instead of rendering a double-column navigation view, I can make a more typical tvOS experience by rendering a single-column navigation view with a tab view as the navigation view’s content. In my tab view, I'll place the existing sidebar view and add a new search tab. The search tab represents the placeholder view that will be visible when someone first navigates to that tab. Finally, instead of wrapping the navigation view, I'll move the searchable modifier to wrap my search tab. Once a non-empty search query has been entered, I'll transition my view to display my search results. Now I've added search functionality to each platform. Thanks to the declarative nature of SwiftUI, where the navigation structure of my app remained consistent, I was able to rely on SwiftUI, and let the implementation of the searchable modifier pick the appropriate interface for that particular navigation structure. On tvOS, where the structure of my app changed, I took what I learned about the searchable modifier and applied that to the different structure. Only what I defined as \"searchable\" changed with that structure. Now that you have an understanding of the searchable modifier, let's move on to our final topic: search suggestions. After using search in my app, a few users have reported that while they really like the new functionality search provides, they're sometimes at a loss for what they're able to search for. Many apps use search suggestions to help guide people towards the type of search queries they can provide. These suggestions represent completed search queries that may be presented in a menu, like on macOS, in a list, like on iOS, or as button that presents a list, like on watchOS. Suggestions give people an idea for the types of things they can search for. SwiftUI offers an easy way to add search suggestions to your apps. Let's take a look. Looking at my app, you can see that I've configured a searchable modifier with text. Searchable modifiers offer an optional parameter, called suggestions, that I can start including. For the suggestions parameter, I'll provide a view. This might just be a few static buttons or, more likely, it will be a ForEach over a dynamic set of suggestions coming from my apps database or from a server. SwiftUI looks at this view and will present it based on whether there are any suggestions to display. For example, watchOS will render an icon in its search field when you provide non-empty suggestions. A common pattern here might be to provide a ForEach of buttons that, when interacted with, updates the text binding provided to the searchable modifier with the search suggestion’s textual value. In fact, we expect this pattern to be so common that we've added a searchCompletion modifier that does just this. You can use the searchCompletion modifier with non-interactive views. It will convert that view into a button that updates the search text and dismisses the currently presented suggestion. If you're creating an app where users first interact with suggestions to then fetch a complete set of search results based on that suggestion, consider using the new onSubmit modifier to know when to fetch your search results. Pass in a value of search to the onSubmit modifier, and the closure you provide will be invoked whenever the user submits their search query. This typically occurs when they select a search suggestion or press Enter on a hardware keyboard. You can also use the new onSubmit modifier in conjunction with text fields or secure fields for non-search-related submissions. Using the suggestions parameter along with the search completion modifier provides an easy way to add powerful search-suggestion functionality to your app. I hope you've enjoyed a brief tour of some of the search functionality that SwiftUI now offers. In summary, a searchable modifier allows you to describe view content as searchable. Navigation views integrate with the searchable modifier to provide platform-appropriate experiences based on the content of the navigation view. Use the environment's isSearching property to dynamically adjust the UI of your app when a user is searching. Use the search completion modifier and the suggestions parameter of the searchable modifier to add search suggestions to your app. Now, go out there and start adding search to all your SwiftUI apps, and have a great WW. [upbeat music]",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "0:10",
+      "title": "Colors Suggestions",
+      "language": "swift",
+      "code": "struct ColorsContentView: View {\n    @State var text = \"\"\n    \n    var body: some View {\n        NavigationView {\n            Sidebar()\n            DetailView()\n        }\n        .searchable(text: $text) {\n           ForEach(suggestions) { suggestion in\n                Button {\n                    text = suggestion.text\n                } label: {\n                    ColorsSuggestionLabel(suggestion)\n                }\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "1:17",
+      "title": "New Searchable Modifier",
+      "language": "swift",
+      "code": "ContentView()\n    .searchable(text: $text)"
+    },
+    {
+      "timestamp": "1:58",
+      "title": "Weather Search",
+      "language": "swift",
+      "code": "NavigationView {\n    WeatherList(text: $text) {\n        ForEach(data) { item in\n            WeatherCell(item)\n        }\n    }\n}\n.searchable(text: $text)"
+    },
+    {
+      "timestamp": "3:11",
+      "title": "Weather List",
+      "language": "swift",
+      "code": "struct WeatherList: View {\n    @Binding var text: String\n    \n    @Environment(\\.isSearching)\n    private var isSearching: Bool\n    \n    var body: some View {\n        WeatherCitiesList()\n            .overlay {\n                if isSearching && !text.isEmpty {\n                    WeatherSearchResults()\n                }\n            }\n    }\n}"
+    },
+    {
+      "timestamp": "5:07",
+      "title": "Colors Search",
+      "language": "swift",
+      "code": "struct ColorsContentView: View {\n    @State var text = \"\"\n    \n    var body: some View {\n        NavigationView {\n            Sidebar()\n            DetailView()\n        }\n        .searchable(text: $text)\n    }\n}"
+    },
+    {
+      "timestamp": "7:15",
+      "title": "Colors Search with TV",
+      "language": "swift",
+      "code": "struct ColorsContentView: View {\n    @State var text = \"\"\n    \n    var body: some View {\n        NavigationView {\n            #if os(tvOS)\n            TabView {\n                Sidebar()\n                ColorsSearch()\n                    .searchable(text: $text)\n            }\n            #else\n            Sidebar()\n            DetailView()\n            #endif\n        }\n        #if !os(tvOS)\n        .searchable(text: $text)\n        #endif\n    }\n}"
+    },
+    {
+      "timestamp": "9:09",
+      "title": "Colors Search Completions",
+      "language": "swift",
+      "code": "struct ColorsContentView: View {\n    @State var text = \"\"\n    \n    var body: some View {\n        NavigationView {\n            Sidebar()\n            DetailView()\n        }\n        .searchable(text: $text) {\n           ForEach(suggestions) { suggestion in\n                ColorsSuggestionLabel(suggestion)\n                    .searchCompletion(suggestion.text)\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "10:21",
+      "title": "On Submit",
+      "language": "swift",
+      "code": "ContentView()\n    .searchable(text: $text) {\n        MySearchSuggestions()\n    }\n    .onSubmit(of: .search) {\n        fetchResults()\n    }"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10176/7/5699E756-ACAC-4EFA-801B-5709E5EDF434/downloads/wwdc2021-10176_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10176/7/5699E756-ACAC-4EFA-801B-5709E5EDF434/downloads/wwdc2021-10176_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10018",
+      "year": "2021",
+      "title": "What's new in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10018"
+    },
+    {
+      "id": "10002",
+      "year": "2021",
+      "title": "What's new in watchOS 8",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10002"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:54:16.449Z"
+}

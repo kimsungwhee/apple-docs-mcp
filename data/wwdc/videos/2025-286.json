@@ -1,0 +1,186 @@
+{
+  "id": "286",
+  "year": "2025",
+  "url": "https://developer.apple.com/videos/play/wwdc2025/286/",
+  "title": "Meet the Foundation Models framework",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Machine Learning & AI"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, I’m Erik. And I’m Yifei. And today, we are so excited to get the privilege of introducing you to the new Foundation Models framework! The Foundation Models framework gives you access to the on-device Large Language Model that powers Apple Intelligence, with a convenient and powerful Swift API. It is available on macOS, iOS, iPadOS, and visionOS! You can use it to enhance existing features in your apps, like providing personalized search suggestions. Or you can create completely new features, like generating an itinerary in a travel app, all on-device. You can even use it to create dialog on-the-fly for characters in a game.\n\nIt is optimized for generating content, summarizing text, analyzing user input and so much more.\n\nAll of this runs on-device, so all data going into and out of the model stays private. That also means it can run offline! And it’s built into the operating system, so it won’t increase your app size. It’s a huge year, so to help you get the most out of the FoundationModels framework, we’ve prepared a series of videos. In this first video, we’ll be giving you a high level overview of the framework in its entirety. Starting with the details of the model.\n\nWe will then introduce guided generation which allows you to get structured output in Swift, and the powerful streaming APIs that turn latency into delight.\n\nWe will also talk about tool calling, which allows the model to autonomously execute code you define in your app.\n\nFinally, we will finish up with how we provide multi-turn support with stateful sessions, and how we seamlessly integrate the framework into the Apple developer ecosystem. The most important part of the framework, of course, is the model that powers it. And the best way to get started with prompting the model, is to jump into Xcode.\n\nTesting out a variety of prompts to find what works best is an important part of building with large language models, and the new Playgrounds feature in Xcode is the best way to do that. With just a few lines of code, you can immediately start prompting the on-device model. Here I’ll ask it to generate a title for a trip to Japan, and the model’s output will appear in the canvas on the right. Now, I want to see if this prompt works well for other destinations too. In a #Playground, you can access types defined in your app, so I’ll create a for loop over the landmarks featured in mine. Now Xcode will show me the model’s response for all of the landmarks.\n\nThe on-device model we just used is a large language model with 3 billion parameters, each quantized to 2 bits. It is several orders of magnitude bigger than any other models that are part of the operating system.\n\nBut even so, it’s important to keep in mind that the on-device model is a device-scale model. It is optimized for use cases like summarization, extraction, classification, and many more. It’s not designed for world knowledge or advanced reasoning, which are tasks you might typically use server-scale LLMs for.\n\nDevice scale models require tasks to be broken down into smaller pieces. As you work with the model, you’ll develop an intuition for its strengths and weaknesses.\n\nFor certain common use cases, such as content tagging, we also provide specialized adapters that maximize the model’s capability in specific domains.\n\nWe will also continue to improve our models over time. Later in this video we’ll talk about how you can tell us how you use our models, which will help us to improve them in ways that matter to you.\n\nNow that we’ve taken a look at the model, the first stop on our journey is Guided Generation. Guided Generation is what makes it possible to build features like the ones you just saw, and it is the beating heart of the FoundationModels framework. Let’s take a look at a common problem and talk about how Guided Generation solves it.\n\nBy default, language models produce unstructured, natural language as output. It’s easy for humans to read, but difficult to map onto views in your app.\n\nA common solution is to prompt the model to produce something that’s easy to parse, like JSON or CSV.\n\nHowever, that quickly turns into a game of whack-a-mole. You have to add increasingly specific instructions about what it it is and isn’t supposed to do… Often that doesn’t quite work… So you end up writing hacks to extract and patch the content. This isn’t reliable because the model is probabilistic and there is a non-zero chance of structural mistakes. Guided Generation offers a fundamental solution to this problem.\n\nWhen you import FoundationModels, you get access to two new macros, @Generable and @Guide. Generable let’s you describe a type that you want the model to generate an instance of.\n\nAdditionally, Guides let you provide natural language descriptions of properties, and programmatically control the values that can be generated for those properties.\n\nOnce you’ve defined a Generable type, you can make the model respond to prompts by generating an instance of your type. This is really powerful.\n\nObserve how our prompt no longer needs to specify the output format. The framework takes care of that for you.\n\nThe most important part, of course, is that we now get back a rich Swift object that we can easily map onto an engaging view.\n\nGenerable types can be constructed using primitives, like Strings, Integers, Doubles, Floats, and Decimals, and Booleans. Arrays are also generable. And Generable types can be composed as well. Generable even supports recursive types, which have powerful applications in domains like generative UIs.\n\nThe most important thing to understand about Guided Generation is that it fundamentally guarantees structural correctness using a technique called constrained decoding.\n\nWhen using Guided Generation, your prompts can be simpler and focused on desired behavior instead of the format.\n\nAdditionally, Guided Generation tends to improve model accuracy. And, it allows us to perform optimizations that speed up inference at the same time. This is all made possible by carefully coordinated integration of Apple operating systems, developer tools, and the training of our foundation models. There is still a lot more to cover about guided generation, like how to create dynamic schemas at runtime, so please check out our deep dive video for more details. So that wraps up Guided Generation — we’ve seen how Swift’s powerful type system augments natural language prompts to enable reliable structured output. Our next topic is streaming, and it all builds on top of the @Generable macro you’re already familiar with.\n\nIf you’ve worked with large language models before, you may be aware that they generate text as short groups of characters called tokens.\n\nTypically when streaming output, tokens are delivered in what’s called a delta, but the FoundationModels framework actually takes a different approach, and I want to show you why.\n\nAs deltas are produced, the responsibility for accumulating them usually falls on the developer.\n\nYou append each delta as they come in. And the response grows as you do.\n\nBut it gets tricky when the result has structure. If you want to show the greeting string after each delta, you have to parse it out of the accumulation, and that’s not trivial, especially for complicated structures. Delta streaming just isn’t the right formula when working with structured output.\n\nAnd as you’ve learned, structured output is at the very core of the FoundationModels framework, which is why we’ve developed a different approach. Instead of raw deltas, we stream snapshots.\n\nAs the model produces deltas, the framework transforms them into snapshots. Snapshots represent partially generated responses. Their properties are all optional. And they get filled in as the model produces more of the response.\n\nSnapshots are a robust and convenient representation for streaming structured output.\n\nYou’re already familiar with the @Generable macro, and as it turns out, it’s also where the definitions for partially generated types come from. If you expand the macro, you’ll discover it produces a type named `PartiallyGenerated`. It is effectively a mirror of the outer structure, except every property is optional.\n\nThe partially generated type comes into play when you call the `streamResponse` method on your session.\n\nStream response returns an async sequence. And the elements of that sequence are instances of a partially generated type. Each element in the sequence will contain an updated snapshot.\n\nThese snapshots work great with declarative frameworks like SwiftUI. First, create state holding a partially generated type.\n\nThen, just iterate over a response stream, store its elements, and watch as your UI comes to life.\n\nTo wrap up, let’s review some best practices for streaming.\n\nFirst, get creative with SwiftUI animations and transitions to hide latency. You have an opportunity turn a moment of waiting into one of delight. Second, you’ll need to think carefully about view identity in SwiftUI, especially when generating arrays. Finally, bear in mind that properties are generated in the order they are declared on your Swift struct. This matters both for animations and for the quality of the model’s output. For example, you may find that the model produces the best summaries when they’re the last property in the struct.\n\nThere is a lot to unpack here, so make sure to check out our video on integrating Foundation Models into your app for more details. So that wraps up streaming with Foundation Models. Next up, Yifei is going to teach you all about tool calling! Thanks Erik! Tool calling is another one of our key features. It lets the model execute code you define in your app. This feature is especially important for getting the most out of our model, since tool calling gives the model many additional capabilities. It allows the model to identify that a task may require additional information or actions and autonomously make decisions about what tool to use and when, when it’s difficult to decide programmatically.\n\nThe information you provide to the model can be world knowledge, recent events, or personal data. For example, in our travel app, it provides information about various locations from MapKit. This also gives the model the ability to cite sources of truth, which can suppress hallucinations and allow fact-checking the model output.\n\nFinally, it allows the model to take actions, whether it’s in your app, on the system, or in the real world.\n\nIntegrating with various sources of information in your app is a winning strategy for building compelling experiences. Now that you know why tool calling is very useful, let’s take a look at how it works.\n\nOn the left we have a transcript which records everything that has happened so far. If you’ve provided tools to the session, the session will present these tools to the model along with the instructions. Next comes the prompt, where we tell the model which destination we want to visit.\n\nNow, if the model deems that calling a tool can enhance the response, it will produce one or more tool calls. In this example, the model produces two tool calls — querying restaurants and hotels.\n\nAt this phase, the FoundationModels framework will automatically call the code you wrote for these tools. The framework then automatically inserts the tool outputs back into the transcript. Finally, the model will incorporate the tool output along with everything else in the transcript to furnish the final response.\n\nNow that we have a high level understanding of tool calling, let’s define a tool.\n\nHere we’re defining a simple weather tool, which conforms to the Tool protocol. The weather tool has kind of emerged as the de-facto ‘hello world’ of tool calling, and it’s a great way to get started.\n\nThe protocol first requires you to specify a name and a natural language description of the tool.\n\nThe framework will automatically provide them for the model to help it understand when to call your tool.\n\nWhen the model calls your tool, it will run the call method you define.\n\nThe argument to the call method can be any Generable type.\n\nThe reason your arguments need to be generable is because tool calling is built on guided generation to ensure that the model will never produce invalid tool names or arguments.\n\nAfter defining your arguments type, you can now write anything you want in the body of your method. Here we’re using CoreLocation and WeatherKit to find the temperature of a given city. The output is represented using the ToolOutput type, which can be created from GeneratedContent to represent structured data. Or from a string if your tool’s output is natural language. Now that we have defined a tool, we have to ensure that the model has access to it.\n\nTo do so, pass your tool into your session’s initializer. Tools must be attached at session initialization, and will be available to the model for the session’s lifetime.\n\nAfter creating a session with tools, all you need to do is prompt the model as you would normally. Tool calls will happen transparently and autonomously, and the model will incorporate the tools’ outputs into its final response. The examples I’ve shown here demonstrate how to define type-safe tools at compile time, which is great for the vast majority of use cases. But tools can also be dynamic in every way! For example, you can define the arguments and behaviors of a tool at runtime by using dynamic generation schemas. If you are curious about that, feel free to check out our deep dive video to learn more.\n\nThat wraps up tool calling. We learned why tool calling is useful and how to implement tools to extend the model’s capabilities. Next, let’s talk about stateful sessions. You’ve seen the word session pop up in this video many times already. The Foundation Models framework is built around the notion of a stateful session. By default, when you create a session, you will be prompting the on-device general-purpose model. And you can provide custom instructions.\n\nInstructions are an opportunity for you to tell the model its role and provide guidance on how the model should respond. For example, you can specify things like style and verbosity.\n\nNote that providing custom instructions is optional, and reasonable default instructions will be used if you don’t specify any.\n\nIf you do choose to provide custom instructions, it is important to understand the difference between instructions and prompts. Instructions should come from you, the developer, while prompts can come from the user. This is because the model is trained to obey instructions over prompts. This helps protect against prompt injection attacks, but is by no means bullet proof.\n\nAs a general rule, instructions are mostly static, and it’s best not to interpolate untrusted user input into the instructions.\n\nSo this is a basic primer on how to best form your instructions and prompts. To discover even more best practices, check out our video on prompt design and safety.\n\nNow that you have initialized a session, let’s talk about multi-turn interactions! When using the respond or streamResponse methods we talked about earlier. Each interaction with the model is retained as context in a transcript, so the model will be able to refer to and understand past multi-turn interactions within a single session. For example, here the model is able to understand when we say “do another one”, that we’re referring back to writing a haiku.\n\nAnd the `transcript` property on the session object will allow you to inspect previous interactions or draw UI views to represent them.\n\nOne more important thing to know is that while the model is producing output, its `isResponding` property will become `true`. You may need to observe this property and make sure not to submit another prompt until the model finishes responding. Beyond the default model, we are also providing additional built-in specialized use cases that are backed by adapters.\n\nIf you find a built-in use case that fits your need, you can pass it to SystemLanguageModel’s initializer. To understand what built-in use cases are available and how to best utilize them, check out our documentation on the developer website. One specialized adapter I want to talk more about today is the content tagging adapter. The content tagging adapter provides first class support for tag generation, entity extraction, and topic detection. By default, the adapter is trained to output topic tags, and it integrates with guided generation out of the box. So you can simply define a struct with our Generable macro, and pass the user input to extract topics from it.\n\nBut there’s more! By providing it with custom instructions and a custom Generable output type, you can even use it to detect things like actions and emotions. Before you create a session, you should also check for availability, since the model can only run on Apple Intelligence-enabled devices in supported regions. To check if the model is currently available, you can access the availability property on the SystemLanguageModel.\n\nAvailability is a two case enum that’s either available or unavailable. If it’s unavailable, you also receive a reason so you can adjust your UI accordingly.\n\nLastly, you could encounter errors when you are calling into the model.\n\nThese errors might include guardrail violation, unsupported language, or context window exceeded. To provide the best user experience, you should handle them appropriately, and the deep-dive video will teach you more about them. That’s it for multi-turn stateful sessions! We learned how to create a session and use it, as well as how our model keeps track of your context. Now that you’ve seen all the cool features of the framework, let’s talk about developer tooling and experience. To start, you can go to any Swift file in your project and use the new playground macro to prompt the model.\n\nPlaygrounds are powerful because they let you quickly iterate on your prompts without having to rebuild and rerun your entire app.\n\nIn a playground, your code can access all the types in your project, such as the generable types that are already powering your UI.\n\nNext, we know that when it comes to building app experiences powered by large language models, it is important to understand all the latency under the hood, because large language models take longer to run compared to traditional ML models. Understanding where latency goes can help you tweak the verbosity of your prompts, or determine when to call useful APIs such as prewarming.\n\nAnd our new Instruments app profiling template is built exactly for that. You can profile the latency of a model request, observe areas of optimizations, and quantify improvements.\n\nNow, as you develop your app, you may have feedback that can help us improve our models and our APIs.\n\nWe encourage you to provide your feedback through Feedback Assistant. We even provide an encodable feedback attachment data structure that you can attach as a file to your feedback.\n\nFinally, if you are an ML practitioner with a highly specialized use case and a custom dataset, you can also train your custom adapters using our adapter training toolkit. But bear in mind, this comes with significant responsibilities because you need to retrain it as Apple improves the model over time. To learn more, you can visit the developer website. Now that you’ve learned many of the cool features provided by the new Foundation Models framework, we can’t wait to see all the amazing things you build with it! To discover even more about how you can integrate generative AI into your app, how technologies like guided generation work under the hood, and how you can create the best prompts, we have a whole series of wonderful videos and articles for you.\n\nThank you so much for joining us today! Happy generating!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:28",
+      "title": "Playground - Trip to Japan",
+      "language": "swift",
+      "code": "import FoundationModels\nimport Playgrounds\n\n#Playground {\n    let session = LanguageModelSession()\n    let response = try await session.respond(to: \"What's a good name for a trip to Japan? Respond only with a title\")\n}"
+    },
+    {
+      "timestamp": "2:43",
+      "title": "Playground - Loop over landmarks",
+      "language": "swift",
+      "code": "import FoundationModels\nimport Playgrounds\n\n#Playground {\n    let session = LanguageModelSession()\n    for landmark in ModelData.shared.landmarks {\n        let response = try await session.respond(to: \"What's a good name for a trip to \\(landmark.name)? Respond only with a title\")\n    }\n}"
+    },
+    {
+      "timestamp": "5:32",
+      "title": "Creating a Generable struct",
+      "language": "swift",
+      "code": "// Creating a Generable struct\n\n@Generable\nstruct SearchSuggestions {\n    @Guide(description: \"A list of suggested search terms\", .count(4))\n    var searchTerms: [String]\n}"
+    },
+    {
+      "timestamp": "5:51",
+      "title": "Responding with a Generable type",
+      "language": "swift",
+      "code": "// Responding with a Generable type\n\nlet prompt = \"\"\"\n    Generate a list of suggested search terms for an app about visiting famous landmarks.\n    \"\"\"\n\nlet response = try await session.respond(\n    to: prompt,\n    generating: SearchSuggestions.self\n)\n\nprint(response.content)"
+    },
+    {
+      "timestamp": "6:18",
+      "title": "Composing Generable types",
+      "language": "swift",
+      "code": "// Composing Generable types\n\n@Generable struct Itinerary {\n    var destination: String\n    var days: Int\n    var budget: Float\n    var rating: Double\n    var requiresVisa: Bool\n    var activities: [String]\n    var emergencyContact: Person\n    var relatedItineraries: [Itinerary]\n}"
+    },
+    {
+      "timestamp": "9:20",
+      "title": "PartiallyGenerated types",
+      "language": "swift",
+      "code": "// PartiallyGenerated types\n\n@Generable struct Itinerary {\n    var name: String\n    var days: [Day]\n}"
+    },
+    {
+      "timestamp": "9:40",
+      "title": "Streaming partial generations",
+      "language": "swift",
+      "code": "// Streaming partial generations\n\nlet stream = session.streamResponse(\n    to: \"Craft a 3-day itinerary to Mt. Fuji.\",\n    generating: Itinerary.self\n)\n\nfor try await partial in stream {\n    print(partial)\n}"
+    },
+    {
+      "timestamp": "10:05",
+      "title": "Streaming itinerary view",
+      "language": "swift",
+      "code": "struct ItineraryView: View {\n    let session: LanguageModelSession\n    let dayCount: Int\n    let landmarkName: String\n  \n    @State\n    private var itinerary: Itinerary.PartiallyGenerated?\n  \n    var body: some View {\n        //...\n        Button(\"Start\") {\n            Task {\n                do {\n                    let prompt = \"\"\"\n                        Generate a \\(dayCount) itinerary \\\n                        to \\(landmarkName).\n                        \"\"\"\n                  \n                    let stream = session.streamResponse(\n                        to: prompt,\n                        generating: Itinerary.self\n                    )\n                  \n                    for try await partial in stream {\n                        self.itinerary = partial\n                    }\n                } catch {\n                    print(error)  \n                }\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "11:00",
+      "title": "Property order matters",
+      "language": "swift",
+      "code": "@Generable struct Itinerary {\n  \n  @Guide(description: \"Plans for each day\")\n  var days: [DayPlan]\n  \n  @Guide(description: \"A brief summary of plans\")\n  var summary: String\n}"
+    },
+    {
+      "timestamp": "13:42",
+      "title": "Defining a tool",
+      "language": "swift",
+      "code": "// Defining a tool\nimport WeatherKit\nimport CoreLocation\nimport FoundationModels\n\nstruct GetWeatherTool: Tool {\n    let name = \"getWeather\"\n    let description = \"Retrieve the latest weather information for a city\"\n\n    @Generable\n    struct Arguments {\n        @Guide(description: \"The city to fetch the weather for\")\n        var city: String\n    }\n\n    func call(arguments: Arguments) async throws -> ToolOutput {\n        let places = try await CLGeocoder().geocodeAddressString(arguments.city)\n        let weather = try await WeatherService.shared.weather(for: places.first!.location!)\n        let temperature = weather.currentWeather.temperature.value\n\n        let content = GeneratedContent(properties: [\"temperature\": temperature])\n        let output = ToolOutput(content)\n\n        // Or if your tool’s output is natural language:\n        // let output = ToolOutput(\"\\(arguments.city)'s temperature is \\(temperature) degrees.\")\n\n        return output\n    }\n}"
+    },
+    {
+      "timestamp": "15:03",
+      "title": "Attaching tools to a session",
+      "language": "swift",
+      "code": "// Attaching tools to a session\n\nlet session = LanguageModelSession(\n    tools: [GetWeatherTool()],\n    instructions: \"Help the user with weather forecasts.\"\n)\n\nlet response = try await session.respond(\n    to: \"What is the temperature in Cupertino?\"\n)\n\nprint(response.content)\n// It’s 71˚F in Cupertino!"
+    },
+    {
+      "timestamp": "16:30",
+      "title": "Supplying custom instructions",
+      "language": "swift",
+      "code": "// Supplying custom instructions\n\nlet session = LanguageModelSession(\n    instructions: \"\"\"\n        You are a helpful assistant who always \\\n        responds in rhyme.\n        \"\"\"\n)"
+    },
+    {
+      "timestamp": "17:46",
+      "title": "Multi-turn interactions",
+      "language": "swift",
+      "code": "// Multi-turn interactions\n\nlet session = LanguageModelSession()\n\nlet firstHaiku = try await session.respond(to: \"Write a haiku about fishing\")\nprint(firstHaiku.content)\n// Silent waters gleam,\n// Casting lines in morning mist—\n// Hope in every cast.\n\nlet secondHaiku = try await session.respond(to: \"Do another one about golf\")\nprint(secondHaiku.content)\n// Silent morning dew,\n// Caddies guide with gentle words—\n// Paths of patience tread.\n\nprint(session.transcript) // (Prompt) Write a haiku about fishing\n// (Response) Silent waters gleam...\n// (Prompt) Do another one about golf\n// (Response) Silent morning dew..."
+    },
+    {
+      "timestamp": "18:22",
+      "title": "Gate on isResponding",
+      "language": "swift",
+      "code": "import SwiftUI\nimport FoundationModels\n\nstruct HaikuView: View {\n\n    @State\n    private var session = LanguageModelSession()\n\n    @State\n    private var haiku: String?\n\n    var body: some View {\n        if let haiku {\n            Text(haiku)\n        }\n        Button(\"Go!\") {\n            Task {\n                haiku = try await session.respond(\n                    to: \"Write a haiku about something you haven't yet\"\n                ).content\n            }\n        }\n        // Gate on `isResponding`\n        .disabled(session.isResponding)\n    }\n}"
+    },
+    {
+      "timestamp": "18:39",
+      "title": "Using a built-in use case",
+      "language": "swift",
+      "code": "// Using a built-in use case\n\nlet session = LanguageModelSession(\n    model: SystemLanguageModel(useCase: .contentTagging)\n)"
+    },
+    {
+      "timestamp": "19:19",
+      "title": "Content tagging use case - 1",
+      "language": "swift",
+      "code": "// Content tagging use case\n\n@Generable\nstruct Result {\n    let topics: [String]\n}\n\nlet session = LanguageModelSession(model: SystemLanguageModel(useCase: .contentTagging))\nlet response = try await session.respond(to: ..., generating: Result.self)"
+    },
+    {
+      "timestamp": "19:35",
+      "title": "Content tagging use case - 2",
+      "language": "swift",
+      "code": "// Content tagging use case\n\n@Generable\nstruct Top3ActionEmotionResult {\n    @Guide(.maximumCount(3))\n    let actions: [String]\n    @Guide(.maximumCount(3))\n    let emotions: [String]\n}\n\nlet session = LanguageModelSession(\n    model: SystemLanguageModel(useCase: .contentTagging),\n    instructions: \"Tag the 3 most important actions and emotions in the given input text.\"\n)\nlet response = try await session.respond(to: ..., generating: Top3ActionEmotionResult.self)"
+    },
+    {
+      "timestamp": "19:56",
+      "title": "Availability checking",
+      "language": "swift",
+      "code": "// Availability checking\n\nstruct AvailabilityExample: View {\n    private let model = SystemLanguageModel.default\n\n    var body: some View {\n        switch model.availability {\n        case .available:\n            Text(\"Model is available\").foregroundStyle(.green)\n        case .unavailable(let reason):\n            Text(\"Model is unavailable\").foregroundStyle(.red)\n            Text(\"Reason: \\(reason)\")\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "22:13",
+      "title": "Encodable feedback attachment data structure",
+      "language": "swift",
+      "code": "let feedback = LanguageModelFeedbackAttachment(\n  input: [\n    // ...\n  ],\n  output: [\n    // ...\n  ],\n  sentiment: .negative,\n  issues: [\n    LanguageModelFeedbackAttachment.Issue(\n      category: .incorrect,\n      explanation: \"...\"\n    )\n  ],\n  desiredOutputExamples: [\n    [\n      // ...\n    ]\n  ]\n)\nlet data = try JSONEncoder().encode(feedback)"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Human Interface Guidelines: Generative AI",
+        "url": "https://developer.apple.com/design/human-interface-guidelines/generative-ai"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/286/4/6f221dca-f35f-4dad-bfec-0ec0970849bb/downloads/wwdc2025-286_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/286/4/6f221dca-f35f-4dad-bfec-0ec0970849bb/downloads/wwdc2025-286_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "259",
+      "year": "2025",
+      "title": "Code-along: Bring on-device AI to your app using the Foundation Models framework",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/259"
+    },
+    {
+      "id": "301",
+      "year": "2025",
+      "title": "Deep dive into the Foundation Models framework",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/301"
+    },
+    {
+      "id": "360",
+      "year": "2025",
+      "title": "Discover machine learning & AI frameworks on Apple platforms",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/360"
+    },
+    {
+      "id": "248",
+      "year": "2025",
+      "title": "Explore prompt design & safety for on-device foundation models",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/248"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:39:07.267Z"
+}

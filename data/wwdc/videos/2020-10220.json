@@ -1,0 +1,104 @@
+{
+  "id": "10220",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10220/",
+  "title": "Handle interruptions and alerts in UI tests",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWWDC.\n\nHi everyone. Welcome to handle interruptions and alerts and UI tests. My name is Dennis and I'm a software engineer on the Xcode team. In today's session we''l define what a UI interruption is and how to handle interruptions utilizing interruption handler's. Interruption handlers have been part of XCTest for many years but it's not always clear when they should be used.\n\nIn the second half of the session I'll demonstrate how to interact with expected alerts. For example the ones that appear when the app wants to get access to protected resources such as Bluetooth or location data for the first time. And lastly we'll talk about how you can work with protected resources and how you can reset the authorization status so that you can test these kinds of alerts in a deterministic way. Let's start with what is a UI interruption? A UI interruption is any element which unexpectedly blocks access to another element with which a UI test is trying to interact. In the example on the right you can see a simple recipes app. Imagine there's a UI test that wants to tap one of the recipes to view it. Even though there's a banner at the top, the banner is not considered a UI interruption because the banners UI does not cover the tableview row that the UI test is going to tap. Now that we're in the recipes detail view we make sure that we actually navigated there by asserting that the UI elements appear as expected. After that we want to navigate back to the list of recipes to ensure that this part of the navigation works as well. But now the back button is covered by the banner notification. So to be able to tap the button, the UI test needs to interact with the panel first. In this case the banner is considered a UI interruption. Interrupting elements are most commonly banners like we've seen in the example, alerts, dialogues or windows, but can be other types as well. The important thing to remember is that interruptions are unexpected or at least not deterministic. The appearance of an alert in direct response to a test action such as clicking a button is not an interruption. Now that we understand what a UI interruption is let's go ahead and explore how we can use UI Interruption handlers to handle these interruptions. We've learned that interruptions are unexpected and appear non deterministically. Per that definition, there is no way to handle interruptions efficiently using the usual automation APIs. Interruption Handlers are closures that are invoked by XCTest when an interruption occurs,there can be multiple interruption handlers registered at any time and the order in which they are added is decisive of the order in which they are invoked. XCTest keeps a stack of interruption handlers and invokes them in reverse order until one of them signals that it handled the interruption. You're free to design these handlers as general or as specific as you wish. Some handlers may just attempt to find a cancel button and press it. Others might make decisions based on the UI and contents of the interrupting element. If an interruption handler successfully handled an interruption, it returns true and the UI test continues. If it was not able to handle the interruption it returns false and the next handler On the stack gets invoked. UI interruption handlers are automatically removed at the end of the test or can be removed manually at any time. At the lowest level in the stack of UI interruption handlers, XCTest provides its own implicit interruption. handler that takes care of the most common interruptions for you. On iOS XCTest handles interrupting elements if they have a cancel button or a default button. And new in Xcode 12 XCTest also implicitly handles Banner notifications.\n\nOn macOS XCTest implicitly handles user permission dialogs by clicking the \"Don't Allow\" button and the Bluetooth set up assistant, which is well known for interrupting UI test flows especially in scenario where no keyboard is attached. Let's take a look at all this works in action. When I lived in Germany and studied computer science my grandma not only helped me with my homework for uni she also used to cook for me almost every day. Since I moved to the US, she's been really worried about my health and wants to make sure that I eat healthy food. She had this idea of having an app that lists all her favorite recipes she inherited and collected over the years, so that I could easily cook the good food myself. She's an exemplary programmer and knows that she needs to have tests that validate her apps behavior. Here you can see one of the UI tests she wrote. She told me that this test would sometimes fail but she has no idea why. I promised her to take a look at this. And sure enough after several rounds of the test I was able to reproduce this. The underlying issue here is that sometimes the connection to the server fails and the app cannot update the recipes. In that case the app displays an alert letting these I know that there was a problem and gives them the opportunity to retry. Now for the purpose of this demo I've shut down the web server so that we can easily reproduce the issue ourselves. As you can see at the top I've already added a UI interruption monitor skeleton to the test set up with error method that we'll complete later. Let us run the tests step by step. First we create and launch the application.\n\nThen we try to tap one of the tableview cells, but the alert is in the way. Since we're actually trying to interact with an element, the alert is considered interruption and XCTest invokes our interruption handler. In our skeleton implementation we just returned false indicating that we did not handle the interruption. This is where XCTest implicit interruption handling kicks in. Once I step over here, you can see how XCTest presses the cancel button to dismiss the alert and tap the cell.\n\nNow the test continues.\n\nGreat. You can see that XCTest handled this interruption for us by clicking the cancel button. But grandma wants to make sure that these tests use the latest available data. Suppressing retry here would be the better choice. Let's modify our interruption handler to press the retry button instead.\n\nInside the interruption handler we check if the interrupting element is an alert and if it has a retry button. If it has we tap it and return true to indicate that we handled the interruption and the test can continue. Let's run the tests one more time. Great. Now our test handles these network interruptions by retrying to fetch the latest set of recipes instead of just canceling. Now that we know how to handle interruptions let's see how to best handle alerts that are expected to show up. Unlike interruptions expected alerts are often deterministic and the direct result of an action performed by the UI test. The majority of alerts are expected and should therefore not be handled as an interruption but as part of your test and should participate in its validation process. Using standard queries and events. In the demo the test did not explicitly trigger the alerts appearance and we don't know beforehand when it will appear. The server will probably respond correctly most of the time but not always. That's why we had to use a UI interruption handler. Let's look at a different example to see how we can interact with expected alerts here. Our test swipes left on one of the recipes to remove it. We know that after deleting a recipe an alert shows up asking if you really want to delete that recipe. Since the alert is expected to show up, we use traditional UI element query and wait for existence APIs. Once it appears on screen we validate that it contains the text we expect. Lastly we dismissed the alert by confirming the action and validate that the row does not exist anymore. The expected alerts we've seen so far have all been in our control. This makes it straightforward to get the app under test in the state we need to validate these scenarios. Protected resources like location, Bluetooth or the microphone are very privacy sensitive. And the system needs to make sure that the user explicitly allowed each app access to these resources before letting the app access them. Once the user interacted with the alert asking for access their decision is stored by the system. In a test, there are two or more distinct branches that should be tested. How does the app respond to the user granting permissions and how does the app respond to the user denying permission. However the user response is stored as system state so after the first such interaction the device is no longer in a clean state and it is difficult or impossible to explore the other branches. For more information about protected resources please watch 'Better Apps through Better Privacy' and 'Your Apps and the Future of macOS Security', from WWDC 2018. In Xcode 11.4 and iOS and tvOS 13.4 and macOS 10.15.4, we introduced API on XCUIApplication to reset the authorization status of Protected Resources. Resetting the authorization status of Protected Resources makes the app behave like it never asked the user for permission before. This allows you to retest these authorization or initial launch experience workflows in a deterministic way. Note that these alerts do not originate from your app but from the system. Therefore you need to make sure to adjust your query's accordingly. Also note that resetting the authorization status of a protected resource may terminate the app process. This behavior is not exclusive to UI testing though, and also happens when the user changes the authorization status in Settings while the app is running. Supported resources for all platforms are, for example, Contacts, Calendar, Photos, microphone, camera and location. On iOS, we also support Keyboard, Network Access, Bluetooth and new Xcode 12 and iOS 14, Health. On macOS we additionally support researching the access to areas directories like the users downloads or desktop folder. Here is an example of what a Test looks like that validates the flow of accessing the user's photos for the first time. First we reset the app's authorization status for photos. Resetting the authorization status for photos terminates the app process which is why we launched the app after the reset. After that we continue with our usual test code verifying that the alert appears after requesting access to the protected resource and dismissing the alert. That's it. Let's recap what we talked about in this session. We learned that UI interruptions are unexpected or at least not deterministic UI elements that block access to an element which the UI test needs to interact with. We covered the UI interruption handlers and when and how to use them and that XCTest provides an implicit interruption handler that can handle most interruptions out of the box. We talked about expected alerts and how they're different from interruptions. And lastly we saw how I can work with expected alerts that result from the use of protected resources by using new API in XCTest to thoroughly test the initial launch experience of your app. Gram and\nI want to thank you for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "5:04",
+      "title": "Interruption Handler Skeleton",
+      "language": "swift",
+      "code": "addUIInterruptionMonitor(withDescription: \"Handle recipe update failures\") { element -> Bool in\n    // TODO: Use this handler to retry the update action\n    return false\n}"
+    },
+    {
+      "timestamp": "5:16",
+      "title": "UI Test Method Body",
+      "language": "swift",
+      "code": "func testRecipeDetailsNavigation() throws {\n\n    let app = XCUIApplication()\n    app.launch()\n\n    let pancakeRecipe = app.cells.staticTexts[\"Fluffy Pancakes\"].firstMatch\n    pancakeRecipe.tap()\n\n    // In the detail view\n    let detailTitle = app.navigationBars.staticTexts[\"Fluffy Pancakes\"].firstMatch\n    XCTAssert(detailTitle.waitForExistence(timeout: 30))\n\n    let expectedImage = app.images[\"Fluffy Pancakes Image\"].firstMatch\n    XCTAssert(expectedImage.exists)\n\n    let ingredientsTitle = app.staticTexts[\"Ingredients Title\"].firstMatch\n    XCTAssert(ingredientsTitle.exists)\n\n    let ingredientsContent = app.textViews[\"Ingredients Content\"].firstMatch\n    XCTAssert(ingredientsContent.exists)\n    XCTAssert((ingredientsContent.value as! String).count > 0)\n\n    let instructionsTitle = app.staticTexts[\"Instructions Title\"].firstMatch\n    XCTAssert(instructionsTitle.exists)\n\n    let instructionsTextView = app.textViews[\"Instructions Content\"].firstMatch\n    XCTAssert(instructionsTextView.exists)\n    XCTAssert((instructionsTextView.value as! String).count > 0)\n\n    // Make sure we received the latest instructions:\n    let expectedInstructions = \"\"\"\n                               1. Mix the flour, sugar, baking powder and salt.\n\n                               2. Pour the milk, melted butter and egg into a well in the center and mix.\n\n                               3. Heat a frying pan (don't forget to add a little bit of oil, grandson!), and fry until they're golden.\n\n                               4. Optionally add maple syrup and/or fruits (they're healthy!).\n                               \"\"\"\n    XCTAssertEqual((instructionsTextView.value as! String), expectedInstructions)\n\n    // Go back to the list of recipes\n    let backButton = app.navigationBars.buttons[\"Grandma's Recipes\"].firstMatch\n    backButton.tap()\n\n    XCTAssert(pancakeRecipe.waitForExistence(timeout: 30))\n}"
+    },
+    {
+      "timestamp": "6:20",
+      "title": "Modified Interruption Handler",
+      "language": "swift",
+      "code": "addUIInterruptionMonitor(withDescription: \"Handle recipe update failures\") { element -> Bool in\n    let retryButton = element.buttons[\"Retry\"].firstMatch\n    if element.elementType == .alert && retryButton.exists {\n        retryButton.tap()\n        return true\n    } else {\n        return false\n    }\n}"
+    },
+    {
+      "timestamp": "7:37",
+      "title": "Handle Expected Alerts",
+      "language": "swift",
+      "code": "func testDeleteRecipe() throws {\n    let breadCell = cell(recipeName: \"Banana Bread\")\n    deleteCell(breadCell)\n\n    let alert = app.alerts[\"Delete Recipe\"].firstMatch\n    let alertExists = alert.waitForExistence(timeout: 30)\n    XCTAssert(alertExists, \"Expected alert to show up\")\n\n    let description = \"\"\"\n                      Are you sure you want to \\\n                      delete this recipe?\n                      \"\"\"\n\n    let alertDescription = alert.staticTexts[description]\n    XCTAssert(alertDescription.exists)\n\n    alert.buttons[\"Delete\"].tap()\n    XCTAssertFalse(breadCell.exists)\n}"
+    },
+    {
+      "timestamp": "10:29",
+      "title": "Reset the Authorization Status of Protected Resources",
+      "language": "swift",
+      "code": "func testAddingPhotosFirstTime() throws {\n    let app = XCUIApplication()\n    app.resetAuthorizationStatus(for: .photos)\n\n    app.launch()\n\n    // Test code…\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10220/3/3529A3B2-1763-4B11-989D-D5B6B986EFE6/wwdc2020_10220_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10220/3/3529A3B2-1763-4B11-989D-D5B6B986EFE6/wwdc2020_10220_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10077",
+      "year": "2020",
+      "title": "Eliminate animation hitches with XCTest",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10077"
+    },
+    {
+      "id": "10221",
+      "year": "2020",
+      "title": "Get your test results faster",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10221"
+    },
+    {
+      "id": "10687",
+      "year": "2020",
+      "title": "Triage test failures with XCTIssue",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10687"
+    },
+    {
+      "id": "10091",
+      "year": "2020",
+      "title": "Write tests to fail",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10091"
+    },
+    {
+      "id": "10164",
+      "year": "2020",
+      "title": "XCTSkip your tests",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10164"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:43:51.092Z"
+}

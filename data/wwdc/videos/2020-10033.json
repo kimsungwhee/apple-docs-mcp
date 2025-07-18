@@ -1,0 +1,118 @@
+{
+  "id": "10033",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10033/",
+  "title": "Build SwiftUI views for widgets",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC. My name is Nils, and I'm an engineer on the iOS System Experience team. Today I'm going to show you how to build SwiftUI views for widgets.\n\nFirst, we'll talk about how widgets are enabled by SwiftUI. Then, in the main part of this session, we're going to build a widgets view together. And we'll finish by going over some of the new APIs that make building widgets with SwiftUI awesome. Let's jump right in. With SwiftUI and WidgetKit, you can provide a timeline of views to be displayed by the Home Screen at the appropriate time. Thanks to SwiftUI's adaptability, you can write a widget and deploy it to both iOS and macOS. Because they're self-contained experiences, new in iOS 14 and macOS Big Sur, widgets are an amazing opportunity to learn and use SwiftUI, even if you need to deploy your app to older versions of our OSes where SwiftUI may not be available. I don't know about you, but I've been drinking a lot of coffee lately. Some days, a bit too much. So I created an app to log and track the caffeinated beverages I drink and to give me an estimate of how much caffeine is in my body. I called it Wired. I think a widget would be a great addition to the app, to be able to know at a glance at all times how caffeinated I am. This is what I want my widget to look like. First you can see that it's using my app's visual identity and color scheme. At the top, we are showing the amount of caffeine currently in my body, and at the bottom, the last drink I had and how long ago that was. Note that the shape of the background for the caffeine amount is concentric with the widget's shape. Also, I want the duration at the bottom of the widget to be updating live to always be correct.\n\nLet's jump to the demo to see how SwiftUI makes all of this easy.\n\nI've already set up the widget configuration to read on a timeline so that we can focus on creating the views for our widget here. I'm going to be using SwiftUI to build this widgets view. And that means everything I write here can be used in your app too. Here is my view. And here is the preview for it. I'm using a WidgetPreviewContext to specify which widget family I want my preview to display. In this case, systemSmall. First, let's define a struct for the data that is going to drive our UI. I called it CaffeineWidgetData, and it has three properties, for the caffeine amount, the drink name and the drink date. I also have a steady constant for some preview values that I'm going to use to make my previews look real. Let's add the property to our view to hold this data.\n\nNext, let's update our preview to use the preview data.\n\nWe're ready to start building our view. Let's start by adding some content.\n\nI'm using a VStack to stack views vertically. At the top, I have the word \"caffeine\" styled with the body font \"bold\" and using a custom color that I've defined here in my asset catalog.\n\nBelow that, I have the amount. That gets a bigger font but a similar look. Because this font is pretty big, I want to allow it to shrink a bit if our layout requires it. That's why I have set a minimumScaleFactor here. Next, let's give our widget some personality by putting a background color behind it using a ZStack. A ZStack allows you to overlay views on top of each other.\n\nYou'll notice that our widget automatically gets its shape, size and corner radius from the system. Now, let's continue building our widget by adding the name of the last drink I had and how long ago that was.\n\nFor the time elapsed since my last drink, you can see that I'm using a new initializer on text that takes a date and a style to format it for you. When using this initializer, the content will count up or down from the specified date automatically as time passes. This is a great way to make your widgets feel alive on the Home Screen. Let's see what it looks like by clicking the \"live preview\" button in the canvas. You can see that the duration is counting up.\n\nI can even use string interpolation to add more content to the string. So I can add the word \"ago\" just like this.\n\nAnd because this is using string interpolation, the framework will generate a localized key for you so that the format can be adapted for other locales and languages.\n\nWe really have two groups of content here, as shown by the text color: this brown text at the top and this white text below it. So let's split them into two VStacks and add a spacer between them. I'm going to come and click on this text here and select \"Embed in VStack.\" Gonna move this text inside the VStack.\n\nNext, I'm gonna do the same thing with this text here. Come and click \"Embed in VStack.\" And move the second text inside.\n\nAnd add a spacer between them.\n\nI'm going to make both of my VStacks leading-aligned. To do that using the canvas, I can click the leading button in the vertical stack section of the Attributes Inspector.\n\nHere...\n\nand here. This is starting to get a bit complicated, so I'm going to extract the top and bottom parts into their own subviews. Because this is SwiftUI, views are cheap, and I can do this with almost no cost. I come and click on the VStack here and select \"Extract Subview.\" Let's call it \"CaffeineAmountView.\" Let's add a property to it to hold some data.\n\nThen I'm gonna do the same thing to the bottom VStack. Come and click \"Extract Subview.\" Let's call it \"DrinkView.\" And let's also add the same property to it. Finally, let's pass in some data.\n\nThings look the same, but we have better code structure to build upon. I want my content to be leading-aligned instead of centered. I'm going to wrap the content of the CaffeineAmountView in an HStack and add a spacer at the end. Come and click \"Embed in HStack.\" An HStack, or horizontal stack, allows you to place views next to each other. By putting a spacer at the end, I'm telling the layout system to push my content to the opposite edge, the leading edge. Because I don't need any minimum spacing, I'm going to specify a min length of zero so that my content can take as much space as is available.\n\nLet's add some padding to our content to make it look better. Because this is SwiftUI, I can do this using the canvas by placing my cursor on the main VStack...\n\nand then clicking the four checkboxes here in the padding section of the Attributes Inspector.\n\nEasy. You can see that I'm not specifying a value for that padding. SwiftUI will use an appropriate default value for the device and configuration it's running on. I want to emphasize the CaffeineAmountView, so I'm going to give it a background.\n\nI'm using the color named \"latte\" from my asset catalog. Let's add some padding again by clicking the four checkboxes in the Attributes Inspector.\n\nThat's a bit too much. Let's make it eight. Okay. You can see that the corners of this shape are not rounded. As described in the Human Interface Guidelines for widgets, rounded rectangles are an important part of widgets' visual design language. So I'm going to round the corners of this shape. I could use a cornerRadius modifier, like this...\n\nand then try to find a value that looks good. But then different devices may use a different radius for their widgets, so it can become a bit cumbersome. We have a much better way to do this in iOS 14 using the new ContainerRelativeShape.\n\nContainerRelativeShape is a new shape type that will take on the path of the nearest container shape specified by a parent with an appropriate corner radius based on the position of the shape. In this instance, the system is defining the container shape for our widget, and we get the corner radius concentric with it super easy.\n\nIf I change the value for the padding of our main VStack, the corner radius of the CaffeineAmountView changes so that the border around it keeps a constant thickness around the corner's curve.\n\nFinally, let's give our most important content some room to breathe using a spacer.\n\nThere. We've implemented the design that we were going for. I personally think it looks gorgeous, and I can't wait to add it to my Home Screen. Let's see what my widget looks like in Dark Mode. To do this, let me duplicate my preview and add a modifier to set it to Dark Mode.\n\nBecause all of my colors come from an asset catalog where I've already defined dark appearance variants for them, my widget automatically adapts for Dark Mode. My mom drinks a lot of coffee too, so I'm sure she will be super excited about Wired. But this small text at the bottom may be difficult for her to read. So let's update our widget to support dynamic type so that she and all our users who prefer larger text can use it too. First, let's add a new preview to check what my widget looks like at a larger size category.\n\nHere, I set the size category to extraExtraExtraLarge.\n\nIt looks great. Thanks to SwiftUI's adaptive nature, I didn't have to change anything to support dynamic type. And I built a widget that's more inclusive with no additional work. Isn't that amazing? Next, I want to talk about placeholders. For a great widget experience, you should provide a placeholder that the system can use while it's requesting a view from your extension or when the device is locked. Your placeholder should look just like your widget but without any specific content. Let's see how we can modify our view to also use it as a placeholder. First, I'm going to create another preview by copying an existing one.\n\nAnd I'm going to add the isPlaceholder(true) modifier to it to make it a placeholder.\n\nYou can see that SwiftUI knows to automatically replace the content of all my text with rounded rectangles and to style them in a way that matches the content they're replacing. And if I want to preserve some text in my placeholder, I can add the isPlaceholder(false) modifier to it. Let's add it to the word \"caffeine.\" Just like that, I updated my view to use it as the placeholder for my widget. Simple, right? The isPlaceholder modifier that I just showed you will be available in a later seed. You probably know that widgets come in three different families: system small, medium and large. Let's look at how easy it is to update my widget for another widget family. Let's start by adding another preview for systemMedium.\n\nThis looks okay, but it's a bit of a waste of space. In my app, I let the user take a photo of their drink when they log it. So let's make better use of screen real estate by including these photos in our widget. First, I'm going to add the property to my data struct to hold the name of that photo.\n\nAnd then add a sample photo from my preview asset catalog.\n\nLet's add the photo to our view. We only want the drinks photo to appear on systemMedium. To be able to create this conditional layout, let's add an Environment variable for the widget family.\n\nI want my photo to appear next to the existing content, so I'm going to wrap all our content in an HStack.\n\nThen, if we are in a systemMedium widget, and if we have a photo to display, let's add our image.\n\nAnd make it resizable.\n\nAwesome. Finally, let's look at our placeholder for this size by adding another preview. I'm pretty sure you're starting to get the hang of this. I'm copying the existing one and adding a modifier to it to make it a placeholder.\n\nYou can see that SwiftUI knows to automatically replace the content of my image with a fill color, so I didn't have to do any additional work to create my systemMedium placeholder. Awesome, right? And that's how easy it is to build your widgets views with SwiftUI. Let me go over two new APIs that I just showed you in the demo. First, let's look at how to make corner radii look beautiful in your widget. When nesting rounded rects, most of the time you don't want them to use the same corner radius. Instead, you want them to be concentric. In iOS 14, this is effortless. Set the new ContainerRelativeShape as the background for your view, and SwiftUI will take it from there. That's almost too easy. In iOS 14, we added a new initializer on text to format a date according to a style. This allows you to create countdowns, timers, and other styles of absolute and relative dates. Because this will automatically update as time passes, it's a great way to make your widgets feel alive on the Home Screen. Let's wrap it up. SwiftUI enables you to build compelling widget experiences for your users. Widgets leverage SwiftUI's existing support for adaptive layouts. We've added new APIs to make it easier to do some things that we found common in widgets. Note that these APIs work everywhere, not just in widgets, so use them in your apps too. Be sure to check out the \"Meet WidgetKit\" session to learn more about widget timelines and also the \"Widgets Code-along\" by my colleague Izzy, to watch him use WidgetKit to build a widget from scratch. I hope you had a great WWDC. Thank you, and see you next year.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "18:40",
+      "title": "Concentric corner radius with ContainerRelativeShape",
+      "language": "swift",
+      "code": "// Concentric corner radius with ContainerRelativeShape\n\nstruct PillView : View {\n    var title: Text\n    var color: Color\n\n    var body: some View {\n        Text(title)\n            .background(ContainerRelativeShape().fill(color))\n    }\n}"
+    },
+    {
+      "timestamp": "19:09",
+      "title": "Displaying date and time",
+      "language": "swift",
+      "code": "// Displaying date and time\n\n// June 3, 2019\nText(event.startDate, style: .date)\n\n// 11:23PM\nText(event.startDate, style: .time)\n\n// 9:30AM - 3:30PM\nText(event.startDate...event.endDate)\n\n// +2 hours\n// -3 months\nText(event.startDate, style: .offset)\n\n// 2 hours, 23 minutes – Automatically updating as time pass\nText(event.startDate, style: .relative)\n\n// 36:59:01 – Automatically updating as time pass\nText(event.startDate, style: .timer)"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Building Widgets Using WidgetKit and SwiftUI",
+        "url": "https://developer.apple.com/documentation/widgetkit/building_widgets_using_widgetkit_and_swiftui"
+      },
+      {
+        "title": "Creating a widget extension",
+        "url": "https://developer.apple.com/documentation/WidgetKit/Creating-a-Widget-Extension"
+      },
+      {
+        "title": "Human Interface Guidelines: Widgets",
+        "url": "https://developer.apple.com/design/human-interface-guidelines/widgets"
+      },
+      {
+        "title": "Keeping a widget up to date",
+        "url": "https://developer.apple.com/documentation/WidgetKit/Keeping-a-Widget-Up-To-Date"
+      },
+      {
+        "title": "WidgetKit",
+        "url": "https://developer.apple.com/documentation/WidgetKit"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10033/5/062E0EF4-4132-4E4F-A5E9-807F30DCCBCC/wwdc2020_10033_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10033/5/062E0EF4-4132-4E4F-A5E9-807F30DCCBCC/wwdc2020_10033_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10048",
+      "year": "2021",
+      "title": "Principles of great widgets",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10048"
+    },
+    {
+      "id": "10103",
+      "year": "2020",
+      "title": "Design great widgets",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10103"
+    },
+    {
+      "id": "10028",
+      "year": "2020",
+      "title": "Meet WidgetKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10028"
+    },
+    {
+      "id": "10041",
+      "year": "2020",
+      "title": "What's new in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10041"
+    },
+    {
+      "id": "10034",
+      "year": "2020",
+      "title": "Widgets Code-along, part 1: The adventure begins",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10034"
+    },
+    {
+      "id": "10035",
+      "year": "2020",
+      "title": "Widgets Code-along, part 2: Alternate timelines",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10035"
+    },
+    {
+      "id": "10036",
+      "year": "2020",
+      "title": "Widgets Code-along, part 3: Advancing timelines",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10036"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:16:44.345Z"
+}

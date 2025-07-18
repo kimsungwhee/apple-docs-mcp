@@ -1,0 +1,97 @@
+{
+  "id": "10140",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10140/",
+  "title": "What's new in SharePlay",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services",
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Adam: Hi, my name's Adam and I'm an engineer on the SharePlay team. I'm excited to talk to you about what's new in SharePlay and how you can adopt it in your app. To start, we'll talk about some new APIs for starting SharePlay from your app. Next, we'll get into some exciting GroupSessionMessenger updates. Finally, some best practices around implementing a SharePlay experience. Starting SharePlay from your app. We heard your feedback and we delivered, As of iOS 15.4 you can now leverage new API to allow your app to start SharePlay without an existing FaceTime call. So let's see what that looks like. So now all we have to do is find our favorite SharePlay app. Let's say the Music app. And we'll find a song that we want to SharePlay, like Viral Hits, and press and hold it. Now in the contextual menu, you'll see that we now have a new SharePlay button. So I'll go ahead and press that, and it brings up the people picker. So we can select Sue and start a FaceTime call.\n\nAnd, as you can see, we now have a pill here with the staged activity. So if Sue joins, we can go ahead and start, and we'll have group session.\n\nWell, I thought that was all pretty cool, but let's break that down into some more detail.\n\nHere we have the ability for users to start SharePlay from share sheet, and you may be wondering what you need to do for this to work. Well, the answer is that if your app is entitled for SharePlay then you get this button for free with our zero adoption flow, but this isn't the optimal user experience since the user won't be able to start the GroupActivity through system UI and will, instead, need to re-interact with your app to pick the content to SharePlay. So let's see how you'd adopt our new APIs for your app. The answer is, it's as simple as registering your GroupActivity on NSItemProvider and then providing the ItemProvider to the share sheet.\n\nWant to still offer the SharePlay button but not display it as prominently? No problem. You can tune the behavior with allowsProminentActivity on the UIActivityViewController. Just set allowsProminentActivity to false.\n\nOr what if you have a piece of content in your app that doesn't support SharePlay? Well, while we'd love for everything to support SharePlay, you can make SharePlay not show up in the share sheet by telling UIActivityViewController to exclude the SharePlay activity type.\n\nAnd if you want to place a button directly within your app, then you can use our new API GroupActivitySharingController to create our UIViewController and then, just present it! Once someone presses your in-app experience and starts a FaceTime or SharePlay session, they'll then be presented with the ability to activate the staged GroupActivity. Once activated, your app will receive the GroupSession. And don't worry if you're saying to yourself \"Wait, Adam, did you just say 'Staged GroupActivity'?\" Why, yes. Yes, I did! But let's hold onto that thought and dive deeper into that later when we're talking about best practices. For now, let's see how we can adopt this in our DrawTogether app.\n\nThis is our DrawTogether app. It's the same app from our previous WWDC talk from 2021 \"Build custom experiences with Group Activities,\" so if you haven't seen it already, I highly recommend checking it out. Now that you've gone ahead and seen that, you'll remember there weren't any share buttons in our app, but we did have a SharePlay button when you were eligible for a GroupSession. Let's go ahead and modify that behavior so that even when isEligibleForGroupSession is false, we show the button and, now, allow the user to start a SharePlay session.\n\nAnd now we can go ahead and see it in action. Let's go ahead and go to our ControlBar code. Now, as you can see here, we have an ‘if’ statement that makes sure that we don't have a group session and that we're eligible for a group session. So let's go ahead and remove the latter statement, and move it down here.\n\nAnd now what we have to do is register a new variable so that we know when to present our GroupActivity sharing controller. So we'll have a new variable up here, and now let's handle when that variable changes to true.\n\nAnd we have to have a wrapper now so we can present the GroupActivity sharing controller in SwiftUI.\n\nAnd now, finally, all we have to do is have an 'else' statement to set isSharingControllerPresented to true if we're not eligible for a GroupSession.\n\nAnd now we can see our code in action. So we'll go ahead and go to the DrawTogether app., and you can see, we have our SharePlay button. So we can now press it, and we're given the people picker.\n\nAnd now we've got a great experience for starting SharePlay from your app. But that's not the only update we made. So now let's talk about some of the GroupSessionMessenger updates we've made. We've got two exciting new updates in our GroupSessionMessenger. For the first update, you may have run into this magical number. It's the payload size you're able to send over the GroupSessionMessenger. Well, not anymore. We've now made it so that the payload size is four times larger at 256KB. With this change, your app doesn't need to worry about breaking up your message into smaller messages. You can simply send your message and focus on building a great experience. And if that didn't excite you enough, then I'm sure our next update will. Unreliable messaging. As part of the GroupSessionMessenger, you can now choose your messages' reliability. This allows you to choose between reliable or unreliable messaging depending on your desired experience.\n\nAll we have to do is leverage the new initializer on GroupSessionMessenger that allows us to specify the MessageReliability.\n\nNow that we understand how to use the API, what about the experience? When would we want to use unreliable messaging? Well, that's a great question People are performing real-time actions on FaceTime and SharePlay. So let's imagine that we have three people in a session. Amy, Brian, and Chris. They're all joined into a session and synced so as time progresses so does our movie. But what happens if Amy wants to do something relevant to the specific time that they're at in that moment? Well, if you use reliable messaging, then we guarantee that messages will be received on all the devices, but that doesn't mean that they'll be received at the time that they're expecting it. For example, Chris received the message, but Brian has the message dropped the first time and receives it properly after that. But remember, the movie is still playing. So now we get to where Amy intended the message to be reflected and Brian doesn't have it. He receives it later, but at that point, it's too late. Well, this is a perfect case for unreliable networking. It allows you, the developer, to know what information needs to be reliably received on the other side and what information doesn't. This is an important concept to understand when designing protocols that have the user experience deeply affected by latency. Unreliable messages are using UDP and have less latency and overhead with each message involved and, as a result of that, you'll have a more real-time experience when sending messages through them. So now let's talk about how we're going to use this for our DrawTogether app You may remember this screen from WWDC '21, especially with my beautifully drawn smiley face. Let's dive a bit into what happens when you're drawing your smiley face on the screen.\n\nIn our app we have some code that listens to a GestureRecognizer and then we sent messages each time we noticed a change. This meant that as we were drawing our smiley face, we were constantly sending new messages for each point our GestureRecognizer gives us. That's a lot of messages! Well, we can now change our protocol to use unreliable messaging to make a more seamless drawing experience.\n\nWhat we'll do here is make it so that each time we receive an update from our GestureRecognizer, we'll send our newly added point using unreliable messaging. Once the gesture is complete, we'll then use reliable messaging and give all of the points so a client can catch up with any points that they missed. This allows us to take advantage of the lower latency provided by unreliable messaging to have a more immediate drawing experience. So let's see how we would do this in code. So first let's go to our messages file.\n\nAnd we'll go ahead and define our new message type.\n\nAs you can see, this new message type is pretty much the same as our old one, but this time, will contain all of the points for our stroke. Now we'll go over to our canvas file.\n\nAnd we need to set up a handler function to handle the new message that we're gonna get.\n\nAnd let's go ahead and create our unreliable messenger. First, we'll create a variable.\n\nAnd now, let's just initialize it.\n\nNow we'll listen for the finished stroke message.\n\nAnd mark the previous message as unreliable messenger as well.\n\nBut we need a way to send the message. So we'll go up to finishedStroke.\n\nAnd we'll go ahead and send our new message type.\n\nAnd let's change our old function for sending all of the points to use the unreliable messenger.\n\nAnd now we can see our code in action. So we go over to the DrawTogether app and we can see how seamless it is. And that's it! And now, as promised, let's talk about some best practices for your SharePlay implementation. You may remember this term from earlier: Staged GroupActivity. What does that term mean for your app? Well, let's talk through a scenario.\n\nLet's say that the device on our left, \"Adam\", starts SharePlay with the device on our right, \"Brian\". But Adam is trying to resume the show they were watching. So when someone activates the staged GroupActivity, we want to jump into that resumed show at a specific time, rather than starting over. This poses a problem because \"Adam\" knew we had 11 minutes remaining in the show, but Brian's device didn't. This means that if Brian's device activated the staged GroupActivity, the show may start over. So what can we do here? It really depends on your app and experience.\n\nSo let's walk through some ideas. For the playback case, we'll want to have each device contribute its initial playback state to the others in catch-up. This means that since Adam's device knew the playback state was 23 seconds, when he joins the session, he'll tell all the other devices his intended playback state, and they'll use that as the source of truth. This same principle applies to any experience you create using SharePlay. Each person that joins a session should contribute their understanding of the session to the others. This is because sessions are peer-to-peer and ownerless. So let's talk a bit more about that. Ownerless sessions are a hard concept to grasp, but they're important when designing a proper SharePlay experience. In this case, Adam, on the left, wants to hand off his session to his Apple TV. This results in his phone dropping off the GroupSession and his TV joining. But what happens if we had ownership implemented? Well, the owner dropped off, so... And remember, this isn't just for TVs.\n\nIn iOS 16 we now have FaceTime handoff. So Adam goes ahead and hands off his iPad, and well, same thing. Boom And that isn't all. We just talked about some examples of a user flow where someone tries to move the session from one device to another, but there's other cases to think about. Okay, don't worry, we'll keep it short with just one more example. This screen may seem a little familiar. It's the FaceTime HUD. But what happens if we click the SharePlay button? We're now presented with a button, End SharePlay, that allows you, you guessed it, end SharePlay. This allows you to end SharePlay for everyone, essentially the system calling .end() on the GroupSession on your application's behalf. This means that no matter how careful you are about not calling .end() unless that device is the owner, the system is still able to call .end() on the GroupSession on your behalf. So remember, while it may be a hard concept to grasp, making sure that your application doesn't have a sense of ownership means that it'll, overall, result in a much better experience. Now that you've listened to the whole session, go and adopt our new APIs for starting SharePlay from within your app, and explore ways for your app to communicate in new, low latency, ways using unreliable messaging.\n\nWe love hearing from you all, so please continue to file feedback using the Feedback Assistant. I hope you enjoyed all the changes that we've made and we look forward to seeing all the amazing experiences that you build. If you haven't already, check out our other WWDC talk, \"Make a great SharePlay experience\". Or, if you're looking for some amazing enhancements we've made around media playback, check out \"Display ads and other interstitials in SharePlay\". If you have any questions, please find us at the GroupActivities labs and challenges. As always, thank you all for tuning in, and have a great WWDC. We can't wait to see what you build.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:06",
+      "title": "Register GroupActivity",
+      "language": "swift",
+      "code": "// Register GroupActivity\nlet itemProvider = NSItemProvider()\nitemProvider.registerGroupActivity(WatchTogether())\n\n// Provide the ItemProvider to the ShareSheet\nlet configuration = UIActivityItemsConfiguration(itemProviders: [itemProvider])\n\nUIActivityViewController(activityItemsConfiguration: configuration)"
+    },
+    {
+      "timestamp": "2:14",
+      "title": "Not as prominent",
+      "language": "swift",
+      "code": "let shareSheet = UIActivityViewController(activityItemsConfiguration: configuration)\n\n// Show SharePlay non-prominently\nshareSheet.allowsProminentActivity = false"
+    },
+    {
+      "timestamp": "2:15",
+      "title": "Exclude",
+      "language": "swift",
+      "code": "let shareSheet = UIActivityViewController(activityItemsConfiguration: configuration)\n\n// Exclude SharePlay activity\nshareSheet.excludedActivityTypes = [.sharePlay]"
+    },
+    {
+      "timestamp": "2:44",
+      "title": "Show your own button to start SharePlay",
+      "language": "swift",
+      "code": "let controller = GroupActivitySharingController(WatchTogetherActivity())\npresent(controller, animated: true)"
+    },
+    {
+      "timestamp": "8:21",
+      "title": "Stroke Gesture",
+      "language": "swift",
+      "code": "var strokeGesture: some Gesture {\n    DragGesture()\n        .onChanged { value in\n            canvas.addPointToActiveStroke(value.location)\n        }\n        .onEnded { value in\n            canvas.addPointToActiveStroke(value.location)\n            canvas.finishStroke()\n        }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Human Interface Guidelines: SharePlay",
+        "url": "https://developer.apple.com/design/human-interface-guidelines/shareplay/overview/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10140/3/7F5B5E00-19E6-4DBE-A169-044C9D0418F0/downloads/wwdc2022-10140_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10140/3/7F5B5E00-19E6-4DBE-A169-044C9D0418F0/downloads/wwdc2022-10140_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10075",
+      "year": "2023",
+      "title": "Design spatial SharePlay experiences",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10075"
+    },
+    {
+      "id": "110380",
+      "year": "2022",
+      "title": "Display ads and interstitials in SharePlay",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110380"
+    },
+    {
+      "id": "10139",
+      "year": "2022",
+      "title": "Make a great SharePlay experience",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10139"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:15:29.246Z"
+}

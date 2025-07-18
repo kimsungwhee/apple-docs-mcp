@@ -1,0 +1,158 @@
+{
+  "id": "10033",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10033/",
+  "title": "Extend Speech Synthesis with personal and custom voices",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Accessibility & Inclusion"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Grant: Hi, my name is Grant. I’m an Engineer on the Accessibility Team. Many people use speech synthesis across Apple platforms and some people rely on synthesizer voices. These voices are a window into their devices. Therefore, the voices they choose are often a very personal choice.\n\nPeople using speech synthesis on iOS can already choose from many different voices. Let’s take a look at how you can provide even more. First, we’ll talk about what Speech Synthesis Markup Language is, how it can bring immersive speech output to your custom voices, and why your speech provider should adopt it. Next, we’ll walk through how you can implement a speech synthesis provider to bring your synthesizer and voice experiences across the device. And finally, we’ll dive into Personal Voice. This is a new feature. Now, people can record their voice and then generate a synthesized voice from those recordings. So now, you can synthesize speech with the user's own personal voice. Let’s start by taking a look at SSML. SSML is a W3C standard for representing spoken text. SSML Speech is represented declaratively using XML format with various tags and attributes. You can use these tags to control speech properties like rate and pitch. SSML is used in first-party synthesizers. This includes WebSpeech in WebKit and is the standard input for speech synthesizers. Let’s take a look at how you can use SSML.\n\nTake this example phrase that has a pause in it. We can represent this pause in SSML. We’ll start with our \"hello\" string, add our one second pause using an SSML break tag, and finish by speeding up \"nice to meet you!\" We do this by adding an SSML prosody tag and setting the rate attribute to 200%. Now we can take this SSML and create an AVSpeechUtterance to speak with. Next, let’s take a look at how you can implement your own speech synthesizer voices.\n\nSo what is a speech synthesizer? A speech synthesizer receives some text and information about desired speech properties in the form of SSML and provides an audio representation of that text.\n\nSuppose you have a synthesizer with great new voices and you want to bring it to iOS, macOS, and iPadOS. Speech synthesis providers allow you to implement your own speech synthesizers and voices into our platforms to give even more personalization to users beyond system voices.\n\nLet’s see how this works. Speech Synthesis provider audio unit extensions will be embedded in a host app and will receive speech requests in the form of SSML. The extension will be responsible for rendering audio for the SSML input and optionally returning markers indicating where words occur within those audio buffers. The system will then manage all playback for that speech request. You don't need to handle any audio session management; it's managed internally by the Speech Synthesis Provider framework.\n\nNow that we understand what a synthesizer is, we can start to build a speech synthesizer extension.\n\nLet’s start by creating a new Audio Unit Extension app project in Xcode, then select the \"Speech Synthesizer\" Audio Unit Type and provide a four character subtype identifier for your synthesizer, as well as a four character identifier for you as a manufacturer. Audio unit extensions are the core architecture upon which speech synthesizer extensions have been built. They allow your synthesizer to run in an extension process instead of in your host app process.\n\nOur app is going to provide a simple interface for buying and selecting a voice that our extension will synthesize speech for. We’ll start by creating a list view that shows our available voices for purchase. Each voice cell will show the voice name and a buy button.\n\nNext, I will populate my list with some voices. Here, WWDCVoice is a simple struct holding the voice name and identifier.\n\nWe also need a state variable for keeping track of purchased voices and a new section to display them. Next, let’s create a function for purchasing a voice. Here we can add the newly purchased voice to our list and update our UI accordingly. Take note of the AVSpeechSynthesisProviderVoice method updateSpeechVoices. That is how your app can signal that the set of available voices for your synthesizer has changed and the system voice list should be rebuilt. In our example, we can make this call after completing an in-app purchase for a voice. We also need a way to keep tabs on which voices are available in our speech synthesizer extension. This can be done by creating an instance of UserDefaults that will be shared through an app group. An app group will allow us to share this voice list between our host app and our extension. We are explicitly specifying a suite name that we provided when creating the app group. This ensures the host app and extension read from the same domain.\n\nTaking a look back at the purchase function, I have implemented a method to update my user defaults when a new voice is purchased. AVSpeechSynthesizer also has new API to listen for a change in available system voices. The set of system voices can change when a user deletes a voice or downloads a new one. You can subscribe to the availableVoicesDidChangeNotification to update your list of voices based on these changes.\n\nNow that our host app is done, let's fill in the audio unit, which consists of four key components.\n\nThe first thing we’ll need to add is some way to inform the system of what voices our synthesizer will provide. This is accomplished by overriding the speechVoices getter to provide a list of voices and reading from our app group UserDefaults domain we specified earlier. For each item in our voice list, we’ll construct a US English AVSpeechSynthesisProviderVoice. Next, we need some way for the system to tell the synthesizer what text to synthesize. The synthesizeSpeechRequest method will be called when the system wants to signal to an extension that it should start synthesizing some text. The argument to this method will be an instance of AVSpeechSynthesisProviderRequest containing SSML and which voice to speak with. Next, I’ll call a helper method I’ve created in my speech engine implementation. In this example, my getAudioBuffer method will generate audio data based on the voice specified in the request and the SSML input. We’ll also set an instance variable, called framePosition, to 0 in order to keep track of how many frames we’ve rendered as the render block is called and we copy frames out of the buffer. The system also needs a way to signal to a synthesizer to stop synthesizing audio and discard the current speech request. This is accomplished with cancelSpeechRequest, where we will simply discard the current buffer. Finally, we need to implement the render block. The render block is called by the system with a desired frameCount. The audio unit is then responsible for filling the requested number of frames into the outputAudioBuffer. Next, we will set ourselves up with a reference to the target buffer and the buffer we generated and stored earlier during the synthesizeSpeechRequest call. Then, we’ll copy the frames into the target buffer. And then finally, once the audio unit has exhausted all the buffers for the current speech request, the actionFlags argument should be set to offlineUnitRenderAction_Complete to signal to the system that rendering has completed and there are no more audio buffers to be rendered. Let's see it in action! This is my speech synthesizer app. I will purchase a voice and navigate to a view where I can synthesize speech using my new voice and speech engine. First, I will give the synthesizer an input of \"hello.\" Synthesized voice: Hello. Grant: Then I’ll give the input \"goodbye.\" Synthesized voice: Goodbye.\n\nGrant: We’ve now implemented a synthesis provider and created a hosting app that provides voices you can use across the system, from VoiceOver to your own apps! We can't wait to see what new voices and text-to-speech experiences you craft using these APIs. Let’s move on and talk about a new feature called Personal Voice.\n\nPeople can now record and recreate their voice on iOS and macOS using the power of their device.\n\nYour Personal Voice is generated on the device and not on a server. This voice will appear amongst the rest of the System voices and can be used with a new feature called Live Speech. Live Speech is a type-to-speak feature on iOS, iPadOS, macOS, and watchOS that lets a person synthesize speech with their own voice on the fly.\n\nYou can request access to synthesize speech with these voices using a new request authorization API for Personal Voice. Keep in mind that usage of Personal Voice is sensitive and should be primarily used for augmentative or alternative communication apps. Let’s checkout an AAC app I’ve made to use Personal Voice.\n\nMy app has two buttons that will speak common phrases I find myself saying at WWDC and a button for requesting access to use Personal Voice. Authorization can be requested with a new API called requestPersonalVoiceAuthorization on AVSpeechSynthesizer. Once authorized, Personal Voices will appear alongside System voices in the AVSpeechSynthesisVoice API speechVoices and will be denoted with a new voiceTrait called isPersonalVoice.\n\nNow that I have access to Personal Voice, I can use it to speak with.\n\nLet’s check out a demo of Personal Voice in action. First, I’ll tap the “Use Personal Voice” button to request authorization, and once authorized, I can tap a symbol to hear my voice. Personal voice: Hi, my name is Grant. Welcome to WWDC23. Grant: Isn’t that amazing? And now you can use these voices in your apps, too.\n\nNow that we discussed SSML, you should use it to standardize speech input and build a rich speech experience in your apps. We also walked through how to implement your Speech Synthesizer into Apple platforms, so now you can provide great new speech voices that people can use across the system. And finally, with Personal Voice, you can bring even more of a personal touch to synthesis in your apps, especially for people who may be at risk of losing their own voice. We are super excited to see what experiences you create using these APIs. Thanks for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:10",
+      "title": "SSML phrase",
+      "language": "swift",
+      "code": "<speak>\n    Hello\n    <break time=\"1s\"/>\n    <prosody rate=\"200%\">nice to meet you!</prosody>\n</speak>"
+    },
+    {
+      "timestamp": "2:29",
+      "title": "SSML utterance",
+      "language": "swift",
+      "code": "let ssml = \"\"\"\n    <speak>\n        Hello\n        <break time=\"1s\" />\n        <prosody rate=\"200%\">nice to meet you!</prosody>\n    </speak>\n\"\"\"\n\nguard let ssmlUtterance = AVSpeechUtterance(ssmlRepresentation: ssml) else {\n    return\n}\n\nself.synthesizer.speak(ssmlUtterance)"
+    },
+    {
+      "timestamp": "4:33",
+      "title": "Create a host app",
+      "language": "swift",
+      "code": "struct ContentView: View {\n    \n    var body: some View {\n        List {\n            Section(\"My Awesome Voices\") {\n                ForEach(availableVoices) { voice in\n                    HStack {\n                        Text(voice.name)\n                        Spacer()\n                        Button(\"Buy\") {\n                            // Buy this voice...\n                        }\n                    }\n                }\n            }\n        }\n    }\n\n    var availableVoices: [WWDCVoice] {\n        return [\n            WWDCVoice(name: \"Screen Reader Voice\", id: \"com.example.screen-reader-voice\"),\n            WWDCVoice(name: \"Reading Voice\", id: \"com.example.reading-voice\")\n        ]\n    }   \n}"
+    },
+    {
+      "timestamp": "5:04",
+      "title": "Keep track of purchased voices",
+      "language": "swift",
+      "code": "struct ContentView: View {\n    \n    @State var purchasedVoices: [WWDCVoice] = []\n    \n    var body: some View {\n        NavigationStack {\n            List {\n                MyAwesomeVoicesSection\n                Section(\"Purchased Voices\") {\n                    ForEach(purchasedVoices) { voice in\n                        NavigationLink {\n                            // Destination View\n                        } label: {\n                            Text(voice.name)\n                        }\n                    }\n                }\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "5:13",
+      "title": "Inform the system when available voices change",
+      "language": "swift",
+      "code": "struct ContentView: View {\n    \n    @State var purchasedVoices: [WWDCVoice] = []\n    \n    var body: some View {\n        List {\n            MyAwesomeVoicesSection\n            PurchasedVoicesSection\n        }\n    }\n    \n    func purchase(voice: WWDCVoice) {\n        // Append voice to list of purchased voices\n        purchasedVoices.append(voice)\n        \n        // Inform system of change in voices\n        AVSpeechSynthesisProviderVoice.updateSpeechVoices()\n    }\n}"
+    },
+    {
+      "timestamp": "5:39",
+      "title": "Update UI with purchased voices",
+      "language": "swift",
+      "code": "struct ContentView: View {\n    \n    @State var purchasedVoices: [WWDCVoice] = []\n    \n    var body: some View {\n        List {\n            Section(\"My Awesome Voices\") {\n                ForEach(availableVoices.filter { !purchasedVoices.contains($0) }) { voice in\n                    HStack {\n                        Text(voice.name)\n                        Spacer()\n                        Button(\"Buy\") {\n                            purchase(voice: voice)\n                        }\n                    }\n                }\n            }\n            PurchasedVoicesSection\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "5:46",
+      "title": "Save available voices into UserDefaults",
+      "language": "swift",
+      "code": "struct ContentView: View {\n    \n    let groupDefaults = UserDefaults(suiteName: \"group.com.example.SpeechSynthesizerApp\")!\n    \n    @State var purchasedVoices: [WWDCVoice] = []\n    \n    var body: some View {\n        List {\n            MyAwesomeVoicesSection\n            PurchasedVoicesSection\n        }\n    }\n    \n    func purchase(voice: WWDCVoice) {\n        // Append voice to list of purchased voices\n        purchasedVoices.append(voice)\n        \n        // Write purchasedVoices to defaults\n        updatePurchasedVoices()\n        \n        // Inform system of change in voices\n        AVSpeechSynthesisProviderVoice.updateSpeechVoices()\n    }\n}"
+    },
+    {
+      "timestamp": "6:25",
+      "title": "Monitor for system voice changes",
+      "language": "swift",
+      "code": "struct ContentView: View {\n\n    @State var systemVoices: [AVSpeechSynthesisVoice] = AVSpeechSynthesisVoice.speechVoices()\n    \n    var body: some View {\n        List {\n            MyAwesomeVoicesSection\n            PurchasedVoicesSection\n            Section(\"System Voices\") {\n                ForEach(systemVoices.filter { $0.language == \"en-US\" }) { voice in\n                    Text(voice.name)\n                }\n            }\n        }\n        .onReceive(NotificationCenter.default\n            .publisher(for: AVSpeechSynthesizer.availableVoicesDidChangeNotification)) { _ in\n                systemVoices = AVSpeechSynthesisVoice.speechVoices()\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "6:53",
+      "title": "Override speechVoices getter",
+      "language": "swift",
+      "code": "// Implement a synthesis provider\n\npublic class WWDCSynthAudioUnit: AVSpeechSynthesisProviderAudioUnit {\n    public override var speechVoices: [AVSpeechSynthesisProviderVoice] {\n        get { }\n    }\n}"
+    },
+    {
+      "timestamp": "7:02",
+      "title": "Use UserDefaults to provide set of available voices",
+      "language": "swift",
+      "code": "public class WWDCSynthAudioUnit: AVSpeechSynthesisProviderAudioUnit {\n    public override var speechVoices: [AVSpeechSynthesisProviderVoice] {\n        get {\n            let voices: [String : String] = groupDefaults.value(forKey: \"voices\") as? [String : String] ?? [:]\n            return voices.map { key, value in\n                return AVSpeechSynthesisProviderVoice(name: value,\n                                                identifier: key,\n                                          primaryLanguages: [\"en-US\"],\n                                        supportedLanguages: [\"en-US\"] )\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "7:22",
+      "title": "Use your synthesis engine on each synthesis request",
+      "language": "swift",
+      "code": "public class WWDCSynthAudioUnit: AVSpeechSynthesisProviderAudioUnit {\n    public override func synthesizeSpeechRequest(speechRequest: AVSpeechSynthesisProviderRequest) {\n        currentBuffer = getAudioBuffer(for: speechRequest.voice, with: speechRequest.ssmlRepresentation)\n        framePosition = 0\n    }\n}"
+    },
+    {
+      "timestamp": "8:14",
+      "title": "Handle request cancellation",
+      "language": "swift",
+      "code": "public class WWDCSynthAudioUnit: AVSpeechSynthesisProviderAudioUnit {\n    public override func synthesizeSpeechRequest(speechRequest: AVSpeechSynthesisProviderRequest) {\n        currentBuffer = getAudioBuffer(for: speechRequest.voice, with: speechRequest.ssmlRepresentation)\n        framePosition = 0\n    }\n\n    public override func cancelSpeechRequest() {\n        currentBuffer = nil\n    }\n}"
+    },
+    {
+      "timestamp": "8:28",
+      "title": "Override internalRenderBlock",
+      "language": "swift",
+      "code": "public class WWDCSynthAudioUnit: AVSpeechSynthesisProviderAudioUnit {\n    public override var internalRenderBlock: AUInternalRenderBlock {\n       return { [weak self]\n           actionFlags, timestamp, frameCount, outputBusNumber, outputAudioBufferList, _, _ in\n           guard let self else { return kAudio_ParamError }\n\n           return noErr\n       }\n    }\n}"
+    },
+    {
+      "timestamp": "8:42",
+      "title": "Implement the render block",
+      "language": "swift",
+      "code": "public class WWDCSynthAudioUnit: AVSpeechSynthesisProviderAudioUnit {\n    public override var internalRenderBlock: AUInternalRenderBlock {\n       return { [weak self]\n           actionFlags, timestamp, frameCount, outputBusNumber, outputAudioBufferList, _, _ in\n           guard let self else { return kAudio_ParamError }\n\n           // This is the audio buffer we are going to fill up\n           var unsafeBuffer = UnsafeMutableAudioBufferListPointer(outputAudioBufferList)[0]\n           let frames = unsafeBuffer.mData!.assumingMemoryBound(to: Float32.self)\n                \n           var sourceBuffer = UnsafeMutableAudioBufferListPointer(self.currentBuffer!.mutableAudioBufferList)[0]\n           let sourceFrames = sourceBuffer.mData!.assumingMemoryBound(to: Float32.self)\n\n           for frame in 0..<frameCount {\n               if frames.count > frame && sourceFrames.count > self.framePosition {\n                   frames[Int(frame)] = sourceFrames[Int(self.framePosition)]\n                   self.framePosition += 1\n                   if self.framePosition >= self.currentBuffer!.frameLength {\n                       break\n                   }\n               }\n           }\n                \n           return noErr\n       }\n    }\n}"
+    },
+    {
+      "timestamp": "11:10",
+      "title": "Request authorization for Personal Voice",
+      "language": "swift",
+      "code": "struct ContentView: View {\n\n    @State private var personalVoices: [AVSpeechSynthesisVoice] = []\n\n    func fetchPersonalVoices() async {\n        AVSpeechSynthesizer.requestPersonalVoiceAuthorization() { status in\n            if status == .authorized {\n                personalVoices = AVSpeechSynthesisVoice.speechVoices().filter { $0.voiceTraits.contains(.isPersonalVoice) }\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "11:34",
+      "title": "Use Personal Voice",
+      "language": "swift",
+      "code": "func speakUtterance(string: String) {\n    let utterance = AVSpeechUtterance(string: string)\n    if let voice = personalVoices.first {\n        utterance.voice = voice\n        syntheizer.speak(utterance)\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Audio Unit",
+        "url": "https://developer.apple.com/documentation/AudioUnit"
+      },
+      {
+        "title": "Creating an audio unit extension",
+        "url": "https://developer.apple.com/documentation/AVFAudio/creating-an-audio-unit-extension"
+      },
+      {
+        "title": "Speech synthesis",
+        "url": "https://developer.apple.com/documentation/AVFoundation/speech-synthesis"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10033/4/2BED83CA-28F2-4B53-ACB4-EF89AB371676/downloads/wwdc2023-10033_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10033/4/2BED83CA-28F2-4B53-ACB4-EF89AB371676/downloads/wwdc2023-10033_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10022",
+      "year": "2020",
+      "title": "Create a seamless speech experience in your apps",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10022"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:07:53.373Z"
+}

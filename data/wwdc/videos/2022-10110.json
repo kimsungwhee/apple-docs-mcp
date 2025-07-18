@@ -1,0 +1,194 @@
+{
+  "id": "10110",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10110/",
+  "title": "Build global apps: Localization by example",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Accessibility & Inclusion"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Andreas: Hello, and welcome to WWDC. I'm Andreas from the localization team at Apple and today I would like to share with you some examples about how to build high-quality, localized apps.\n\nInternationalization means preparing your app to run on devices all across the world. When localization is done well, everybody gets to enjoy the same great experience and utility– regardless of the language they speak. Using the APIs that Apple offers, most parts of your app are internationalization friendly right out of the box. In this talk, you will learn from our experience making Apple's apps appealing to a diverse audience, including some challenges and how we solved them. I will start with declaring and loading localized text. It's easy to include formatted dates, times, and more in our strings. I will highlight some options, and we will take a look at a sophisticated example. Your Swift Package might include localized text, too, and you will learn about improvements to the localization workflow. Finally, I will talk about layout and great new additions to SwiftUI. At Apple, we make sure that our apps are providing a great experience to our international audience. And the Weather app is one example of this. Millions of users open it up every day to check the forecast– and this is what the app looks like to them, wherever they are in the world. Notice how everything in the UI is adjusted to their preferences. We localize descriptions of the current weather conditions and we format numbers. The UI is also adapted appropriately depending on whether the language is left-to-right or right-to-left. Let's take a closer look at one of the things we customize by starting with translation. This view here says \"Wind is making it feel cooler\" in English. And this is what it looks like in other languages. To support them properly, all we have to do is declare the string using String(localized). Xcode discovers it when exporting for localization, and we can send the result over our translators. I will use the Mail app on my Mac to do so. And while we're there, I want to show you something. If I open the context menu of an email, I can move it to a special folder called \"Archive.” It is located in my sidebar. Notice how both words are \"Archive\" in English. Other languages like Spanish, however, have different words for the action and the folder name. Even though the English words are the same, when they appear in different contexts, other languages might use different words. You should use two strings in code in this case. And to do that, we added new API to the string initializer this year. It now takes a default value, which we can use for our English string. Then, we modify the localized string's key to make the distinction clear to translators. This way, the same word is shown when running the app in English, and Spanish translators are able to provide different words. Last year's talk \"Streamline your localized strings\" helps you understanding the basics of managing strings, and it goes further into the localization process. I want you to take away from this example that sometimes the same English word, or even an entire sentence, is shown in different contexts in the UI. In these instances, make sure to use two different strings in your code. Weather is not just about the app. It is also well integrated into the system. Here, we see a user activity, suggesting to open the app to check the weather at the current location. Let's take a look at how that might be implemented. The string could be declared and loaded like this, using String Interpolation to insert any location name. And this name could be a city or a term for the current location. The result works well in English: \"Show weather in Cupertino\" and \"Show weather in my location,” respectively. In other languages however, we might run into grammatical issues. In German, for example, the preposition works for a city name, but is wrong when inserting a term for the current location. We need to have a different translation instead. The solution here is simple: just use two different strings. Inserting a city name is fine in the first one, and for the current location we use another string. This ensures that translators are able to use the correct grammar for their language. And it works well in English, and German. I made this example to show you that inserting a variable had an impact on the entire sentence. Joining strings might have surprising consequences in other languages: they might need to inflect the grammar or could have troubles with capitalization, but knowing that beforehand when writing the code is difficult. Having people who speak the language testing the app is a substantial part of the workflow. Keep that in mind when you're tempted to construct a string programmatically.\n\nNow that we share a good understanding of how strings are declared in code, let's talk about their comments. Here's the string from our previous example again, with a proper comment. A comment is really, really important for translators. You should make sure to give them the context they need to translate it, keeping the same intention as you had when declaring the string. A great comment explains which interface element the string is shown in, like a label or a button. It also explains the context of the UI element and where it is shown on screen. That could be a section header, a context menu, or a user activity. If the string contains variables, make sure to explain their value at runtime. This is very important for matching the grammar of the sentence, as we have seen in the example. Remember that translators might not see the app at runtime when translating your content. But with these tips you should be able to create a shared understanding between declaration and translation of a string and which role it plays in your app. Now, it might have never occurred to you, but the Weather app doesn't actually control the weather. Instead, the data is downloaded from a server. It can be located anywhere in the world and it might not even know what language to send the content in. When content is downloaded to a user's device, it should always be presented in the language that the user prefers. Having just some parts of an app localized can be very confusing.\n\nHere, the Weather app shows a severe weather alert, which has been loaded from a server. This looks really serious, and if it was not translated into my language, I might get into trouble later. Let's take a look at what you can do to make sure that your users are always able to read remote content.\n\nYour server can send a list of supported languages to the app. This should be an array of language IDs, and the device has all the knowledge about which languages the user prefers, so you don't have to check an compare them yourselves. You can leverage Apple's Frameworks by calling 'Bundle.preferredLocalizations'. And this will do the match for you. It returns an array of candidate languages, sorted by how closely they match the user's language choices. And the first one is usually the best fit, so you will use this one. That language then should be used for any subsequent requests to the server. It uses it to generate a response with content in the language that your user will be able to understand. With this technique you can be confident that strings coming from the server are ready for updating the UI and for showing alerts to the user. So to save your users from a storm of frustration when displaying remote content, download the available languages, match that against the user's preferences, and use the result for any requests that load user-facing content. But let's come back to nicer weather now. Rain or shine, the Weather app is very rich in data and many aspects of it contain numbers and counts. Let's focus on one of them. Under \"Precipitation\" it says \"0 mm in last 6 hours.” Let's assume that you want to build something similar, but spelling out \"one hour\" here. This is how you can declare the string in code. In English, you will need to use the plural form if the number of hours is larger than one: one hour, but two hours. The rules when another variant should be used are even more complicated in Ukrainian. You do not want to implement that logic in your code, and this is why you leverage Apple's frameworks. All you have to do is to declare the string in code and provide a stringsdict file, which encodes the plural rule. Another option is to make use of Automatic Grammar Agreement. You can learn more about these two techniques in last year's talk \"Streamline your localized strings.” Even though it is easy, you should not always apply a plural rule to all of your strings. For example, if your sentence doesn't count anything, and does not include a number, you should not use a plural rule for it. Here, \"Remove this city from your favorites\" doesn't need one because there is no number, and the same applies to multiple cities. But if the string does include a number, you should consider having variations for plural. The string of the previous example counted how much rain will fall in the next hours, and we just learned how easy it is to make it adapt for numbers larger than one. However, if there is a unit in the sentence, like a duration, a time, or percentage, you should consider using a formatter. So let's talk about formatters now. Weather displays the current humidity in percent in this view. To do this in SwiftUI, it's just a matter of a single line of code. You just wrap your value in Text() and specify how you would like your number to be formatted. And the equivalent Swift code is simple too. You just call .formatted on your value.\n\nThat really is all you need to do, and the Formatter takes care of everything else. It does not only place the percent sign in front of or after the number and add spaces, it also accommodates for the user's preferred numbering system, and that is something that Arabic and Hindi users expect. But that's really only the beginning of what types of data you can format. There are formatters for almost everything, and I encourage you to recap the session: \"Formatters: Make data human-friendly.” As we have seen, the weather is not always sunny, and some days will have rain. Of course, this highlight can't be missing from Weather app. Under \"Rainfall\" it says, \"50 mm expected in next 24 hours,\" and I'm really glad that it is not that much where I am right now. In English, the case is simple. We say \"50 millimeters expected in next 24 hours.” In Spanish however, the matter is more complicated. We need to vary the translation when the amount of precipitation is singular or plural. We can solve this by combining both a Formatter and a plural rule. The string \"2 mm\" is produced by a Formatter, and it is embedded in a sentence that needs to be varied for plural in Spanish. All right, let's take a look at how to do this in code. We start by declaring a function that takes a parameter about how much the precipitation will be in millimeters. Probably it was downloaded from a server. First, we ask the system for a UnitLength, which encodes the user's configuration, and it will pick the right one for our the case of showing rainfall. If the user has not configured their system to use metrics, the Measurement type can be easily converted to the preferred unit.\n\nNext, the formatting API allows us to produce a formatted string for the value in a single line of code. The preferredUnit already has the information that we want to display rainfall. So when formatting, we set the usage to asProvided. If more than 1 millimeter or inches of rain will fall, we want to use the plural case. We convert the value into an integer so that we can check for that. Next, we load a localized String with a given key, and we provide a default value, too. There, we use String Interpolation to include the integerValue, the formattedValue, and the number 24. The number is defined in code here, because it will be always 24 hours. Using String Interpolation automatically makes sure that the correct numbering system is used. The key is declared in a stringsdict file. Let's take a look at that. The stringsdict starts with the key that we have just used in our code. In English, we don't need to vary the string for plural, so we use the category of \"Other\" for it. The first parameter defines which category is chosen at runtime. Remember, it was the integer value. Parameter number two and three are present in the formatted string. This defines what the sentence will look like at runtime. The Spanish stringsdict has the same structure, except that we provide a translation in both singular and plural.\n\nWe have now formatted the data in code and placed it in a sentence. A stringsdict file contains the plural rule, so that the Spanish translation is using the correct grammar. Sometimes it's challenging to provide a fully localized UI that is working well for all languages. Again, you learned that joining strings can work for English but might have surprising consequences in other languages. This might require some comprehensive code to do, but now you know how you can make it right for all your users. Sometimes your strings are in a dependency, or in a module that your app uses. Or maybe you distribute your own code to other developers, too, using Swift Packages. Let's take a look at what's new for localization. For defining a Swift Package you declare the structure and build configuration by using Swift itself. If you have user-facing content, you can use the parameter defaultLocalization to declare that the content is using English as primary language. That is similar to specifying the development language of an app project. Xcode now reads that parameter and recognizes that you are interested in providing a localized experience. Because of that, it will add the option to Export Localizations to the Product menu. You're probably used to using this feature for your main app, and now it also works for Swift Packages. If you click \"Export,” Xcode reads your code and extracts all your strings. They are placed in .xcloc files, that you send to translators. And to import your localized content back into your package, use Import Localizations, and Xcode will place the files at the correct file path in your package. The workflow of localizing a Swift Package is now identical to localizing your app.\n\nBut remember, loading a string in a Swift Package requires that you specify the 'bundle' argument. You can learn more about that in the talk \"Swift package: resources and localization.” If you are the author of a library which is distributed as a Swift Package, you now have an easy way of keeping your project updated and making localization a regular part of your workflow. You put a great amount of effort and care into your project, and having it localized is a huge time-saver for all of your clients. It can really make it stand out. Make people aware that you are going the extra mile to provide the best experience with your software, so go ahead and tell them! Be open about which languages you support out of the box. As an app developer, you put special considerations into your dependencies, not only from a code quality perspective. Components that you use should support the same languages and high-quality translations as the rest of your app. In the case that third-party code is not localized to your required languages, you can still create a local copy of the package and update the localizations there. Make sure to test all parts of your app in the languages that it supports. This way you can make sure that there will be no UI elements that are not adapted to the user's language. Most of the time a translated string is longer or shorter than the English equivalent, and that always affects the layout of your app. Let's look at what this means for the Weather app. This is the app running in English, and on the right side you can see it running in Arabic. It is apparent that not only translations are adapted to the language, also the layout follows the appropriate directionality. If you want to learn more about how to create a layout that works for all languages, which types of symbols provide a localized alternative, and what else to consider for right-to-left languages, make sure to watch the talk \"Get it right... to left.” Here, the app is running in Hindi on the right side. Let's zoom in. The script of that language tends to be taller in general. And if you look closely, you see that the height of the labels are adjusted to accommodate for that. The system does this automatically. All you have to do is to make sure that you don't give UI elements a fixed height. Don't assume that everything will fit within 44 points just because it's tall enough to fit the English string. Please always expect your text to be taller according to the circumstances.\n\nComing back to the main view and scrolling it up, Weather has a 10-day forecast view which is great for checking out the next week.\n\nWhat stands out on this screen is how it dynamically adjusts the position of elements according to the longest label. In English, \"Today\" is longer than all of the abbreviated weekday names. In Spanish, however, all of them are three characters wide, and in Greek, the translation for \"Today\" is almost double the size. In all languages, though, the weather icons are aligned vertically with each other. Meaning they do not have fixed spacing to their neighbor elements, but flow according to the longest weekday label. When it comes to creating a layout that works well with internationalization, you should always keep in mind that labels need to be flexible. You have just seen how important it is to make them flexible vertically, but also expect labels to grow horizontally with a longer translation. It can be a challenge to accommodate for that in certain layouts, such as in this example, but this year, SwiftUI adds support for Grid, which is a new view that helps you to build this kind of layout more easily. Let's take a closer look at how to use Grid. You start by declaring the Grid with a leading alignment. That means that UI elements start on the left side of the screen in a left-to-right language and on the right side of the screen in a right-to-left language. Then, for each horizontal group, you add a GridRow. And lastly you declare the content of the rows. That's all it takes to create this rather advanced layout. When the label needs more space, the Capsule can shrink in size because it's the most flexible element. SwiftUI does all the heavy lifting, such as measuring, sizing, and positioning the views– completely automatic. Another challenge is to make a view with a longer translation work with a limited amount of space, like on Apple Watch. Here, the German translation of \"Tip Function\" is too long to fit in one row. To fix this, we do not remove the icon next to the text to make more room. The solution is rather to use two or more lines of text if needed, which is the default behavior. We do not encourage you to change that and hiding interface elements if there is not enough space. Usually there is a way to adjust the layout, so that it can accommodate for the needs of the language. The Mail app does this in a creative way.\n\nIn the sheet presentation, there are four buttons to take action on this email. When a translation of one of the button titles is too long, we do not clip the text or wrap it onto a new line. This would make the view look imbalanced. Instead, the entire layout is transitioned from a horizontal stack, to a vertical stack of two rows.\n\nThis year, SwiftUI adds another great tool that makes creating this dynamic layout easier: ViewThatFits. In essence, it lets you provide alternative layouts if the space is constrained and the view would not fit.\n\nYou simply declare your views independently of each other, and place them in ViewThatFits. SwiftUI automatically detects if a view does not fit without clipping, and transitions to the next one provided. Keep in mind that you should only switch out the layouts. Hiding a view just because the translation is too long is a bad practice. That makes it harder for the users to orient themselves in the UI. Try to make room for all the interface elements first by having a flexible layout.\n\nThis is not only helpful for localization. This layout also works great when the user prefers to have smaller or larger text, and uses different devices. To learn more about the great new layout features of SwiftUI this year, I recommend you to watch the talk \"Compose custom layouts with SwiftUI.” Having different accessibility preferences and localized text can be a challenge for your layout. Interface elements can be taller and wider. Adapting the layout to accommodate for that can be a challenge, but with SwiftUI it gets a lot easier this year.\n\nI want you to take away from this talk that constructing a string in code can be challenging when supporting other languages. Listen to the feedback that your international users and testers give you to make sure it works great for everybody. Formatting values in Swift is easy and it often just takes a single line of code. And doing that, your formatted values respect the user's preferences automatically.\n\nWhen you are offering a Swift Package, make use the new Xcode localization workflow to provide a fully localized experience to your clients. Now, with or without using SwiftUI, your layout should be able to accommodate for translated text and accessibility settings. Use your layout tools to make the layout flexible, without hiding interface elements. In the end, your users will be grateful for that because they expect your app to fit into their lives, and that includes respecting their languages. Now, I'm looking forward to a very sunny week. Enjoy the rest of WWDC, and thank you for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:59",
+      "title": "Declare strings using String(localized)",
+      "language": "swift",
+      "code": "let windPerceptionLabelText = String(\n    localized: \"Wind is making it feel cooler\", \n    comment: \"Explains the wind is lowering the apparent temperature\"\n)"
+    },
+    {
+      "timestamp": "2:46",
+      "title": "Translation example 1",
+      "language": "swift",
+      "code": "let filter = String(localized: \"Archive.label\",\n                 defaultValue: \"Archive\", \n                      comment: \"Name of the Archive folder in the sidebar\")\n\nlet filter = String(localized: \"Archive.menuItem\",\n                 defaultValue: \"Archive\", \n                      comment: \"Menu item title for moving the email into the Archive folder\")"
+    },
+    {
+      "timestamp": "3:40",
+      "title": "Translation example 2",
+      "language": "swift",
+      "code": "String(localized: \"Show weather in \\(locationName)\", \n       comment: \"Title for a user activity to show weather at a specific city\")\n\nString(localized: \"Show weather in My Location\",\n       comment: \"Title for a user activity to show weather at the user's current location\")"
+    },
+    {
+      "timestamp": "4:58",
+      "title": "Comment example",
+      "language": "swift",
+      "code": "String(localized: \"Show weather in \\(locationName)\",\n         comment: \"Title for a user activity to show weather at a specific city\")"
+    },
+    {
+      "timestamp": "6:40",
+      "title": "Localized remote content example",
+      "language": "swift",
+      "code": "let allServerLanguages = [\"bg\", \"de\", \"en\", \"es\", \"kk\", \"uk\"]\nlet language = Bundle.preferredLocalizations(from: allServerLanguages).first"
+    },
+    {
+      "timestamp": "7:56",
+      "title": "Numbers in a string example 1",
+      "language": "swift",
+      "code": "String(localized: \"\\(amountOfRain) in last \\(numberOfHours) hour\",\n         comment: \"Label showing how much rain has fallen in the last number of hours\")\n\nString(localized: \"\\(amountOfRain) in last ^[\\(numberOfHours) hour](inflect: true)\",\n         comment: \"Label showing how much rain has fallen in the last number of hours\")"
+    },
+    {
+      "timestamp": "8:40",
+      "title": "Numbers in a string example 2",
+      "language": "swift",
+      "code": "if selectedCount == 1 {\n    return String(localized: \"Remove this city \n                              from your favorites\")\n} else {\n    return String(localized: \"Remove these cities \n                              from your favorites\")\n}"
+    },
+    {
+      "timestamp": "9:00",
+      "title": "Numbers in a string example 3",
+      "language": "swift",
+      "code": "String(localized: \"\\(amountOfRain) in last ^[\\(numberOfHours) hour](inflect: true).\",\n         comment: \"Label showing how much rain has fallen in the last number of hours\")"
+    },
+    {
+      "timestamp": "9:29",
+      "title": "Formatter example",
+      "language": "swift",
+      "code": "let humidity = 54\n\n// In a SwiftUI view\nText(humidity, format: .percent)\n\n// In Swift code\nhumidity.formatted(.percent)"
+    },
+    {
+      "timestamp": "10:03",
+      "title": "Formatter example 2",
+      "language": "swift",
+      "code": "date.formatted(\n    .dateTime.year()\n    .month()   \n) // Jun 2022\n\nwhatToExpect.formatted()\n// New features, exciting API, and advanced tips\n\namountOfRain.formatted(\n    .measurement(\n        width: .narrow,\n        usage: .rainfall)) // 12mm\n\n(date...<later).formatted(\n    .components(\n        style: .wide\n    )\n) // 24 minutes, 18 Seconds\n\ndate.formatted(\n    .relative(\n        presentation: \n            .numeric\n    )\n) // 2 minutes ago\n\nlet components = PersonNameComponents()\n…\nnameComponentsFormatter\n    .string(from: components)\n// Andreas Neusüß or 田中陽子\n\nexcitementLevel.formatted(\n    .number\n    .precision(\n        .fractionLength(2)\n    )\n) // 1,001.42\n\nprice.formatted(\n    .currency(\n        code: \"EUR\"\n    )\n) // $20.99\n\ndistance.formatted(\n    .measurement(\n        width: .wide,\n        usage: .road)\n) // 500 feet\n\nbytesCopied.formatted(\n    .byteCount(\n        style: .file\n)) // 42.23 MB"
+    },
+    {
+      "timestamp": "11:10",
+      "title": "Combine a formatter with text",
+      "language": "swift",
+      "code": "func expectedPrecipitationIn24Hours(for valueInMillimeters: Measurement<UnitLength>) -> String {\n    // Use user's preferred measures\n    let preferredUnit = UnitLength(forLocale: .current, usage: .rainfall)\n\n    let valueInPreferredSystem = valueInMillimeters.converted(to: preferredUnit)\n\n    // Format the amount of rainfall\n    let formattedValue = valueInPreferredSystem\n        .formatted(.measurement(width: .narrow, usage: .asProvided))\n\n    let integerValue = Int(valueInPreferredSystem.value.rounded())\n\n    // Load and use formatting string\n    return String(localized: \"EXPECTED_RAINFALL\", \n               defaultValue: \"\\(integerValue) \\(formattedValue) expected in next \\(24)h.\", \n                    comment: \"Label - How much precipitation (2nd formatted value, in mm or Inches) is expected in the next 24 hours (3rd, always 24).\")\n}"
+    },
+    {
+      "timestamp": "12:22",
+      "title": "Stringsdict examples in English and Spanish",
+      "language": "swift",
+      "code": "Localizable.stringsdict English:\n\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n    <key>EXPECTED_RAINFALL</key>\n    <dict>\n        <key>NSStringLocalizedFormatKey</key>\n        <string>%#@next_expected_precipitation_amount_24h@</string>\n        <key>next_expected_precipitation_amount_24h</key>\n        <dict>\n            <key>NSStringFormatSpecTypeKey</key>\n            <string>NSStringPluralRuleType</string>\n            <key>NSStringFormatValueTypeKey</key>\n            <string>d</string>\n            <key>other</key>\n            <string>%2$@ expected in next %3$dh.</string>\n        </dict>\n    </dict>\n</dict>\n</plist>\n\nLocalizable.stringsdict Spanish:\n\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n    <key>EXPECTED_RAINFALL</key>\n    <dict>\n        <key>NSStringLocalizedFormatKey</key>\n        <string>%#@next_expected_precipitation_amount_24h@</string>\n        <key>next_expected_precipitation_amount_24h</key>\n        <dict>\n            <key>NSStringFormatSpecTypeKey</key>\n            <string>NSStringPluralRuleType</string>\n            <key>NSStringFormatValueTypeKey</key>\n            <string>d</string>\n            <key>one</key>\n            <string>Se prevé %2$@ en las próximas %3$d h.</string>\n            <key>other</key>\n            <string>Se prevén %2$@ en las próximas %3$d h.</string>\n        </dict>\n    </dict>\n</dict>\n</plist>"
+    },
+    {
+      "timestamp": "13:40",
+      "title": "Swift Package localization example",
+      "language": "swift",
+      "code": "let package = Package(\n    name: \"FoodTruckKit\",\n\n    defaultLocalization: \"en\",\n\n    products: [\n       .library(\n            name: \"FoodTruckKit\",\n            targets: [\"FoodTruckKit\"]),\n    ],\n    …\n)"
+    },
+    {
+      "timestamp": "14:41",
+      "title": "Loading a string in a Swift Package",
+      "language": "swift",
+      "code": "let title = String(localized: \"Wind\",\n                      bundle: .module, \n                     comment: \"Title for section that\n                               shows data about wind.\")"
+    },
+    {
+      "timestamp": "18:19",
+      "title": "Grid example",
+      "language": "swift",
+      "code": "// Requires data types \"Row\" and \"row\" to be defined\n\nstruct WeatherTestView: View {\n    var rows: [Row]\n    var body: some View {\n        Grid(alignment: .leading) {\n            ForEach(rows) { row in\n                GridRow {\n                    Text(row.dayOfWeek)\n                    \n                    Image(systemName: row.weatherCondition)\n                        .symbolRenderingMode(.multicolor)\n                    \n                    Text(row.minimumTemperature)\n                        .gridColumnAlignment(.trailing)\n                    \n                    Capsule().fill(Color.orange).frame(height: 4)\n                    \n                    Text(row.maximumTemperature)\n                }\n                .foregroundColor(.white)\n            }\n        }\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Internationalization and Localization Guide",
+        "url": "https://developer.apple.com/library/content/documentation/MacOSX/Conceptual/BPInternational/Introduction/Introduction.html"
+      },
+      {
+        "title": "Localization",
+        "url": "https://developer.apple.com/documentation/Xcode/localization"
+      },
+      {
+        "title": "Localizing package resources",
+        "url": "https://developer.apple.com/documentation/Xcode/localizing-package-resources"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10110/3/9DDED4EB-547B-46DD-AEE5-9D3F2C60CFF8/downloads/wwdc2022-10110_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10110/3/9DDED4EB-547B-46DD-AEE5-9D3F2C60CFF8/downloads/wwdc2022-10110_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10153",
+      "year": "2023",
+      "title": "Unlock the power of grammatical agreement",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10153"
+    },
+    {
+      "id": "10056",
+      "year": "2022",
+      "title": "Compose custom layouts with SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10056"
+    },
+    {
+      "id": "10034",
+      "year": "2022",
+      "title": "Design for Arabic",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10034"
+    },
+    {
+      "id": "10107",
+      "year": "2022",
+      "title": "Get it right (to left)",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10107"
+    },
+    {
+      "id": "110427",
+      "year": "2022",
+      "title": "What's new in Xcode",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110427"
+    },
+    {
+      "id": "10221",
+      "year": "2021",
+      "title": "Streamline your localized strings",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10221"
+    },
+    {
+      "id": "10160",
+      "year": "2020",
+      "title": "Formatters: Make data human-friendly",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10160"
+    },
+    {
+      "id": "10169",
+      "year": "2020",
+      "title": "Swift packages: Resources and localization",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10169"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:08:04.076Z"
+}

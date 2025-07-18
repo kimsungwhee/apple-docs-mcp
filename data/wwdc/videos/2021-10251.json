@@ -1,0 +1,174 @@
+{
+  "id": "10251",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10251/",
+  "title": "SF Symbols in UIKit and AppKit",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, I'm Tom, and I'd like to welcome you to \"SF Symbols in UIKit and AppKit.\" Today I'm going to take you on a tour of how to implement the new features of SF Symbols in your app.\n\nFirst, we're gonna go over the different color modes and how to use them.\n\nThen, we'll talk about how to combine configurations to get the effects that you want.\n\nAnd finally, we're going to explore using these colored symbols in attributed strings. You will see examples that apply both to AppKit and UIKit.\n\nThe new APIs are identical for both frameworks, so what applies to one, also applies to the other, with the exception of some framework-specific nuances.\n\nThe new features center around adding colors to SF Symbols. While AppKit added multicolor symbols in macOS 11, UIKit is adding them in iOS 15. For this year's releases, additional color rendering modes for SF Symbols are being added. And to be clear, these rendering modes work on all platforms. In order to support the new rendering modes, symbols now have different layers, each having a different color. These layers are defined in a hierarchy, meaning that one layer is more prominent than another. This means we've got three layers: primary, secondary, and tertiary.\n\nOn iOS, symbols require template mode for the new rendering modes to take effect. On macOS, applying the new configurations will automatically set the correct template mode.\n\nAnd if you're new to SF Symbols, check out \"Introducing SF Symbols\" from WWDC19. The first rendering mode we're going to look at are monochrome symbols. Here's a Voicemail app. In this UI, a couple symbols are being used. There's one monochrome symbol, and a few other symbols using a different color mode. But let's focus on the monochrome symbol first, and we'll come back to the others later.\n\nAs the name implies, a monochrome symbol only has one color: usually the tint or accent color of the view. And in order to accomplish this result, we create a new symbol image, assign it to the image view, and set a tint or accent color to configure the color of the symbol. And nothing has changed here: we don't need any extra configuration to render a monochrome symbol, as it is the default behavior.\n\nSo, monochrome was the only rendering mode before iOS 15 and macOS 11. To specify a color, all we have to do is set the tint or accent color on the image view, and that's it.\n\nNow that we have the previously-existing monochrome mode out of the way, we can talk about a new mode: hierarchical color symbols. A good example of hierarchical symbols on a Mac are the icons used in Control Center. There are a few places where symbols are being used in Control Center, but let's zoom in on the Display section.\n\nThere are a few symbols being used here: the row of toggle buttons in the center, and the icons in the list of devices. The device symbols are tinted differently than the toggle buttons above them, and these are hierarchically-colored symbols.\n\nThe hierarchical color mode uses the layer hierarchy of a symbol to color each layer, and the provided color is used as the primary layer color. The secondary and tertiary layers get variations of the primary color with progressively reduced opacity.\n\nYou specify the color mode through a new type of symbol configuration, which works exactly like the existing types of symbol configurations. And by setting the symbol configuration of an imageView to this type of configuration, the symbol will be displayed as a hierarchical color symbol.\n\nThe color scheme of a hierarchical color symbol is based on one color, with the other colors derived from that one color by reducing opacity. The layer hierarchy is important here. If one layer is missing, the associated derived color will not be used.\n\nThere's also a third color rendering mode: palette. As we will discover, it's much like hierarchical color rendering mode, but also different. Let's go back to our Voicemail example. The three buttons on the right each have multiple colors, and each have different colors. We're going to build these buttons one step at a time.\n\nFirst, we're gonna initialize our buttons with the desired images. We're using a new button configuration for this. But these plain images isn't what we want at all. The images should have a circle shape and be filled in.\n\nWe used to be able to do this by appending the desired modifiers to the symbol name, but now there's a better way: image variants. As the name implies, when using image variants, you can request a different variant of an image without manually changing the name. First, let's turn our images into circles.\n\nThen, we'll add a nice fill to those circles.\n\nSince we are specifying the variants on the button container view, those variants are applied to all the images in all the buttons. If an image doesn't have that variant, the originally-specified image will be used. The variant specification will propagate down the view hierarchy, and the image view in that hierarchy will pick them up to do their magic.\n\nNow that we have the shape out of the way, how do we specify the colors for each of these symbols? Well, we can create a new type of symbol configuration, one that specifies a palette of colors. These colors are applied to the layer hierarchy similar to the hierarchical color configuration. But we're using colors here that are specified explicitly versus using derived colors. And we're also using a new type of color in the list of palette colors: tint color. This means that the view will automatically apply its tint color to the appropriate layer.\n\nAnd for the next button, we do exactly as before. Load the base image, build the right color configuration, and apply them to the button configuration. And in this case, it looks exactly the same as before, but there's a catch here, and I'll explain that later.\n\nAnd the same scenario also works for the last button, but just with different colors. And like before, you might wonder why we explicitly have to specify white here. Couldn't we just use a monochrome symbol and tint them correctly? The answer is no, we can't, and this is the catch I mentioned before. Our designer specified that the inner parts of these symbols should always be white. And up until now, we would've gotten the correct result by accident, even when using monochrome symbols. Why? We were in light mode. But when we switch to dark mode, monochrome symbols do not give us the desired results. This is because the monochrome versions use knockouts for the inner parts, and so the background bleeds through the gaps. Now, by using a palette rendering mode, we make sure these buttons appear correctly for different user interface styles.\n\nI mentioned a new color before: tintColor. This is a new dynamic color in UIKit that will resolve to the tint color of the view it is used in. This is especially handy when specifying symbol layer colors, but you can also use this color everywhere where you can use any other color. However, keep in mind that the rules around dynamic colors still apply.\n\nSee \"Implementing dark mode on iOS\" session of WWDC19 to learn more about how dynamic colors work. Some symbols only have two layers. For instance, there's a bunch of symbols that are missing a secondary layer. How do we handle palette mode for these kinds of symbols? A good example of these are the device symbols, which only have a primary layer and a tertiary layer.\n\nHow do we color this iPad symbol with two layer colors? Since symbols can have up to three layers, you can just specify three colors, one for each layer.\n\nIn this case, the secondary color is not used because the layer isn't there. However, there's another way to do this for symbols with only two layers. For those symbols, we can specify just two colors in your configuration, and the colors will be applied to the available layers in sequence.\n\nThe former method allows for consistency on how to specify palette colors for related symbols with a mixed number of layers, because the colors directly map to the correct layer.\n\nThe latter method is a convenience for when you know for sure that the symbol only has two layers.\n\nThe palette configuration specifies an explicit set of colors that are applied to the layer hierarchy of the symbol. Unlike the hierarchical rendering mode, the palette rendering mode doesn't create derived colors. And similar to hierarchical rendering mode, the hierarchy level of each symbol layer is important. There's also a convenient solution for symbols with less than three layers. This brings us to the last color rendering mode: multicolor. Like I mentioned before, this color mode was added to AppKit and SwiftUI last year but is introduced to UIKit this year.\n\nSome of these categories have images with multiple colors. These are multicolor symbols. Let's see how we would implement this.\n\nFirst of all, we need to load the images for each cell. For now, these are regular symbols, and we get the monochrome mode by default.\n\nThen we need to indicate that we want multicolor symbols. We do this by creating a configuration requesting the multicolor variant of a symbol and assigning that configuration to the image view.\n\nBut one icon didn't change: its symbol does not support multicolor. So, how do you figure out which symbols support multicolor or not? An easy way to find out is to use the SF Symbols app. Search for the symbol, then use the inspector to see which color rendering modes the symbol supports. For instance, our flame symbol only supports monochrome.\n\nBut the lung symbol supports all four color rendering modes.\n\nAdditionally, you can also play with the color mapping for each layer here, in order to get a better feel of how the symbol would appear without having to write one line of code.\n\nLet's go back to our example.\n\nSo, since not all of these symbols support multicolor, we need to manually set the tintColor to the right value in order for the symbol to display correctly.\n\nSome multicolor symbols have a tint layer, and they will be affected by the tint or accent color of the view. Symbols without such layer won't be affected. In our example, none of them do, so everything remains as is.\n\nAs you might have guessed from the name of the configuration, the multicolor configuration indicates a preference for a multicolor rendering of a symbol. As I mentioned before, not all symbols have a multicolor variant. You can combine a multicolor configuration with one of the other color configurations, but more on that later. And the result is a configuration that supports two color modes: multicolor when it is available, and the other color mode otherwise. Note that combining hierarchical mode and palette mode will result in the last-specified mode, as they are mutually exclusive.\n\nIf, in turn, that color mode is not supported, the system uses monochrome mode.\n\nSo, multicolor symbols have a fixed set of colors which aren't modifiable in code. Additionally, some symbols have a layer that will be rendered using the tint or accent color. And you don't have anything to do in order for this to work. The symbol picks up the right tint or accent color from its imageview when it is displayed.\n\nNow, we've covered all four modes and how to use them in your code. But can we do the same in Interface Builder? Fortunately, the answer is yes. Xcode has added similar functionality to configure color rendering modes right from the IDE.\n\nHere we have Xcode Open displaying a storyboard for the Planets app. The ImageView UI has been expanded to enable specifying a color rendering mode. And the resulting color configuration is also combinable with the previously-existing configurations. If you want to learn more about all these new features in Interface Builder, check out this year's \"Build interfaces with style.\" Now that we have talked about all these different color modes, how can we combine them with other configurations to get more complex effects? Luckily, it's not that hard. Let's check out another example, this time from the Shortcuts app. The icons of each of the actions are quite large, but they also appear to have a hierarchical color rendering mode. So, we need two configurations: one for specifying a point size, and one for specifying a color configuration.\n\nBut we can only apply one. How do we combine them? Turns out there's an easy way to do this. There's a method to combine two configurations, resulting in a configuration that has the elements of both configurations.\n\nIn the example here, we create two configurations: one for specifying a point size, and another one for specifying a hierarchical color.\n\nWe then combine them using the applying methods to create a final configuration. And that configuration is applied on the image view displaying the image, giving us the desired result. Note that this mechanism is not limited to color configurations only. You can also use this with the other types of configurations. For instance, combining text, style, and weight.\n\nNow we know how to combine different configurations. We've got one topic left: using color symbols in attributed strings. Take this last example. This is an imaginary app that lists various hotels and information about their available rooms. There's a few places where symbols are combined with text. But let's focus on the room amenities and how we would implement this text. It's fairly simple, but a bit elaborate. We have to build an attributed string with an image attachment.\n\nFirst, we load the image, using the correct color configuration. In this case, we're using a hierarchical color configuration.\n\nWe use this image to create a text attachment, and then we use that attachment to complete our attributed string. And this is then repeated for all the available amenities. On the label displaying the text, we also specify the correct font and the same text color as we used for the hierarchical color configurations.\n\nMonochrome symbols pick up the text color automatically, but for symbols with a color configuration, we have to specify the colors explicitly. And color symbols do pick up the font sizes specified in the string, just like monochrome symbols.\n\nAfter these steps, we have the result that we want: a label with the right content, color, and size, thanks to the integration of symbols in attributed strings.\n\nWe introduced three new color modes for SF Symbols in addition to the existing one, and we explained how to use them in your app. Symbols are a great way to add high-quality images to your app. Colored symbols expand on that, allowing for even more possibilities.\n\nIf you enjoyed this session, be sure to check out a few related sessions. Watch \"What's new in SF Symbols\" for a primer on the new capabilities. Or take a look at \"SF Symbols in SwiftUI\" to see how you can use the new symbols in SwiftUI.\n\nThanks for watching, and now go build amazing apps! [upbeat music]",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:52",
+      "title": "Monochrome symbols",
+      "language": "swift",
+      "code": "// Play\n\nlet playImage = UIImage(systemName: \"play\")\n\nplayImageView.image = playImage \nplayImageView.tintColor = .systemBlue"
+    },
+    {
+      "timestamp": "3:00",
+      "title": "Hierarchical symbols",
+      "language": "swift",
+      "code": "// Device image\n\nvar image = NSImage(systemSymbolName: \"ipad.landscape\",\n                    accessibilityDescription: \"iPad\")\n\nlet config = NSImage.SymbolConfiguration(hierarchicalColor: .label)\n\ndeviceView.image = image\ndeviceView.symbolConfiguration = config"
+    },
+    {
+      "timestamp": "4:13",
+      "title": "Setup button configurations",
+      "language": "swift",
+      "code": "// Initialize button configuration\n\nlet speakerConfig = UIButtonConfiguration.plain\nspeakerConfig.image = UIImage(systemName: \"speaker.wave.2\")\n\nlet callConfig = UIButtonConfiguration.plain\ncallConfig.image = UIImage(systemName: \"phone\")\n\nlet deleteConfig = UIButtonConfiguration.plain\ndeleteConfig.image = UIImage(systemName: \"trash\")"
+    },
+    {
+      "timestamp": "4:40",
+      "title": "Image variants",
+      "language": "swift",
+      "code": "// Button container view\n\nactionsView.imageVariant = .none"
+    },
+    {
+      "timestamp": "4:44",
+      "title": "Image variants",
+      "language": "swift",
+      "code": "// Button container view\n\nactionsView.imageVariant = .circle"
+    },
+    {
+      "timestamp": "4:51",
+      "title": "Image variants",
+      "language": "swift",
+      "code": "// Button container view\n\nactionsView.imageVariant = .circle.fill"
+    },
+    {
+      "timestamp": "5:09",
+      "title": "Speaker button color configuration",
+      "language": "swift",
+      "code": "// Speaker button color configuration\n\nlet config = UIImage.SymbolConfiguration(paletteColors: [.tintColor, .systemGray2])\n\nspeakerConfig.preferredSymbolConfigurationForImage = config\nspeakerButton.configuration = speakerConfig"
+    },
+    {
+      "timestamp": "5:40",
+      "title": "Call button color configuration",
+      "language": "swift",
+      "code": "// Call button color configuration\n\nlet config = UIImage.SymbolConfiguration(paletteColors: [.white, .tintColor])\n\ncallConfig.preferredSymbolConfigurationForImage = config\ncallButton.configuration = callConfig"
+    },
+    {
+      "timestamp": "5:56",
+      "title": "Delete button color configuration",
+      "language": "swift",
+      "code": "// Delete button color configuration\n\nlet config = UIImage.SymbolConfiguration(paletteColors: [.white, .systemRed])\n\ndeleteConfig.preferredSymbolConfigurationForImage = config\ndeleteButton.configuration = deleteConfig"
+    },
+    {
+      "timestamp": "6:10",
+      "title": "Colors matter",
+      "language": "swift",
+      "code": "// Colors matter!\n\nlet config = UIImage.SymbolConfiguration(paletteColors: [.tintColor, .systemGray2])\n\nlet config = UIImage.SymbolConfiguration(paletteColors: [.white, .tintColor])\n\nlet config = UIImage.SymbolConfiguration(paletteColors: [.white, .systemRed])"
+    },
+    {
+      "timestamp": "6:46",
+      "title": "Tint color",
+      "language": "swift",
+      "code": "view.backgroundColor = .tintColor\nlabel.textColor = .tintColor\nsearchField.tokenBackgroundColor = .tintColor\ntabBarItem.badgeColor = .tintColor"
+    },
+    {
+      "timestamp": "9:03",
+      "title": "Multicolor symbols",
+      "language": "swift",
+      "code": "// configure table view cell\n\nlet image = UIImage(systemName: category.iconName)\n\ncell.imageView.image = image"
+    },
+    {
+      "timestamp": "9:13",
+      "title": "Multicolor symbols",
+      "language": "swift",
+      "code": "// configure table view cell\n\nlet image = UIImage(systemName: category.iconName)\n\nlet config = UIImage.SymbolConfiguration.preferringMultiColor\n\nlet tintColor = category.colorForIcon\n\ncell.imageView.image = image\ncell.imageView.preferredSymbolConfiguration = config\ncell.imageView.tintColor = tintColor"
+    },
+    {
+      "timestamp": "12:25",
+      "title": "Combining configurations",
+      "language": "swift",
+      "code": "// combined configuration\n\nlet image = UIImage(systemImage: \"ipad.and.iphone\")\nheaderView.image = image"
+    },
+    {
+      "timestamp": "12:40",
+      "title": "Combining configurations",
+      "language": "swift",
+      "code": "// Combined configuration\n\nlet image = UIImage(systemImage: \"ipad.and.iphone\")\nheaderView.image = image\n\nlet fontConfig = UIImage.SymbolConfiguration(pointSize: 60, scale: .large)\nlet colorConfig = UIImage.SymbolConfiguration(hierarchicalColor: .systemBlue)\nlet config = fontConfig.applying(colorConfig)\n\nheaderView.preferredSymbolConfiguration = config"
+    },
+    {
+      "timestamp": "13:20",
+      "title": "Symbols in attributed strings",
+      "language": "swift",
+      "code": "// Hotel amenities\n\nlet amenitiesString = NSMutableAttributedString(...)\n\nif (room.amenities.contains(.tv)) {\n    let config = UIImage.SymbolConfiguration(\n                         hierarchicalColor: .systemGreen)\n    let tvImage = UIImage(systemImage: \"tv\", \n                          withConfiguration: config)\n\n    let attachment = NSTextAttachment(image: tvImage)\n    let attachmentString = NSAttributedString(attachment: \n                                               attachment)\n    let tvString = attachmentString.mutableCopy()\n    tvString.append(NSAttributedString(\" TV, \")\n\n    amenitiesString.append(tvString)\n}"
+    },
+    {
+      "timestamp": "13:51",
+      "title": "Symbols in attributed strings",
+      "language": "swift",
+      "code": "// hotel amenities\n\nlet amenitiesLabel = UILabel()\n\namenitiesLabel.textColor = .systemGreen\namenitiesLabel.font = UIFont.systemFont(ofSize: 25)\n\namenitiesLabel.attributedString = amenitiesString"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Human Interface Guidelines: SF Symbols",
+        "url": "https://developer.apple.com/design/human-interface-guidelines/sf-symbols"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10251/8/1F3B1961-5626-4737-BFCB-442B8F6A6CC3/downloads/wwdc2021-10251_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10251/8/1F3B1961-5626-4737-BFCB-442B8F6A6CC3/downloads/wwdc2021-10251_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10250",
+      "year": "2021",
+      "title": "Create custom symbols",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10250"
+    },
+    {
+      "id": "10288",
+      "year": "2021",
+      "title": "Explore the SF Symbols 3 app",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10288"
+    },
+    {
+      "id": "10349",
+      "year": "2021",
+      "title": "SF Symbols in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10349"
+    },
+    {
+      "id": "10059",
+      "year": "2021",
+      "title": "What's new in UIKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10059"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:54:33.787Z"
+}

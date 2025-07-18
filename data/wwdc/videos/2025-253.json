@@ -1,0 +1,164 @@
+{
+  "id": "253",
+  "year": "2025",
+  "url": "https://developer.apple.com/videos/play/wwdc2025/253/",
+  "title": "Enhancing your camera experience with capture controls",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Photos & Camera"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, my name is Vitaliy. I'm an engineer on the AVKit team, and welcome to 'Enhancing your camera experience with capture controls'. In this session, we will explore powerful new ways to improve user interactions in your app. With Capture Controls, you can programmatically map physical button gestures to camera actions, giving users the familiar feel of the native iOS Camera app. We'll also be showcasing an amazing new feature introduced in iOS 26, and we think you are going to love it.\n\nTo illustrate the power of Capture Controls, let’s use the camera app on iOS. Instead of taking a photo with the UI button on the screen, let’s use physical buttons on the phone.\n\nWith just a simple click of the volume up button, we can initiate capture.\n\nBut this API isn't just about simple clicks. It also supports long presses. For example, in camera mode, if we press and hold the volume down button, it'll kick off video recording.\n\nJust like that, with Capture Controls, we have given our users more flexibility in using the camera to capture unforgettable moments with their iPhones.\n\nIn this session, We will first cover what physical capture is and what physical buttons are supported. Then, we’ll show you how to effectively use the API in your app to handle user interactions and build a robust and responsive camera interface like we saw in the demo We will also go over an exciting new feature in iOS 26 Remote Camera Control with AirPods.\n\nFinally, my colleague, Nick, will present an overview of Camera Control on iPhone 16.\n\nBefore exploring the API's core functionalities let's review the key frameworks involved in creating a great camera experience in iOS At the heart of our camera app's architecture is AVFoundation, providing the low-level capture functionality through APIs like AVCapturePhotoOutput for photo and AVCaptureMovieFileOutput for video.\n\nTo combine the UI layer with AVFoundation, we have AVKit that sits on top of these frameworks.\n\nOne capture-specific API that AVKit includes is AVCaptureEventInteraction.\n\nNow, let’s dive into the key features and capabilities of AVCaptureEventInteraction. This API lets you override the default behavior of physical buttons like the volume up and down or the Camera Control introduced with iPhone 16.\n\nAnother button that AVCaptureEventInteraction supports is the Action button. Please check out our session from last year on how to configure the Action button for capture.\n\nEvery physical button press triggers a capture event notification. This notification includes an event phase, giving you precise control over the entire press lifecycle. There are three possible phases: began: The moment the button is pressed. Perfect for preparing your app’s camera object.\n\ncancelled: For those moments when the app goes into background or capture is not available.\n\nended: The moment when the button is released. This is the phase when the camera object should initiate capture.\n\nAVCaptureEventInteraction also gives you the ability to distinguish button presses between primary and secondary actions. A button press triggers a capture notification that is sent only to its designated handler.\n\nPrimary actions are triggered by the volume down button, Action button, and the Camera Control, while the secondary action is triggered by the volume up button. The same button cannot trigger both handlers as they are designed to represent distinct actions. The secondary handler is optional, if it's not specified, the volume up click will trigger the primary action. Such design introduces modularity into your app and gives you more flexibility in designing a great camera experience for your users. This API is intended for capture use cases. The system sends capture events only to apps that actively use the camera. Adopting this API overrides default physical button behavior, so apps must always respond appropriately to any events received. Failing to handle events results in a nonfunctional button that provides a poor user experience.\n\nBackgrounded capture apps, or those that do not have an active AVCaptureSession running, won’t receive any events. Any button press will trigger its default system action, such as adjusting volume or launching the camera.\n\nAlthough AVCaptureEventInteraction is an API designed specifically for UIKit, SwiftUI developers can also access its functionality through the onCameraCaptureEvent view modifier. Adopting either of them will result in the same behavior.\n\nNow that we understand AVCaptureEventInteraction, let's build a simple camera app that uses the SwiftUI onCameraCaptureEvent view modifier to allow photo capture with physical buttons. First, let’s begin by crafting the user interface for our camera app. We will include the CameraView that is responsible for displaying the camera output on the screen.\n\nNext, let's add a button to the view, giving the user a way to capture photos. We'll connect this button to our CameraModel, so tapping it triggers the photo capture.\n\nNow, we have a functional view that takes pictures when the user presses on the on-screen button. However, pressing on any physical buttons will trigger system actions. So, let’s make these hardware button presses camera specific with the API we discussed in this session. First, we will import the AVKit framework. Then, we would attach the onCameraCaptureEvent view modifier to the CameraView and if the event phase is ended, we take a picture.\n\nIt’s as simple as that! With only 6 additional lines of code, we've enabled the same intuitive physical button interactions for photo capture as you find in the built-in Camera app. That's the power of leveraging the Capture Controls API. This year, we're excited to announce that AVCaptureEventInteraction will also support primary actions triggered by clicks on either AirPod stem, specifically from AirPods equipped with the H2 chip. This will allow the user to remotely capture unforgettable moments without needing to interact with their phones.\n\nFor those who have already adopted the API, this feature will come for free with iOS 26.\n\nNow, let's checkout this new feature in action. First, I'll put in my right AirPod, then the left one.\n\nLooking sharp! Then, to configure the AirPods for capture, let's go into settings and scroll down to the “Remote Camera Capture” section.\n\nThere, we can choose which type of click will trigger capture. I’ll choose the “Press once” option.\n\nNow, let’s go back into the camera app.\n\nI’ll step back a few steps, and take a photo by clicking on one of the stems.\n\nGreat, now I can control my camera without touching the device.\n\nBecause AirPods are used for remote camera control, audio feedback is crucial, as users may not be viewing the screen during capture but need confirmation that their command has been recognized.\n\nTherefore, we're introducing a new API for controlling sound playback, specifically for AirPod stem clicks. If a capture event is triggered by something other than an AirPod click, the AVCaptureEventInteraction object will not allow control of sound feedback.\n\nTo provide this new feature to AVCaptureEventInteraction users without requiring additional work, we've added a default tone for AirPods clicks.\n\nHowever, this sound may not be optimal for your use case. So, you can customize the sound playback by providing your own sound within the app’s bundle.\n\nLet’s go back to our camera app, specifically the .onCameraCaptureEvent view modifier. In iOS 26, if we leave this code unchanged, when the user clicks their AirPod stem, they will hear the default sound. Since we are building an app specifically for taking photos, the default sound may not be appropriate for our app.\n\nTo tune the capture sound for our specific scenario, we first disable the default sound using defaultSoundDisabled parameter.\n\nIf audio feedback is needed, we play the cameraShutter sound using the playSound method on the event object. Note, that the shouldPlaySound property will only be true if the capture action was triggered by an AirPod stem click.\n\nTo sum up, the AVCaptureEventInteraction API significantly simplifies the process of building high-quality camera experiences for your apps. We reviewed the API's key features and best practices for implementation, including this year's update: a way to control camera capture with AirPod stem clicks. Now, over to Nick to talk about AVCaptureControls. Hi, I’m Nick Lupinetti. I’m a software engineer on the Camera Experience team, and I’m excited to introduce you to AVCaptureControl, a powerful way to turn Camera Control on iPhone 16 into a physical piece of hardware for your camera interface. Camera Control is a versatile capture tool, which can click to launch a camera app, act as a shutter button, and make quick adjustments, all while keeping your finger in one place.\n\nLet’s take those three functions in order, starting with launch. In order to launch your app, Camera Control needs access to it even when the device is locked. That means creating a Lock Screen capture extension. For more details, check out last year’s session on building a Lock Screen camera experience.\n\nNext, it’s easy to use Camera Control as a shutter button for your app. Just set up one of the capture event APIs that Vitaliy showed you earlier, and you’re done! Camera Control will run the same primary event callback you already provided for the volume buttons. Now, my favorite part: adjusting camera settings. Camera Control supports a light press gesture, like on a traditional camera shutter, which activates a clean preview to focus on composing, and presents a setting to adjust by sliding the control. Other settings are available for selection by light pressing twice, then sliding on Camera Control and light pressing again to confirm.\n\nAt the highest level, there are two kinds of controls: sliders for numeric values, and pickers for items in a list.\n\nSliders, in turn, come in two flavors: continuous, and discrete.\n\nContinuous sliders can select any numeric value within a specified range. For example, iOS comes out of the box with a continuous zoom slider. It supports the entire gamut of zoom factors between the recommended minimum and maximum for the device it operates. Discrete sliders also select numeric values: either from an explicit set you provide, or by fixed steps from one value to another. iOS offers a built-in discrete slider to drive exposure bias, with one-third increments between plus or minus two, which are manageable units from traditional photography.\n\nPickers, LIKE discrete sliders, allow finite selections, but are instead indexed. Each index maps to a named state for the control, like “On” and “Off” for Flash, or the names of Photographic Styles in Camera app. Okay, now that we understand the various types of controls, let’s take a look at the classes that implement them. Controls are defined in the AVFoundation framework. AVCaptureControl is the abstract base class the others inherit from.\n\nThere are two system-defined subclasses, which allow any app to adopt the same behavior as the built-in camera app for zoom or exposure bias. Finally, there are two generic subclasses, for sliders, both continuous and discrete, and pickers, whose behaviors you can define yourself. To adopt controls in your app, you add them to an AVCaptureSession. Usually, the first step in configuring a session is creating a capture device, and adding it to the session wrapped as an input. Next, any system-defined controls are created, with a reference to that same device for them to drive its properties on your behalf. Any controls with app-defined behaviors are also created at this time, and finally, each control is added to the session.\n\nFor your app to respond as a person interacts with Camera Control, there are a couple of flows to consider. System-provided controls apply values from Camera Control directly to the configured device. You don’t need to set videoZoomFactor or exposureTargetBias yourself.\n\nBut you may have models or UI that need to be updated. If you already use Key-Value Observing, or KVO, to know when the relevant property changes, you can continue using that mechanism to update your interface.\n\nIf you’re not using KVO, create the system control with an action handler, which will be called on the main thread as the value changes, so you can update your UI directly.\n\nApp-defined controls are always created with an action callback, run on a queue that you specify. If your control needs to drive capture settings, you can do that synchronously by specifying the queue where you manage that state.\n\nThen, you can update your UI on the main queue.\n\nGreat, now we’re ready to adopt Camera Control in the app I’m making with Vitaliy. Since he’s added a capture interaction, the control already works as a shutter button to take photos, without any additional code.\n\nBut I’d also like to support zooming in and out with Camera Control, so let’s add that next.\n\nHere’s where we’re currently configuring our capture session to use a device. First we’ll check if controls are actually supported, since they’re only available on devices with a Camera Control, like iPhone 16.\n\nSystem-provided controls are so easy to create, it takes a single line of code.\n\nBefore adding your control, make sure the session will accept it. For example, you can’t add a system-provided zoom control for a device that’s already associated with a zoom control. Finally, we add the control to the session.\n\nThat’s all it took to make zoom work perfectly in our app using Camera Control! But there’s one problem. I also support a pinch gesture to zoom in. After I zoomed in with Camera Control, the UI wasn’t up to date, so the pinch gesture jumped back to a stale zoom factor.\n\nBut that’s an easy fix. We’ll just create the slider with an action closure, which receives the zoom factor as an argument. The new value gets applied to the UI with a delegate callback or an observable model property.\n\nOnce the model behind the pinch gesture is in sync, I can zoom with Camera Control, and the pinch always starts from the right zoom factor.\n\nNow I’d like to add a control that isn’t available right out of the box. But before we create our own, let’s give some thought to what makes a great control. Camera Control, true to its name, is meant to be used with the iPhone Camera, so it should affect the appearance or experience of capturing. That makes it confusing if your controls affect unrelated areas of your app. And never introduce a capture session just to adopt Camera Control, since running the camera has power and privacy requirements best reserved for a capture experience. A great example of a custom control is a Picker that iterates through the effects or filters your app supports.\n\nSuch a control typically needs to operate closer to capture than to UI. So let’s checkout what that looks like. Starting with the code we just wrote, we’ll make the zoom control one of many. Note that there’s a limit to how many controls you can add, reported by the session’s maxControlsCount property. canAddControl will return false once you reach the limit. Now we can define our effects. Your effects might be rendered on a dedicated queue using video sample buffers, but for our app, I’ll use the reaction effects introduced with iOS 17. Here we’ve built an ordered list of effects as well as their names out of the available unordered set. The Picker gets initialized with the effect names to show as it iterates through the options. The Picker also needs a name of its own, as well as an SF Symbol image, to distinguish it from the zoom control. It’s a great idea to disable your control when it’s not currently supported, rather than omitting it. That way, it’s still visible, just not interactive. Otherwise, another control will be selected as a fallback, and people might wonder what happened.\n\nAs the user changes the Picker’s selected index, we’ll perform the corresponding reaction. We’re targeting the action to the session queue, since that’s our isolation context for managing the device. And all that’s left, is to add the picker to the array of controls. Let’s checkout how we did! As I interact with Camera Control, note how zoom is disabled in this new configuration. Let’s change the control. I’ll swipe out on the overlay, and now I can checkout my picker in the list. I’ll scroll over to it and press lightly to display its options. Now I can select each effect in turn, and watch as they play in the preview.\n\nRock on! So, with what Vitaliy and I showed you in this session, you’ve got a ton of great tools to build a world-class camera app.\n\nWe’ve seen how to capture media with physical buttons on iOS devices, including how easily this works with AirPods interactions on iOS 26. And we learned how to harness Camera Control as a convenient tool to supercharge your app’s capture interactions. And there’s even more great resources at developer.apple.com, including Human Interface Guidelines for Camera Control, guidance on setting up AirPods to test new features, and articles and sample code with more information on how to adopt Camera Control. I can’t wait for you to build a camera that will capture peoples’ attention. Thanks for watching!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "5:35",
+      "title": "Initial PhotoCapture view setup",
+      "language": "swift",
+      "code": "import SwiftUI\n\nstruct PhotoCapture: View {\n    var body: some View {\n        VStack {\n            CameraView()\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "5:37",
+      "title": "Connecting a button to the camera model",
+      "language": "swift",
+      "code": "import SwiftUI\n\nstruct PhotoCapture: View {\n    let camera = CameraModel()\n    var body: some View {\n        VStack {\n            CameraView()\n            Button(action: camera.capturePhoto) {\n                Text(\"Take a photo\")\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "6:10",
+      "title": "Importing AVKit",
+      "language": "swift",
+      "code": "import AVKit\nimport SwiftUI\n\nstruct PhotoCapture: View {\n    let camera = CameraModel()\n    var body: some View {\n        VStack {\n            CameraView()\n            Button(action: camera.capturePhoto) {\n                Text(\"Take a photo\")\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "6:14",
+      "title": "Setting up onCameraCaptureEvent view modifier",
+      "language": "swift",
+      "code": "import AVKit\nimport SwiftUI\n\nstruct PhotoCapture: View {\n    let camera = CameraModel()\n    var body: some View {\n        VStack {\n            CameraView()\n            .onCameraCaptureEvent { event in\n                if event.phase == .ended {\n                   camera.capturePhoto()\n                }\n            }\n            Button(action: camera.capturePhoto) {\n                Text(\"Take a photo\")\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "8:53",
+      "title": "Default sound for onCameraCaptureEvent view modifier",
+      "language": "swift",
+      "code": ".onCameraCaptureEvent { event\n\tif event.phase == .ended {\n   \tcamera.capturePhoto() \n  }\n}"
+    },
+    {
+      "timestamp": "9:13",
+      "title": "Play photo shutter sound on AirPod stem click",
+      "language": "swift",
+      "code": ".onCameraCaptureEvent(defaultSoundDisabled: true) { event in\n    if event.phase == .ended {a\n        if event.shouldPlaySound {d\n            event.play(.cameraShutter)\n        }\n    }\n    camera.capturePhoto()\n }"
+    },
+    {
+      "timestamp": "14:46",
+      "title": "Add a build-in zoom slider to Camera Control",
+      "language": "swift",
+      "code": "captureSession.beginConfiguration()\n\n// configure device inputs and outputs\n\nif captureSession.supportsControls {\n    let zoomControl = AVCaptureSystemZoomSlider(device: device)\n\n    if captureSession.canAddControl(zoomControl) {\n        captureSession.addControl(zoomControl)\n    }\n}\n\ncaptureSession.commitConfiguration()"
+    },
+    {
+      "timestamp": "15:40",
+      "title": "Modifying the built-in zoom slider to receive updates when zoom changes",
+      "language": "swift",
+      "code": "let zoomControl = AVCaptureSystemZoomSlider(device: device) { [weak self] zoomFactor in\n    self?.updateUI(zoomFactor: zoomFactor)\n}"
+    },
+    {
+      "timestamp": "16:46",
+      "title": "Adding a custom reaction-effects picker alongside zoom slider",
+      "language": "swift",
+      "code": "let reactions = device.availableReactionTypes.sorted { $0.rawValue < $1.rawValue }\nlet titles = reactions.map { localizedTitle(reaction: $0) }\nlet picker = AVCaptureIndexPicker(“Reactions\", symbolName: “face.smiling.inverted”,\n    localizedIndexTitles: titles)\n\npicker.isEnabled = device.canPerformReactionEffects\npicker.setActionQueue(sessionQueue) { index in\n    device.performEffect(for: reactions[index])\n}\n\nlet controls: [AVCaptureControl] = [zoomControl, picker]\n\nfor control in controls {\n    if captureSession.canAddControl(control) {\n        captureSession.addControl(control)\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Accessing the camera while multitasking",
+        "url": "https://developer.apple.com/documentation/avkit/accessing_the_camera_while_multitasking"
+      },
+      {
+        "title": "AVFoundation",
+        "url": "https://developer.apple.com/documentation/AVFoundation"
+      },
+      {
+        "title": "AVMultiCamPiP: Capturing from Multiple Cameras",
+        "url": "https://developer.apple.com/documentation/AVFoundation/avmulticampip-capturing-from-multiple-cameras"
+      },
+      {
+        "title": "Capture setup",
+        "url": "https://developer.apple.com/documentation/AVFoundation/capture-setup"
+      },
+      {
+        "title": "Capturing Photos with Depth",
+        "url": "https://developer.apple.com/documentation/AVFoundation/capturing-photos-with-depth"
+      },
+      {
+        "title": "Creating a camera experience for the Lock Screen",
+        "url": "https://developer.apple.com/documentation/LockedCameraCapture/Creating-a-camera-experience-for-the-Lock-Screen"
+      },
+      {
+        "title": "Creating a camera extension with Core Media I/O",
+        "url": "https://developer.apple.com/documentation/coremediaio/creating_a_camera_extension_with_core_media_i_o"
+      },
+      {
+        "title": "DockKit",
+        "url": "https://developer.apple.com/documentation/DockKit"
+      },
+      {
+        "title": "Forum: Photos & Camera",
+        "url": "https://developer.apple.com/forums/topics/media-technologies/photos-and-camera?cid=vf-a-0010"
+      },
+      {
+        "title": "Scanning data with the camera",
+        "url": "https://developer.apple.com/documentation/VisionKit/scanning-data-with-the-camera"
+      },
+      {
+        "title": "Supporting Continuity Camera in your macOS app",
+        "url": "https://developer.apple.com/documentation/AVFoundation/supporting-continuity-camera-in-your-macos-app"
+      },
+      {
+        "title": "Supporting Continuity Camera in your tvOS app",
+        "url": "https://developer.apple.com/documentation/AVKit/supporting-continuity-camera-in-your-tvos-app"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/253/4/61747dad-b349-43cc-83c6-782e690f2ae1/downloads/wwdc2025-253_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/253/4/61747dad-b349-43cc-83c6-782e690f2ae1/downloads/wwdc2025-253_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10204",
+      "year": "2024",
+      "title": "Build a great Lock Screen camera capture experience",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10204"
+    },
+    {
+      "id": "10256",
+      "year": "2023",
+      "title": "Discover Continuity Camera for tvOS",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10256"
+    },
+    {
+      "id": "10106",
+      "year": "2023",
+      "title": "Support external cameras in your iPadOS app",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10106"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:41:23.458Z"
+}

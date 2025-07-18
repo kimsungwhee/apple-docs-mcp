@@ -1,0 +1,192 @@
+{
+  "id": "311",
+  "year": "2025",
+  "url": "https://developer.apple.com/videos/play/wwdc2025/311/",
+  "title": "Safely mix C, C++, and Swift",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Swift"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, my name is Yeoul. I’m the manager of the Secure Language Extension team at Apple. When creating an app, it’s crucial to prioritize security. This means protecting your users' private information from potential attackers. These bad actors often exploit vulnerabilities in code written in C and C++, which are unsafe languages. On the bright side, if your app already uses Swift, the language is safe by default. That's fantastic news.\n\nBut even if you are writing all your new code in Swift, your app may still have some C and C++ code in older parts of your code base. Or, it might rely on external libraries. When you mix these languages, it’s important to make sure that Swift safety guarantees aren’t compromised. At a high level, the problem is that C and C++ functions that take or return raw pointers are very difficult to call safely. Calling them incorrectly might cause security and stability bugs such as buffer overflows and use-after-frees.\n\nBecause of this, pointers from C and C++ are imported as unsafe types in Swift. For example, a C integer pointer is imported as an UnsafeMutablePointer. Swift puts unsafe in the type name on purpose. That lets me know I cannot rely on its normal safety guarantees when calling the function. However, I know that some functions are possible to call safely from Swift. But until now, C and C++ didn’t have a way to convey how to do so. And this is what this talk is about. First, I’ll describe a new feature, strict memory safety, that helps identify unsafe calls in Swift. Second, I’ll cover how to annotate C and C++ functions to convey missing information so Swift can call them safely. Then, I’ll explain how to annotate custom C++ types for safe importing. Finally, while it is never possible to make C-based languages as safe as Swift, I’ll describe some tools to make C and C++ code a bit safer. Swift 6.2 has a cool new feature to help catch calls to unsafe C and C++ functions. I'll demonstrate this on an app I wrote, where users can share cute profile photos of their pets. This app has access to user super sensitive private information, like their dog’s middle name, so I want to keep it secure. It's written in Swift. However, it also calls into C and C++ code to apply custom image filters. I want to find all the unsafe calls to C and C++ within the app so I can make them safe. The tricky part is sometimes finding those calls can be hard. Swift is safe by default, but it allows use of unsafe constructs, especially when interoperating with C and C++. For example, behind the scenes, and percent imageData creates an UnsafeMutablePointer, which I can tell from the name is unsafe. But that’s not so easy to notice when I’m reading this code. To spot all calls to unsafe functions, I can now use a new compiler mode in Swift 6.2 called Strict memory safety. When Strict Memory Safety is turned on, The compiler alerts me to any unsafe code along with nodes explaining the reasoning.\n\nStrict memory safety is not enabled by default, but since my app is security sensitive, I’m definitely going to turn it on. Let’s check this out in Xcode.\n\nI’ll flip Strict Memory Safety to yes in my project’s build settings to opt-in.\n\nWhen I rebuild, the compiler provides warnings to help me spot unsafe constructs.\n\nI see some new warnings now. Most of this unsafe code involves C and C++ pointers.\n\nI’ll show you how to safely call functions that use these pointers from Swift.\n\nBut first, let’s talk about what makes it so hard to use C and C++ pointers safely.\n\nPointers are a powerful and useful tool. They give me the ability to performantly look into memory without needing to copy it. But they are very hard to use safely. The root of the problem is that C and C++ don’t help programmers to avoid making mistakes. So for example, nothing stops me from accidentally using a piece of memory after it has been freed or from accessing past the bounds of a buffer. Here's some good news. Swift 6.2 introduces a new safe pointer type called Span that provides the benefits of pointers while automatically preventing those mistakes. A Span acts like a pointer but has safety built in. Swift ensures you cannot do unsafe things with it. And if you need to modify memory, there’s a MutableSpan as well. To learn more about Span, check out “Improved memory usage and performance with Swift.” It would be great if Swift could import C and C++ pointers as Spans rather than as unsafe pointers. Unfortunately, the compiler is missing two key pieces of information to allow it to do so safely. Without information from C++ about the bounds of a pointer, Swift can't prevent out-of-bounds accesses. And without information from C++ about the lifetime of the pointer, Swift can’t prevent it from being used after it is freed. The key idea is that if the programmer provides that missing information, Swift can treat an unsafe pointer as a Swift Span.\n\nIn Swift 6.2, I can provide that missing information to the compiler by adding annotations to my C and C++ code. This doesn't change how that code works. It just makes its assumptions explicit. This enables Swift to make safe calls to C and C++ code that uses pointers. Let’s talk about how to annotate functions that take and return pointers. To do that, let's return to my app.\n\nThe first warning is on a use of invertImage function that takes a raw pointer. I’ll show you how to safely call functions like that, the ones that take pointers as parameters.\n\nAs I mentioned, raw pointers are missing bounds information, so there’s no way to verify whether they access within bounds. If I don’t use them carefully, they can cause out-of-bounds memory errors. Here's an example. The InvertImage function is called from Swift. The function takes an image pointer, which is a raw pointer to the image, and the size has separate parameters.\n\nBut since image pointer is just a raw pointer, there’s nothing stopping me from accidentally passing a size that’s too large. If I do, the function will read and write past the bounds of the buffer. And this is exactly one of the problems that Span solves. Imagine if invertImage were imported as a Swift function that takes a Span. Then I could pass a Span directly, instead of a raw pointer and size separately. That’ll automatically protect me from mistakes like passing the wrong size, because Spans always carry the correct bounds information for the memory they point to. Then, behind the scenes, the compiler will take care of unwrapping the Span, extracting the correct pointer and size, and pass them to the C function for me. That way, there will be no room for mistakes.\n\nThe compiler can do this, but it is missing the connection between the raw pointer and the size. The invertImage function assumes that the pointer refers to a buffer of imageSize elements, but that's only an implicit assumption. I need to express that relationship explicitly so both humans and the compiler understand that. That can be expressed with the counted_by annotation. The annotation tells the compiler about the number of elements in the memory pointed to by the pointer. Then the pointer also needs another annotation called noescape for missing lifetime information. But you can ignore it for now. I'll get into that later. Once I provide this extra information, I can now safely call the function from Swift by passing a Span directly. Then the compiler will automatically take care of the rest. This way, mistakes are not even possible. I'll return to my invertImage function.\n\nI’ll add counted_By and noescape annotations on the invertImage function.\n\nAnd I’ll jump to the decoration and add the same annotations.\n\nThen I’ll jump back to the call site in Swift.\n\nI will now pass imageData spent directly to call the function from Swift.\n\nNow there’s no unsafe pointer involved, so the warning’s gone.\n\nThe next warning is on the function applyGrayScale. It says that the function uses an unsafe C++ type.\n\nLet’s take a look at the C++ definition of that function. As the name implies, applyGrayScale is a function that applies a grayscale effect on the input image. The function takes a view of the image, which you can see is of a C++ Span type. Up until this point, we’ve talked about Spans in Swift. But C++ also has a notion of Spans. And we see the warning because Swift considers C++ Spans unsafe, even though they are trying to solve the same problem. Similarly to Swift Spans, C++ Spans are a standard type used to access contiguous memory owned by someone else. They contain a pointer to that memory and its size. Because C++ Spans know their size, they can safely check for out of bounds accesses, just like Swift Spans. However, unlike Swift Spans, C++ Spans don’t have lifetime information, so they don’t prevent accessing the allocated memory. So using a C++ Span can cause a use-after-free bug.\n\nHere is an example. Imagine if the function ApplyGrayScale were to take a C++ Span named ImageView, which points to an array created by Swift.\n\nInside apply Grayscale, I might store that pointer, maybe in a global variable like cachedView, so other C++ code can use it later. But here's the problem. Once the function returns, Swift may deallocate the array, assuming nothing else is using it. Now, the C++ code is holding onto a pointer that no longer points to valid memory. That's a dangling pointer, and accessing it is a classic use after free bug.\n\nOn the other hand, a Swift Span is safe. It’s not allowed to outlive the memory that it points to. If a function takes a Swift Span, it can only use it within the function. It’s not allowed to keep it, such as saving it in a cachedView for later use. That behavior, when a pointer is kept after the function ends, is called escaping. And the compiler reports an error like this whenever a Span tries to escape its scope.\n\nThis way, dangling pointers just aren’t possible with Swift Spans, and use after free bugs are avoided by design. A C++ Span doesn’t provide the same kind of guarantees. To use it safely, I need to manually audit the function so it doesn’t keep the imageView parameter to avoid a dangling pointer. Once I verify that the parameter doesn’t escape the C++ function, I need to recall that information in the function definition. This will allow both humans and the compiler to understand the function behavior. Adding the noescape annotation helps me do that. the noescape annotation can also be applied to raw pointers and references.\n\nStarting with Swift 6.2, a C++ Span parameter with the noescape annotation can be treated as a Swift Span. This means I can now pass a Swift Span directly to applyGrayscale, which is super convenient and eliminates the need for unsafe boilerplate code. It's incredible how calling a C++ function can be so safe and easy.\n\nI’ll jump to the definition of applied Grayscale and add noescape on the parameter imageView, and also on the decoration.\n\nNow I’ll jump back to the core site in Swift.\n\nNow I can remove the temporary access to unsaved mutable buffer pointer and directly pass Swift Span taken from imageData.\n\nNow the warning is gone since I safely call into applyGrayscale.\n\nThe next warning is on the use of scanImageRow, which takes a C++ Span and returns another C++ Span.\n\nSo how can I make it safe to call a function that returns a pointer like C++ Span? Returning a C++ Span can be dangerous because it doesn’t track whether the memory it points to is still valid. Here’s an example. ScanImageRow takes the imageView as a C++ Span and returns another C++ Span pointing to a selected row of the imageData. Once the function returns, the data will get deallocated. But the return C++ Span still points into that memory, a dangling pointer. Accessing it will be a use after free. This bug wouldn’t be possible if the return value could be treated like a Swift Span instead of a C++ Span. That’s because the compiler won’t even let me return a Swift Span unless it knows that the returned memory is still valid and so it's still safe to use. So when is it actually safe to use the return Span? It points to part of the same memory as the imageView parameter. That means it’s alive only as long as imageView. This relationship is called a lifetimebound.\n\nThat’s exactly the missing information that Swift needs in order to import a return C++ Span as a Swift Span. I can express that with the lifetimebound annotation. This enables the compiler to ensure that it’s used safely.\n\nI’ll jump to the definition of scanImageRow.\n\nI’ll add the lifetimebound annotation to the imageView parameter of the scanImageRow function.\n\nAnd I'll do the same on the declaration.\n\nWith the lifetimebound annotation, the function can now take a Swift Span and return another Swift Span. I'm moving to the core side in Swift.\n\nHere, I can now remove the unsafe pointer access and pass the Swift Span directly.\n\nThe function now returns a Swift Span instead of unsafe pointer. Once I rebuild it, the warning will be gone.\n\nNow that I’ve addressed the unsafety in calling my C and C++ code, all the warnings have vanished. So far, I talked about how to treat C and C++ pointers like Swift Spans. But there are some other idiomatic types in C++ that can be directly imported into Swift and used safely with annotations. These are custom view types and reference-counted types. First, we’ll see how to safely import custom C++ view types. A view type is a struct that contains a pointer or reference to memory that it doesn’t own. That means Swift Span is also a view type.\n\nSo let’s take a closer look at what really makes Swift Spans safe. Behind the scenes, Spans are marked as a special kind of Swift type, nonescapable. Nonescapable types are often used to implement types that offer a view into another type’s memory without making a copy of it. Just like with Span, Swift makes sure that all non-escapable types do not escape their current context. This ensures they do not outlive the memory they point to, so they are protected from use after free bugs. C++ view types can be safely imported as non-escapable in Swift. All I need to do is to add an annotation. Here's an example. My app has a custom C++ struct, ImageView, that stores an image’s width, height, as well as a pointer to the image’s pixel data. imageView doesn’t own that pixel data. It belongs to another object, which is responsible for freeing the memory when it is no longer needed. This means it is not safe for imageView to escape. If it did, the view could use the underlying memory after it is deallocated.\n\nSo I want to make sure the type never escapes. For that, I can add the SWIFT_NONESCAPABLE annotation. This way, the compiler imports the C++ type as nonescapable. A good rule of thumb is that if you have a struct that contains a view or pointer to memory that it doesn’t own, you should use this annotation.\n\nNot only view types, it's also a very common idiom in C++ and many other languages for a type to own the memory it refers to and track its references via reference counting. Swift offers a feature to safely import these types using annotations. For example, my image buffer struct in C++ owns its underlying imageData. When the struct is deallocated, the imageData is deallocated as well. I want image buffer to be imported as a reference counted type in Swift, so the compiler can automatically manage its lifetime. To do that,I’ll use the SWIFT_SHARED_REFERENCE annotation to tell the compiler what functions Swift should call to increment the reference count and to decrement it. Now Swift sees image buffer as a reference counting type. But there is more information that compiler needs from me to return the image buffer safely.\n\nWhen a C++ function returns an image buffer, there can be two possible situations. First, if the function returns a newly created image, it is the caller’s responsibility to release the image when it is done with it. In this case, I’ll annotate the method as SWIFT_RETURNS_RETAINED. This tells the Swift compiler to release the image in the caller when it is no longer used. Second, if the function returns a reference to an already existing image, it is the caller’s responsibility to retain the image if it wants to hold on to it. In this case, I’ll annotate the method as SWIFT_RETURNS_UNRETAINED. This tells the Swift compiler that it should retain the image if it wants to hold on to it. Adding these annotations makes the ownership expectations explicit, so Swift can manage memory safely.\n\nAnnotating code to provide missing information enables Swift to safely use C and C++ functions and types. These annotations don’t change how the code works. They just make assumptions in the code explicit.\n\nLet’s recap the annotations we’ve covered and how to use them.\n\nIf a function parameter or return is a pointer or array type, and it points to memory of more than one element, use the counted_by annotation to indicate the number of elements. If a parameter references memory owned by others and the parameter does not escape the function, use noescape. If the function return value references memory whose lifetime depends on the lifetime of a parameter, add the lifetimebound annotation. By adding this information, you enable Swift to import the pointer as a safe Swift Span type that doesn’t need ceremony at the call site to use.\n\nYou can also add annotations to help Swift safely manage your custom C++ types. Use SWIFT_NONESCAPABLE if your C++ type stores a view, a pointer, or a reference to memory that it doesn’t own. This will tell the compiler to import your type as a non-escapable type. If your type is reference counted instead, you should use SWIFT_SHARED_REFERENCE. Then the compiler will manage its memory automatically.\n\nYeah, that was a lot. If you want to pause the video now to get a snack or drink of water, now is a good time. Just promise me you'll be back. because up next, I’ll be showing some really exciting new tools that make C and C++ code much safer to work with.\n\nAll right, I’ll switch gears and talk about how C and C++ code can actually be made safer. In my app, I added annotations to make sure that Swift can safely call into C and C++. However, the pure C and C++ code still remains unsafe. I’m just one mistake away from a security bug. Ideally, I would rewrite that code in Swift to get full safety. But sometimes that is not practical. It’s never possible to make C and C++ as safe as Swift, but here are some tools to provide partial safety in C and C++. First, I’ll talk about a tool we developed to enhance bounds safety for C++.\n\nSome of you might be wondering why C++ isn’t already bounds safe, given Spans already store bounds information, as I talked about earlier. However, the problem is, array subscripts on Spans like this aren’t bounds checked by default in C++. And the same is true for other standard containers like vectors. Xcode has a feature called C++ Standard Library Hardening. It makes sure that array subscripts on standard C++ views and containers have bounds checks. It also adds some other safety checks to the standard library.\n\nEven after enabling C++ Standard Library Hardening, there is still another problem. You can still use raw pointers, which cannot be bounds checked because they don’t have bounds information. So the best way to use C++ is to avoid raw pointers and use standard types like C++ Spans. To help with that, Xcode lets you turn on errors for when you use unsafe pointers in C++. This way, you can check your code and replace raw pointers with C++ Spans or standard containers as needed.\n\nJust a heads up, these errors are about bounds safety, not lifetime safety.\n\nTo make your C++ projects bounds safe, you can set enforce bounds safe buffer usage in C++ to yes in your project build settings. That’ll enable C++ Standard Library Hardening and unsafe buffer usage errors all together.\n\nWhat about C? Unlike C++, C doesn’t have standard types like Spans to allow pointers to carry bounds information. So for C, we have developed a new language extension that guarantees bounds safety. You can now use it in Xcode. With this language extension enabled, the compiler will tell you where it is missing bounds information throughout your C code. You can then add bounds annotations to express the missing information. In this example, you can add the counted_by annotation on the buffer, the same annotation used for safe Swift and C interoperation earlier. Then the compiler will insert bounds check at run time that safely trapped on out-of-bounds memory accesses.\n\nI can enable the Bounds Safety extension for all C files in my Xcode project settings. To learn more check out the Bounds Safety documentation on the llvn.org website.\n\nIn this talk, I describe how to ensure safety in Swift and safely call into C and C++ code. It’s never possible to make C and C++ as safe as Swift, but they can be made safer.\n\nHere are some tips for getting the best safety when you mix C, C++, and Swift.\n\nTurn on strict memory safety in Swift. This will alert you whenever you use unsafe constructs and help you find any unsafe uses of C and C++ APIs. Make sure Swift can safely interact with unsafe C and C++ APIs by adding annotations to them.\n\nMake C and C++ safer by default. You can do this by turning on the new bounds safety features for C and C++.\n\nWe are collaborating with the open source community to make C, C++, and Swift work together seamlessly and safely. So your feedback and participation are super important to us. Please try it out and let us know what you think. Thanks for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:19",
+      "title": "Unsafety can be subtle",
+      "language": "swift",
+      "code": "// Swift\nvar imageData = [UInt8](repeating: 0, count: imageDataSize)\nfilterImage(&imageData, imageData.count)"
+    },
+    {
+      "timestamp": "4:01",
+      "title": "Strict memory safety",
+      "language": "swift",
+      "code": "// Swift\nvar imageData = [UInt8](repeating: 0, count: imageDataSize)\nfilterImage(&imageData, imageData.count)\n//warning: Expression uses unsafe constructs but is not marked with 'unsafe'"
+    },
+    {
+      "timestamp": "8:00",
+      "title": "Raw pointers don't prevent out-of-bounds errors",
+      "language": "swift",
+      "code": "// C/C++\nvoid invertImage(uint8_t *imagePtr, size_t imageSize);"
+    },
+    {
+      "timestamp": "8:21",
+      "title": "Raw pointers don't prevent out-of-bounds errors",
+      "language": "swift",
+      "code": "// Swift\nvar imageData = [UInt8](repeating: 0, count: imageSize)\ninvertImage(&imageData, imageSize)"
+    },
+    {
+      "timestamp": "8:30",
+      "title": "Raw pointers don't prevent out-of-bounds errors",
+      "language": "swift",
+      "code": "// Swift\nvar imageData = [UInt8](repeating: 0, count: imageSize)\ninvertImage(&imageData, 1000000000000)"
+    },
+    {
+      "timestamp": "8:48",
+      "title": "Solution for out-of-bounds error",
+      "language": "swift",
+      "code": "// Swift\nfunc invertImage(_ imagePtr : inout MutableSpan<UInt8>)"
+    },
+    {
+      "timestamp": "8:54",
+      "title": "Solution for out-of-bounds error",
+      "language": "swift",
+      "code": "// Swift\nvar imageDataSpan = imageData.mutableSpan\ninvertImage(&imageDataSpan)"
+    },
+    {
+      "timestamp": "9:58",
+      "title": "Express bounds information using __counted_by",
+      "language": "swift",
+      "code": "// C/C++\nvoid invertImage(uint8_t *__counted_by(imageSize) imagePtr __noescape, size_t imageSize);"
+    },
+    {
+      "timestamp": "12:10",
+      "title": "Unsafe function declaration taking a C++ span",
+      "language": "swift",
+      "code": "// C++\nusing CxxSpanOfByte = std::span<uint8_t>;\nvoid applyGrayscale(CxxSpanOfByte imageView);"
+    },
+    {
+      "timestamp": "13:21",
+      "title": "Unsafe C++ function caching a C++ span",
+      "language": "swift",
+      "code": "// C++\nCxxSpanOfByte cachedView;\nvoid applyGrayscale(CxxSpanOfByte imageView) {\n  cachedView = imageView;\n  // Apply effect on image ...\n}"
+    },
+    {
+      "timestamp": "14:08",
+      "title": "Swift Span prevents escaping scope",
+      "language": "swift",
+      "code": "// Swift\nvar cachedView: MutableSpan<UInt8>?\nfunc applyGrayscale(_ imageView: inout MutableSpan<UInt8>) {\n  cachedView = imageView // error: lifetime dependent value escapes its scope\n  // Apply effect on image ...\n}"
+    },
+    {
+      "timestamp": "15:18",
+      "title": "Express lifetime information using __noescape",
+      "language": "swift",
+      "code": "// C++\nCxxSpanOfByte cachedView;\nvoid applyGrayscale(CxxSpanOfByte imageView __noescape) {\n  // Apply effect on image ...\n}"
+    },
+    {
+      "timestamp": "15:56",
+      "title": "Safely use a C++ Span as a Swift Span",
+      "language": "swift",
+      "code": "// Swift\nvar imageDataSpan = &imageData.mutableSpan\napplyGrayscale(&imageDataSpan)"
+    },
+    {
+      "timestamp": "17:21",
+      "title": "Returned C++ Span is unsafe",
+      "language": "swift",
+      "code": "// C++\nCxxSpanOfByte scanImageRow(CxxSpanOfByte imageView,\n                           size_t width, size_t rowIndex);"
+    },
+    {
+      "timestamp": "18:06",
+      "title": "Swift Spans prevent use-after-free by design",
+      "language": "swift",
+      "code": "// Swift\nfunc scanImageRow(_ imageView : inout MutableSpan<UInt8>,\n                  _ width : Int, _ rowIndex : Int) -> MutableSpan<UInt8>\n// error: a function with a ~Escapable result requires '@lifetime(...)'"
+    },
+    {
+      "timestamp": "18:47",
+      "title": "Express lifetime dependency with __lifetimebound",
+      "language": "swift",
+      "code": "// C++\nCxxSpanOfByte scanImageRow(CxxSpanOfByte imageView __lifetimebound,\n                           size_t width, size_t rowIndex);"
+    },
+    {
+      "timestamp": "18:50",
+      "title": "Safely return a C++ Span as a Swift Span",
+      "language": "swift",
+      "code": "// Swift\nvar imageDataSpan = imageData.mutableSpan\nvar rowView = scanImageRow(&imageDataSpan, width, y)"
+    },
+    {
+      "timestamp": "22:29",
+      "title": "Import a C++ view type as SWIFT_NONESCAPABLE",
+      "language": "swift",
+      "code": "// C++\nstruct ImageView {\n  std::span<uint8_t> pixelBytes;\n  int width;\n  int height;\n} SWIFT_NONESCAPABLE;"
+    },
+    {
+      "timestamp": "23:31",
+      "title": "Import a C++ reference-counted type",
+      "language": "swift",
+      "code": "// C++\nstruct ImageBuffer {\n  std::vector<uint8_t> data;\n  int width;\n  int height;\n  std::atomic<unsigned> refCount;\n} SWIFT_SHARED_REFERENCE(retain_image_buffer, release_image_buffer);\n\nvoid retain_image_buffer(ImageBuffer *_Nonnull buf);\nvoid release_image_buffer(ImageBuffer *_Nonnull buf);"
+    },
+    {
+      "timestamp": "23:57",
+      "title": "Safely return a reference-counted type",
+      "language": "swift",
+      "code": "// C++\nImageBuffer *_Nonnull createImage() SWIFT_RETURNS_RETAINED;\nImageBuffer *_Nonnull getCachedImage() SWIFT_RETURNS_UNRETAINED;"
+    },
+    {
+      "timestamp": "27:51",
+      "title": "C++ standard library hardening",
+      "language": "swift",
+      "code": "// C++\nvoid fill_array_with_indices(std::span<uint8_t> buffer) {\n  for (size_t i = 0; i < buffer.size(); ++i) {\n    buffer[i] = i;\n  }\n}"
+    },
+    {
+      "timestamp": "28:59",
+      "title": "C++ unsafe buffer usage errors",
+      "language": "swift",
+      "code": "// C++\nvoid fill_array_with_indices(uint8_t *buffer, size_t count) {\n  for (size_t i = 0; i < count; ++i) {\n    buffer[i] = i; // error: unsafe buffer access\n  }\n}"
+    },
+    {
+      "timestamp": "30:11",
+      "title": "Bounds safety extension for C",
+      "language": "swift",
+      "code": "// C\nvoid fill_array_with_indices(uint8_t *__counted_by(count) buf, size_t count) {\n  for (size_t i = 0; i < count; ++i) {\n    buf[i] = i;\n  }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Safely Mixing Swift and C++",
+        "url": "https://www.swift.org/documentation/cxx-interop/safe-interop/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/311/4/10e5709a-8f4f-488a-92f6-f551b4ce97c5/downloads/wwdc2025-311_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/311/4/10e5709a-8f4f-488a-92f6-f551b4ce97c5/downloads/wwdc2025-311_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "312",
+      "year": "2025",
+      "title": "Improve memory usage and performance with Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/312"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:47:17.998Z"
+}

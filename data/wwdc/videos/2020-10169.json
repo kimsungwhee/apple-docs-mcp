@@ -1,0 +1,118 @@
+{
+  "id": "10169",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10169/",
+  "title": "Swift packages: Resources and localization",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Accessibility & Inclusion"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nI'm Anders, and today I'll be talking about Swift package resources and localization. First we'll see how to add resources to a Swift package. Next, we'll talk about what happens when the package is built, and how code in a package can use resources at runtime. Finally, we'll take a look at how to localize the resources in a package.\n\nLet's start by adding resources to a package. Xcode 11 introduced support for Swift packages, letting you create packages as well as use existing packages in your Xcode projects. You can implement a package in Swift or in any of the C-based languages. And in Xcode 12, you can add resources, such as images, storyboards, and other files to a package. You can also localize those resources so that internationalized apps can take advantage of the functionality your package provides. And adding resources to a package works with existing APIs, so it does not affect the OS version requirements of your package. Let's take a look at how this works. Here I have a package that implements a SwiftUI view. It shows the side of a die and has a button that lets you roll the die. And one of the things that's new in Xcode 12 is that it can show previews for SwiftUI views in packages without having to have a client app in the same workspace. But as we can see, there's something missing. This package view is showing a black box instead of the dots on the die. When I click the button to roll the die, it picks a new number of dots, but it doesn't display it. Let's fix that. I'm going to create an asset catalog right next to the source code in the DiceUI target.\n\nBecause of its filename suffix, Xcode will know that it's an asset catalog and will know how to process it. The asset catalog starts out empty, but I'm going to add some images that show dice with various numbers of dots at three different resolutions.\n\nNow I go into the implementation of the view, and I replace the Rectangle view with an Image.\n\nI've chosen the names of my images so they match the names of the dot count, so I can just pass the name to the initializer.\n\nI'm going to specify a bundle parameter to indicate that the images should come from the resource bundle for the module into which my code is built.\n\nPackage resources use existing Foundation APIs of the bundle type to access resources, so you can then pass that to any API that takes a bundle parameter. We'll take a closer look at how this works in a moment. And then I see that the image of the dice shows up.\n\nAnd if I click the \"roll\" button, I can see that it picks the different numbers. Now, I can actually delete the bundle part here, because with Swift type inference, I can just have .module.\n\nSo here we've seen how you can easily add resources to a Swift package, and to show the preview while working on the package in Xcode. Files in a package are processed according to their type, as indicated by the filename suffix. Some kinds of files, such as asset catalogs, storyboards and Core Data models, have a clear purpose. These kinds of files can just be added to the package, and Xcode knows what to do with them.\n\nOther kinds of files could have a variety of purposes. A plain text file might be needed at runtime, or it might only be used during development. The same is true for images, shell scripts, and other common types of files.\n\nFor those kinds of files, you need to declare the intent in the package manifest. Let's look at an example. Here is the file system structure of an example package called MyGame with a single target called GameLogic. All the target's source files are located underneath the Sources directory, in a subdirectory with the same name as the target.\n\nIf we look at the contents of the package manifest file, we see the corresponding product and target definitions for the GameLogic target. This is where we're going to declare what to do with any target files whose purpose is ambiguous.\n\nTo learn more about the syntax of the package manifest and how it relates to the file system structure, see the video for the \"Adopting Swift Packages in Xcode\" session from WWDC 19.\n\nSo let's focus in on the target directory, under which all the target's sources and resources are located. There's already a Swift source file there, and the intent is pretty clear: It should be compiled when the package is built. We don't need anything extra in the manifest. Now let's add an asset catalog. An asset catalog is a directory with a well-defined filename suffix and a structure. It'll be processed at build time and included in the client of the package. We don't need anything special in the manifest. The same thing is true if we add a storyboard. It has a clear purpose, too, and will be compiled the same way as if it were in an Xcode project.\n\nNext, let's add a plain text file. Now things get a bit more interesting. Text files could be used for all kinds of things, so it isn't obvious what Xcode should do with it. Maybe it's a resource for use at runtime, or maybe it's just some internal development notes. In this example, we don't want Xcode to treat it as a resource. We add it to the list of excluded files in the manifest, which will cause it to be ignored when the package is built.\n\nWe can also add a directory full of files and folders, such as the sketches and design documents for creating the artwork in the game. Just as for a file, we can add the name or sub-path of a directory to the exclusion list in the manifest. This will cause that directory and everything under it to be skipped when the package is built.\n\nNow let's add a stand-alone image file. In this case, we will need it at runtime, so we add it to the manifest as a resource, and we specify the process action for it. Most resources should use the process action so that they are transformed as appropriate at build time. The exact type of processing that will happen depends on the platform for which the package is built.\n\nNow let's add a directory full of files that our sample game will need at runtime. In this case, there is a whole hierarchy of files and folders underneath it.\n\nWe want all of it to be available at runtime, including the directory structure. So we declare it as a resource, but this time, we specify the \"copy\" action. This will cause it to be copied exactly as it is, preserving its directory structure. So now we've seen how to add several different kinds of files to a package target, and we've seen how to declare the intent for any cases where it isn't clear from the file type. As we saw, any resource can be either processed or copied byte for byte. The \"process\" action is usually the recommended choice, because it will apply the appropriate built-in rules for the platform. This might include converting a storyboard or asset catalog into a form suitable for use at runtime, or it might include compressing an image, etcetera.\n\nIf the file type is unknown, or no special processing is needed for the platform, the file will be copied.\n\nThe processing rules are applied recursively to every file under a directory, and each resulting output file is included in the product as a separate resource.\n\nThe \"copy\" action is appropriate when you want to make an exact copy of the resource, regardless of its type.\n\nCopying doesn't do any transformation at all, so it can be used, for example, to copy a source file that would normally have been compiled if you want to use it as a template at runtime.\n\nCopying can also be used if you want to include a whole directory and preserve its hierarchical structure. So what happens to the files in a target when it's built? For example, here we have a package, and an app that uses the package. The package contains source files as well as resource files. Each target's sources get compiled into a code module and linked into the client app. Each target's resources are processed into a resource bundle for that module, which then gets embedded into the app.\n\nOn Apple platforms, applications and app extensions are bundles, so nothing more needs to be done. The resource bundles for each package module are a part of the app bundle, and will therefore be available at runtime.\n\nWhen building an unbundled product, such as a command line tool, the resource bundles would need to be installed alongside the tool.\n\nThere's one more thing to note about the package manifest, and that is the minimum tools version. The Swift Package Manager is part of the Swift toolchain. Support for package resources is new in Swift 5.3, so the package manifest needs to declare 5.3 as its required tools version. But how does this relate to the Xcode version? Every Xcode release includes a version of the Swift toolchain. Xcode 11 was the first version to support Swift packages, and its Swift toolchain version was 5.1. In Xcode 12, the included version of the Swift toolchain is 5.3. The tool version should be set to the lowest version that supports the features needed by the package. This is because any package or project that uses it will also need to have that tool version or later in order to build the package. Now that we have added the resources to the package, let's talk about how to access them from code. As we saw, you use Foundation's Bundle API to access package resources at runtime. Foundation is available on all platforms that support Swift packages, so this provides a consistent and platform-neutral way to access resources, regardless of what kind of artifacts the build system creates for a particular platform.\n\nWhen Xcode builds a package target that contains resources, it synthesizes an accessor for the resource bundle and includes it in the code module that it creates for the target. The module can then access its resource bundle regardless of whether it's implemented in Swift or Objective-C. The bundle object that's returned is specific to each code module, but the way you access it is always the same in the source code.\n\nHere's an example of using Bundle APIs to access the files in the resource bundle from both Swift and Objective-C.\n\nIn both languages, the accessor returns a Foundation Bundle object that can be used to look up resources by name.\n\nBut the resource bundle can also be passed to any system API that takes a bundle as a parameter. In the example shown here, it's being passed to a UIImage method that can look up images from the package resource bundle.\n\nWhen adding a resource to a package, you should add it to the target for the code module that uses it. The resource bundle accessor is only visible to the code that's in the same module as the resources. If you need to provide resources to other modules, it's best to do so by adding specific typed accessors that vend the individual resources. It's generally not recommended to vend the whole resource bundle to other modules, because that would create an external dependency on the specific names of resources.\n\nXcode 12 also lets you add localized resources to your packages. Let's take a look at localizing the text in the sample package we saw earlier.\n\nFirst thing I'm going to do is to add a defaultLocalization parameter to my package manifest.\n\nThis declares the language I'm using during development and will be used as the fallback localization at runtime if no better match is available. This is needed for any package that contains resources.\n\nNext, I'm going to create a localization directory for my default localization, English...\n\nand name it \"en.lproj.\" And inside, I create a file called \"Localizable.strings.\" I add one entry to the strings file that just maps the localizable string key I used in the code to the English word \"roll.\" Now I'm going to do the same thing, but for French. I create a directory called \"fr.lproj,\" and I create a \"Localizable.strings\" file in it.\n\nIn this file, I'm going to add a mapping from the English string key...\n\nto the French translation of the word. Now I'm going to do the same thing with the Text view as I did with the Image view, which is to pass in the resource bundle for the module that contains my code. This uses Foundation support for localization to find the right localized content based on the user's chosen language.\n\nThe preview is still showing in English, and that's because my system language is English. But with SwiftUI, we can customize our preview. For example, we can add an environment override to see the French localization in the preview. And we can see that it's using the localized strings from the generated resource bundle.\n\nAs we saw in the demo, a localization directory has a .lproj filename suffix. Localization directories can be included in package targets without mentioning them in the manifest because the .lproj suffix makes their purpose clear.\n\nA localization directory usually contains string files and string dictionary files for translating text, but it can also contain customized versions of individual resources in the package. It's also possible to localize the contents of an asset catalog. This lets you provide different artwork for specific localizations where that's appropriate.\n\nYou can learn more about how to do this in the \"Creating Great Localized Experiences\" session from WWDC 19.\n\nWhen you add localized resources to a package, you need to declare the default localization in the package manifest.\n\nThis uses the same kind of language ID that is used for all localization on Apple platforms and specifies the language that will be used as a last resort if no preferred language is available. You can find more information about this topic in the \"Language and Locale IDs\" document on developer.apple.com. In this video, we've seen how to add resources to a Swift package, and how Xcode builds resource bundles that let you access those resources at runtime. We also saw how to localize the resources in your package.\n\nXcode lets you create Swift packages and also take advantage of a great and growing ecosystem of existing packages. Xcode 12 makes it easier to develop packages containing SwiftUI views by letting you interact with your views even in the absence of a client app. And the support for localized package resources lets you create packages whose functionality is available to people all over the world. Thank you, and enjoy the rest of WWDC 20.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:09",
+      "title": "Package Manifest file",
+      "language": "swift",
+      "code": "// swift-tools-version:5.3\nimport PackageDescription\n\nlet package = Package(name: \"MyGame\",\n    products: [\n        .library(name: \"GameLogic\",\n            targets: [\"GameLogic\"])\n    ],\n    targets: [\n        .target(name: \"GameLogic\",\n            excludes: [\n                \"Internal Notes.txt\",\n                \"Artwork Creation\"],\n            resources: [\n                .process(\"Logo.png\"),\n                .copy(\"Game Data\")]\n        )\n    ]\n)"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Language and Locale IDs",
+        "url": "https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPInternational/LanguageandLocaleIDs/LanguageandLocaleIDs.html"
+      },
+      {
+        "title": "PackageDescription",
+        "url": "https://developer.apple.com/documentation/PackageDescription"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10169/3/0F6E83BB-5FF5-4627-9C42-F111EF4B4098/wwdc2020_10169_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10169/3/0F6E83BB-5FF5-4627-9C42-F111EF4B4098/wwdc2020_10169_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10110",
+      "year": "2022",
+      "title": "Build global apps: Localization by example",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10110"
+    },
+    {
+      "id": "110401",
+      "year": "2022",
+      "title": "Create Swift Package plugins",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110401"
+    },
+    {
+      "id": "10019",
+      "year": "2022",
+      "title": "Get to know Create ML Components",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10019"
+    },
+    {
+      "id": "10142",
+      "year": "2020",
+      "title": "Build scalable enterprise app suites",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10142"
+    },
+    {
+      "id": "10147",
+      "year": "2020",
+      "title": "Distribute binary frameworks as Swift packages",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10147"
+    },
+    {
+      "id": "10096",
+      "year": "2020",
+      "title": "Explore Packages and Projects with Xcode Playgrounds",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10096"
+    },
+    {
+      "id": "10170",
+      "year": "2020",
+      "title": "What's new in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10170"
+    },
+    {
+      "id": "408",
+      "year": "2019",
+      "title": "Adopting Swift Packages in Xcode",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/408"
+    },
+    {
+      "id": "403",
+      "year": "2019",
+      "title": "Creating Great Localized Experiences with Xcode 11",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/403"
+    },
+    {
+      "id": "410",
+      "year": "2019",
+      "title": "Creating Swift Packages",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/410"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:09:05.596Z"
+}

@@ -1,0 +1,118 @@
+{
+  "id": "10189",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10189/",
+  "title": "Migrate to SwiftData",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Swift"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Luvena: Hi everyone! My name is Luvena, and I am excited to share with you how you may migrate your Core Data application to SwiftData, the Swift-native persistence framework that can coexist with Core Data.\n\nI will cover common use cases for how you may adopt SwiftData for your Core Data app, whether you are ready for a complete transition from Core Data to SwiftData or if you would like to adopt SwiftData incrementally and coexist with Core Data.\n\nI will first walk through how you can generate SwiftData Model Classes using the Managed Object Model Editor assistant.\n\nThen, I will demonstrate the flow of a complete SwiftData adoption for an existing Core Data application.\n\nAnd finally, I will introduce you to coexistence between Core Data and SwiftData, for cases where a complete transition into SwiftData may not be a feasible solution for your use case.\n\nLet me first walk through the flow of how you can generate model classes.\n\nIn SwiftData, you are transitioning to using models in code to set up your schema.\n\nOne easy way to do this is to use your Core Data managed object model to help generate your SwiftData models. Let me demonstrate to you how to make this transition.\n\nI created a Core Data application here called SampleTrips, which helps users plan their itineraries for upcoming trips. Here is the model file, which contains information about my data and its organization.\n\nI have the entities Trip, LivingAccommodation, and BucketListItem, organized such that each trip has one corresponding living accommodation and bucket list items representing desired trip activities.\n\nFrom here, I will generate SwiftData classes that capture this same information. While the Core Data managed object model is not necessary to create these SwiftData classes, if I have a preexisting Core Data model, I am able to use that to help generate SwiftData classes based on the organization that I already have in my preexisting model, which I will be demonstrating for this use case.\n\nTo do this, I go through our Managed Object Model Editor assistant.\n\nAfter selecting my model file, I navigate to the menu bar, select Editor, and click on Create SwiftData Code. Now I can generate files for my three preexisting entities. Creating SwiftData models from scratch is also an option in the case of creating a new Swift app, and would not require this assistant.\n\nHere are the files I have just created.\n\nYour Swift types should conform to Model, and each one captures information for the entity as variables, including its attributes, which for Trip is its name, destination, and start and end dates, and its relationships to other entities, LivingAccommodation and BucketListItem. Now, let me take you through the complete adoption process for SwiftData. When fully migrating your application to SwiftData, you are replacing your Core Data stack with your SwiftData stack to harness the Swift-native language features with SwiftData. This allows for more legible code for persisting your data, as well as implicitly managing some features. Before making this transition though, you should consider how your preexisting core data model designs are structured. Your Core Data model designs refer to your schema, including the entities and their properties and relationships.\n\nYou need to make sure that your Core Data model designs are supported in SwiftData as well.\n\nThis means that for each entity that was defined in Core Data, there needs to be a corresponding model type with exact matches for entity name and properties in SwiftData.\n\nMake sure you thoroughly test your models to verify that all features are supported in SwiftData.\n\nLet me cover some highlights of the complete SwiftData adoption process from a Core Data app in more detail. I already generated Swift types to capture my model earlier. Once I have those files ready to go, I can delete the Core Data managed object model file that had been used previously, and manage the model through these Swift files instead.\n\nAdditionally, I can delete the Persistence file that previously helped to set up the Core Data stack.\n\nNow I can set up the modelContainer for my SwiftData stack.\n\nmodelContainer is a modifier that ensures that all windows in the group are configured to access the same persistent container.\n\nBy adding this container here in TripsApp, I am setting up both my container and the context, as modelContainer also creates and sets a default ModelContext in the environment.\n\nModelContext is used to track changes to instances of my app’s types. It can be read from within any scene or view using this environment property.\n\nMy SwiftData persistent stack for SampleTrips is now set up, but there are a couple more changes that need to happen.\n\nI am first going to demonstrate how object creation works.\n\nPreviously, in Core Data, creating a new Trip would resemble something like this. I would create an instance of Trip, passing in a managed object context, before setting its attributes.\n\nIn SwiftData, I can create a new instance of Trip with this line of code, which is already comparatively more legible.\n\nOnce I have this new trip, I insert it into the model context to ensure that it is persisted.\n\nNow that my trip is being persisted, I want to look at how I can save it and any future changes that I make to it.\n\nSwiftData has an implicit save feature that triggers saves on UI lifecycle events and on a timer after the context is changed if possible.\n\nI can therefore remove Core Data’s explicit save that is called on the context, and rely on implicit saves to persist my data when the context changes.\n\nNow, let me take you through how I fetch my data.\n\nInstead of using a fetch request like I had in Core Data, I can use Query to fetch the full list of upcoming trips by wrapping an array of trips in Query.\n\nThis allows me to fetch those Trip objects from the SwiftData container.\n\nI am also defining a sort order for the query. I want to sort it according to my trip start dates in forward order, such that the closest upcoming trip is at the top.\n\nQuery can also be used for use cases that would need to include a predicate. Now that you know how to migrate your Core Data app to SwiftData completely, let me take you through the case where you want coexistence between Core Data and SwiftData.\n\nA full migration may not always be feasible or practical, in which case you may consider a partial conversion to SwiftData.\n\nCoexistence is when there are two completely separate persistent stacks, one Core Data stack and one SwiftData stack, talking to the same persistent store.\n\nThis means that there is no need to completely rewrite existing Core Data code in order to be able to start adding SwiftData code.\n\nThis option provides you more flexibility when adopting SwiftData into your application, whether you may already have some data in Core Data, or if you are simply faced with other constraints that don’t allow you to transition completely to SwiftData. This is how you can set up both stacks to be talking to the same store.\n\nBefore loading the persistent store, you need to set the persistent store URL for the container description to ensure that both stacks are writing to the same URL. Additionally, you need to turn on persistent history tracking.\n\nWhile SwiftData automatically turns on persistent history tracking, Core Data does not.\n\nIf you try to open a persistent store when you have both Core Data and SwiftData coexisting in the same application without setting the persistent history, your store will be put into read-only mode.\n\nThere are a couple different scenarios where you would find coexistence to be the best option for your use case.\n\nOne scenario is to allow backwards compatibility with existing clients.\n\nBecause SwiftData is only available in iOS 17 and macOS Sonoma, your current Core Data applications could be impacted by a full switch to SwiftData.\n\nAlternatively, you might be facing resource constraints that make a full conversion to SwiftData difficult.\n\nIn these cases, it would make sense to incorporate SwiftData partially by doing new development using SwiftData, or converting only portions of your application to SwiftData. There are a couple requirements for coexisting between Core Data and SwiftData that you should consider before making this transition. First, you must either namespace preexisting NSManagedObject-based entity subclasses or the SwiftData classes such that they do not collide.\n\nThis means that no two classes can be called the same thing, and that at least one of them needs to change.\n\nKeep in mind that even though you are changing the class name, the entity name stays the same. For example, here I have the same SampleTrips project from earlier, except this time I want to coexist with Core Data and SwiftData. The two class names clash.\n\nTo differentiate between both the SwiftData and Core Data names Trip, I changed the Core Data trip class name to CDTrip instead.\n\nYou can also do this in the managed object model editor.\n\nAdditionally, you would need to keep the Core Data and SwiftData schemas in sync. New parts of the SwiftData schema must be materialized as an NSManagedObjectModel, and the two schemas cannot diverge. This means that properties and relationships must be added to the models in the exact same way.\n\nThis is so that the entity version hashes are matching every step of the way, as mismatched hashes would potentially trigger a migration and delete information that you did not want to remove.\n\nFinally, you need to keep track of the schema versions when incorporating coexistence.\n\nWhen working with multiple versions of the SwiftData model, you must make sure that the changes are represented correctly such that SwiftData may evaluate the differences.\n\nThere are a couple ways you could go about doing this. Check out the “Model your schema with SwiftData” talk to understand how to use versioned schemas. For your Swift apps that rely on UIKit or AppKit, there are still viable options for you to use SwiftData.\n\nThe first approach is the coexistence solution.\n\nYou can bind your UIKit code to Core Data, and it could work in parallel with SwiftData.\n\nAlternatively, you could treat your SwiftData classes as Swift classes, and wrap your Swift code with UIKit code instead.\n\nThat’s all from me! Now go and discover how you may flexibly migrate your Core Data application to SwiftData, either fully or incrementally. In the meantime, check out these other cool talks about SwiftData for a deeper dive.\n\nThanks for joining me! I’m excited to see what you will build! ♪ ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:37",
+      "title": "Creating a ModelContainer in SwiftUI",
+      "language": "swift",
+      "code": "@main\nstruct TripsApp: App {\n    var body: some Scene {\n        WindowGroup {\n            ContentView()\n        }\n        .modelContainer(\n            for: [Trip.self, BucketListItem.self, LivingAccommodation.self]\n        )\n    }\n}"
+    },
+    {
+      "timestamp": "4:57",
+      "title": "Object creation in Core Data",
+      "language": "swift",
+      "code": "@Environment(\\.managedObjectContext) private var viewContext\n\nlet newTrip = Trip(context: viewContext)\nnewTrip.name = name\nnewTrip.destination = destination\nnewTrip.startDate = startDate\nnewTrip.endDate = endDate"
+    },
+    {
+      "timestamp": "5:30",
+      "title": "Object creation in SwiftData",
+      "language": "swift",
+      "code": "@Environment(\\.modelContext) private var modelContext\n\nlet trip = Trip(\n    name: name, \n    destination: destination, \n    startDate: startDate, \n    endDate: endDate\n)\n\nmodelContext.insert(object: trip)"
+    },
+    {
+      "timestamp": "6:16",
+      "title": "Fetch with Query in SwiftData",
+      "language": "swift",
+      "code": "@Query(sort: \\.startDate, order: .forward)\n\nvar trips: [Trip]"
+    },
+    {
+      "timestamp": "7:30",
+      "title": "Setting store path and enabling persistent history tracking in Core Data",
+      "language": "swift",
+      "code": "let url = URL(fileURLWithPath: \"/path/to/Trips.store\")\n\nif let description = container.persistentStoreDescriptions.first {\n    description.url = url\n    description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)\n}"
+    },
+    {
+      "timestamp": "9:11",
+      "title": "Ensuring Core Data and SwiftData class names are unique",
+      "language": "swift",
+      "code": "class CDTrip: NSManagedObject {\n    // ...\n}\n\n\n@Model final class Trip {\n    // ...\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Adopting SwiftData for a Core Data app",
+        "url": "https://developer.apple.com/documentation/CoreData/adopting-swiftdata-for-a-core-data-app"
+      },
+      {
+        "title": "SwiftData",
+        "url": "https://developer.apple.com/documentation/SwiftData"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10189/4/87485DA7-96D9-41FA-979E-1D0224B540C2/downloads/wwdc2023-10189_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10189/4/87485DA7-96D9-41FA-979E-1D0224B540C2/downloads/wwdc2023-10189_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10154",
+      "year": "2023",
+      "title": "Build an app with SwiftData",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10154"
+    },
+    {
+      "id": "10149",
+      "year": "2023",
+      "title": "Discover Observation in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10149"
+    },
+    {
+      "id": "10196",
+      "year": "2023",
+      "title": "Dive deeper into SwiftData",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10196"
+    },
+    {
+      "id": "10187",
+      "year": "2023",
+      "title": "Meet SwiftData",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10187"
+    },
+    {
+      "id": "10195",
+      "year": "2023",
+      "title": "Model your schema with SwiftData",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10195"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:47:53.492Z"
+}

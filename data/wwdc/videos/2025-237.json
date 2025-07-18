@@ -1,0 +1,231 @@
+{
+  "id": "237",
+  "year": "2025",
+  "url": "https://developer.apple.com/videos/play/wwdc2025/237/",
+  "title": "What’s new for the spatial web",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Safari & Web",
+    "Spatial Computing"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, I’m Eddy from the visionOS Safari team. This is a big year for the spatial web, with new exciting features that will take the web experience to the next dimension.\n\nWe have added support to render 3D models stereoscopically in line with other web content while allowing people to interact with the model.\n\nWe have also added support for playing immersive media, a new class of media that extends beyond the planar screen.\n\nWe have added some new developer preview features, such as website environments.\n\nI’d love to show you how you can adopt these new features. I will show you how to embed 3D models on your webpage, present immersive media, and provide a custom webpage environment.\n\nLet's jump right in.\n\nFor the past few decades, the HTML Image element allowed web developers to put images onto the web. As we enter the spatial computing era, we are introducing a new way to take your web content to the next dimension by allowing you to embed and display 3D models on your webpage.\n\nThis is a new HTML Model element. It has been proposed to the web standards bodies a few years ago, and we are now making it available by default in Safari on visionOS this year. With simple markup, your visitors can now see 3D models embedded alongside other web content.\n\nUnlike any existing model rendering libraries, the Model element is rendered stereoscopically, so people can perceive the depth of the object, and they can move around to see different angles of the model.\n\nWe are going to dig deep into many aspects of embedding 3D models, from preparing the asset to rendering it nicely with interactions and animations, etc.\n\nThe first step to embed a 3D model is to create the model.\n\nNow, with Safari on visionOS, the Model element supports the USDZ file format, which is a widely used format in the 3D content industry. With existing tools, you can capture, convert, or create USDZ files. You can capture a real-world object into a 3D model file with an iPhone. Simply download the Reality Composer app from the App Store to get started. The Object Capture API on iOS allows apps to capture and generate model files in a similar way. Some of you may already have some 3D models for your use case, but they may be in some other formats. macOS has built-in support to convert various 3D model formats to USDZ using Preview or command-line tools.\n\nFor advanced users, there are existing 3D modeling software people have been using to create beautiful, amazing 3D models, such as Blender, Houdini, Maya, Reality Composer Pro, and many more. Many of them support exporting to USDZ. The USD ecosystem has a wide spectrum of tools that you can utilize in your workflow. And you can learn more at the WWDC23 session: “Explore the USD ecosystem.” If you have never created a 3D model before, you may want to check out “Meet Reality Composer Pro”, also from WWDC23.\n\nIt will be handy for you to have a testing USDZ file ready when you experiment with the model element. The absolute quickest way to get the USDZ file is to download from developer.apple.com. Some of them were made with Object Capture, while some others were carefully crafted with 3D modeling software.\n\nJust like all web assets, you should try to keep the file size small so that it loads fast. My favorite way is to use Preview on your Mac to export a copy with compressed textures. There are a lot more ways you can optimize your file, and they’re introduced in-depth in the WWDC24 session: “Optimize your 3D assets for spatial computing”.\n\nWith an asset file ready, let’s embed it on the webpage. The syntax to embed a model is simple. Just apply a USDZ file in the source attribute of the model element. Don't forget the closing tag.\n\nAlternatively, put the source element inside an empty model element, just like how you would do it with the picture element.\n\nThe model element works just like other visual DOM elements, so you will put it in wherever you want the model to be displayed in.\n\nA key thing to know is that the model is always rendered behind the page surface.\n\nThink about it as the model element being an opening into a virtual space behind the page, and the model lives within that space. This prevents content from poking out of the page unexpectedly, as the model element is scrolled into view.\n\nBy default, the browser will scale the model to fit within the element’s bounds.\n\nIt does so by fitting and centering the x-y face of the bounding box of the model within the element.\n\nSome older web servers or CDN may not recognize the USDZ file extension, and may return the wrong content type in the HTTP response header. To return the correct content type, you may have to add some configuration to your web server.\n\nHere are some examples of specifying the USDZ MIME type for different web servers.\n\nFor details, check the documentation for your specific web server software. A vital part to building a great website is to accommodate for all visitors with different devices. Therefore, it is important for you to provide a backward compatible fallback.\n\nTo provide a fallback image, you can put it inside the model element.\n\nI like to provide a 2D rendering of my model so that people using other browsers can still get an idea of what the object looks like.\n\nInstead of a static image, you can also provide a 2D viewing experience using existing third-party libraries such as Three.js, BabylonJS, model-viewer, and many more.\n\nThis is an example leveraging the model-viewer library. This library draws a given model onto a 2D canvas using JavaScript.\n\nYou can use it as a fallback experience by wrapping the model element around the 2D viewer code.\n\nWith this setup, people using Safari on visionOS will see the model rendered stereoscopically with depth, while those using other browsers will see a 2D rendering instead.\n\nIf you have some really custom fallback behavior in mind, you can use JavaScript to detect whether the model element is supported.\n\nYou can check for the existence of window.HTMLModelElement object.\n\nAs a reminder, it is a bad idea to detect whether the user agent is visionOS Safari. It’s fragile and may do the wrong thing in the future, when other browsers start supporting the model element.\n\nRemember, detect for the feature, not for the agent.\n\nA USDZ file could easily go beyond 10 MB, so it could take several seconds to load on slower networks.\n\nYou may find yourself wanting to know when the model is fully loaded, so that you can perform updates to the UI. One common example is the loading indicator.\n\nThe model element has a ready property, which returns a Promise object.\n\nWhen the model is fully loaded, the promise will resolve.\n\nYou can then hide the loading indicator and show the model element.\n\nThe ready promise can fail in case of a loading error, so don’t forget to handle the error as appropriate, such as providing a retry button.\n\nIn my experience, providing visual cues to your visitors that something is loading really helps keep them on your page instead of navigating away.\n\nNow you have the model embedded. It’s time to make it look great on your website.\n\nThe model element defines a virtual space to render the model within.\n\nIt’s a good idea to set the color of the space to the same color as the surrounding web content, so that the model element blends nicely into the page.\n\nWhen you add a model element to a page, the entire model element is replaced by the virtual space, so people will not see the original background color of that region. To fix that, you should set the color of the virtual space using the CSS background-color attribute. Remember, this needs to be set on the model element itself, not its ancestors.\n\nIf you specified a background color with alpha, it will be converted to opaque. If you don’t want to repeat yourself for the color definition, you can use a CSS custom property to keep your code dry. Once the model element blends into the page, it’s much easier to do creative things.\n\nIn this previous example, I extended the model element under the panel on the right. I applied a frosted glass effect to the panel, revealing the camera underneath at a certain angle, giving it a very strong sense of layering.\n\nThere are a number of ways to achieve the same effect, and I’ll just show you my way of doing it. First, I make sure the model element extends behind the panel using position: absolute. The backdrop-filter gives the frosted glass effect by blurring the pixels of the model element. The linear-gradient gives a specular highlight on the edge to give a sense of thickness, while keeping the panel light in color so that the text is easy to read. All these are good old CSS tricks that have existed for some time, but they really shine when combined with the depth effect of the model element. The page is looking so good now, but we can make the model look even better by adjusting the lighting effect. Here, I’m applying different lighting to the same model file. Notice how different they look depending on the lighting chosen. To control the lighting effect, you use a special kind of image to define what the environment looks like for the model, so that your model will reflect lights contributed by the environment. This technique is called image-based lighting, or IBL for short. The image is often called an IBL file. The IBL file may look distorted because it’s projecting the entire 360 degree of the environment onto a planar image. This flattened spherical projection, also known as equirectangular projection, is very common for IBL files. Note that the IBL file is not part of the USDZ file, so it has to be specified during rendering.\n\nTo specify the IBL for model elements, you should use the environmentmap attribute. If you don’t supply one, the browser will apply a default lighting for your model. Because the IBL is not part of the USDZ file, when the model file is used outside of the webpage, it will not get the same lighting effect. This allows the presenting app to apply the most suitable lighting for the viewing experience. One tip I have is that you should consider using OpenEXR and Radiance HDR formats for your IBL file. These two formats will make reflections a lot more realistic, because they represent brightness level across many orders of magnitude. On the other hand, a JPEG IBL will look very dull and flat.\n\nWith your model looking great, it’s time to let your visitors interact with it. The model element supports a variety of user interactions out of the box.\n\nBy default, pinch and hold on the model element will initiate a drag and drop interaction. People can drop the model to another app or drop it to an empty location to view the model in their space through Quick Look. This is a fantastic way for people to see the model in their real size, with realistic lighting effects applied to the model to make it look real. People can stick it onto a surface, turn it around, make it bigger or smaller. In addition to drag and drop, you can also enable pinch and drag on the model element to rotate the model when it’s displayed inline. You can tilt the model up and down, and the model will reset the tilt on release.\n\nThis inline rotation behavior is enabled by specifying stagemode equals orbit on the model element. The rotation happens along the y-axis, with small amount of vertical tilting allowed during gesture.\n\nThe browser engine will also scale and offset your model to ensure it remains behind the page surface during rotation. If this stagemode rotation behavior is not sufficient for your use case, you can implement custom interactions manually.\n\nIf you want to move and orient the model manually in specific ways, you can do so with JavaScript.\n\nYou can control the exact location and orientation you want your model to be in within the virtual space. This is achieved by changing the transformation matrix exposed by the model element.\n\nThe transformation matrix is exposed through the entityTransform property. When the model is loaded, the browser computes the transformation needed for the default placement and saves it to the entityTransform property. The property will be populated once the ready promise resolves.\n\nLet me show you an example of customizing the placement of the model. Here, we want to offer a link that will rotate the model to face right.\n\nIn the turnRight function, read the browser computed transformation matrix from the entityTransform property. Then, apply a 90 degree rotation along the y-axis using the rotateAxisAngle method, which is an existing API of the DOMMatrix class. 0-1-0 means the y-axis, and 90 means rotate for 90 degrees. Once we have our new matrix, set it back to the entityTransform property for it to take effect. The operations supported by an entityTransform matrix include uniform scaling, rotation, and translation. You will get an error if you try to assign a matrix containing unsupported operations to the entityTransform property. The default entity transform should be sufficient for most use cases. But some of you may want to understand the math behind the default computation. To understand that, it helps to go back to the basics and discuss the entity transform behavior for an identity matrix.\n\nIf you set the entity transform to an identity matrix, it will align the origin of the USDZ file to the center point of the model element. Remember, the model is only rendered within the space behind the page surface. so any parts extending forward will be clipped. In addition, it renders such that 1 cm in the USDZ file equals exactly 1 cm in CSS, which is around 38px in CSS.\n\nOn visionOS, the Safari window grows bigger when it's further away from the user. Therefore, when the model is displayed on the webpage, there’s no relationship between the units used in the USDZ file and the physical units in the real world.\n\nIf you need to showcase your object in its real physical size, the best way is to let people drag it out of the page and view it through Quick Look, as we have shown previously.\n\nThe entityTransform property can be used in really creative ways. In this previous example, it zooms into different parts of the model as we go through different features of this camera. And to just moving it around, you can even animate the camera screen open and close using model animations. Let me show you how.\n\nThe USDZ file format supports defining animations within the file itself, and is a well-supported feature in all major authoring tools. Some USDZ files contain multiple tracks of animations too.\n\nThe model element supports playback of the first animation track defined in the USDZ file.\n\nFor simple looping animations, you can use the loop and autoplay attribute. If you want to control the animation manually, you can use the play and pause methods on the model element. You can determine whether the animation is playing using the paused property.\n\nThese few API may look familiar to you because they’re actually the same as those for the video element.\n\nFor more complex use cases, you can use your 3D modeling software to build a timeline for your model, animating between different states. In my camera model file, I first animate the opening and closing of the camera flashlight, followed by the opening and closing of the camera screen. The animation information is stored inside the USDZ file. When you put an animated model in the model element, you can jump to any point in the timeline using the currentTime property. For example, if I want to open the flash on the camera, I just need to set the currentTime property to 1.\n\nKeep in mind the unit for the currentTime property is seconds. Similarly, if I want to open the screen, I just set it to 3. Pay attention to how the model is updated instantly without any implicit animation. This allows you to jump to discontinuous timestamps to achieve any specific effect you need. You can create interesting experiences by hooking up the currentTime property with some interactions.\n\nHere, I have a slider that has a value range between 2 and 3. Meant to cover the portion of the timeline where the screen animates open. I add an event listener to watch for the slider value change. And when that happens, I set the current time to the value of the slider. This way, my visitors can use the slider to control the position of the screen. You can extend this idea to other interactions, like scrolling of a page or a custom drag event. You can also combine currentTime and entityTransform in creative ways. In this previous camera page example, the animation is driven by a timer. The individual parts are animated using the currentTime property, while the movement of the whole camera is animated using the entityTransform property. The page is becoming really nice, but you may want to make it even better by adding a personal touch, like allowing people to engrave on the product. But you cannot possibly know what text to put into the USDZ model ahead of time. That’s where dynamically generated models come into play.\n\nIf your use case requires displaying a model that depends on user input at runtime, you can use JavaScript to programmatically generate a USDZ file in the browser and display it within the model element.\n\nThree.js is a powerful JavaScript library that allows you to create 3D models programmatically. Three.js is a deep subject on its own, so we are not going to discuss the fine details of it today. At a high level, you have a THREE.Scene object that contains the model you created procedurally. So let’s assume you have a nicely crafted scene object already. Three.js comes with a USDZ exporter module that you can import. Once imported, you can use the parseAsync method to generate the data blob for the full USDZ file of the model scene. You can create an object URL pointing to the data blob you have generated using the URL.createObjectURL method.\n\nNow you have the object URL, you can set it to the source attribute of the model element, and it will start rendering. With this technique, you’re no longer limited to using static known USDZ files you prepared offline.\n\nYou can add customizations to models based on data inputs from your visitors, like adding the name to a product or changing the color of the text.\n\nOne cool thing about this is that the model can still be dragged out and viewed in people’s space.\n\nThere are a lot more APIs supported by the model element, and we have only covered some of them today. The rest of them could be useful to you as you adopt models on your webpages.\n\nYou can learn more about the model element at the MDN documentation page and the model element proposal at the W3C website. You can find the URLs at the related links for this session.\n\nLet me tell you about another category of content, immersive media. Last year, we introduced ways for you to display panorama and spatial photos from your website. We are extending the support to spatial video, 180-degree, 360-degree, and wide field-of-view video, as well as Apple Immersive Video. And we have some updates to presenting panorama and spatial photos too. With iPhone 15 Pro or newer, you can capture spatial video right from the Camera app, and they can be viewed spatially from the Photos app on Apple Vision Pro. Now, with visionOS, there is new support for three immersive media types: 180-degree, 360-degree, and wide field-of-view video. These media types extend beyond a flat surface, wrapping around the user to provide an immersive experience.\n\nThere is also new support for presenting Apple Immersive Video, with high resolution stereo video perfectly calibrated to each lens in the camera that captured it. You can learn about these new media types at the WWDC session this year, “Explore video experiences for visionOS”.\n\nWhen an immersive media file is embedded on the page, such as this 360-degree video, it will render as a 2D video. To let people view it immersively, present your video in full screen, and the video will wrap around the user with the correct projection. The full screen player also supports stereoscopic content, which is often found in 180-degree and Apple Immersive Video formats. You may already have taken some immersive media before. Now is the best time to showcase them on your website. You can embed all these media types on your website using the existing video element. There’s no new element or attribute involved. You can also use HTTP Live Streaming to serve large video assets as usual. For 180, 360 and wide field-of-view media, the file should conform to APMP, the Apple Projected Media Profile, which contains extra metadata to describe the media’s projection. To learn how to convert your existing media to APMP, check out the WWDC session this year: “Learn about the Apple Projected Media Profile.” To learn more about Apple Immersive Video, check out “Learn about Apple Immersive Video technologies.” Here is an example of wide field-of-view APMP. The metadata captures the camera parameters that was used during recording. visionOS will then present the media in a shape that will line up each pixels to its intended location, resulting in correct projection during playback. Notice how straight lines will look straight even on the edges when viewed in full screen. This is the power of APNP. The default controls for video element allow people to enter full screen. You can also programmatically enter full screen using the requestfFullScreen API from JavaScript. In fact, this is the exact same API as you would use to present panorama and spatial photo from your webpage. For panorama, you can now supply different sources for the same picture element, so that you can display a suitable thumbnail before going full screen. Once entered full screen, the widest variant will be used.\n\nFor spatial photos, the requestFullscreen API works the same way.\n\nThe spatial photo will render as a flat 2D image when it’s displayed in line, and will render spatially when it’s presented full screen.\n\nIn my experience, I always have to communicate to my visitors that this particular image is actually spatial, and that they should tap on it to see its true beauty.\n\nThis may become much easier in the future by using the new attribute, controls, which has been added as a developer preview feature since visionOS 2.4.\n\nThe controls attribute adds a spatial photo badge, indicating that this image is a spatial photo. Coupled with the full screen button, your visitors can easily view the spatial version of the image, all without having you to write a single line of JavaScript. Like all developer preview features, you will have to explicitly turn this feature on to try it out. To do so, go to Settings > Apps > Safari > Advanced > Feature Flags, and enable Spatial Image Controls API. While we are here, let’s also enable the other one, Website environments, as we’re going to talk about it next.\n\nWebsite environment is a new developer preview feature we’re introducing this year to allow websites to provide a virtual environment for their visitors.\n\nHere's how it works. This example page has specified a USDZ file as the environment, and people can choose to display the environment through the page menu, while still keeping Safari and the website in view. They can use the digital crown to fully immerse themselves in the environment undistracted. This is a fantastic way to augment your website beyond the bounds of the browser window.\n\nTo provide an environment, use a link element specifying rel equals spatial-backdrop. Then, use the href attribute to point your environment USDZ file. Just like 3D models, you can use the environmentmap attribute to supply a custom IBL for your USDZ file. With a well-crafted environment, your visitors will feel like they are teleported to another location like a restaurant, a submarine, or a dungeon. Since this is a developer preview, you will need to enable the feature in Settings before you can try it out. The markup may change in the future as it goes through the web standards process. Apple is actively leading the development of this feature, and your feedback will help shape its future.\n\nTo learn more about creating a custom environment, please check out “Create custom environments for immersive apps in visionOS” from WWDC24.\n\nWe have covered a lot of new spatial web features today.\n\nWe talked about the new HTML model element, with its support for interactions, custom lighting, and manual placement. Using the existing video element, you can display a range of new immersive media straight from your website. And you got a sneak peek of what website environments would be like in the future.\n\nTo help you get started, we have added some example usage of model element on webkit.org. There’s no better way to experience it than actually seeing it through your Apple Vision Pro. Once you feel ready, go ahead and add 3D models to your webpage where appropriate. to give your visitors a stunning new experience. If your website serves video, now is a great time to start including immersive media on your website. We would love for you to experiment with adding custom environments and share your feedback with us.\n\nBesides the spatial web, there’s a lot more new features for the web, which you can learn more at “What’s new for Safari and WebKit” session this year.\n\nYou can file bug reports and feature requests for web technology at bugs.webkit.org, the issue tracker for WebKit.\n\nIssues about the interface of Safari or anything about visionOS or other Apple platforms, please file those at feedbackassistant.apple.com. We are eagerly waiting to see all the amazing things you’re going to build with these new technologies. Thank you, and have a great WWDC.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:00",
+      "title": "Embed 3D models - Basic syntax",
+      "language": "swift",
+      "code": "<model src=\"teapot.usdz\"></model>"
+    },
+    {
+      "timestamp": "4:15",
+      "title": "Embed 3D models with source element",
+      "language": "swift",
+      "code": "<model>\n  <source src=\"teapot.usdz\" type=\"model/vnd.usdz+zip\">\n</model>"
+    },
+    {
+      "timestamp": "5:30",
+      "title": "Example server configurations to add USDZ MIME type support",
+      "language": "swift",
+      "code": "# Apache\n\n```\nAddType model/vnd.usdz+zip .usdz\n```\n\n# NGINX mime.types\n\n```\ntypes {\n  ...\n  model/vnd.usdz+zip usdz;\n}\n```\n\n# Python HTTP server\n\n```\nimport http.server\nHandler = http.server.SimpleHTTPRequestHandle\nHandler.extensions_map = { \".usdz\": \"model/vnd.usdz+zip\" }\nhttpd = http.server.HTTPServer((\"\", 8000), Handler)\nhttpd.serve_forever()\n```"
+    },
+    {
+      "timestamp": "5:51",
+      "title": "Specify a fall back image for  element",
+      "language": "swift",
+      "code": "<model src=\"camera.usdz\">\n  <img src=\"camera.png\">\n</model>"
+    },
+    {
+      "timestamp": "6:17",
+      "title": "Example 2D rendering fallback experience",
+      "language": "swift",
+      "code": "<!-- <model-viewer> library from https://modelviewer.dev/ -->\n<script type=\"module\" \n  src=\"https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js\">\n</script>\n\n<model src=\"camera.usdz\">\n  <!-- Fallback experience for backward compatibility -->  \n  <model-viewer src=\"camera.glb\"></model-viewer>\n</model>"
+    },
+    {
+      "timestamp": "6:52",
+      "title": "Detect if the model element is supported",
+      "language": "swift",
+      "code": "if (window.HTMLModelElement) {\n  // Supported by this browser\n} else {\n  // Not supported by this browser\n}"
+    },
+    {
+      "timestamp": "7:32",
+      "title": "Implementing a loading indicator using .ready promise",
+      "language": "swift",
+      "code": "<model src=\"camera.usdz\" id=\"mymodel\"></model>\n\n<script>\nconst mymodel = document.getElementById(\"mymodel\");\n\nif (window.HTMLModelElement) {\n  mymodel.ready.then(result => {\n\t// Hide the loading indicator\n\t// Show the model\n }).catch(error => {\n\t// Loading error occurred, show a retry button\n });\n}\n</script>"
+    },
+    {
+      "timestamp": "8:23",
+      "title": "CSS example for setting the color of the virtual space",
+      "language": "swift",
+      "code": "<body>\n  <!-- page content here -->\n  <model src=\"camera.usdz\" class=\"my_model\"></model>\n</body>\n\n<style>\n:root {\n  --main-bg-color: rgb(240, 240, 240);\n}\n\nbody {\n  background-color: var(--main-bg-color);\n}\n\n.my_model {\n  /* set the virtual space color */\n  background-color: var(--main-bg-color); \n}\n</style>"
+    },
+    {
+      "timestamp": "9:21",
+      "title": "CSS example for frosted glass panel on top of a",
+      "language": "swift",
+      "code": "<div class=\"container\">\n  <model src=\"camera.usdz\"></model>\n  <div class=\"panel\"> ... </div>\n</div>\n\n<style>\n.container {\n  position: relative;\n}\n\n.panel {\n  position: absolute;\n  left: 60%;\n  backdrop-filter: blur(20px);\n  background: linear-gradient(to right,\n                              rgba(240, 240, 240, 0.8),\n                              rgba(240, 240, 240, 0.5) 4px);\n}\n</style>"
+    },
+    {
+      "timestamp": "10:56",
+      "title": "Setting image-based lighting (IBL) with environmentmap",
+      "language": "swift",
+      "code": "<model src=\"camera.usdz\" environmentmap=\"sunset.exr\"></model>"
+    },
+    {
+      "timestamp": "12:41",
+      "title": "Allowing inline rotation with stagemode",
+      "language": "swift",
+      "code": "<model src=\"teapot.usdz\" stagemode=\"orbit\"></model>"
+    },
+    {
+      "timestamp": "13:31",
+      "title": "Customize placement with JavaScript entityTransform",
+      "language": "swift",
+      "code": "<model src=\"teapot.usdz\" id=\"mymodel\"></model>\n\n<script>\nconst mymodel = document.getElementById(\"mymodel\");\nmymodel.ready.then(result => {\n  const matrix = mymodel.entityTransform; // DOMMatrixReadOnly\n});\n</script>"
+    },
+    {
+      "timestamp": "13:49",
+      "title": "Make the model face right with entityTransform",
+      "language": "swift",
+      "code": "<model src=\"teapot.usdz\" id=\"mymodel\"></model>\n<a onclick=\"turnRight()\">Right</a>\n\n<script>\nconst mymodel = document.getElementById(\"mymodel\");\nfunction turnRight() {\n  const matrix = mymodel.entityTransform; // DOMMatrixReadOnly\n  const newMatrix = matrix.rotateAxisAngle(0, 1, 0, 90);\n  mymodel.entityTransform = newMatrix;\n}\n</script>"
+    },
+    {
+      "timestamp": "15:03",
+      "title": "Setting the entityTransform to an identity matrix",
+      "language": "swift",
+      "code": "model.entityTransform = new DOMMatrix();"
+    },
+    {
+      "timestamp": "16:31",
+      "title": "Basic animation control",
+      "language": "swift",
+      "code": "<model src=\"toy.usdz\" id=\"mymodel\" loop autoplay></model>\n<button onclick=\"toggleAnimation()\">Play/Pause</button>\n\n<script>\nconst mymodel = document.getElementById(\"mymodel\");\n\nfunction toggleAnimation() {\n  if (mymodel.paused) {\n\tmymodel.play();\n  } else {\n\tmymodel.pause();\n  }\n}\n</script>"
+    },
+    {
+      "timestamp": "17:35",
+      "title": "Jump to animation timestamp using .currentTime property",
+      "language": "swift",
+      "code": "<model src=\"camera.usdz\" id=\"mymodel\"></model>\n\n<script>\nconst mymodel = document.getElementById(\"mymodel\");\n\nfunction openFlash() {\n  mymodel.currentTime = 1; // Unit is seconds\n}\n\nfunction openScreen() {\n  mymodel.currentTime = 3; // Unit is seconds\n}\n</script>"
+    },
+    {
+      "timestamp": "18:11",
+      "title": "Update .currentTime with a slider",
+      "language": "swift",
+      "code": "<model src=\"camera.usdz\" id=\"mymodel\"></model>\n<input type=\"range\" id=\"slider\" min=\"2\" max=\"3\" step=\"any\" value=\"2\">\n\n\n<script>\nconst mymodel = document.getElementById(\"mymodel\");\n\nslider.addEventListener(\"input\", (event) => {\n  mymodel.currentTime = event.target.value;\n});\n</script>"
+    },
+    {
+      "timestamp": "19:35",
+      "title": "Generate USDZ with three.js and display with",
+      "language": "swift",
+      "code": "import * as THREE from \"three\";\nimport { USDZExporter } from \"three/examples/exporters/USDZExporter.js\";\n\nasync function generateModel() {\n\tconst scene = new THREE.Scene();\n\t// ... create a really nice scene procedurally ...\n\n\tconst bytes = await new USDZExporter().parseAsync(scene);\n\tconst objURL = URL.createObjectURL(new Blob([bytes]));\n\n\tconst mymodel = document.getElementById(\"mymodel\");\n\tmymodel.setAttribute(\"src\", objURL);\n}"
+    },
+    {
+      "timestamp": "23:10",
+      "title": "Embed immersive media",
+      "language": "swift",
+      "code": "<video src=\"spatial_video.mov\"></video>  <!-- Single file -->\n<video src=\"360_video.m3u8\"></video>  <!-- HTTP Live Streaming -->"
+    },
+    {
+      "timestamp": "24:25",
+      "title": "Going full screen with Javascript for  elements",
+      "language": "swift",
+      "code": "<video src=\"360_video.m3u8\" id=\"player\" controls></video>\n\n<script>\nconst player = document.getElementById(\"player\");\nplayer.requestFullScreen();\n</script>"
+    },
+    {
+      "timestamp": "24:35",
+      "title": "Embed panoramas and offer full screen with Javascript",
+      "language": "swift",
+      "code": "<picture>\n  <source media=\"(max-width: 799px)\" srcset=\"thumbnail.jpg\">\n  <source media=\"(min-width: 800px)\" srcset=\"panorama.jpg\">\n  <img src=\"panorama.jpg\" id=\"pano\">\n</picture>\n    \n<script>\nconst pano = document.getElementById(\"pano\");\npano.requestFullScreen();\n</script>"
+    },
+    {
+      "timestamp": "24:57",
+      "title": "Embed spatial photos and offer full screen with Javascript",
+      "language": "swift",
+      "code": "<img src=\"spatial.heic\" id=\"img\">\n  \n<script>\nconst img = document.getElementById(\"img\");\nimg.requestFullScreen();\n</script>"
+    },
+    {
+      "timestamp": "25:21",
+      "title": "Embed spatial photos with the new \"controls\" attribute",
+      "language": "swift",
+      "code": "<img src=\"spatial.heic\" id=\"img\" controls>"
+    },
+    {
+      "timestamp": "26:49",
+      "title": "Provide a custom environment",
+      "language": "swift",
+      "code": "<link rel=\"spatial-backdrop\" href=\"office.usdz\" environmentmap=\"lighting.hdr\">"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/237/5/f5fcabf4-e9fa-420b-a1a8-3e4868fccca9/downloads/wwdc2025-237_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/237/5/f5fcabf4-e9fa-420b-a1a8-3e4868fccca9/downloads/wwdc2025-237_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "304",
+      "year": "2025",
+      "title": "Explore video experiences for visionOS",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/304"
+    },
+    {
+      "id": "297",
+      "year": "2025",
+      "title": "Learn about the Apple Projected Media Profile",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/297"
+    },
+    {
+      "id": "296",
+      "year": "2025",
+      "title": "Support immersive video playback in visionOS apps",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/296"
+    },
+    {
+      "id": "233",
+      "year": "2025",
+      "title": "What’s new in Safari and WebKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/233"
+    },
+    {
+      "id": "10087",
+      "year": "2024",
+      "title": "Create custom environments for your immersive apps in visionOS",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10087"
+    },
+    {
+      "id": "10086",
+      "year": "2023",
+      "title": "Explore the USD ecosystem",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10086"
+    },
+    {
+      "id": "10083",
+      "year": "2023",
+      "title": "Meet Reality Composer Pro",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10083"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:43:58.441Z"
+}

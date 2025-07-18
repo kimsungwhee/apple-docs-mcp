@@ -1,0 +1,164 @@
+{
+  "id": "10095",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10095/",
+  "title": "Enhance collaboration experiences with Messages",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Mellow instrumental hip-hop music ♪ ♪ Miranda Zhou: Hi, my name is Miranda and I'm an engineer on the Sharing team. Elana Stettin: I'm Elana and I'm an engineer on the Messages team. Miranda: In this video, Elana and I will be diving into how to enhance collaboration with Messages in your app. I'll start with an introduction of what the feature is. You'll learn how to prepare to adopt this feature, and how to tie Messages into the process to start a collaboration. Elana will explain how to add collaboration with Messages UI to your app, and finally she will discuss how to keep up to date when the collaboration is updated. First, let me introduce collaboration with Messages! In iOS 16 and macOS Ventura, we've added a new and easy way to improve communication between people who are collaborating. Collaborators are able to tie a document to conversations by sharing via Messages. Collaboration activity is surfaced in Messages conversations and in ongoing FaceTime calls. A customizable Collaboration popover is also provided to your app to manage details of the collaboration and connect to the Messages conversation. This builds on technologies that you are already using, such as the share sheet and drag and drop. Next, I'll go over the types of collaboration infrastructures we support, and how to tie each of those to Messages collaboration. We support three types of collaboration infrastructures: CloudKit, iCloud Drive, and whatever custom collaboration infrastructure you may be using today! In this video, I'll mainly focus on the CloudKit and iCloud Drive cases. If you are using a custom infrastructure, watch the \"Integrate your custom collaboration app with Messages\" video for more details. If you use CloudKit-based collaboration, we've provided a new API to create an object that the system can recognize for collaboration. This is based off the macOS Sierra API to start or manage a share with NSSharingService. Once you have the collaboration object, identify where in the app you are showing UI to start or manage the share. You need to update to the new API to enhance your collaboration with Messages, as we will deprecate the existing AppKit API. The new collaboration object API uses NSItemProvider. NSItemProvider is used by system services to transport your app's data to other processes on the system. The provider requires either the CKShare for the collaboration item, or a preparation handler to create a CKShare when collaboration starts. Your app's CKContainer is also required. And finally, provide a CKAllowedSharingOptions object representing the access and permissions options for the collaboration. The values of the options are the same as the NSCloudKitSharingServiceOptions which were previously requested from NSCloudSharingServiceDelegate methods. Here's a brief overview of what it looks like to create a CloudKit collaboration object. If the collaboration is being started and you pass in a preparation handler, you need to both create the share and save it to the server in the handler. If it's already started, just pass in the associated share. The CKAllowedSharingOptions instance being registered is using a static standard property which returns the default set of allowed options. CloudKit adopters can use that or create a custom instance of the class for a restricted set of allowed options.\n\nFor those of you who might be interested in adopting CloudKit, CloudKit lets you use iCloud as your app's database without writing your own server code. You will also get a built-in method of sharing parts of that data with other iCloud users. For more details, watch the \"What's new in CloudKit\" video. If you're using iCloud Drive, your object for collaboration is simply your file URL -- we'll do all the work to recognize it! Once you have that, identify the entry points to start or manage collaboration in your app and prepare to replace them with the new and improved versions. For custom collaboration infrastructures, your collaboration object is called SWCollaborationMetadata, wrapped in new NSItemProvider API. Watch the \"Integrate your custom collaboration app with Messages\" video for details on how to use this API to update your collaboration UI. Now you're ready to go. Next, initiating a collaboration. There are two different ways: through the share sheet in its new collaboration mode, and through drag and drop to Messages, either from your app or from the Files app on iOS and Finder on macOS. The new share sheet collaboration mode can be identified by an indicator in the header, which also provides a choice between collaboration and sending a copy. In order to have collaboration in the share sheet, give the share sheet the collaboration object you prepared earlier. On macOS, this collaboration indicator is shown in a beautiful new share popover! The share popover also includes a title and image in the header, plus a row of conversation suggestions, and all the transports we offered already. For more details about this, watch the WWDC22 \"What's new in AppKit\" video. On iOS and Mac Catalyst, show the share sheet using the UIActivityViewController class. On macOS, show the share popover using NSSharingServicePicker. Pass the collaboration object to UIActivityViewController as an activity item to present it with collaboration enabled. And similarly, initialize NSSharingServicePicker with the collaboration object to show it with collaboration enabled. CloudKit adopters will need to take an extra step to provide a title and image for the headers. On iOS, use existing API such as UIActivityItemsConfiguration or UIActivityItemSource to provide an LPLinkMetadata object with a title and imageProvider. Create your configuration with your collaboration object, then set the metadata provider to return your LPLinkMetadata object for the item being shared. Finally, initialize UIActivityViewController with that configuration. On macOS, we have a new API called NSPreviewRepresenting ActivityItem for providing the header metadata. Refer to the NSPreviewRepresenting ActivityItem documentation for more details. To use NSPreviewRepresenting ActivityItem, first choose your title, image, and icon. The image represents the item being shared, while the icon represents the source of the item being shared -- for example, an app icon. Create an NSPreviewRepresenting ActivityItem with your collaboration object, title, image, and icon, and initialize NSSharingServicePicker with that preview item. On an exciting note, the new SwiftUI ShareLink API for the share sheet will also support collaboration mode! To adopt, the item you are sharing must be represented by Transferable, a new protocol for sharing and data transfer. CloudKit adopters provide the share, container, and options through a CKShareTransferRepresentation returned by your Transferable item. For more details, watch the \"Meet Transferable\" and WWDC22 \"What's new in SwiftUI\" videos. Here's an example of how a CloudKit adopter like Notes would create a transferable object to share with ShareLink. The note provides a CKShareTransferRepresentation, which is constructed either as its existing value with an existing CKShare, CKContainer, and CKAllowedSharingOptions value, or as its prepareShare value with a CKContainer, CKAllowedSharingOptions value, and a preparation handler to create and save a CKShare for the collaboration object. For iCloud Drive adopters, your file URL is the Transferable object which you share through ShareLink. If you have a custom collaboration infrastructure, watch the \"Integrate your custom collaboration app with Messages\" video for how to return an SWCollaborationMetadata object from your transferable object. Once you have your Transferable object, pass it to the ShareLink initializer as the item to share. At the same time, pass in a preview with a title and image to fill in the share sheet header. One notable feature of the share sheet collaboration mode header is the summary of the access and permissions options. Tapping this summary brings up a view where collaborators choose what access and permissions options to use when collaborating. For CloudKit adopters, this view shows the set of options registered in the collaboration object. iCloud Drive adopters show the standard set of iCloud Drive options. If you have a custom infrastructure, watch the \"Integrate your custom collaboration app with Messages\" video for how to specify your custom options and have them show up in this view. There's one more way to start a collaboration, and that's through drag and drop. A collaborator can simply drag your document into Messages and get the new collaboration-enabled rich link for the document in Messages. This rich link provides functionality both for collaboration and sending a copy, and for selecting collaboration options. To adopt, provide your collaboration object through ShareLink on iOS 16 and macOS Ventura. And that's how you prepare for and initiate collaborations with Messages. Next, I'll hand it over to Elana, who will talk about taking your app's collaboration experience to the next level. Elana: Thanks, Miranda! Now that you know how to get started, I'll talk about how to further integrate our collaboration UI into your app. We've added these new features to amplify the collaboration experience. The collaboration button is placed in your app's navigation and will show the group photo of the associated messages group. There is also an active participant count to the right of the button that will show when others are present in the document. When you tap the collaboration button, the new collaboration popover appears. The customizable popover shows the overview of the collaboration. It also allows users to initiate communication with other participants with just one tap. This provides them the ability to work together in real time via Messages and FaceTime.\n\nThese UI elements are all powered by a single class in the SharedWithYou framework: SWCollaborationView. This view represents the button view in the navigation. All you need to do is initialize the SWCollaborationView and we will take care of the popover layout and presentation for you. To show custom content, you'll provide a view which will be added to the popover. Now, I'll go over the code to create the SWCollaborationView. Initialize the SWCollaborationView with an itemProvider. The itemProvider contains the CKShare for CloudKit-based apps, the fileURL for iCloud Drive-based apps, or the SW Collaboration metadata for custom collaboration infrastructures.\n\nSet the activeParticipantCount property on the collaboration view to show the number of active participants on the document. Then set the contentView property on the collaborationView to provide the popover with custom content. The ContentView is what makes the popover completely customizable. This is where you'll add your own content to give users a unique view of what is going on in the collaboration. For example, in Pages, the ContentView contains the Current Participants list and the Participant Cursors toggle. Now, let's look at the \"manage\" button. For CloudKit and iCloud Drive adopters, this manage button will bring up the manage UI, where you can add and remove participants or change the share settings. I'll talk more about this shortly. Customize the provided button title by setting the manageButtonTitle property on the collaboration view. If you do not set this property, the title will default to \"Manage Share.\" If your app uses a custom collaboration infrastructure, include your own manage button in the contentView. One will not be provided for you. On Mac, make sure the button has a transparent background to adhere to Apple design recommendations. Finally, create a UIBarButtonItem on iOS as shown here, using the collaborationView as the custom view. On Mac, initialize an NSToolbarItem using a UIBarButtonItem. Then, add the bar button item or toolbar item to the ViewController's navigationItem. As I mentioned earlier, CloudKit and iCloud Drive adopters are provided with a button in the collaboration popover. This enables you to manage the share in the same way you've always been able to. Changes in the provided manage UI are observable by adhering to the same delegate protocols already used to observe changes: UICloudSharing ControllerDelegate and NSCloudSharing ServiceDelegate. Now you have an understanding of how to integrate the new collaboration UI into your app. Next, I'll go over how to observe and handle updates to collaborations. It is critical to know when a share starts or stops. For CloudKit adopters, we've added a new protocol called CKSystemSharing UIObserver to notify you of just that. With this protocol, you get callbacks corresponding to when your CKShare is saved or removed without needing the CloudKit Sharing UI. I'll take you through some code now. Initialize an observer using the CKContainer. On the observer, define a closure to be executed when the CKShare is saved and assign it to the systemSharingUI DidSaveShareBlock. In the closure, if the Share was saved correctly, you'll get a success result -- indicating the share was started -- and an associated CKShare to work with. If the save was unsuccessful, you receive a failure result and the associated error. Here is the implementation of the closure for when the document owner stops sharing. In the success case, the CKShare has successfully been deleted. In the failure case, you will also get the associated error. Starting and stopping shares are not the only changes you may care about. Some changes, you might even want to bubble up to users. We've added API to enable you to post notices summarizing updates to a collaboration, right at the top of the relevant Messages thread. Collaborators are shown what the update was and who made the change. To post a notice, retrieve the SWCollaborationHighlight, which is a collaboration-specific type of highlight in Shared with You. Use it to create an SWCollaborationHighlight event. Learn more about SWHighlights and other SharedWithYou APIs in the \"Add Shared with You to your app\" video. Watch this video before beginning your work to adopt notices. I'll talk through posting different notices using a CloudKit app as an example. If your app uses a custom collaboration infrastructure, view the \"Integrate your custom collaboration app with Messages\" video for detailed instructions. To represent a notice, we've introduced a protocol called SWHighlightEvent. Highlight events are initialized with SWHighlights retrieved from the SWHighlightCenter API. The supported event types include a change event for content updates or comments; a mention event when a user is mentioned in a collaboration; a persistence event when content is moved, renamed, or deleted; and a membership event when a participant is added or removed from a document. Here's an example showing how to post a change event when a collaboration has been edited. Using the highlight center API, retrieve a collaboration highlight using the CKShare URL. Remember, this CKShare is one you defined during the collaboration initiation, so your app should have this available when a content change is made. Next, create a HighlightChangeEvent instance. The initializer takes a highlight, and a trigger enum value. In this case, we set the trigger type to edit. Lastly, post the notice for that event to the highlightCenter. The rest of the events follow a similar format with the sole exception being the mentionEvent, as it requires more information to indicate which user was mentioned. You are able to post this type of event only if your app supports user mentions. Create the mentionEvent by passing in the retrieved highlight and the handle of the mentioned CKShare participant. This notice will only be shown to the mentioned user. Use the persistence event type when content is moved, renamed, or deleted. Here, the renamed trigger type is used to signify the document name has been changed. Finally, here is a membershipEvent. For a membershipEvent, use the addedCollaborator or removedCollaborator trigger type instead. With mentionevents, notices are posted to show how the document membership has changed. However, we've also made it possible to keep collaborators on your shared documents in sync when the Messages group membership changes. For CloudKit and iCloud Drive, this is simple: we do the work for you. When someone new is added to the Messages group with a collaboration, the document owner is prompted via a notice to add them to the share. The same goes for when someone is removed.\n\nFor apps with custom collaboration infrastructures, there's a little more work to be done. You will need to adopt the SWCollaborationActionHandler API, which you can learn more about in \"Integrate your custom collaboration app with Messages.\" Now you know how to get started with collaboration in Messages and integrate it into your app, whether you're using CloudKit, iCloud Drive, or your own collaboration infrastructure. Prepare your app to initiate collaborations by adopting the new share sheet and drag and drop APIs. Integrate the new collaboration UI to provide a customized overview of what is happening in the shared document. Once you have that set up, go even further and adopt notices to display changes to the collaboration from within the Messages thread. Miranda and I can't wait to see how your app takes advantage of these new collaboration features in Messages! Both: Thank you for watching! ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:08",
+      "title": "Create a CloudKit collaboration item provider",
+      "language": "swift",
+      "code": "// CloudKit collaboration object\n\n// Starting collaboration\nlet itemProvider = NSItemProvider()\nitemProvider.registerCKShare(container: container, \n                             allowedSharingOptions: CKAllowedSharingOptions.standard, \n                             preparationHandler: {\n    // Create your share and save to server, or throw error\n    return savedShare\n})\n\n// Inviting to existing collaboration\nlet itemProvider = NSItemProvider()\nitemProvider.registerCKShare(share, \n                             container: container, \n                             allowedSharingOptions: CKAllowedSharingOptions.standard)"
+    },
+    {
+      "timestamp": "7:35",
+      "title": "Set up Share Sheet on iOS and Mac Catalyst",
+      "language": "swift",
+      "code": "// Setting up Share Sheet - iOS and Mac Catalyst\n\nlet activityViewController = UIActivityViewController(activityItems: [collaborationObject], applicationActivities: nil)\n\npresentingViewController.present(activityViewController, animated: true)"
+    },
+    {
+      "timestamp": "7:47",
+      "title": "Set up Share Popover on macOS",
+      "language": "swift",
+      "code": "// Setting up Share Popover - macOS\n\nlet sharingServicePicker = NSSharingServicePicker(items: [collaborationObject])\n\nsharingServicePicker.show(relativeTo: view.bounds, of: view, preferredEdge: .minY)"
+    },
+    {
+      "timestamp": "8:22",
+      "title": "Provide metadata for CloudKit collaboration in Share Sheet (iOS, Mac Catalyst)",
+      "language": "swift",
+      "code": "// Providing CloudKit metadata - iOS\n\nlet configuration = UIActivityItemsConfiguration(itemProviders: [collaborationItemProvider])\nconfiguration.perItemMetadataProvider = { (_, key) in\n    switch key {\n    case .linkPresentationMetadata:\n        // Create LPLinkMetadata with title and imageProvider\n        return metadata\n    default:\n        return nil\n    }\n}\n\nlet activityViewController = UIActivityViewController(activityItemsConfiguration: configuration)"
+    },
+    {
+      "timestamp": "9:03",
+      "title": "Provide metadata for CloudKit collaboration in Share Popover (macOS)",
+      "language": "swift",
+      "code": "// Providing CloudKit metadata - macOS\n\nlet title = “Shared Item”\nlet image = NSImage(contentsOfFile: “Shared_Item_Preview_Image.png”)\nlet icon = NSImage(contentsOfFile: “App_Icon.png”) // Shared item source\n\nlet previewRepresentingItem = NSPreviewRepresentingActivityItem(item: collaborationItemProvider, \n                                                                title: title, \n                                                                image: image, \n                                                                icon: icon)\n\nlet picker = NSSharingServicePicker(items: [previewRepresentingItem])"
+    },
+    {
+      "timestamp": "10:21",
+      "title": "Create Transferable object for CloudKit collaboration with ShareLink",
+      "language": "swift",
+      "code": "// SwiftUI CloudKit Transferable\n\nstruct Note: Transferable {\n    // Properties of the note e.g. name, preview image, content, ID, …\n    var share: CKShare?\n    func saveCKShareToServer() async throws -> CKShare { … }\n\n    static var transferRepresentation: some TransferRepresentation {\n        CKShareTransferRepresentation { note in\n            if let share = note.share {\n                return .existing(share, container: container, options: options)\n            } else {\n                return .prepareShare(container: container, options: options) {\n                    return try await note.saveCKShareToServer()\n                }\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "11:34",
+      "title": "Adopt ShareLink in SwiftUI",
+      "language": "swift",
+      "code": "// SwiftUI ShareLink adoption\n\nstruct ContentView: View {\n    @State let item = ShareItem()\n\n    var body: some View {\n        ShareLink(item: item, preview: SharePreview(item.title, image: item.previewImage))\n    }\n}"
+    },
+    {
+      "timestamp": "14:58",
+      "title": "Initialize the collaborationView",
+      "language": "swift",
+      "code": "// Collaboration View\n\nlet collaborationView = SWCollaborationView(itemProvider: itemProvider)\n\ncollaborationView.activeParticipantCount = myModel.activePeople.count\n\ncollaborationView.contentView = MyView(model: myModel)\n\ncollaborationView.manageButtonTitle = \"Custom Manage Button\""
+    },
+    {
+      "timestamp": "18:11",
+      "title": "Observe when CKShare is saved with CKSystemSharingUIObserver",
+      "language": "swift",
+      "code": "// Observing CKShare Changes\n\nlet observer = CKSystemSharingUIObserver(container: container)\n\nobserver.systemSharingUIDidSaveShareBlock = { _, result in\n    switch result {\n    case .success(let share):\n        // Handle successfully starting share\n    case .failure(let error):\n        // Handle error\n    }\n}"
+    },
+    {
+      "timestamp": "18:47",
+      "title": "Observe when CKShare is removed with CKSystemSharingUIObserver",
+      "language": "swift",
+      "code": "// Observing CKShare Changes\n\nobserver.systemSharingUIDidStopSharingBlock = { _, result in\n    switch result {\n    case .success(let share):\n        // Handle successfully starting share\n    case .failure(let error):\n        // Handle error\n    }\n}"
+    },
+    {
+      "timestamp": "20:44",
+      "title": "Posting notice for edit SWHighlightChangeEvent",
+      "language": "swift",
+      "code": "// Post an SWHighlightChangeEvent Notice\n\nlet highlightCenter: SWHighlightCenter = self.highlightCenter\n\nlet highlight = try highlightCenter.collaborationHighlight(forURL: ckShareURL, error: &error)\n\nlet editEvent = SWHighlightChangeEvent(highlight: highlight, trigger: .edit)\n\nhighlightCenter.postNotice(for: editEvent)"
+    },
+    {
+      "timestamp": "21:30",
+      "title": "Post an SWHighlightMentionEvent Notice",
+      "language": "swift",
+      "code": "// Post an SWHighlightMentionEvent Notice\n\nlet highlightCenter: SWHighlightCenter = self.highlightCenter\n\nlet highlight = try highlightCenter.collaborationHighlight(forURL: ckShareURL, error: &error)\n\nlet mentionEvent = SWHighlightMentionEvent(highlight: highlight, \n           mentionedPersonCloudKitShareHandle: ckShareParticipantHandle)\n\nhighlightCenter.postNotice(for: mentionEvent)"
+    },
+    {
+      "timestamp": "21:58",
+      "title": "Post an SWHighlightPersistenceEvent Notice",
+      "language": "swift",
+      "code": "// Post an SWHighlightPersistenceEvent Notice\n\nlet highlightCenter: SWHighlightCenter = self.highlightCenter\n\nlet highlight = try highlightCenter.collaborationHighlight(forURL: ckShareURL, error: &error)\n\nlet renamedEvent = SWHighlightPersistenceEvent(highlight: highlight, trigger: .renamed)\n\nhighlightCenter.postNotice(for: renamedEvent)"
+    },
+    {
+      "timestamp": "22:11",
+      "title": "Post an SWHighlightMembershipEvent Notice",
+      "language": "swift",
+      "code": "// Post an SWHighlightMembershipEvent Notice\n\nlet highlightCenter: SWHighlightCenter = self.highlightCenter\n\nlet highlight = try highlightCenter.collaborationHighlight(forURL: ckShareURL, error: &error)\n\nlet membershipEvent = SWHighlightMembershipEvent(highlight: highlight, \n                                           trigger: .addedCollaborator)\n\nhighlightCenter.postNotice(for: membershipEvent)"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10095/5/DB09B90A-7453-4E3F-90E9-4AB7322DD253/downloads/wwdc2022-10095_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10095/5/DB09B90A-7453-4E3F-90E9-4AB7322DD253/downloads/wwdc2022-10095_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10094",
+      "year": "2022",
+      "title": "Add Shared with You to your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10094"
+    },
+    {
+      "id": "10093",
+      "year": "2022",
+      "title": "Integrate your custom collaboration app with Messages",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10093"
+    },
+    {
+      "id": "10062",
+      "year": "2022",
+      "title": "Meet Transferable",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10062"
+    },
+    {
+      "id": "10074",
+      "year": "2022",
+      "title": "What's new in AppKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10074"
+    },
+    {
+      "id": "10052",
+      "year": "2022",
+      "title": "What's new in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10052"
+    },
+    {
+      "id": "10086",
+      "year": "2021",
+      "title": "What's new in CloudKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10086"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:15:17.740Z"
+}

@@ -1,0 +1,94 @@
+{
+  "id": "10145",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10145/",
+  "title": "Enhance your UI animations and transitions",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Design"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Welcome to \"Enhance your UI animations and transitions\", where I’m happy to tell you your SwiftUI, UIKit, and AppKit animations are friendlier with each other than ever! And to celebrate that friendship, I’ve made some friendship bracelets! And it’s through the power of that friendship, that I have some awesome new features and APIs to share with you today. So if you’d like to learn how to add a cool new fluid zoom transition to your app, where a cell you tap zooms in to fill the screen… ...or use SwiftUI animations to build a fluid interaction, even with UIKit or AppKit views, this talk is for you! Note, all the animations in this video are slowed down to half speed.\n\nTo showcase these APIs, I made this app to plan my friendship bracelet designs. Each one encodes an API I love with the first letter of each word in the API. This one stands for: “SwiftUI.Animation.spring.repeatForever()” Now let’s get into the details of what makes this friendship so strong. First, we’ll talk about some new high level transitions for navigation and presentations. Next, we’ll go *lower* and learn about some new integration between SwiftUI Animations and UIKit and AppKit, which help power these new transitions. Then, we’ll talk about how to bridge SwiftUI Animations through Representable types in mixed hierarchies. And finally, we’ll talk about how animating UIViews and NSViews is *extra* powerful when continuous gestures are involved.\n\nLet’s get into the new transitions! In iOS 18, there’s a new zoom transition! With this new transition, the cell you tap morphs into the incoming view. And it’s not just a new visual appearance, it also is continuously interactive, allowing you to grab and drag it around, from the beginning or during the transition.\n\nIn parts of your app where you transition from a large cell, the zoom transition can increase the sense of continuity in your app by keeping the same UI elements on screen across the transition. Let’s adopt it in code.\n\nHere’s some existing code I have for a NavigationLink that shows a preview of a bracelet, and when tapped, pushes into the full bracelet editor. This code results in the default slide transition, where the incoming view slides in from the trailing edge. But this is a perfect situation to use a zoom transition.\n\nTo opt into the zoom transition, there are two things we have to do. First, we say that we want it! This means adding the navigationTransitionStyle modifier to the presented view, and specifying the zoom transition.\n\nSecond, we connect this modifier to a source view, so that the system knows which view to zoom from.\n\nIn both places, we specify the same identifier and namespace, so that SwiftUI knows which preview goes with which presented view. And now, we’re zooming! To adopt the zoom transition with UIKit, the story is similar. Here I have some code where, when a bracelet preview is tapped, I create an Editor for that bracelet and push it onto the current navigation controller.\n\nTo adopt zoom here, first, specify on the pushed view controller that it would like to zoom. And second, provide the view to use as the source of the zoom transition.\n\nIt works! Note the closure passed to the zoom transition will be run on zoom in and again on zoom out, and it should capture a stable identifier. In this case, the bracelet model object, that can be used to fetch a view, rather than capture a view directly.\n\nThis is important in cases where the source view may get reused, such as in a collection view.\n\nNow I can also swipe between bracelets without leaving the editor, which means the editor’s bracelet can change. To handle this, and zoom down to the correct bracelet preview, use the context passed into the closure to retrieve the current bracelet from the editor.\n\nAnd by the way, these same APIs work with the fullScreenCover and sheet presentation APIs in both SwiftUI and UIKit! Now for UIKit apps, we’re going to go more in depth for a minute, and go through how these new fluid transitions work with view controller life cycle and appearance callbacks. For my SwiftUI friends, you’ll learn a little about what we do with callbacks in UIKit.\n\nThroughout this example, we’ll consider the state of the bracelet editor view controller being pushed on. And first, I’m going to go through all the cases that show how the system already works.\n\nThe red dot represents the current state of the editor, and as it moves by a callback, the method is called. In the normal case, if a push runs to completion with no user interaction, the editor starts in the Disappeared state, then moves through Appearing during the transition, calling viewWillAppear, isAppearing and didAppear, and ends in the Appeared state when the transition finishes.\n\nSimilarly, if a pop runs to completion, the editor moves through the Disappearing state during the transition, and then ends back in the Disappeared state. This is true whether the pop was initiated from tapping the back button, or an interactive swipe.\n\nNow rewind, because I want to review how the cancelled pop works as well.\n\nIf I only drag a little and hold, the editor moves to the Disappearing state when the pop transition starts.\n\nThen if I lift my finger such that the pop is cancelled, the animation runs to completion, but then at the end, the view controller moves straight to the Appearing state and then finally the Appeared state in one turn of the run loop.\n\nOkay, so that covers callback timings in the existing transition scenarios.\n\nNow I’ll show what happens when you really test the fluidity of these new transitions. We’ll go back to the beginning, with the editor in the Disappeared state.\n\nI start a push and now the editor is Appearing. Now let’s consider what happens if I start a pop in the middle of the push, either by tapping the back button, or with a back swipe. In this case, the push is not cancelled. Instead, the push completes immediately, so the editor goes straight to the Appeared state, and then in the same turn of the run loop, the pop transition starts, moving to the Disappearing state. And then from here it’s a normal pop transition, which may complete or be cancelled.\n\nCancelling a push is different from how cancelling a pop works, and this is on purpose. Conceptually, the system never cancels an interrupted push. Instead, the push is always converted into a pop. From the perspective of the pushed view controller, it will always reach the Appeared state, which means the system always runs through the full cycle of callbacks, just as it always has. Phew! I think I need another friendship bracelet to remind me that appearance callbacks really are my friend.\n\nThis new feature is as compatible with existing code as possible. I have some additional tips for UIKit apps to ensure your code works perfectly in this new world, where push and pop transitions can begin at any time. Be ready for a new transition to start at any time. Don’t try to “handle” being in a transition differently from not being in a transition. Here the tap handler fails to call push if a transition is in progress. Just call push, regardless of whether a transition is running or not.\n\nKeep temporary transition state to a minimum.\n\nThe less state you have, the less likely you are to make other code dependent on transition state. And it’s one less thing to clean up.\n\nBut if you do need to keep track of state during a transition, reset it by viewDidAppear or viewDidDisappear. These are guaranteed to be called at the end of the transition. If you’re using the navigation controller delegate methods will and didShowViewController, the same is true for those as well.\n\nAnd finally, incorporate SwiftUI into your app. Being more functional than imperative, SwiftUI is generally better equipped to handle a continuously changing world. Now helping to power these new transitions are some amazing new lower level APIs for animating UIKit and AppKit views with SwiftUI animations. Let’s check out how to use them to build some custom UI.\n\nHere’s my bracelet editor, and I can tap a bead in the box at the bottom to add it to the end of my bracelet.\n\nIf this UI was implemented with UIKit or AppKit, we would use the existing animation API, describing the spring in the paramaters of the call, and then updating view properties in the closure. For SwiftUI, there’s a similar syntax, where we describe the animation with a SwiftUI animation type, and update state in the closure. But wouldn’t it be awesome, if you could have the best of both? Now in iOS 18, you can! You can use a SwiftUI Animation type to animate UIKit and AppKit views! This lets you use the full suite of SwiftUI Animation types, including SwiftUI CustomAnimations, to animate UIKit views! If your code works with CALayers, there are a couple of implications to consider when using this new API. The existing UIKit API generates a CAAnimation, which is then added to the view’s layer.\n\nHowever, the SwiftUI animation does not create a CAAnimation, but instead animates the view’s layer's presentation values directly. These presentation values are still reflected in the presentation layer.\n\nNow, that we’ve talked about how to animate UIKit and AppKit views, let’s talk about how to animate them in the context of representable types, like UIViewRepresentable.\n\nI have an existing UIView for my box of beads called BeadBox, and I’m embedding it in my SwiftUI app with this representable wrapper.\n\nIt has a lid that I can open or close with this \"isOpen\" binding.\n\nRight now the lid just appears and disappears when I open and close the box, but I’d love to animate it! The natural way to do this, without knowing whether BeadBoxWrapper is implemented with UIKit or not, is to add an animated modifier to the binding. And if BeadBoxWrapper was implemented with SwiftUI, this would work! But because BeadBoxWrapper is implemented with UIKit under the lid, we need to bridge the animation ourself.\n\nHere I’ve used the new \"animate\" method on the context, which lets me apply any animation on the Transaction associated with this update, to any UIView changes I make in the \"updateUIView\" method. It grabs whatever SwiftUI animation is present on the Transaction, and bridges to the UIView.animate method to slide the lid up or down.\n\nIt works! If the current Transaction isn’t animated, the animation and completion are called immediately inline, so this code works whether the update is animated or not. And notably, a single animation running across SwiftUI Views and UIViews runs perfectly in sync! Now that we’ve discussed how to run animations in response to discrete actions, let’s check out how these same APIs can be even more powerful when run in response to continuous gestures. Going back to our bead box, I’d like to drag a bead out of the box with a pan gesture, and fling it towards the end of the bracelet.\n\nHere’s some UIKit code that handles dragging a bead out of the bead box in response to a pan gesture.\n\nWhen the pan gesture changes, the center of the bead is updated based on the translation of the gesture. And when the gesture ends, the bead is sent to its final location. To animate this, we compute the initial velocity of the spring based on the current velocity of the bead, and we have to convert to a unit velocity by dividing by the distance the bead will travel from its current location to its final one. But wouldn’t it be easier if we didn’t have to do that? Yes! SwiftUI animations already have the ability to preserve velocity at the end of a gesture by merging together during the gesture, as shown with this equivalent SwiftUI code that achieves the same effect. No computation of an initial velocity when the gesture ends required.\n\nAnd now this same technique can be applied when animating UIViews, where the same SwiftUI animations can be passed to the new UIView animate method.\n\nAs I drag across the screen, the gesture is continuously firing change events as my finger moves, and each of these events creates a new \".interactiveSpring\" animation, each new animation retargeting the last one. Then, when the gesture ends, a final non-interactive spring animation is created. This spring uses the velocity from the interactiveSprings, to carry the animation forward with continuous velocity.\n\nDon’t you just love continuous velocity? Like, it’s the best! And that’s it for animations and transitions, and now it’s up to you! Adopt zoom transitions in places where you have a large cell to zoom from, enhancing visual continuity across your app.\n\nZoom transitions are continuously interactive, so ensure your code is ready to handle a transition starting at any time! And, start using SwiftUI.Animation to animate UIKit and AppKit views, especially in UI where maintaining continuous velocity is important. It could simplify your code a lot, and make your animation feel much better! To learn more about the full suite of SwiftUI Animations, my friend Kyle’s video, \"Explore SwiftUI animation\", has everything you need, and for a deeper dive into springs, check out my friend Jacob’s video, \"Animate with springs\".\n\nAnd tell all your friends! Or better yet, encode and share this knowledge in trendy bracelets!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:10",
+      "title": "Zoom transition in SwiftUI",
+      "language": "swift",
+      "code": "NavigationLink {\n    BraceletEditor(bracelet)\n        .navigationTransitionStyle(\n            .zoom(\n                sourceID: bracelet.id,\n                in: braceletList\n            )\n        )\n} label: {\n    BraceletPreview(bracelet)\n}\n.matchedTransitionSource(\n    id: bracelet.id,\n    in: braceletList\n)"
+    },
+    {
+      "timestamp": "3:02",
+      "title": "Zoom transition in UIKit",
+      "language": "swift",
+      "code": "func showEditor(for bracelet: Bracelet) {\n    let braceletEditor = BraceletEditor(bracelet)\n    braceletEditor.preferredTransition = .zoom { context in\n        let editor = context.zoomedViewController\n            as! BraceletEditor\n        return cell(for: editor.bracelet)\n    }\n    navigationController?.pushViewController(braceletEditor, animated: true)\n}"
+    },
+    {
+      "timestamp": "8:39",
+      "title": "Animate UIView with SwiftUI animation",
+      "language": "swift",
+      "code": "UIView.animate(.spring(duration: 0.5)) {\n    bead.center = endOfBracelet\n}"
+    },
+    {
+      "timestamp": "9:56",
+      "title": "Animating representables",
+      "language": "swift",
+      "code": "struct BeadBoxWrapper: UIViewRepresentable {\n    @Binding var isOpen: Bool\n\n    func updateUIView(_ box: BeadBox, context: Context) {\n        context.animate {\n            box.lid.center.y = isOpen ? -100 : 100\n\t\t    }\n    }\n}\n\nstruct BraceletEditor: View {\n    @State private var isBeadBoxOpen = false\n    var body: some View {\n        BeadBoxWrapper($isBeadBoxOpen.animated())\n            .onTapGesture {\n                isBeadBoxOpen.toggle()\n            }\n    }\n}"
+    },
+    {
+      "timestamp": "11:39",
+      "title": "Gesture-driven animations",
+      "language": "swift",
+      "code": "switch gesture.state {\ncase .changed:\n    UIView.animate(.interactiveSpring) {\n        bead.center = gesture.translation\n    }\n\ncase .ended:\n    UIView.animate(.spring) {\n        bead.center = endOfBracelet\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Forum: UI Frameworks",
+        "url": "https://developer.apple.com/forums/topics/ui-frameworks?cid=vf-a-0010"
+      },
+      {
+        "title": "Unifying your app’s animations",
+        "url": "https://developer.apple.com/documentation/SwiftUI/Unifying-your-app-s-animations"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10145/4/53B7DA20-6508-44CC-9BC6-86943CE6BF32/downloads/wwdc2024-10145_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10145/4/53B7DA20-6508-44CC-9BC6-86943CE6BF32/downloads/wwdc2024-10145_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10158",
+      "year": "2023",
+      "title": "Animate with springs",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10158"
+    },
+    {
+      "id": "10156",
+      "year": "2023",
+      "title": "Explore SwiftUI animation",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10156"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:35:38.280Z"
+}

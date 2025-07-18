@@ -1,0 +1,155 @@
+{
+  "id": "10149",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10149/",
+  "title": "Work with windows in SwiftUI",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Spatial Computing",
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi everyone! I’m Andrew, and I work on SwiftUI. I’m super happy to talk to you about working with windows in your SwiftUI app! Windows are a container for the content of your app. A window allows people to manage parts of your app with familiar controls. Like being able to reposition, resize, or close it. I’ll be working on BOT-anist, a SwiftUI app my friends and I have been working on.\n\nHere in the simulator, is the BOT-anist robot editor, where a robot can be customized. Players can bring this robot into a game where they help the robot tend to plants.\n\nBOT-anist has a tailored experience for iOS, iPadOS, visionOS, and macOS.\n\nThe concepts I’ll discuss apply to multi-window platforms. But, in this video, I’ll focus on visionOS. I’ll talk about how to define, open, and use a window. I’ll cover how to control the initial placement of windows, and I’ll discuss the different ways, windows can be sized. First up, the fundamentals.\n\nWith individual windows people can use different parts of your app at the same time. And, having multiple instances of the same interface can be really powerful.\n\nPeople can use system controls to independently manipulate each window. Like being able to resize, reposition, or scale it.\n\nAnd, each window can take advantage of platform specific features. For example, on visionOS, a window can contain 3D content by using a volumetric window style. While multiple windows are powerful, using a single top-level view, like a TabView, can simplify the experience.\n\nTo learn more about TabView and other top-level views, check out “Elevate your windowed app for spatial computing” To learn when multiple windows are appropriate in visionOS, check out “Design for spatial user interfaces”.\n\nBOT-anist, has two primary scenes in visionOS: The editor window and the game volume.\n\nEach scene is defined by a WindowGroup. The app opens to an instance of the robot editor WindowGroup. And a button in this window, opens an instance of the “game” WindowGroup. The volumetric window style makes this window a volume in visionOS. I’d like to add two new features to BOT-anist.\n\nThe first, will open a new window containing a movie made about the robot. The movie will be a 3D scene contained in a portal.\n\nIn the app body, I add a new WindowGroup that contains the 3D scene view. To identify this WindowGroup, I’ve given it an ID of “movie\". I’ll use this ID to open the window. I’ll pass the ID to an Environment Action. These actions are available at any point in the SwiftUI hierarchy. A few different environment actions are available for managing windows.\n\nUse openWindow to open a window. To close a window use dismissWindow.\n\npushWindow can be used to open a window and hide the originating window.\n\nI’ll use openWindow to open a new movie window. In the robot editor view, I retrieve an OpenWindowAction from the environment by creating an environment property with a key path of openWindow. And then, within a new button, I can perform the OpenWindowAction, passing in the ID I defined for the window group earlier… “movie”.\n\nNow, tapping the button in the editor opens the Movie portal as a separate window.\n\nNow that I see it, I don’t think the editor should be visible at the same time as the movie view. So I’ll use the pushWindow environment action to present the window instead.\n\nThis will open the new window in place of the originating window. Closing the new window will result in the originating window reappearing.\n\nTo hide the editor when opening the movie window, I change the environment property key path from openWindow to pushWindow, and update the button to call this action instead.\n\nNow, tapping the TV button will push the movie window and hide the robot editor window. Now I can watch the robot I’ve designed begin their acting career without any distractions.\n\nTapping the close button will take me back to the editor. No additional logic is needed to get this behavior. Consider using this action when showing content that doesn’t need to be visible at same time as the presenting window. With the windows defined and opened, they can now be enhanced to feel even more at home with platform specific features: like how Freeform uses a toolbar ornament to display controls along the bottom edge of a window, or how a ToolbarTitleMenu presents actions related to a document without crowding the canvas; the window bar and close button are always visible by default. But, for the movie view, I used the .persistentSystemOverlays modifier to hide these, to let people focus on the movie.\n\nThese APIs are some great ways to enhance a window in visionOS. For refining a window in macOS, check out “Tailor macOS windows with SwiftUI”. The movie window is looking great! Next, I’d like to add an optional control panel for the game. This panel will have additional controls for moving the robot and a few buttons to perform actions like jump or wave. I’ve added a new window group that displays the controls.\n\nAnd also an openWindow call in the game volume.\n\nNow, tapping the button in the game opens my controls in a new window. I like that they can repositioned independently of the game volume.\n\nBut, when the window first opens, it covers the volume and might be positioned far away. visionOS places new windows, like the control panel, in front of the originating window. macOS on the other hand, opens new windows at the center of the screen. This behavior can be customized with the defaultWindowPlacement modifier. It allows the initial position and size of a window to be set programmatically. Depending on the platform, windows can be positioned and sized in a few ways. They can be positioned relative to other windows like a leading or trailing position: relative to people, with a position like utilityPanel in visionOS, which places the window close by and generally within direct touch range; or, relative to the screen, like the top right quadrant in macOS.\n\nTo make the game controls appear close to the player in visionOS, I apply the defaultWindowPlacement modifier to the “controller” window group.\n\nFrom this, I return a WindowPlacement with a position of .utilityPanel.\n\nI wrap this return, in an if condition so that this placement is only applied for visionOS.\n\nNow the controls appear close by when the window is first opened. And the player is able to move the window from its initial placement if they like.\n\nUsing these new controls I’m able to interact with the robot in a whole new way! Like tapping this button, to make the BOT-anist wave! The controller window is looking great in visionOS! Next, in macOS, I’ll calculate a position for this window manually. The defaultWindowPlacement modifier provides a context. Depending on the platform, this will contain different information. In macOS, the context contains information about the default display. I access that and get the .visibleRect. This represents where it is safe to place content.\n\nUsing the sizeThatFits method, I ask the contents of the window, what size they would like to be. Using the displayBounds and size variables, I calculate a position that’s just above the bottom of the display and centered horizontally.\n\nNow, I can return a WindowPlacement with the calculated position and the size.\n\nNow my controls are positioned comfortably on macOS as well. While playing, the player is free to reposition the window, or even place it on a separate screen. I’m loving these new window placements! To make sure my content is always looking its best, I’d like to change how the window can be resized as well. Windows have an initial size determined by the system. You can change the default size in a few different ways.\n\nIf the size depends on the screen size or other windows, you can specify an initial size through the default window placement API, like I did for the controller window in macOS. Alternatively, you can use the defaultSize modifier to change the initial size. Note that this default size, is not used if there are other size constraints, like a size provided by the window placement API or when scenes are restored.\n\nFor a pushed window, like the movie window I added earlier, the defaultSize will be the same as the originating window’s size. The originating window in this case, is the robot editor. I’m happy with the default size, but players may want to resize the movie window. I’ll set some limits, so the movie always looks good.\n\nBy specifying that the \"movie\" WindowGroup should have a .windowResizability of .contentSize, the window will be limited to the min and max size of the content it contains. To the movie content view, I add a min and maxWidth, and a min and maxHeight.\n\nNow the movie window can be resized down to a square and resized up within reasonable limits.\n\nI could watch the BOT-anist all day! But, I should really focus on the controls window.\n\nIt can be resized to be too large, getting in the way of the volume. It makes sense for the size of this window to match the size of the content it contains.\n\nJust like I did for the movie WindowGroup, I also add a windowResizability modifier to the controller window group.\n\nNow, when I change the controller mode, the window resizes to match the size of the content.\n\nNote that this window is not resizable by the player, because the views for each mode have fixed sizes, not min and max sizes.\n\nBOT-anist is coming along really well! I’ve made some great improvements to the app for visionOS & macOS. Your app, can also make great use of windows and the API’s that support them.\n\nConsider whether a window or a top-level view makes the most sense for your app. Use the window placement API to provide an initial layout. Size windows based on their content and set limits on how a window can be resized. And make use of platform specific window features, to make your app feel even more at home.\n\nThanks for joining me! I hope you enjoy working with windows in your app.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:36",
+      "title": "BOT-anist scenes",
+      "language": "swift",
+      "code": "@main\nstruct BOTanistApp: App {\n    var body: some Scene {\n        WindowGroup(id: \"editor\") {\n            EditorContentView()\n        }\n\n        WindowGroup(id: \"game\") {\n            GameContentView()\n        }\n        .windowStyle(.volumetric)\n    }\n}"
+    },
+    {
+      "timestamp": "3:09",
+      "title": "Creating the movie WindowGroup",
+      "language": "swift",
+      "code": "@main\nstruct BOTanistApp: App {\n    var body: some Scene {\n        WindowGroup(id: \"editor\") {\n            EditorContentView()\n        }\n\n        WindowGroup(id: \"game\") {\n            GameContentView()\n        }\n        .windowStyle(.volumetric)\n\n        WindowGroup(id: \"movie\") {\n            MovieContentView()\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "3:55",
+      "title": "Opening a movie window",
+      "language": "swift",
+      "code": "struct EditorContentView: View {\n    @Environment(\\.openWindow) private var openWindow\n\n    var body: some View {\n        Button(\"Open Movie\", systemImage: \"tv\") {\n            openWindow(id: \"movie\")\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "4:45",
+      "title": "Pushing a movie window",
+      "language": "swift",
+      "code": "struct EditorContentView: View {\n    @Environment(\\.pushWindow) private var pushWindow\n\n    var body: some View {\n        Button(\"Open Movie\", systemImage: \"tv\") {\n            pushWindow(id: \"movie\")\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "5:34",
+      "title": "Toolbar",
+      "language": "swift",
+      "code": "CanvasView()\n    .toolbar {\n        ToolbarItem {\n            Button(...)\n        }\n        ...\n    }"
+    },
+    {
+      "timestamp": "5:40",
+      "title": "Title menu",
+      "language": "swift",
+      "code": "CanvasView()\n    .toolbar {\n        ToolbarTitleMenu {\n            Button(...)\n        }\n        ...\n    }"
+    },
+    {
+      "timestamp": "5:48",
+      "title": "Hiding window controls",
+      "language": "swift",
+      "code": "WindowGroup(id: \"movie\") {\n    ...\n}\n.persistentSystemOverlays(.hidden)"
+    },
+    {
+      "timestamp": "6:28",
+      "title": "Creating the controller window",
+      "language": "swift",
+      "code": "@main\nstruct BOTanistApp: App {\n    var body: some Scene {\n        ...\n\n        WindowGroup(id: \"movie\") {\n            MovieContentView()\n        }\n\n        WindowGroup(id: \"controller\") {\n            ControllerContentView()\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "6:34",
+      "title": "Opening the controller window",
+      "language": "swift",
+      "code": "struct GameContentView: View {\n    @Environment(\\.openWindow) private var openWindow\n\n    var body: some View {\n        ...\n        Button(\"Open Controller\", systemImage: \"gamecontroller.fill\") {\n            openWindow(id: \"controller\")\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "7:46",
+      "title": "Positioning the controller window",
+      "language": "swift",
+      "code": "WindowGroup(id: \"controller\") {\n    ControllerContentView()\n}\n.defaultWindowPlacement { content, context in\n    #if os(visionOS)\n    return WindowPlacement(.utilityPanel)\n    #elseif os(macOS)\n    ...\n    #endif\n}"
+    },
+    {
+      "timestamp": "8:45",
+      "title": "Positioning the controller window continued",
+      "language": "swift",
+      "code": "WindowGroup(id: \"controller\") {\n    ControllerContentView()\n}\n.defaultWindowPlacement { content, context in\n    #if os(visionOS)\n    return WindowPlacement(.utilityPanel)\n    #elseif os(macOS)\n    let displayBounds = context.defaultDisplay.visibleRect\n    let size = content.sizeThatFits(.unspecified)\n    let position = CGPoint(\n        x: displayBounds.midX - (size.width / 2),\n        y: displayBounds.maxY - size.height - 20\n    )\n    return WindowPlacement(position, size: size)\n    #endif\n}"
+    },
+    {
+      "timestamp": "10:12",
+      "title": "Default size",
+      "language": "swift",
+      "code": "@main\nstruct BOTanistApp: App {\n    var body: some Scene {\n        ...\n        WindowGroup(id: \"movie\") {\n            MovieContentView()\n        }\n        .defaultSize(width: 1166, height: 680)\n    }\n}"
+    },
+    {
+      "timestamp": "10:49",
+      "title": "Setting resize limits on the movie window",
+      "language": "swift",
+      "code": "@main\nstruct BOTanistApp: App {\n    var body: some Scene {\n        ...\n        WindowGroup(id: \"movie\") {\n            MovieContentView()\n                .frame(\n                    minWidth: 680, maxWidth: 2720,\n                    minHeight: 680, maxHeight: 1020\n                )\n        }\n        .windowResizability(.contentSize)\n    }\n}"
+    },
+    {
+      "timestamp": "11:37",
+      "title": "Controller window resizability",
+      "language": "swift",
+      "code": "@main\nstruct BOTanistApp: App {\n    var body: some Scene {\n        ...\n        WindowGroup(id: \"controller\") {\n            ControllerContentView()\n        }\n        .windowResizability(.contentSize)\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "BOT-anist",
+        "url": "https://developer.apple.com/documentation/visionOS/BOT-anist"
+      },
+      {
+        "title": "Forum: UI Frameworks",
+        "url": "https://developer.apple.com/forums/topics/ui-frameworks?cid=vf-a-0010"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10149/5/D0809E73-22CA-4A6A-9F6B-BC3C19A39167/downloads/wwdc2024-10149_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10149/5/D0809E73-22CA-4A6A-9F6B-BC3C19A39167/downloads/wwdc2024-10149_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10148",
+      "year": "2024",
+      "title": "Tailor macOS windows with SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10148"
+    },
+    {
+      "id": "10076",
+      "year": "2023",
+      "title": "Design for spatial user interfaces",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10076"
+    },
+    {
+      "id": "10110",
+      "year": "2023",
+      "title": "Elevate your windowed app for spatial computing",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10110"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:45:20.422Z"
+}

@@ -1,0 +1,72 @@
+{
+  "id": "10225",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10225/",
+  "title": "Improve stream authoring with HLS Tools",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": false,
+  "transcript": {
+    "fullText": "Hello, and welcome to WWDC.\n\nHi. Welcome to WWDC. My name is Eryk Vershen. I'm an engineer on the streaming team. This talk is about HLS Tools and HLS Authoring. In particular, it's about new stuff we have for you this year.\n\nThere's three main topics to cover. First of all, I want to tell you about changes that we've made in HLS Tools. Then I'll tell you about how to use some of the tools to make a Low-Latency HLS stream.\n\nAnd last, I'll give you some advice about creating master playlists. Let's get started with the first topic.\n\nLast year, the Low-Latency HLS Tools were in a separate package. Since Low-Latency HLS is coming out of beta, we've gone back to a single tool distribution that includes those tools. When you're validating a stream with Media Stream Validator, the tool waits until it's completely done to report most errors. In the case of a live stream, where you might run the validator for half an hour or even an hour or more, this can be a problem. With the new immediate option, the validator will report errors as soon as it detects them.\n\nThe other part of validation is HLS Report. That used to be a Python script. We've changed it into a compiled binary. We did drop one old deprecated option, but all the other functionality is still there.\n\nWe've added support for some new audio codecs. While I'll mention a few things in this talk, you should watch our other talk, Delivering a Better HLS Audio Experience, for more details.\n\nLet's move on to the Low-Latency Tools. Instead of one very long talk about Low-Latency HLS, we've split it into several smaller talks this year. You should definitely watch the overview talk, Low-Latency HLS Updates. And you may find it helpful to review the talk about Low-Latency HLS from last year's conference.\n\nLet's look at the specific tools for Low-Latency HLS.\n\nWe added TS recompressor. As the name implies, it can modify transport streams, but it can also generate video and audio. That's what we're going to use it for.\n\nMedia Stream Segmenter was modified for Low-Latency HLS to be able to produce partial segments and their associated tags.\n\nAnd we added two scripts that implement what we call the Delivery Directives Interface, which is the interpretation and response to some query parameters. I'll talk a little more about those later.\n\nHere's how the flow works. Any particular variant of your Low-Latency HLS stream is going to use Media Stream Segmenter to break up its input. That's going to be a transport stream coming out of TS recompressor via UDP.\n\nThe segmenter will produce a media playlist and media segments. And that playlist will point at the media segments. Now, the playlist is going to be periodically updated because it's a live playlist. And the media segments are dynamic. That is, we add segments over time and delete them when they're no longer needed. Low-Latency HLS requires the server to interpret some query parameters, so we have an interface script that handles that, and it returns a modified playlist, which points at the same media segments.\n\nSince we have multiple variants, we need a master playlist to reference them, which is just a static file that uses URLs that activate the interface script, rather than the raw media playlists. Here's what the TS recompressor command line looks like. We tell it we want to generate input for us, and use the hardware encoder if possible. Then we tell it to output three versions: a preview at 500 Kbps, a lower-quality video at 2 Mbps, and a main output at 4 Mbps. These are sent to the listed UDP ports.\n\nEach output port needs to have its own copy of Media Stream Segmenter. For example, this one is processing the low-quality output from TS recompressor.\n\nNow the first option, part-target-duration-ms, activates the generation of partial segments.\n\nThe next three should be familiar: target duration, how many parent segments to have in the playlist, and delete segments after they are no longer needed. \"Date-time\" is a new option that adds an EXT-X-PROGRAM-DATE-TIME tag to the playlist. And then, of course, you have to tell it where to put the output files.\n\nAs I said earlier, we need to implement the Delivery Directives Interface. The first form is a script written in the Go language. It creates its own HTTP server, so you pass it a directory to tell it where the segmenter output is, and it serves up synthesized playlist when certain URLs are requested.\n\nThe other form is a PHP script. This uses your existing HTTP server. In this case, you need one copy of the script for each variant.\n\nThe Delivery Directives Interface requires returning the EXT-X-RENDITION-REPORT tag, which gives information about the other variants. To make that easier for both of these scripts, they expect that all the variants are written to sub-directories of a single parent directory. That way they can simply search relative to the parent directory to find the other variants.\n\nLet's talk about the new audio codecs and how you can use them.\n\nHere are the codec tags. USAC or xHE-AAC is an MPEG-4 audio variant. Apple Lossless has a very straightforward CODECS string. Please note that the CODECS attribute for FLAC, that's not a typo. It really does have that odd case structure. When you're building up a master playlist, it can be a bit complicated. First you need to choose your video resolutions and codecs. These are your basic variants. Then you have some some set of audio languages. For example, English and Chinese.\n\nYou'll have some codecs, say, AAC, FLAC, AC-3. Maybe some of these are in stereo and some in 5.1 sound, or both.\n\nYou'll want to make one audio group for each codec/channel count pair. Each group must have every language in it.\n\nThen you replicate the variant entries for each group, with some exceptions.\n\nWhen you're making audio groups, there are some things to remember. First, you should always have a stereo AAC group. This is good fallback, since it's something all devices can play.\n\nIf you have multichannel in a lossless audio codec, then we suggest you have a multichannel AAC codec as well. Lossless requires a high bit rate. You want something available that has a lower bit rate.\n\nRemember, we don't want to switch the number of channels. If you're in multichannel, we want to stay in multichannel.\n\nGenerally speaking, we don't switch between audio codecs, but there are two notable exceptions. We will switch among the AAC variants: AAC-LC, HE-AAC, HE-AACv2, and USAC or xHE-AAC. And we will switch between lossless codecs and AAC codecs.\n\nAs I said earlier, once you have your audio groups, you replicate the variant entries for each group, with some exceptions. If the codecs are switchable between, like the AAC codecs, then you can spread the groups across the variants using the low audio bit rate group with the low video bit rates and the high audio bit rate group with the high video. But, if the codecs are not switchable, like AC-3 and lossless, then you want them to be associated with every variant. Remember, this doesn't create new variant playlists, it just creates new entries in the master playlist, which associate a video playlist with an audio group.\n\nNow, some of you may have hit a problem where the variants you want to favor aren't being chosen. The default behavior is to choose the highest bit rate among what's currently playable. With USAC and with Dolby Digital Plus, this can cause an inversion where the chosen variant is not what you would prefer.\n\nTo get around this, we've added the SCORE attribute. This is on variants and I-Frame variants. The value is a floating-point number. The feature is already in so you can try it without upgrading.\n\nIt allows you to set an ordering on all the variants.\n\nYou have to put it on all the variants. If you want to set an order, it has to be complete, otherwise we'll have situations where we wouldn't be able to choose.\n\nThe way it works is we'll do all our usual filtering to get down to a set of variants, any of which could be played. At that point, we use SCORE to decide and the highest SCORE wins.\n\nLet's see an example. This is a very cut-down master playlist. I've left out a lot so it would fit on one slide, and I've fiddled with the spacing. We have two audio groups here. One is USAC, the other is HE-AAC. They have the same set of languages.\n\nWe have two video variants, a 720p and a 1080p, which makes for four video variant entries. Even though these are compatible audio, I've put all the possible entries in.\n\nThese are in order by BANDWIDTH. So notice, we would end up choosing the HE-AAC variants to play. This is not what we want, since the USAC is going to sound better. We really want to choose the HE-AAC only if we are on some device that can't play the USAC.\n\nWe fix this with the SCORE attribute. We give the USAC variants higher scores, so they are preferred. This allows the USAC to function like a mutually exclusive codec. Let's wrap up. Remember, we've made changes to the tools. And you want to take a look at how you're using audio groups.\n\nSo download the latest version of the tools. Read the Read Me files and manual pages and explore what you can do.\n\nThat's all. Thanks for watching.",
+    "segments": []
+  },
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10225/1/071CF9A2-F9B9-48A1-8D81-012721D0A52C/wwdc2020_10225_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10225/1/071CF9A2-F9B9-48A1-8D81-012721D0A52C/wwdc2020_10225_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10158",
+      "year": "2020",
+      "title": "Deliver a better HLS audio experience",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10158"
+    },
+    {
+      "id": "10230",
+      "year": "2020",
+      "title": "Optimize live streams with HLS Playlist Delta Updates",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10230"
+    },
+    {
+      "id": "10231",
+      "year": "2020",
+      "title": "Reduce latency with HLS Blocking Playlist Reload",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10231"
+    },
+    {
+      "id": "10228",
+      "year": "2020",
+      "title": "What's new in Low-Latency HLS",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10228"
+    },
+    {
+      "id": "502",
+      "year": "2019",
+      "title": "Introducing Low-Latency HLS",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/502"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:25:14.190Z"
+}

@@ -1,0 +1,145 @@
+{
+  "id": "10019",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10019/",
+  "title": "Discover concurrency in SwiftUI",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Swift",
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, welcome to \"Discover concurrency in SwiftUI.\" I'm Curt Clifton, an engineer on the SwiftUI team. Later, I'll be joined by my colleague Jessica. Swift 5.5 introduces a variety of new tools for managing concurrency in your Swift code. In this talk, Jessica and I will help you understand how these improvements interact with your SwiftUI apps. I’ll walk through how the new tools can help you make your data models even better and show you how SwiftUI works with the new main actor. Then Jessica will show you how to connect your concurrent data model to your SwiftUI views and introduce some great new APIs that take advantage of Swift’s new concurrency tools.\n\nTo make the most of the information Jessica and I will be sharing, it’s important to have some background on Swift’s new concurrency support. We recommend you watch “Meet async/await in Swift” and “Explore structured concurrency in Swift” before diving into the rest of this video. When I was a child, I always dreamed of being an astronaut. I sometimes work in a spaceship, but otherwise that particular childhood dream didn't come true. Still, I haven't lost my enthusiasm for space. So I decided to apply my actual skills as a SwiftUI engineer to build an app to download space-related photos. Let's take a look at the app I have planned.\n\nThe app shows a list of random space photos. These colors are just beautiful. When I see a photo I really love, I can save it to view later. In order to fetch these beautiful images, my app is going to interact with a web service using a REST API. This sounds like a perfect use of the new concurrency features introduced in Swift. Let's start with our data model.\n\nI’m using a SpacePhoto struct to hold the information for a single image. The struct has fields like the title, a description of the photo, the date the image was posted, and a URL pointing to the actual image. I made my type Codable so that I can easily instantiate instances from a server response or save them to disk, and Identifiable so I can use them in ForEach and other data driven views. Next, I want to display a list of these entries. For that, I need a model that will fetch and hold a collection of them. I'm using a Photos class for this. By making my Photos class conform to ObservableObject, my SwiftUI views will automatically update whenever my data updates. I'm using a published property to store an array of SpacePhotos.\n\nTo fetch updated items from the REST endpoint, I’m using an Update Items method. I’ll talk about that in more detail shortly. But first I’d like to rough in a basic user interface.\n\nThis is the user interface I want to build. So far, I just have my tab view in place and a basic PhotoView.\n\nMy PhotoView takes a space photo and displays its title. That’s enough plumbing that I’ll be able to see my data model in action. Let’s look at the Catalog view next. My Catalog view will show the list of photos. To do that, I'll add a State Object and instantiate it with my Photos observable object. In the body of my view, I'll add a NavigationView. Using a navigation view here will let me add a large navigation title shortly. Next, inside my NavigationView, I’ll add a List. And inside my List, I’ll use a ForEach to map over my photos, showing a PhotoView for each of them.\n\nWith that, I can see my sample data.\n\nThat’s as far as I need to go for now, but let’s add just a bit more polish here.\n\nFirst, here’s the promised navigation title. Now, the default inset list style here looks great, but to really show off my space photos, I want to switch to a plain style so the photos will really pop against the black background.\n\nI can make the list style plain using the new enum-like static member syntax here. With this syntax, SwiftUI’s style modifiers get a more concise spelling with better support for autocompletion in Xcode 13. Finally, let me use another feature new in SwiftUI this year: control of list separators.\n\nInside my ForEach, I can use the listRowSeparator modifier to hide the separators.\n\nSometimes when I’m polishing a user interface with SwiftUI, I find it hard to stop. But I’ll leave the UI for now. Jessica is planning to finish it after I’m done with the data model.\n\nBefore I dig into the data model though, I’d like to talk just a bit about how SwiftUI interacts with your observable objects. And how the new concurrency features in Swift 5.5 make this interaction easier than ever to get right. At Dub Dub 2020, in “Data Essentials in SwiftUI,” my colleague Raj talked about the SwiftUI update life cycle. I’ll refer to the code that drives this life cycle as the “run loop.” With Swift 5.5, the run loop runs on the main actor. For more details on actors in general, check out the talk, “Protect mutable state with Swift actors.” Jessica and I will focus on the main actor in this talk. The SwiftUI run loop receives events from your user, lets you update your model, and then renders your SwiftUI views to the screen. I like to call these updates the “ticks of the run loop.” Let’s unroll this loop so we can look at multiple ticks in a row.\n\nIn SwiftUI, ObservableObjects can interact with the SwiftUI run loop in some interesting ways. Let’s go back to the Photos ObservableObject and look at the updateItems method. I’m going to call updateItems from my SwiftUI views and it will run on the main actor. Let’s use this blue rectangle to show the time when updateItems is running. I want to focus on this line of code where I assign the fetched photos to my “items” property. Because “items” is a Published property, this assignment triggers an objectWillChange event, immediately followed by writing the fetched photos to the storage for “items.” When SwiftUI sees this objectWillChange, it takes a snapshot of my items. On the next tick of the run loop after the snapshot, SwiftUI compares the snapshot to the current value. Because these values are different, SwiftUI knows to update my views that depend on Photos. Note that because objectWillChange, updating the storage, and the run loop tick all happen on the main actor, they’re guaranteed to happen in order. In the 2020 “Data Essentials” talk, Raj describes slow updates when your view does too much work in body.\n\nSlow updates can also happen if your model code does too much work on the main actor.\n\nFor example, suppose my fetchPhotos function blocks while waiting for the download to complete, and suppose I’m on a slow connection. Because I’m blocking the main actor, I miss this tick of the run loop. This is visible to my users as a hitch. In the past, you might have dispatched to another queue to perform the work, so that the expensive fetchPhotos occurs off of the main thread. This might seem to work fine, but I have a tricky issue here. I’m changing my ObservableObject from off the main actor. It’s possible for my changes and the run loop tick to interleave. For example, when I assign to “items,” and SwiftUI takes its objectWillChange snapshot, it’s possible that this happens immediately before a tick of the run loop. The state change hasn’t happened yet, so SwiftUI compares the snapshot to the unchanged value. The actual state change happens after the run loop tick, but SwiftUI doesn’t see that change, and so my views aren’t updated. To update correctly, SwiftUI needs these events to happen in order: objectWillChange, the ObservableObject’s state is updated, and then the run loop reaches its next tick. If I can ensure that these all happen on the main actor, I can guarantee this ordering. Prior to Swift 5.5, I might have dispatched back to the main queue to update my state, but now it’s much easier. Just use await! By using await to make an async call from the main actor, I let other work continue on the main actor while the async work happens. This is called “yielding” the main actor.\n\nIn updateItems, I can use await to yield the main actor back to SwiftUI during my long running I/O, so it can keep the run loop ticking and avoid any UI hitches. When the async work completes, Swift re-enters my updateItems method back on the main actor, so I can update my state. Let’s see how this works.\n\nInstead of dispatching to another queue, I simply await the result of the long running operation. When I write await, the updateItems function yields control of the main actor so that the run loop can continue. When the awaited fetch is complete, the main actor re-enters my function, so that I can safely update my published property, triggering objectWillChange, and making the new value available to SwiftUI.\n\nLet’s jump into Xcode and see if I can make fetch happen.\n\nHere’s the updateItems method that I showed on the slides. To implement fetchPhotos, let’s start by adding the code to fetch a single photo. I’ll make my fetchPhoto method take the URL of a photo from the rest endpoint, and return a SpacePhoto.\n\nNext, I’ll use the new async version of the data convenience on URLSession to fetch the data from the URL.  To stub this in, I’m using a forced try. I’ll clean that up shortly.\n\nAh, the data method is async, so I need to use await.\n\nAnd that means I need to make my fetchPhoto method async.\n\nOK, great. Now that I have my data, I’ll use the Decodable initializer to instantiate a photo and return it.  Let’s look at fetchPhotos next. I’ve stubbed in some code to get a random selection of dates and loop over them. I want to build up an array, so I’ll make “downloaded” a var, and add a date variable to my loop.\n\nInside the loop, I’ll call a helper method I already have to construct the rest endpoint URL for fetching a particular date.\n\nThen, I’ll call my fetchPhoto method and append the results to my array.  And let’s build. Ah, because fetchPhoto is async, I need to await the result.\n\nAnd that means fetchPhotos needs to be async, too.\n\nI’m making these calls to fetchPhoto sequentially for simplicity. Check out Swift 5.5’s task groups for even more powerful options.\n\nNow, I just need to await fetchPhotos like I showed in the slides.\n\nAnd with that, my update logic is in place. Now, maybe you’re as nervous as I am by these forced tries to make fetch happen. Let’s clean that up. For now, I’ll return nil when the download fails.  Then in fetchPhotos, I’ll only add the non-nil values to my array.\n\nNow that Photos uses async-await, I can be sure it won’t run into any of the tricky objectWillChange bugs I discussed, as long as it runs on the main actor. But how can I ensure that? Luckily, the Swift compiler can help me here. By adding the new @MainActor annotation to Photos, the compiler will guarantee that the properties and methods on Photos are only ever accessed from the main actor. With that done, the model is in place. Next, Jessica will connect our views to the model and show you some great new SwiftUI APIs for leveraging concurrency in your apps. Jessica? Thank you, Curt. Let’s switch over to the CatalogView and use the updateItems method that Curt just showed us.\n\nI want to call updateItems whenever my Catalog shows. In the past, you might have used onAppear for this, but starting this year in SwiftUI, use the task modifier. Task lets you associate an asynchronous task with your view. The task starts at the beginning of the view’s lifetime. Task is async by default, so inside its closure, I can call updateItems on myPhotos object and await the results.\n\nThis is a great use of task, but there’s even more to this new modifier. A task’s lifetime is tied to the view’s lifetime, so you can do things like waiting on an async sequence and responding to its values. And the task will be automatically canceled when the view’s lifetime ends. For more on view lifetime, be sure to check out the talk “Demystify SwiftUI.” Using live preview, I can see that the entries are updated. But we’re still missing the beautiful images. I’ve already been updating the PhotoView that Curt showed earlier. I’ll add some background materials behind the title. Now, let’s add the images. Happily, using the new AsyncImage API, loading images from a remote server is easier than ever. All I have to do is get the image URL I want to fetch out of our entry, and pass it to AsyncImage.  Well, this is a little too big at its full size, so let’s use the overload of AsyncImage that lets me adjust the image and show a placeholder so that users know their image is loading.   Next, I’ll make the image resizable and set its aspect ratio to fill the space.  Finally, I’ll add a minimum width and height to make my image flexible. Using a non-zero minimum height will also make sure that the progress view peeks out over my title area.  Like the rest of SwiftUI, AsyncImage comes built with intelligent defaults, so even if there are errors loading your image, the result will be to continue showing the placeholder. You can also choose to customize the error handling behavior. To do that, check out “AsyncImage’s overload that uses a phase.” It would also be great if users could save their favorite images to view later. Let’s add a button to this title area to do that. The button will trigger an async action to save the image entry to disk. Saved entries will appear in the Saved tab in our app. I’ve already stubbed in a view to do this. Let me add it here, then we can take a look at its code.  Here’s the stubbed-in version of my Save button. Let’s add an action to save the photo. Button actions in SwiftUI are synchronous, but my “save” method is asynchronous. To call the method, I’ll start an async task.\n\nThen, inside the closure, I’ll call the “save” method on “photo.” It’s asynchronous, so I’ll just use await.\n\nI think it would be nice to show a progress view while the save is taking place. To do that, I’ll add a State property.  Then, I’ll update the State around my call to save.  Then, I’ll update the label on my button to show a progress view when the save is happening. I’m using “opacity” to hide the Save label and an overlay to show the progress view. This combination ensures that the button stays the same size, based on the localization of the word “save.”    Finally, I’ll disable the button while the save is happening.\n\nLet’s see how this works with live preview.\n\nThat’s pretty great! Let’s go back to the Catalog view to put it all together.\n\nSwiftUI has a great new modifier this year that you can use to give people the ability to manually refresh their data. By adding the refreshable modifier to my List, I tell SwiftUI that this content is refreshable. I can provide an async closure to refreshable and call our updateItems method to update the List. As I showed earlier with “task,” I’ll use await on this async method.\n\nThe refreshing indicator dismisses automatically when my asynchronous work is done. Now, I can pull down to refresh my images, tap Save to save an image I like, and switch to my Saved tab to see my saved images.\n\nSwift’s new features make it easy to work with concurrent data. SwiftUI integrates nicely with Swift’s concurrency features to provide you the best behavior by default. In many cases, you just need to use await to leverage the power of concurrency. Mark your ObservableObject as “@MainActor” for more robust checking that your object updates in ways that work well with your views.\n\nTake advantage of SwiftUI’s API additions to write safe and performant concurrent apps with minimal effort. Use AsyncImage to concurrently load images. Add the “refreshable” modifier to your view hierarchy to allow users to manually refresh their data. Like we saw with the Save button, you can use Swift’s new concurrency features in your own custom views.\n\nAs we all know, concurrency is tricky. It’s a hard problem, but with these new language features and SwiftUI APIs, you now have the tools to manage that complexity in your apps. We hope you enjoyed learning about the great new concurrency tools in Swift 5.5 and SwiftUI, and we look forward to seeing all the ways you use them to tackle tricky problems in your apps. [music]",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:55",
+      "title": "SpacePhoto",
+      "language": "swift",
+      "code": "/// A SpacePhoto contains information about a single day's photo record\n/// including its date, a title, description, etc.\nstruct SpacePhoto {\n    /// The title of the astronomical photo.\n    var title: String\n\n    /// A description of the astronomical photo.\n    var description: String\n\n    /// The date the given entry was added to the catalog.\n    var date: Date\n\n    /// A link to the image contained within the entry.\n    var url: URL\n}\n\n\nextension SpacePhoto: Codable {\n    enum CodingKeys: String, CodingKey {\n        case title\n        case description = \"explanation\"\n        case date\n        case url\n    }\n\n    init(data: Data) throws {\n        let decoder = JSONDecoder()\n        decoder.dateDecodingStrategy =\n            .formatted(SpacePhoto.dateFormatter)\n\n        self = try JSONDecoder()\n            .decode(SpacePhoto.self, from: data)\n    }\n}\n\nextension SpacePhoto: Identifiable {\n    var id: Date { date }\n}\n\nextension SpacePhoto {\n    static let urlTemplate = \"https://example.com/photos\"\n    static let dateFormat = \"yyyy-MM-dd\"\n\n    static var dateFormatter: DateFormatter {\n        let formatter = DateFormatter()\n        formatter.dateFormat = Self.dateFormat\n        return formatter\n    }\n\n    static func requestFor(date: Date) -> URL {\n        let dateString = SpacePhoto.dateFormatter.string(from: date)\n        return URL(string: \"\\(SpacePhoto.urlTemplate)&date=\\(dateString)\")!\n    }\n\n    private static func parseDate(\n        fromContainer container: KeyedDecodingContainer<CodingKeys>\n    ) throws -> Date {\n        let dateString = try container.decode(String.self, forKey: .date)\n        guard let result = dateFormatter.date(from: dateString) else {\n            throw DecodingError.dataCorruptedError(\n                forKey: .date,\n                in: container,\n                debugDescription: \"Invalid date format\")\n        }\n        return result\n    }\n\n    private var dateString: String {\n        Self.dateFormatter.string(from: date)\n    }\n}\n\nextension SpacePhoto {\n    init(from decoder: Decoder) throws {\n        let container = try decoder.container(keyedBy: CodingKeys.self)\n        title = try container.decode(String.self, forKey: .title)\n        description = try container.decode(String.self, forKey: .description)\n        date = try Self.parseDate(fromContainer: container)\n        url = try container.decode(URL.self, forKey: .url)\n    }\n\n    func encode(to encoder: Encoder) throws {\n        var container = encoder.container(keyedBy: CodingKeys.self)\n        try container.encode(title, forKey: .title)\n        try container.encode(description, forKey: .description)\n        try container.encode(dateString, forKey: .date)\n    }\n}"
+    },
+    {
+      "timestamp": "2:39",
+      "title": "Photos",
+      "language": "swift",
+      "code": "/// The current collection of space photos.\nclass Photos: ObservableObject {\n    @Published private(set) var items: [SpacePhoto] = []\n\n    /// Updates `items` to a new, random list of photos.\n    func updateItems() async {\n        let fetched = fetchPhotos()\n        items = fetched\n    }\n\n    /// Fetches a new, random list of photos.\n    func fetchPhotos() -> [SpacePhoto] {\n        let downloaded: [SpacePhoto] = []\n        for _ in randomPhotoDates() {\n        }\n        return downloaded\n    }\n}"
+    },
+    {
+      "timestamp": "3:24",
+      "title": "CatalogView",
+      "language": "swift",
+      "code": "struct CatalogView: View {\n    @StateObject private var photos = Photos()\n\n    var body: some View {\n        NavigationView {\n            List {\n                ForEach(photos.items) { item in\n                    PhotoView(photo: item)\n                        .listRowSeparator(.hidden)\n                }\n            }\n            .navigationTitle(\"Catalog\")\n            .listStyle(.plain)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "10:09",
+      "title": "Make fetch happen",
+      "language": "swift",
+      "code": "/// An observable object representing a random list of space photos.\n@MainActor\nclass Photos: ObservableObject {\n    @Published private(set) var items: [SpacePhoto] = []\n\n    /// Updates `items` to a new, random list of `SpacePhoto`.\n    func updateItems() async {\n        let fetched = await fetchPhotos()\n        items = fetched\n    }\n\n    /// Fetches a new, random list of `SpacePhoto`.\n    func fetchPhotos() async -> [SpacePhoto] {\n        var downloaded: [SpacePhoto] = []\n        for date in randomPhotoDates() {\n            let url = SpacePhoto.requestFor(date: date)\n            if let photo = await fetchPhoto(from: url) {\n                downloaded.append(photo)\n            }\n        }\n        return downloaded\n    }\n\n    /// Fetches a `SpacePhoto` from the given `URL`.\n    func fetchPhoto(from url: URL) async -> SpacePhoto? {\n        do {\n            let (data, _) = try await URLSession.shared.data(from: url)\n            return try SpacePhoto(data: data)\n        } catch {\n            return nil\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "14:07",
+      "title": "CatalogView",
+      "language": "swift",
+      "code": "struct CatalogView: View {\n    @StateObject private var photos = Photos()\n\n    var body: some View {\n        NavigationView {\n            List {\n                ForEach(photos.items) { item in\n                    PhotoView(photo: item)\n                        .listRowSeparator(.hidden)\n                }\n            }\n            .navigationTitle(\"Catalog\")\n            .listStyle(.plain)\n            .refreshable {\n                await photos.updateItems()\n            }\n        }\n        .task {\n            await photos.updateItems()\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "15:11",
+      "title": "PhotoView with image",
+      "language": "swift",
+      "code": "struct PhotoView: View {\n    var photo: SpacePhoto\n\n    var body: some View {\n        ZStack(alignment: .bottom) {\n            AsyncImage(url: photo.url) { image in\n                image\n                    .resizable()\n                    .aspectRatio(contentMode: .fill)\n            } placeholder: {\n                ProgressView()\n            }\n            .frame(minWidth: 0, minHeight: 400)\n\n            HStack {\n                Text(photo.title)\n                Spacer()\n                SavePhotoButton(photo: photo)\n            }\n            .padding()\n            .background(.thinMaterial)\n        }\n        .background(.thickMaterial)\n        .mask(RoundedRectangle(cornerRadius: 16))\n        .padding(.bottom, 8)\n    }\n}"
+    },
+    {
+      "timestamp": "18:06",
+      "title": "SavePhotoButton",
+      "language": "swift",
+      "code": "struct SavePhotoButton: View {\n    var photo: SpacePhoto\n    @State private var isSaving = false\n\n    var body: some View {\n        Button {\n            Task {\n                isSaving = true\n                await photo.save()\n                isSaving = false\n            }\n        } label: {\n            Text(\"Save\")\n                .opacity(isSaving ? 0 : 1)\n                .overlay {\n                    if isSaving {\n                        ProgressView()\n                    }\n                }\n        }\n        .disabled(isSaving)\n        .buttonStyle(.bordered)\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "AsyncImage",
+        "url": "https://developer.apple.com/documentation/SwiftUI/AsyncImage"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10019/6/97B7FCAB-AC78-4A0D-8F28-C5C7AE8C339C/downloads/wwdc2021-10019_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10019/6/97B7FCAB-AC78-4A0D-8F28-C5C7AE8C339C/downloads/wwdc2021-10019_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10142",
+      "year": "2022",
+      "title": "Efficiency awaits: Background tasks in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10142"
+    },
+    {
+      "id": "110351",
+      "year": "2022",
+      "title": "Eliminate data races using Swift Concurrency",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110351"
+    },
+    {
+      "id": "10022",
+      "year": "2021",
+      "title": "Demystify SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10022"
+    },
+    {
+      "id": "10134",
+      "year": "2021",
+      "title": "Explore structured concurrency in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10134"
+    },
+    {
+      "id": "10132",
+      "year": "2021",
+      "title": "Meet async/await in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10132"
+    },
+    {
+      "id": "10294",
+      "year": "2021",
+      "title": "Meet MusicKit for Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10294"
+    },
+    {
+      "id": "10133",
+      "year": "2021",
+      "title": "Protect mutable state with Swift actors",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10133"
+    },
+    {
+      "id": "10018",
+      "year": "2021",
+      "title": "What's new in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10018"
+    },
+    {
+      "id": "10040",
+      "year": "2020",
+      "title": "Data Essentials in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10040"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:49:00.877Z"
+}

@@ -1,0 +1,347 @@
+{
+  "id": "10013",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10013/",
+  "title": "Meet StoreKit for SwiftUI",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services",
+    "App Store, Distribution & Marketing"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Welcome to Meet StoreKit for SwiftUI. I'm Greg, an engineer on the StoreKit team. Let's talk about merchandising in-app purchases. Merchandising in-app purchase is all about presenting your product offerings and providing a way for customers to complete the purchase.\n\nMerchandising starts with getting data about the product you're selling and getting the status of your customer. For example, does the customer already own my non-consumable product? Are they subscribed to my subscription? You combine this data to build an interface to market the product to customers and provide interactions to purchase the product. This little red rectangle underrepresents all the hard work that goes into building your interface. There are actually many aspects to building your interface, requiring skills from a variety of disciplines. Then, your customer chooses to purchase your product. Your app needs to respond by using the purchase API and then updating its interface as a result of the purchase. If you've ever added in-app purchase to an app, you know getting merchandising right is critical. Wouldn't it be nice if we could abstract all these steps into a simple, yet powerful, view? This view could handle all common functionality and take parameters which allow you to configure the bits that make your app, your app. Well, I'm excited to introduce a powerful new set of APIs from StoreKit for building merchandising UI. In Xcode 15, StoreKit now provides a collection of SwiftUI views, which help you build declarative in-app purchase UI. You just declare what you want the merchandising experience to be, and the system puts your declarations into action behind the scenes.\n\nThe StoreView, ProductView, and SubscriptionStoreView are new views to get you up and running merchandising faster than ever. These views abstract over the data flow from the App Store and display system-provided UI to represent your in-app purchases. You can even use SwiftUI APIs you're already familiar with to customize how these views integrate with your app. Just like SwiftUI, these new views are supported on all platforms, so merchandising in-app purchase will be easier than ever on iPhone, iPad, Mac, Apple Watch, and Apple TV.\n\nA flock of feathered friends approached me and asked if I can help them add in-app purchases to their new game called Backyard Birds. With these new views from StoreKit, of course I said, \"No problem at all.\" Join me as we deliver an excellent in-app purchase experience in Backyard Birds. Feel free to download the sample project to work through this with me. We'll use Xcode Previews to rapidly iterate on our SwiftUI views. Because we have so much to cover, I've already set up a StoreKit configuration file. This contains metadata about our in-app purchases, which is necessary to use Xcode Previews with StoreKit. We have some great sessions to help you get started in your own app, such as, \"What's new in StoreKit Testing\" and \"Introducing StoreKit Testing in Xcode.\" Let's get right into Xcode. In Backyard Birds, we want to sell premium bird food like this nutrition pellet. After purchasing the food, we can leave it in our backyard to attract more hungry bird visitors. Let's jump into the code to see how we can leverage StoreKit to merchandise these products.\n\nTo get started, we'll create a view called BirdFoodShop to merchandise our bird food. I already created a file to implement this view. To use StoreKit to build our view, we need to import both StoreKit and SwiftUI at the top of the file.\n\nNext, I'll declare a query here to get our bird food data model, which will help us build out our store.\n\nI'm adding a StoreView to the app because it's the quickest way to get the merchandising view up and running. We need to provide it a collection of product identifiers from our StoreKit configuration file, which we can get from the birdFood model.\n\nAfter this declaration, now we have a functioning merchandising view. StoreKit loads all the product identifiers from the App Store and presents them in UI for us to view. The display names, descriptions, and prices all come directly from the App Store, which uses what you've set up in App Store Connect or your StoreKit configuration file. StoreKit even handles more subtle, but important, considerations like caching the data until it expires or the system is under memory pressure and checking whether in-app purchase is disabled in Screen Time. Earlier, the bird designers sent decorative icons for each bird food product. We can add these icons to the Store View just by adding a trailing view builder, and passing in a SwiftUI view representing our icons.\n\nThe view builder takes a Product value as a parameter, which we can use to determine an icon to use. I created a helper view that takes a product ID and looks up the right icon from our asset catalog.\n\nOnce I place this in here, you can see the preview updates to show the icons for each of our products. The Store View helps us get up and running with ease by turning our product identifiers and icons into a functional and well designed store. A powerful feature of the Store View is, our products automatically adjust to different platforms, so we already have a shop that looks great on iPad, Mac, and Apple Watch. Let's change our target in Xcode to Apple Watch to preview our shop.\n\nLooks great! I think we're ready to sell some bird food on Apple Watch as well.\n\nIt's common to want to organize your products in a way that's unique to your offering. Our team of bird designers have been hard at work creating a composition to showcase the bird food. This composition displays the best value prominently and organizes the other products into shelves. This is different from the list style layout we can achieve with StoreView, but StoreKit has us covered here as well.\n\nFor more detailed layouts, we can utilize the new ProductView. In fact, the StoreView we were just looking at uses the same ProductView to create its rows. Let's start by declaring a container for our new store.\n\nI want to showcase this box of nutrition pellets prominently above the other products, because it's our best value. To do this, I'll declare a ProductView by providing the ID for the nutrition pellet box.\n\nJust like with the StoreView, we can add a decorative icon by adding a trailing closure. I'll reuse our helper view from before.\n\nNext, let's add a section below for the other food items. I'll start by placing a background behind the best value...\n\nThen a header along with another helper view I made to lay out our bird food in shelves.\n\nInside this shelf helper view, we can declare a ProductView for each bird food product, along with our decorative icon.\n\nThere's one last thing we need to tie this whole shop together. We really want to display this box of nutrition pellets prominently to customers, but the bird designers think what we have now could look better. To appease the birds, we can use the new productViewStyle API to set the style for our hero product. I'll choose the large style to really make this stand out.\n\nIn just a few minutes, we built a specialized shop just for our bird food using the new ProductView in StoreKit. The large ProductView style helps us display our best value prominently by just adding one view modifier. There are three standard styles to choose from to fit your needs. Compact helps display more products in a smaller space, our bird food shelves automatically use the Regular style, and of course, the Large style is great for prominent presentations.\n\nSince the StoreView is composed of ProductView instances, you can use the same productViewStyle modifier to change the style of the StoreView.\n\nYou can even create custom styles and use them with ProductView and StoreView. Stick around, and I'll show you how later in the session. We've built a great way to offer consumable bird food in-app purchases using ProductView. The business birds think we haven't gone far enough, and they've tasked me with offering a subscription called Backyard Birds Pass for the most avid birdwatchers. While we can build subscription UI using ProductView or StoreView, the new SubscriptionStoreView is built specifically for subscriptions. Let's return to Xcode and build this together. To get started, in our StoreKit configuration, I've created this \"Backyard Birds Pass\" subscription group which offers three levels of service.\n\nTake note of this group ID. We'll need this in a moment.\n\nEarlier, I made a new file for our pass shop, so let's dive right in to the SubscriptionStoreView. The fastest way to get up and running with the SubscriptionStoreView is by providing the group ID from our StoreKit configuration file or App Store Connect. I already added the group ID to our environment, so we can just declare an environment property to access it, and then declare a SubscriptionStoreView by providing the group ID.\n\nJust like the StoreView and the ProductView, the SubscriptionStoreView manages the data flow for us and lays out a view with the different plan options. It also checks for existing subscriber status and whether the customer is eligible for an introductory offer. While this automatic look is great, there are some powerful new APIs we can use to make this fit the look and feel of Backyard Birds. For example, we can replace the marketing content in the header with any SwiftUI view. I built a marketing content view earlier, so I'll just drop this in here.\n\nWe can also add a container background to the Subscription Store to make things more visually interesting. We can use the new SwiftUI containerBackground API.\n\nNotice how I'm choosing to place this in the full height of the Subscription Store and then declaring a view I created earlier with a sky gradient and some clouds. To tie everything together, we can use some other APIs for styling the Subscription Store. By default, the Subscription Store adds a material layer between the subscription controls and a full-height background.\n\nWe can use the background style modifier to make the background behind the subscription controls clear.\n\nNow, I'll use subscriptionStoreButtonLabel to choose a multi-line layout for our subscribe button.\n\nNotice how the subscribe button now contains both the price and \"Try it Free.\" Next, I'll add subscriptionStorePickerItemBackground to declare a material effect for our subscription options.\n\nHere, we can see the sky gradient shine through the subscription plan options.\n\nFinally, because our subscription has offer codes, I'll use the new storeButton modifier to declare the Redeem Code button as visible.\n\nWith just this one view modifier, we have a button for customers to open the offer code redemption sheet.\n\nNow, our subscription view matches the feel of the rest of Backyard Birds. While these new views significantly reduce the effort required to add in-app purchase to an app, there are a couple important pieces we're missing. First, we must add logic to actually unlock the content after a purchase is made.\n\nSecond, we need to check if someone is already subscribed and then hide any controls that present the SubscriptionStoreView. StoreKit views handle customers who are already subscribed automatically, but in many cases, the best experience is choosing not to present any merchandising UI to existing customers.\n\nStoreKit has some brand new APIs to make implementing these important capabilities just as easy and fun as selling your content. Before you get started with these APIs, you'll want to have already implemented your business logic, or at least have some scaffolding in place. Ensure you're handling updated transactions, cooperating with your server, tracking consumable entitlements, and creating a data model that's suitable for your UI code, among other things. I recommend checking out \"Meet StoreKit 2\" and \"What's new in App Store server APIs\" to learn more about implementing your business logic.\n\nI already went ahead and implemented our bird business logic into an actor called BirdBrain. You'll see me referencing this soon.\n\nLet's get started with giving bird watchers access to the consumable bird food they purchase. Handling purchases that come from any of the StoreKit views is simple. You just modify a view with onInAppPurchaseCompletion and provide a function to call whenever a purchase completes. You can modify any view with this method, and it will be called whenever a descendant StoreKit view finishes a purchase. Let's add this modifier to our BirdFoodShop.\n\nThe modifier gives us the product which was purchased and the result of the purchase, whether it was successful or not. Let's implement this to send any successful results to the BirdBrain actor for processing.\n\nBy adding this modifier, we're now unlocking the consumable bird food that people purchase. Let's give this a try in the simulator.\n\nI'll choose a backyard and tap the supplies.\n\nThen, I'll purchase some nutrition pellets.\n\nAfter the sheet dismisses, you'll notice we now have five nutrition pellets in our supplies inventory.\n\nNow, we can place a nutrition pellet and sit back as our pellet brings all the hungry birds to the yard.\n\nIn addition to onInAppPurchaseCompletion, there are a few other related view modifiers you can use to handle events from StoreKit views.\n\nYou can use onInAppPurchaseStart to handle when someone triggers a purchase button, but before the purchase begins. This is useful if you want to update some UI components while the purchase is running, like dimming controls. The function you provide here receives the product that will be purchased as a parameter.\n\nWhen using these modifiers, it's important to know that they will handle events from any descendant ProductView, StoreView, or SubscriptionStoreView instances. If you add multiple modifiers, all of your actions will run for each event. Keep in mind, using these modifiers is entirely optional. By default, successful transactions from StoreKit views will emit from the Transaction.updates sequence, but you have the option to add onInAppPurchaseCompletion to handle the result directly. You can pass nil to any of these modifiers to revert to the default behavior. Now, let's talk about handling Backyard Birds Pass subscriptions. In addition to the new view APIs, StoreKit has new view modifiers for declaring data dependencies in SwiftUI. First, I'll cover the subscriptionStatusTask, which we can use to make unlocking our pass a breeze. In any view that depends on our subscription, we can add the subscriptionStatusTask modifier. Let's start with the Backyard Grid, because this is where we show the button to open the subscription offer sheet.\n\nThe subscriptionStatusTask modifier takes the group ID of the subscription we depend on.\n\nThis is the same group ID we used earlier when we declared the SubscriptionStoreView. Now, whenever the Backyard Grid appears, a background task will load the subscription status and then call the function we provide once the task completes.\n\nThe best practice for using this API is to just pass the statuses to our business logic, in our case, the BirdBrain actor, and then have the actor process the data and return a model type that is easier to work with in our UI code.\n\nI made this Pass status enum, so I'll just make a state property to assign this to.\n\nThen, we can choose to only show the subscription offer card if someone is not currently subscribed.\n\nWith these quick additions, we'll now only show the offer card to bird watchers who aren't yet subscribed. StoreKit will call our function when the status changes, so our view will always reflect the most up to date information. We can use this same pattern throughout the app to unlock Backyard Birds Pass content, and we can use the onInAppPurchaseCompletion modifier to automatically dismiss the Pass Shop sheet after a successful subscription. I already completed this part earlier, so let's run the app in the iPhone simulator and give this whole thing a test.\n\nI'll just tap Check It Out and press Try it Free.\n\nThe payment sheet appears, and I can tap Subscribe, then dismiss the alert. Watch how the offer sheet automatically dismisses, and the offer card is hidden too. That's because the subscription status task calls our function again each time the status changes, so we can be sure our app's UI is always up to date.\n\nWhile we're on the topic, if your app offers non-consumables or non-renewing subscriptions, there's a new API to make checking entitlements as easy as the subscriptionStatusTask. You can use the currentEntitlementTask modifier to declare a view as dependent on the current entitlement for a product ID, and the system will asynchronously load the current entitlement and call your function with the current entitlement whenever it changes. The functions you provide to both the subscriptionStatusTask and currentEntitlementTask take an entitlement task state as a parameter. That way, you can choose to granularly handle the case when the entitlement is still loading, if it fails to load, and when the entitlement loaded successfully. I covered how these new StoreKit views help streamline in-app purchase integration in Backyard Birds. Now, I want to go a little deeper and show how you can take these views a step further with all the new StoreKit APIs for SwiftUI.\n\nFirst, we'll look at more options for setting icons for ProductView and StoreView. Then, I'll go into detail about styling the Product View. After that, I'll cover how to add buttons with common functionality to the StoreView and SubscriptionStoreView. Finally, I'll go into the various new APIs you can use to make the Subscription Store View fit your brand's look and feel. Let's get into decorative icons. When you provide an icon, the standard Product View styles all show a placeholder icon while the product is loading, like what you can see on the left. Sometimes the automatic icon doesn't exactly fit what you expect the actual icon to be. For example, on iPhone, the automatic placeholder is a square, but we use circle icons for Bird Food products.\n\nYou can easily improve this appearance by adding a second trailing closure to your ProductView with the icon you want to use for your placeholder. In this case, I just provided a circle for the placeholder. If you set an App Store promotion image in App Store Connect, you can have the ProductView use that same image instead of a SwiftUI view. Just set the prefersPromotionalIcon parameter to true.\n\nYou can still provide a SwiftUI view as a fallback, but this view is ignored as long as the product has a promotional icon. Check out \"What's new in StoreKit 2 and StoreKit Testing in Xcode\" and \"What's new in App Store Connect\" to learn how to set up a promotional icon.\n\nEven if you don't want to use a promotional icon from the App Store, you can still use the cool in-app purchase icon treatment for your icons declared in SwiftUI. Just add this modifier to the view you provide for the icon to get this border added to your view. That's all about icons in the Product View. Keep in mind, there's corresponding API to do all of the same things with Store View icons, too. Now, let's talk about styling the Product View.\n\nEarlier in the session, I mentioned you can make custom Product View styles, and it's finally time for me to show you how.\n\nThe Product View's appearance, layout behavior, and interactions are entirely defined by the style it uses. So, if you can't find a standard style that fits what you're going for, you can always create your own custom Product View style.\n\nThe first case we'll look at involves creating custom styles composed of the standard styles so you aren't starting entirely from scratch. For example, what if you want the Product View to show a progress spinner instead of the standard placeholder appearance while loading? The first step for creating a custom style is to create a type that conforms to the ProductViewStyle protocol.\n\nThe only requirement for implementing the protocol is this makeBody method. The configuration value passed to your makeBody method has all of the properties you need to declare an excellent Product View. For example, it has a state enumeration which covers the different states of loading the product. To customize the loading appearance, we just have to declare a ProgressView for the loading state. Then, we can fallback to the standard ProductView behavior for any other states by simply passing the configuration to a ProductView instance.\n\nYou apply custom styles the same way you do standard styles, by passing it to the productViewStyle modifier. Of course, you don't need to compose your custom style with a standard style. You can always define your style using other views in the makeBody method. When the task state is success, you can access the Product value the view is representing. This is the same Product value you're already used to working with if your app uses StoreKit 2. You can use all of the properties of the Product to create your view. The configuration also allows you to access the decorative icon.\n\nWhen you're adding the purchase button, make sure to use the purchase method on the configuration value, not the product value. Using the method on the configuration will add default purchase options to make sure the payment confirmation sheet displays in proximity to your Product View, and also triggers the reactive modifiers like onInAppPurchaseCompletion. Remember: when your custom style is built from scratch, the appearance and behavior of Product Views using this style will match that of the views you composed to build the style. Creating custom styles is a great way to leverage all the infrastructure for the Product View, such as App Store data flow, while being free to declare any appearance and behavior you want.\n\nWhile loading, the UI we built for the Bird Food Shop shows placeholder shapes for each product. But what if we want an appearance like this loading spinner on the right? The solution to this problem is to lift up state. Let me explain what I mean here.\n\nThis diagram represents the hierarchy of the BirdFoodShop we built earlier. The BirdFoodShop has several ProductView descendants. When you initialize a ProductView with a product ID, each view internally keeps state of the product since the loading operation is asynchronous. If you want to create an effect where the parent BirdFoodShop shows a different appearance while the products are loading, you'll need to lift your state up into the parent BirdFoodShop. Once the parent BirdFoodShop is managing the state of the products, it's free to change its appearance while the data is loading, and then create ProductView instances using the pre-loaded product values instead of their IDs. We've only covered creating Product Views by product ID so far, but it's important to know you can pass a Product value that you've already loaded to a ProductView. This causes the Product View to skip loading and just lay out the merchandising view directly. You might be thinking: that's all cool, but in order to do that, now I have to write my own product request and caching logic. Well, you'll be happy to know we're exposing the insides of the StoreKit views as a view modifier, so you can declare any view as dependent on the metadata for a product ID. StoreKit will handle loading the products for you, caching them, and keeping them up to date. To do this, you just use the new storeProductsTask modifier. Similar to the subscriptionStatusTask we covered earlier, you pass a collection of product IDs for the view to depend on. Then, you get a state value you can use to handle the states of the async task. This should all feel pretty familiar after we just looked at a custom ProductViewStyle implementation.\n\nFrom here, we can show our loading view on loading….\n\nUse the new ContentUnavailableView if the products aren't available… Or just show our BirdFoodShop directly with the preloaded Product values. It's that easy. Speaking of easy, there are several useful common actions to include with in-app purchase merchandising UI. The StoreView and SubscriptionStoreView make it really easy to add auxiliary buttons for these common actions.\n\nWhen I talk about auxiliary buttons, I mean buttons that perform actions which support the main purpose of the view. For example, this Cancellation button and Redeem Code button are both auxiliary to subscribing to the pass.\n\nWe already looked at adding the Redeem Code button using the storeButton modifier when we first built this sheet. Let's take a closer look at this view modifier. There are a few values you can pass for each of the two parameters here. The first parameter enables you to choose the visibility. Automatic is the default for all buttons, which causes StoreKit to choose whether to make the button visible depending on the context. You can also choose to make a button explicitly visible or hidden. The next parameter allows you to choose the button kind you want to configure the visibility for. The cancellation button shows a platform-appropriate button to dismiss the view. This button works for both the StoreView and the SubscriptionStoreView. The automatic behavior for the cancellation button is to show whenever the view is presented. On the right, the Subscription Store View is presented as a sheet so it shows the cancellation button in the top right automatically. On the left, the view isn't presented as a sheet, so there's no cancellation button. Of course, you could choose to override this behavior and hide the cancellation button when presented. Keep in mind, you only want to do this when you're replacing the cancellation button with your own cancellation button. It's good practice to always accompany your merchandising UI with a clear button to dismiss the presentation.\n\nJust like the cancellation button, both the Store View and Subscription Store View can show a Restore Purchases button. By default, the Restore Purchases button is always hidden, but you can choose to show it in your merchandising UI with the storeButton modifier. The next three button kinds are only for the SubscriptionStoreView. We've already talked about the redeemCode button. The next button kind is a signIn button. If your subscription service allows people to subscribe outside of the App Store, it's a good idea to show a sign in button in case an existing subscriber needs to access their subscription. An important thing to know for the sign in button is, you must declare a sign in action using the new subscriptionStoreSignInAction modifier. If you set a sign in action, the sign in button will be visible automatically.\n\nThe sign in button simply calls the function you declare with subscriptionStoreSignInAction, so you can use this as a signal to run your sign in flow.\n\nThe final button kind to review is policies. You might want to show links to the terms of service and privacy policy along with your subscription offer, and the SubscriptionStoreView makes this really easy.\n\nTypically the policy buttons are hidden by default. If you make them visible with the storeButton modifier, they'll display above the subscribe controls on iOS and Mac. Since these buttons display above your container background, the default style may not be legible against your background. Use subscriptionStorePolicyForegroundStyle to set a shape style to use for the policy buttons that is legible against your background.\n\nConfiguring auxiliary buttons with the storeButton modifier helps add powerful functionality to your merchandising UI with just a few straightforward declarations. Earlier in the session, we configured the style of the Subscription Store View to match the look and feel of Backyard Birds. Now, I want to look at these style APIs closer. First, let's look at choosing a control style. Automatically, the SubscriptionStoreView chooses a control style based on the kind of subscription you're merchandising.\n\nYou can use the new subscriptionStoreControlStyle modifier to choose the style of controls to use for your subscription plans. For example, you can choose a button per plan instead of the automatic picker.\n\nLet's talk about the different styles of controls.\n\nIf you don't specify the style, the Subscription Store View picks a control automatically. On iPhone, this is the picker control for subscriptions with multiple plan options. You can also explicitly choose the picker control. On iOS and Mac, there's a prominent picker control, which displays the subscription plan options more prominently with a shadow and selection ring.\n\nLast, you can choose to show a button for each subscription plan instead of the picker control. On the topic of subscribe buttons, there's a new API you can use to customize the button labels.\n\nBy default, the SubscriptionStoreView shows a subscribe button that contains an action phrase and the pricing information as a caption above the button.\n\nYou can add the subscriptionStoreButtonLabel modifier to change the button label to multiline, which causes the pricing text to be contained within the button label, instead of as a separate caption.\n\nIn addition to customizing the layout of the button label, you can also customize the content. For example, you could choose to show the display name of the selected subscription instead of an action phrase.\n\nYou can even compose a button label value with both the layout and the content by chaining the components together, like this.\n\nSince the button controls are composed of the same subscribe buttons as the picker controls, you can use the same modifier to customize these buttons too.\n\nFor example, you can choose to only show the price in the label. This is useful when your plans are all the same service, but with different price points.\n\nDifferent subscription plans use the display name and the description you set up in App Store Connect to build the controls. To make these controls more interesting, you can choose to add a decorative view for each different plan. To add the decorative view, just add the subscriptionStoreControlIcon modifier to the Subscription Store.\n\nThe modifier takes a view builder. It provides the view builder with both a Product value and a SubscriptionInfo value. Using these parameters, you can provide a different view for each plan.\n\nThese icons also work when you use the button control style for your subscription plans. Now, let's look a little closer at adding background content to the Subscription Store View. To recap from earlier, you can add a container background to the Subscription Store by modifying your marketing content with the containerBackground modifier. In this case, we're providing a gradient of our accent color for the background and choosing to place it in the Subscription Store.\n\nYou can learn more about the new containerBackground API in the session \"What's new in SwiftUI.\" There are a few different background placements you can use for the Subscription Store. If you use the Subscription Store placement, it will choose an automatic placement based on the context. On iOS and Mac, you can explicitly specify you want your background to be placed in the Header of the Subscription Store. This placement is behind your marketing content. There's also a Full Height placement, which places the background behind the full height of the Subscription Store View.\n\nEarlier in the session, we discussed how to use an API like the subscription status task to avoid presenting our Get Backyard Birds Pass sheet. However, there is a case when we may want to show a Subscription Store View to existing subscribers, and that's when we want to encourage subscribers to upgrade to the premium plan.\n\nWhen we detect a subscriber is currently subscribed to a plan with a lower level of service than premium, we can present an upgrade sheet by passing upgrade as the visibleRelationships parameter. This could be any combination of subscription relationships we want, and it only has effects when someone is currently subscribed. Then, to make the offer more effective, we can provide a different view for the marketing content to explain the benefits of the premium plan. You can use the subscriptionStatusTask to keep track of a subscriber's level of service, and then use this information to know which offering to present to a customer. That's everything I have to cover today. When you start adding in-app purchase to your apps, declare a StoreView to get up and running quickly. If you desire a more customized layout, give ProductView a try. For your subscriptions, you can declare a SubscriptionStoreView to build compelling offers. And when you're ready to take things to the next level, try out the new view modifiers and other APIs to really make this your own. If you can't get enough StoreKit and SwiftUI, check out the sessions; \"What's new in StoreKit 2 and StoreKit Testing in Xcode\" and \"What's new in SwiftUI\" next.\n\nThanks for joining me today to learn about the new StoreKit APIs for SwiftUI. Happy coding!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:35",
+      "title": "Setting up the bird food shop view",
+      "language": "swift",
+      "code": "import SwiftUI\n\nstruct BirdFoodShop: View {\n \n  var body: some View {\n    Text(\"Hello, world!\") \n  }\n  \n}"
+    },
+    {
+      "timestamp": "3:42",
+      "title": "Import StoreKit to use the new merchandising views with SwiftUI",
+      "language": "swift",
+      "code": "import SwiftUI\nimport StoreKit\n\nstruct BirdFoodShop: View {\n \n  var body: some View {\n    Text(\"Hello, world!\") \n  }\n  \n}"
+    },
+    {
+      "timestamp": "3:51",
+      "title": "Declaring a query to access the bird food data model",
+      "language": "swift",
+      "code": "import SwiftUI\nimport StoreKit\n\nstruct BirdFoodShop: View {\n  @Query var birdFood: [BirdFood]\n \n  var body: some View {\n    Text(\"Hello, world!\") \n  }\n  \n}"
+    },
+    {
+      "timestamp": "4:18",
+      "title": "Meet store view",
+      "language": "swift",
+      "code": "import SwiftUI\nimport StoreKit\n\nstruct BirdFoodShop: View {\n  @Query var birdFood: [BirdFood]\n \n  var body: some View {\n    StoreView(ids: birdFood.productIDs) \n  }\n  \n}"
+    },
+    {
+      "timestamp": "4:51",
+      "title": "Adding decorative icons to the store view",
+      "language": "swift",
+      "code": "import SwiftUI\nimport StoreKit\n\nstruct BirdFoodShop: View {\n  @Query var birdFood: [BirdFood]\n\t\n  var body: some View {\n    StoreView(ids: birdFood.productIDs) { product in \n      BirdFoodProductIcon(productID: product.id)\n    }\n  }\n \n}"
+    },
+    {
+      "timestamp": "6:38",
+      "title": "Creating a container for a custom store layout",
+      "language": "swift",
+      "code": "import SwiftUI\nimport StoreKit\n\nstruct BirdFoodShop: View {\n  @Query var birdFood: [BirdFood]\n \n  var body: some View {\n    ScrollView {\n      VStack(spacing: 10) {\n        if let (birdFood, product) = birdFood.bestValue {\n          \n        }\n      }\n      .scrollClipDisabled()\n    }\n    .contentMargins(.horizontal, 20, for: .scrollContent)\n    .scrollIndicators(.hidden)\n    .frame(maxWidth: .infinity)\n    .background(.background.secondary)  \n  }\n  \n}"
+    },
+    {
+      "timestamp": "6:47",
+      "title": "Meet product view",
+      "language": "swift",
+      "code": "import SwiftUI\nimport StoreKit\n\nstruct BirdFoodShop: View {\n  @Query var birdFood: [BirdFood]\n \n  var body: some View {\n    ScrollView {\n      VStack(spacing: 10) {\n        if let (birdFood, product) = birdFood.bestValue {\n          ProductView(id: product.id)\n        }\n      }\n      .scrollClipDisabled()\n    }\n    .contentMargins(.horizontal, 20, for: .scrollContent)\n    .scrollIndicators(.hidden)\n    .frame(maxWidth: .infinity)\n    .background(.background.secondary)  \n  }\n  \n}"
+    },
+    {
+      "timestamp": "7:03",
+      "title": "Adding a decorative icon to the product view",
+      "language": "swift",
+      "code": "import SwiftUI\nimport StoreKit\n\nstruct BirdFoodShop: View {\n  @Query var birdFood: [BirdFood]\n \n  var body: some View {\n    ScrollView {\n      VStack(spacing: 10) {\n        if let (birdFood, product) = birdFood.bestValue {\n          ProductView(id: product.id) {\n            BirdFoodProductIcon(\n              birdFood: birdFood,\n              quantity: product.quantity\n            )\n          }\n        }\n      }\n      .scrollClipDisabled()\n    }\n    .contentMargins(.horizontal, 20, for: .scrollContent)\n    .scrollIndicators(.hidden)\n    .frame(maxWidth: .infinity)\n    .background(.background.secondary)  \n  }\n  \n}"
+    },
+    {
+      "timestamp": "7:17",
+      "title": "Adding more containers to layout product views",
+      "language": "swift",
+      "code": "import SwiftUI\nimport StoreKit\n\nstruct BirdFoodShop: View {\n  @Query var birdFood: [BirdFood]\n \n  var body: some View {\n    ScrollView {\n      VStack(spacing: 10) {\n        if let (birdFood, product) = birdFood.bestValue {\n          ProductView(id: product.id) {\n            BirdFoodProductIcon(\n              birdFood: birdFood,\n              quantity: product.quantity\n            )\n          }\n          .padding()\n          .background(.background.secondary, in: .rect(cornerRadius: 20))\n        }\n      }\n      .scrollClipDisabled()\n      Text(\"Other Bird Food\")\n        .font(.title3.weight(.medium))\n        .frame(maxWidth: .infinity, alignment: .leading)\n      ForEach(birdFood.premiumBirdFood) { birdFood in\n        BirdFoodShopShelf(title: birdFood.name) {\n          \n        }\n      }\n    }\n    .contentMargins(.horizontal, 20, for: .scrollContent)\n    .scrollIndicators(.hidden)\n    .frame(maxWidth: .infinity)\n    .background(.background.secondary)  \n  }\n  \n}"
+    },
+    {
+      "timestamp": "7:36",
+      "title": "Declaring product views for the remaining products",
+      "language": "swift",
+      "code": "import SwiftUI\nimport StoreKit\n\nstruct BirdFoodShop: View {\n  @Query var birdFood: [BirdFood]\n \n  var body: some View {\n    ScrollView {\n      VStack(spacing: 10) {\n        if let (birdFood, product) = birdFood.bestValue {\n          ProductView(id: product.id) {\n            BirdFoodProductIcon(\n              birdFood: birdFood,\n              quantity: product.quantity\n            )\n          }\n          .padding()\n          .background(.background.secondary, in: .rect(cornerRadius: 20))\n        }\n      }\n      .scrollClipDisabled()\n      Text(\"Other Bird Food\")\n        .font(.title3.weight(.medium))\n        .frame(maxWidth: .infinity, alignment: .leading)\n      ForEach(birdFood.premiumBirdFood) { birdFood in\n        BirdFoodShopShelf(title: birdFood.name) {\n          ForEach(birdFood.orderedProducts) { product in\n            ProductView(id: product.id) {\n              BirdFoodProductIcon(\n                birdFood: birdFood,\n                quantity: product.quantity\n              )\n            }\n          }\n        }\n      }\n    }\n    .contentMargins(.horizontal, 20, for: .scrollContent)\n    .scrollIndicators(.hidden)\n    .frame(maxWidth: .infinity)\n    .background(.background.secondary)  \n  }\n  \n}"
+    },
+    {
+      "timestamp": "7:50",
+      "title": "Choosing a product view style",
+      "language": "swift",
+      "code": "import SwiftUI\nimport StoreKit\n\nstruct BirdFoodShop: View {\n  @Query var birdFood: [BirdFood]\n \n  var body: some View {\n    ScrollView {\n      VStack(spacing: 10) {\n        if let (birdFood, product) = birdFood.bestValue {\n          ProductView(id: product.id) {\n            BirdFoodProductIcon(\n              birdFood: birdFood,\n              quantity: product.quantity\n            )\n          }\n          .padding()\n          .background(.background.secondary, in: .rect(cornerRadius: 20))\n          .padding()\n          .productViewStyle(.large)\n        }\n      }\n      .scrollClipDisabled()\n      Text(\"Other Bird Food\")\n        .font(.title3.weight(.medium))\n        .frame(maxWidth: .infinity, alignment: .leading)\n      ForEach(birdFood.premiumBirdFood) { birdFood in\n        BirdFoodShopShelf(title: birdFood.name) {\n          ForEach(birdFood.orderedProducts) { product in\n            ProductView(id: product.id) {\n              BirdFoodProductIcon(\n                birdFood: birdFood,\n                quantity: product.quantity\n              )\n            }\n          }\n        }\n      }\n    }\n    .contentMargins(.horizontal, 20, for: .scrollContent)\n    .scrollIndicators(.hidden)\n    .frame(maxWidth: .infinity)\n    .background(.background.secondary)  \n  }\n  \n}"
+    },
+    {
+      "timestamp": "8:25",
+      "title": "Styling the store view",
+      "language": "swift",
+      "code": "StoreView(ids: birdFood.productIDs) { product in \n    BirdFoodShopIcon(productID: product.id)\n}\n.productViewStyle(.compact)"
+    },
+    {
+      "timestamp": "9:53",
+      "title": "Setting up the Backyard Birds pass shop",
+      "language": "swift",
+      "code": "import SwiftUI\nimport StoreKit\n\nstruct BackyardBirdsPassShop: View {\n \n    var body: some View {\n        Text(\"Hello, world!\") \n    }\n  \n}"
+    },
+    {
+      "timestamp": "9:57",
+      "title": "Meet subscription store view",
+      "language": "swift",
+      "code": "import SwiftUI\nimport StoreKit\n\nstruct BackyardBirdsPassShop: View {\n    @Environment(\\.shopIDs.pass) var passGroupID\n \n    var body: some View {\n        SubscriptionStoreView(groupID: passGroupID)\n    }\n  \n}"
+    },
+    {
+      "timestamp": "10:38",
+      "title": "Customizing the subscription store view's marketing content",
+      "language": "swift",
+      "code": "import SwiftUI\nimport StoreKit\n\nstruct BackyardBirdsPassShop: View {\n    @Environment(\\.shopIDs.pass) var passGroupID\n \n    var body: some View {\n        SubscriptionStoreView(groupID: passGroupID) {\n            PassMarketingContent() \n        }\n    }\n  \n}"
+    },
+    {
+      "timestamp": "10:57",
+      "title": "Declaring a full height container background",
+      "language": "swift",
+      "code": "import SwiftUI\nimport StoreKit\n\nstruct BackyardBirdsPassShop: View {\n    @Environment(\\.shopIDs.pass) var passGroupID\n \n    var body: some View {\n        SubscriptionStoreView(groupID: passGroupID) {\n            PassMarketingContent()\n                .lightMarketingContentStyle()\n                .containerBackground(for: .subscriptionStoreFullHeight) {\n                    SkyBackground()\n                }\n        }\n    }\n  \n}"
+    },
+    {
+      "timestamp": "11:21",
+      "title": "Configuring the control background style",
+      "language": "swift",
+      "code": "import SwiftUI\nimport StoreKit\n\nstruct BackyardBirdsPassShop: View {\n    @Environment(\\.shopIDs.pass) var passGroupID\n \n    var body: some View {\n        SubscriptionStoreView(groupID: passGroupID) {\n            PassMarketingContent()\n                .lightMarketingContentStyle()\n                .containerBackground(for: .subscriptionStoreFullHeight) {\n                    SkyBackground()\n                }\n        }\n        .backgroundStyle(.clear)\n    }\n  \n}"
+    },
+    {
+      "timestamp": "11:44",
+      "title": "Choosing a subscribe button label layout",
+      "language": "swift",
+      "code": "import SwiftUI\nimport StoreKit\n\nstruct BackyardBirdsPassShop: View {\n    @Environment(\\.shopIDs.pass) var passGroupID\n \n    var body: some View {\n        SubscriptionStoreView(groupID: passGroupID) {\n            PassMarketingContent()\n                .lightMarketingContentStyle()\n                .containerBackground(for: .subscriptionStoreFullHeight) {\n                    SkyBackground()\n                }\n        }\n        .backgroundStyle(.clear)\n        .subscriptionStoreButtonLabel(.multiline)\n    }\n  \n}"
+    },
+    {
+      "timestamp": "12:01",
+      "title": "Choosing a subscription store picker item background",
+      "language": "swift",
+      "code": "import SwiftUI\nimport StoreKit\n\nstruct BackyardBirdsPassShop: View {\n    @Environment(\\.shopIDs.pass) var passGroupID\n \n    var body: some View {\n        SubscriptionStoreView(groupID: passGroupID) {\n            PassMarketingContent()\n                .lightMarketingContentStyle()\n                .containerBackground(for: .subscriptionStoreFullHeight) {\n                    SkyBackground()\n                }\n        }\n        .backgroundStyle(.clear)\n        .subscriptionStoreButtonLabel(.multiline)\n        .subscriptionStorePicketItemBackground(.thinMaterial)\n    }\n  \n}"
+    },
+    {
+      "timestamp": "12:20",
+      "title": "Declaring a redeem code button",
+      "language": "swift",
+      "code": "import SwiftUI\nimport StoreKit\n\nstruct BackyardBirdsPassShop: View {\n    @Environment(\\.shopIDs.pass) var passGroupID\n \n    var body: some View {\n        SubscriptionStoreView(groupID: passGroupID) {\n            PassMarketingContent()\n                .lightMarketingContentStyle()\n                .containerBackground(for: .subscriptionStoreFullHeight) {\n                    SkyBackground()\n                }\n        }\n        .backgroundStyle(.clear)\n        .subscriptionStoreButtonLabel(.multiline)\n        .subscriptionStorePicketItemBackground(.thinMaterial)\n        .storeButton(.visible, for: .redeemCode)\n    }\n  \n}"
+    },
+    {
+      "timestamp": "14:10",
+      "title": "Reacting to completed purchases from descendant views",
+      "language": "swift",
+      "code": "BirdFoodShop()\n    .onInAppPurchaseCompletion { (product: Product, result: Result<Product.PurchaseResult, Error>) in\n        if case .success(.success(let transaction)) = result {\n            await BirdBrain.shared.process(transaction: transaction)\n            dismiss()\n        }\n    }"
+    },
+    {
+      "timestamp": "15:43",
+      "title": "Reacting to in-app purchases starting",
+      "language": "swift",
+      "code": "BirdFoodShop()\n    .onInAppPurchaseStart { (product: Product) in\n        self.isPurchasing = true\n    }"
+    },
+    {
+      "timestamp": "16:57",
+      "title": "Declaring a subscription status dependency",
+      "language": "swift",
+      "code": "subscriptionStatusTask(for: passGroupID) { taskState in\n    if let statuses = taskState.value {\n        passStatus = await BirdBrain.shared.status(for: statuses)\n    }            \n}"
+    },
+    {
+      "timestamp": "19:37",
+      "title": "Unlocking non-consumables",
+      "language": "swift",
+      "code": "currentEntitlementTask(for: \"com.example.id\") { state in\n    self.isPurchased = BirdBrain.shared.isPurchased(\n        for: state.transaction\n    )\n}"
+    },
+    {
+      "timestamp": "20:52",
+      "title": "Declaring placeholder icons",
+      "language": "swift",
+      "code": "ProductView(id: ids.nutritionPelletBox) {\n    BoxOfNutritionPelletsIcon()\n} placeholderIcon: {\n    Circle()\n}"
+    },
+    {
+      "timestamp": "21:25",
+      "title": "Using the promotional icon",
+      "language": "swift",
+      "code": "ProductView(\n    id: ids.nutritionPelletBox,\n    prefersPromotionalIcon: true\n) {\n    BoxOfNutritionPelletsIcon()\n}"
+    },
+    {
+      "timestamp": "21:56",
+      "title": "Using the promotional icon border",
+      "language": "swift",
+      "code": "ProductView(id: ids.nutritionPelletBox) {\n    BoxOfNutritionPelletsIcon()\n        .productIconBorder()\n}"
+    },
+    {
+      "timestamp": "23:02",
+      "title": "Composing standard styles to create custom styles",
+      "language": "swift",
+      "code": "struct SpinnerWhenLoadingStyle: ProductViewStyle {\n\n    func makeBody(configuration: Configuration) -> some View {\n        switch configuration.state {\n        case .loading:\n            ProgressView()\n                .progressViewStyle(.circular)\n        default:\n            ProductView(configuration)\n        }\n    }\n\n}"
+    },
+    {
+      "timestamp": "23:44",
+      "title": "Applying custom styles to the product view",
+      "language": "swift",
+      "code": "ProductView(id: ids.nutritionPelletBox) {\n    BoxOfNutritionPelletsIcon()\n}\n.productViewStyle(SpinnerWhenLoadingStyle())"
+    },
+    {
+      "timestamp": "23:58",
+      "title": "Declaring custom styles",
+      "language": "swift",
+      "code": "struct BackyardBirdsStyle: ProductViewStyle {\n\n  func makeBody(configuration: Configuration) -> some View {\n    switch configuration.state {\n      case .loading: // Handle loading state here\n      case .failure(let error): // Handle failure state here\n      case .unavailable: // Handle unavailabiltity here\n      case .success(let product):\n        HStack(spacing: 12) {\n          configuration.icon\n          VStack(alignment: .leading, spacing: 10) {\n            Text(product.displayName)\n            Button(product.displayPrice) {\n              configuration.purchase()\n            }\n            .bold()\n          }\n        }\n        .backyardBirdsProductBackground()\n    }\n  }\n\n}"
+    },
+    {
+      "timestamp": "26:44",
+      "title": "Declaring a dependency on products",
+      "language": "swift",
+      "code": "@State var productsState: Product.CollectionTaskState = .loading\n\nvar body: some View {\n    ZStack {\n        switch productsState {\n        case .loading:\n            BirdFoodShopLoadingView()\n        case .failed(let error):\n            ContentUnavailableView(/* ... */)\n        case .success(let products, let unavailableIDs):\n            if products.isEmpty {\n                ContentUnavailableView(/* ... */)\n            }\n            else {\n                BirdFoodShop(products: products)\n            }\n        }\n    }\n    .storeProductsTask(for: productIDs) { state in\n        self.productsState = state\n    }\n}"
+    },
+    {
+      "timestamp": "27:54",
+      "title": "Configuring the visibility of auxiliary buttons",
+      "language": "swift",
+      "code": "SubscriptionStoreView(groupID: passGroupID) {\n   // ...\n}\n.storeButton(.visible, for: .redeemCode)"
+    },
+    {
+      "timestamp": "29:56",
+      "title": "Adding a sign in action",
+      "language": "swift",
+      "code": "@State var presentingSignInSheet = false\n\nvar body: some View {\n    SubscriptionStoreView(groupID: passGroupID) {\n        PassMarketingContent()\n            .containerBackground(for: .subscriptionStoreFullHeight) {\n                SkyBackground()\n            }\n    }\n    .subscriptionStoreSignInAction {\n        presentingSignInSheet = true\n    }\n    .sheet(isPresented: $presentingSignInSheet) {\n        SignInToBirdAccountView()\n    }\n}"
+    },
+    {
+      "timestamp": "30:32",
+      "title": "Displaying policies from the App Store metadata",
+      "language": "swift",
+      "code": "SubscriptionStoreView(groupID: passGroupID) {\n    PassMarketingContent()\n        .containerBackground(for: .subscriptionStoreFullHeight) {\n            SkyBackground()\n        }\n}\n.subscriptionStorePolicyForegroundStyle(.white)\n.storeButton(.visible, for: .policies)"
+    },
+    {
+      "timestamp": "31:22",
+      "title": "Choosing a control style",
+      "language": "swift",
+      "code": "SubscriptionStoreView(groupID: passGroupID) {\n    PassMarketingContent()\n        .containerBackground(for: .subscriptionStoreFullHeight) {\n            SkyBackground()\n        }\n}\n.subscriptionStoreControlStyle(.buttons)"
+    },
+    {
+      "timestamp": "32:28",
+      "title": "Declaring the layout of the subscribe button label",
+      "language": "swift",
+      "code": "SubscriptionStoreView(groupID: passGroupID) {\n    PassMarketingContent()\n        .containerBackground(for: .subscriptionStoreFullHeight) {\n            SkyBackground()\n        }\n}\n.subscriptionStoreButtonLabel(.multiline)"
+    },
+    {
+      "timestamp": "32:51",
+      "title": "Declaring the content of the subscribe button label",
+      "language": "swift",
+      "code": "SubscriptionStoreView(groupID: passGroupID) {\n    PassMarketingContent()\n        .containerBackground(for: .subscriptionStoreFullHeight) {\n            SkyBackground()\n        }\n}\n.subscriptionStoreButtonLabel(.displayName)"
+    },
+    {
+      "timestamp": "33:04",
+      "title": "Declaring the layout and content of the subscribe button label",
+      "language": "swift",
+      "code": "SubscriptionStoreView(groupID: passGroupID) {\n    PassMarketingContent()\n        .containerBackground(for: .subscriptionStoreFullHeight) {\n            SkyBackground()\n        }\n}\n.subscriptionStoreButtonLabel(.multiline.displayName)"
+    },
+    {
+      "timestamp": "33:44",
+      "title": "Decorating subscription plans",
+      "language": "swift",
+      "code": "SubscriptionStoreView(groupID: passGroupID) {\n    PassMarketingContent()\n        .containerBackground(for: .subscriptionStoreFullHeight) {\n            SkyBackground()\n        }\n}\n.subscriptionStoreControlIcon { subscription, info in\n    Group {\n        let status = PassStatus(\n            levelOfService: info.groupLevel\n        )\n        switch status {\n        case .premium:\n            Image(systemName: \"bird\")\n        case .family:\n            Image(systemName: \"person.3.sequence\")\n        default:\n            Image(systemName: \"wallet.pass\")\n        }\n    }\n    .foregroundStyle(.tint)\n    .symbolVariant(.fill)\n}"
+    },
+    {
+      "timestamp": "34:07",
+      "title": "Decorating subscription plans with the button control style",
+      "language": "swift",
+      "code": "SubscriptionStoreView(groupID: passGroupID) {\n    PassMarketingContent()\n        .containerBackground(for: .subscriptionStoreFullHeight) {\n            SkyBackground()\n        }\n}\n.subscriptionStoreControlIcon { subscription, info in\n    Group {\n        let status = PassStatus(\n            levelOfService: info.groupLevel\n        )\n        switch status {\n        case .premium:\n            Image(systemName: \"bird\")\n        case .family:\n            Image(systemName: \"person.3.sequence\")\n        default:\n            Image(systemName: \"wallet.pass\")\n        }\n    }\n   .symbolVariant(.fill)\n}\n.foregroundStyle(.white)\n.subscriptionStoreControlStyle(.buttons)"
+    },
+    {
+      "timestamp": "34:14",
+      "title": "Adding a container background",
+      "language": "swift",
+      "code": "SubscriptionStoreView(groupID: passGroupID) {\n    PassMarketingContent()\n        .containerBackground(\n            .accent.gradient,\n            for: .subscriptionStore\n        )\n}"
+    },
+    {
+      "timestamp": "35:30",
+      "title": "Presenting upgrade offers",
+      "language": "swift",
+      "code": "SubscriptionStoreView(\n    groupID: passGroupID,\n    visibleRelationships: .upgrade\n) {\n    PremiumMarketingContent()\n        .containerBackground(for: .subscriptionStoreFullHeight) {\n            SkyBackground()\n        }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Backyard Birds: Building an app with SwiftData and widgets",
+        "url": "https://developer.apple.com/documentation/SwiftUI/Backyard-birds-sample"
+      },
+      {
+        "title": "StoreKit views",
+        "url": "https://developer.apple.com/documentation/StoreKit/storekit-views"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10013/4/451654C1-7E00-42AE-A765-A2ECE947464C/downloads/wwdc2023-10013_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10013/4/451654C1-7E00-42AE-A765-A2ECE947464C/downloads/wwdc2023-10013_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10117",
+      "year": "2023",
+      "title": "What’s new in App Store Connect",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10117"
+    },
+    {
+      "id": "10141",
+      "year": "2023",
+      "title": "What’s new in App Store server APIs",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10141"
+    },
+    {
+      "id": "10140",
+      "year": "2023",
+      "title": "What’s new in StoreKit 2 and StoreKit Testing in Xcode",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10140"
+    },
+    {
+      "id": "10148",
+      "year": "2023",
+      "title": "What’s new in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10148"
+    },
+    {
+      "id": "10039",
+      "year": "2022",
+      "title": "What's new in StoreKit testing",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10039"
+    },
+    {
+      "id": "10114",
+      "year": "2021",
+      "title": "Meet StoreKit 2",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10114"
+    },
+    {
+      "id": "10659",
+      "year": "2020",
+      "title": "Introducing StoreKit Testing in Xcode",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10659"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:13:21.632Z"
+}

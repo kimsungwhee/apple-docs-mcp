@@ -1,0 +1,74 @@
+{
+  "id": "10107",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10107/",
+  "title": "Embed the Photos Picker in your app",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Photos & Camera"
+  ],
+  "hasTranscript": true,
+  "hasCode": false,
+  "transcript": {
+    "fullText": "♪ ♪ Justin: Hello! My name's Justin, and I'm part of the Photos team. Today I'm going to take you through new improvements to the system Photos picker and all the great new APIs you can use in your app. We introduced the redesigned picker UI in iOS 14. It has many great features like search and a zoomable grid. Even better, you don't need to request any photo library access to use it. We really recommend you to replace your custom picker with the system one whenever possible. The API is really easy to use as well. With only a few lines of code, you can present the picker and receive user selected images. \"What's new in the Photos picker\" session last year talked about the new API in depth. In this session, I'm going to focus on new APIs you can leverage to embed the system picker in your app, making the photo picking experience more seamless. Later, I will also discuss the new Options menu, as well as best practices if you want to support HDR photos, HDR videos, and Cinematic mode videos.\n\nBut before we dive in, let's quickly recap the picker's access model.\n\nThis is the picker you saw a moment ago. Even though it looks like it is running in your app, it is really running in a separate process, rendered on top of your app. Your app can't access the picker directly and not even take screenshots of the picker content. Only what the user actually selected is passed back to your app. This year, we are bringing more configuration options to the out-of-process picker. A new \".photosPickerDisabledCapabilities\" modifier allows you to disable certain picker capabilities, so you can implement your own version of it. For example, the \"Cancel\" button and the \"Add\" button can be hidden if you disable selection actions. A new \".photosPickerAccessoryVisibility\" modifier allows you to hide accessory UI around the picker content, like the navigation bar and the toolbar.\n\nYou can even specify the size and position of the picker using standard SwiftUI modifiers like \".frame\" and \".padding\". You may be wondering: \"If the \"Add\" button is hidden, how can my app receive user selected assets in multiple selection mode?\" You can now set selection behavior to \".continuous\" to receive live selection updates. And finally, you can use the new \".photosPickerStyle(.inline)\" modifier to embed the picker in your app, instead of having it presented as a separate sheet.\n\nEven though the picker is embedded, it is still rendered in a separate process. Some users might be worried when they see your app displaying all of their photos without prompting for library access. We want to help users to feel safe when using your app, so the first time an embedded picker is displayed, an onboarding UI will automatically appear explaining that your app can only access selected photos. The Photos privacy badge indicates that the picker is private and out of process. If your app already presents the full size picker, a dismissible banner will appear when users upgrade to iOS 17. The Privacy Settings UI is also updated with more detailed explanation. In addition, we made some changes to the library access permission prompt. To learn more about those changes, you can watch the \"What's new in privacy\" session.\n\nAll right, let's go back to the actual API. I will go though their use cases first, and then I'll explain each API in detail. If you want to embed the out-of-process picker, use the \".photosPickerStyle\" modifier. To place your own UI around the picker, \".photosPickerAccessoryVisibility\" is the one to use. It also has an optional argument allowing you to control accessories around specified edges. The default value is all edges. If you want to implement your own replacement for some picker features, use the \".photosPicker DisabledCapabilities\" modifier. And lastly, if you need to adjust or respond to selection updates in real time, make sure \"selectionBehavior\" is set to \".continuous\". So what exactly are considered as accessories? On iOS, the top accessory is the navigation bar and the bottom accessory is the toolbar. On iPadOS and macOS, the leading accessory is the sidebar when it is visible. The top and bottom accessories are similar to what iOS has. Next, I will walk you through picker capabilities that can be disabled and how they will affect the picker UI.\n\nThe search bar will be hidden if the search capability is disabled. If collection navigation is disabled, the albums tab will be hidden. On iPadOS and macOS, the sidebar will be hidden as well. If the staging area is disabled, the toolbar button will be replaced with the status label. If you disabled selection actions without continuous selection, only the \"Cancel\" button will be hidden and the \"Add\" button will still be visible. Otherwise, your app won't be able to receive any user selection. Both buttons will be hidden if you also set the selection behavior to \".continuous\". Let's look at new picker styles now. In addition to the \".presentation\" style and the \".inline\" style, the picker also supports another \".compact\" style. This is the default \".presentation\" style. This is the \".inline\" style with all accessories hidden. And this is the \".compact\" style. The single row picker allows you to embed it in more places where the available vertical space is seriously constrained. It's time for a demo to connect everything together. I already made a simple app allowing me to annotate images with text descriptions. Let me show you what it can do right now. I can present the picker as a modal sheet, select some images, and add some descriptions. For the demo, I want to replace the \"Select Photos\" button with the embedded picker. Let me add the \".photosPickerStyle(.inline)\" modifier and try it out.\n\nIt works, but it doesn't look good yet. I still need to tap the \"Add\" button to update the list, and if the picker resizes, the toolbar is not extended to the bottom edge of the device.\n\nBut don't worry. With only a few tweaks, it can look a lot better. First, because the picker can handle safe area insets gracefully, I can use the \".ignoresSafeArea\" modifier so the picker can expand to the bottom edge of the screen. Next, I'm going to make sure the list can be updated as soon as I select a photo in the picker. Actually, it's super easy to change. Setting the selection behavior to \".continuous\" is all I need to do.\n\nSince the list is now live updated, I don't really need to keep the navigation bar buttons anymore. I can remove them using the \".photosPicker DisabledCapabilities\" modifier.\n\nThe picker is now fully functional. But I want to make sure the picker looks nice as well.\n\nI think I should hide the navigation bar and the toolbar. I also want to give the picker a fixed height. I can use the \".photosPicker AccessoryVisibility\" modifier to hide the bars, and adjust the height of the picker like any other SwiftUI views.\n\nNow it looks great. Within just a few minutes, I updated my app to display the new embedded picker. I'll build and run so we can test it on a real device. I can use the zoomable grid to quickly navigate to the photo I want to pick. Selected photos automatically appear in my app. My app's photo picking experience is greatly improved with the new embedded picker.\n\nThat's it for the demo.\n\nI was using an iPhone in the demo, but the same API is available on iOS, iPadOS, and macOS. In addition to SwiftUI, the same API is available to UIKit and AppKit apps as well. Let's take a look at the UIKit and AppKit API. The embedded picker is available via the same PHPickerConfiguration API. You can now set \"selection\" to \".continuous\" to opt in the continuous selection behavior. You can also set \"mode\" to \".compact\" to configure the picker to the single row layout. You can use \"edgesWithoutContentMargins\" to hide accessories like the navigation bar, and \"disabledCapabilities\" to disable certain picker capability. Unlike the SwiftUI API where you can use the \".photosPickerStyle(.inline)\" modifier to embed the picker, you will need to add it as a child view controller to your container controller. You can set the frame of the picker manually or use Auto Layout constraints to size and position the picker view. After adding the subview, you just need to notify the picker that it has been added.\n\nA new \"PHPickerConfiguration.Update\" API allows you to update the picker while it is shown to the user. You can also deselect or reorder selected assets using the existing \"deselectAsset\" and \"moveAsset\" APIs. Next, I will talk about the new Options menu and how it will affect your app. The new Options menu gives users more control over what they can share with your app. By default, all image metadata are included, but users can now choose to remove sensitive metadata, like location, from selected photos.\n\nIf you are using the \"PhotosPicker\" and \"Transferable\" API, you don't need to do any adoption work to support the new Options menu. Similarly, no adoption work is needed if you are using the \"PHPickerViewController\" API. The Options menu will not be supported for apps that use the legacy \"UIImagePickerController\" API or have full library access. Okay, that's the Options menu. Now I will talk about how you can support HDR images, HDR videos, and Cinematic mode videos if you use the system picker. The picker may automatically transcode assets to compatible formats, like JPEG, by default. However, the transcoded asset may not contain all information included in the original asset. So if you want to receive HDR content, it's best to avoid automatic transcoding. You can get photos and videos in their original formats by using the \".current\" encoding policy and requesting a generic content type, like \".image\" or \".movie\". Requesting specific content types, like \".jpeg\", may still transcode assets even if the encoding policy is set to \".current\". For more information about adding support for HDR, you can watch the \"Support HDR images in your app\" session this year. Here is a code example that receives images in their original formats. You can see that \"preferredItemEncoding\" is set to \".current\" and \"importedContentType\" is \".image\". If a Cinematic mode video is selected, the picker will give you its rendered version, with all the depth effect baked in. If you want to get all decision points, you need to request photo library access and use PhotoKit to fetch the video instead. To learn more about Cinematic mode videos, you can check out the \"Support Cinematic mode videos in your app\" session. To wrap up, the new embedded picker brings a lot of flexibility and I can't wait to see what you can do with it. The Options menu gives users more control over what to share, so please avoid requesting photo library access unless it's really necessary.\n\nThank you, and happy coding! ♪ ♪",
+    "segments": []
+  },
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Implementing an inline Photos picker",
+        "url": "https://developer.apple.com/documentation/PhotoKit/implementing-an-inline-photos-picker"
+      },
+      {
+        "title": "Selecting Photos and Videos in iOS",
+        "url": "https://developer.apple.com/documentation/PhotoKit/selecting-photos-and-videos-in-ios"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10107/5/62F52A2D-1C9A-4349-8D1F-03308947930A/downloads/wwdc2023-10107_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10107/5/62F52A2D-1C9A-4349-8D1F-03308947930A/downloads/wwdc2023-10107_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10053",
+      "year": "2023",
+      "title": "What’s new in privacy",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10053"
+    },
+    {
+      "id": "10132",
+      "year": "2022",
+      "title": "Discover PhotoKit change history",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10132"
+    },
+    {
+      "id": "10023",
+      "year": "2022",
+      "title": "What's new in the Photos picker",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10023"
+    },
+    {
+      "id": "10652",
+      "year": "2020",
+      "title": "Meet the new Photos picker",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10652"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:41:33.644Z"
+}

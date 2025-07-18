@@ -1,0 +1,108 @@
+{
+  "id": "10220",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10220/",
+  "title": "Bring expression to your app with Genmoji",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, I'm Aaron, an engineer for the Input Experience team. Today, I'm happy to share with you some exciting new ways to enhance your app’s expressiveness with emoji. In this session we’ll explore recent updates to the emoji experience, introduce a new API for sending custom emoji and learn how easy it is to adopt in your app. After that we’ll dive into compatibility considerations and even some advanced use cases for custom text rendering. Emoji are everywhere! And why shouldn’t they be? Emoji are so expressive, I’ve been known to replace entire paragraphs of text with just a single one! They’re versatile, too. If one emoji can’t get the point across, finding the right combination can be just perfect! Emoji are even more powerful when combined with text, because they are text! And unlike images, emoji are part of the sentence and adjust their presentation to match the surrounding text. This year, Apple is introducing a host of updates to make emoji even better! This includes an updated emoji keyboard that takes the standard emoji we all know and love and combines it with your personalized content that can now be used like an emoji.\n\nWe’re talking Stickers, Memoji, Animoji, and a brand new way to make your own emoji called Genmoji.\n\nThat’s a pretty cool dog. Now, I know what some of you are thinking. Traditional emoji aren’t actually images, but are instead a standardized list of Unicode characters sent as plain text and it’s up to the viewing device to render the appropriate image in its own font, just like any other text content.\n\nPersonalized images like Genmoji, on the other hand, are unique, rasterized bitmaps that can't be described by a Unicode text character.\n\nSo how does this work? Introducing NSAdaptiveImageGlyph, a brand new API to support using Genmoji and other personalized images just like a standard emoji! NSAdaptiveImageGlyphs are powered by a standard image format in a square aspect ratio with multiple resolutions, and bolstered by additional metadata such as a globally unique and stable identifier a content description that can be used for accessibility, and alignment metrics to allow proper layout and placement of images so they can be used with and formatted alongside regular text. You can use Genmoji all by themselves or combine them with text. You can format them, copy them, paste them, and even send them as stickers.\n\nAnywhere that can support rich text can support Genmoji and all of your expressive images.\n\nNow, let's take a look at just how easy it can be to support Genmoji in your application. NSAdaptiveImageGlyph is natively supported by rich TextViews. So, if your app already supports rich text, getting started could be as simple as enabling supportsAdaptiveImageGlyph.\n\nAnd on iOS, if your text view already has a pasteConfiguration or target action for paste that supports images you won’t even have to do that as those configurations enable support for Genmoji and adaptive image glyphs by default.\n\nOn macOS, declaring importsGraphics on your text view does the same thing.\n\nLet's look at an example.\n\nI have an app where user's can create and share memories about their pets.\n\nOur main text area is already a rich text view and is backed in our persistence model by rich text data.\n\nas a result Genmoji support is enabled by default and it just works.\n\nIt works because all system serialization frameworks such as SecureCoding and Pasteboard have been updated to natively support NSAdaptiveImageGlyph. In fact, if your text content is already backed by NSAttributedStrings there is nothing more to do but sit back and start self-expressing! Just as with any rich text simply serialize the content of the text view into an RTFD data object and store it in your database. When it comes time to display the content again, simply reverse the process and create an attributed string from the data you previously stored. It really is that easy! But as easy as it is, it’s important to remember that Genmoji are not Unicode and they may not be appropriate for use with text-only items such as email addresses and phone numbers. However, user created content like: blog posts, titles, and messages are just the sort of thing that can really spring to life with support for image glyphs.\n\nFor example, I’d really love to make this title stand out with a custom emoji, but the data is currently stored as plain text and eventually shared with a back end server where it can be displayed in a web browser. So what can we do? One solution when using plain text or other non-RTF data stores is to handle image glyphs the same way you may already support inline images today. For example, we can store the Unicode attachment character at the appropriate text location along with a reference to the image glyph's identifier in our plain text data field and add the image to our image store. Remember, because contentIdentifiers are unique and stable, if you’ve already stored an image glyph with this identifier there is no need to store it again. You can find examples of how to decompose and recompose these attributed strings in the code attached to this session.\n\nWith those changes I can now add a Genmoji to the title and see it displayed in our main entry as well as the list. But what about that web interface I mentioned before? It couldn’t be easier. To display the image in HTML use the same data-from-range method we used earlier to convert to RTFD except this time we’ll request the HTML document type.\n\nThis will emit cross-compatible HTML so advanced engines that support the \"apple-adaptive-glyph type\", such as Webkit, will display the image inline with text as if it were a standard emoji. For engines that don’t support image glyphs, this fallback image will be displayed instead.\n\nNotice that the alt-text here is sourced from the NSAdaptiveImageGlyph’s content description and will be applied no matter which source is ultimately displayed in the browser.\n\nIf your app makes use of communication notifications you can even include Genmoji and other image glyphs in your notifications with the new \"UNNotificationAttributed MessageContext API\". For push notifications, the payload just needs to contain a rich text representation that may contain image glyphs.\n\nWe recommend that you use a Notification Service Extension to parse the rich text, download assets, create the attributed body and update the notification content.\n\nSimply create your notification message from an attributed string that includes an image glyph, and pass it as the attributedContent to create the context. Update the request with that context and finally call the handler. Before we look at some advanced uses of NSAdaptiveImageGlyph, let's take a moment to talk about important compatibility considerations for your app.\n\nLike the text they are displayed with, image glyphs carry important semantic meaning that may be lost or altered if not properly conveyed so care must be taken when handling fallback behavior in unsupported contexts.\n\nIt is vital that this important information is not simply dropped. If your app does not support inline images, consider using a textual representation sourced from the contentDescription. For more fundamental incompatibilities, you may consider not opening the document at all on unsupported systems.\n\nImage glyphs stored in the RTFD format are encoded to be backwards compatible with any rich text view, including those that are not image glyph aware. In the event you share RTF documents in unsupported environments, perhaps a previous version of your app or apps running on an older operating system, the image glyphs will automatically fall back to a standard text attachment.\n\nWhile it might be easiest to get started with Genmoji by supporting rich text, image glyphs can be fully supported by third party data formats and completely custom text engines.\n\nIn addition to supporting image glyphs in existing UI text elements across all Apple platforms including text views, content editable WebViews, and SwitfUI text, custom text engines built with existing Apple frameworks such as TextKit and CoreText can take advantage of updated text rendering APIs to provide custom solutions for Genmoji.\n\nFor custom typesetting solutions, CoreText provides methods to use an NSAdadptiveImageGlyph as the adaptive image provider which can be queried for appropriate typographic bounds based on the metrics of the current font. It also offers a way to render the image at a given point in the current context. Let’s take a closer look at how that works.\n\nCTFontGetTypographicBoundsForAdaptiveImageProvider returns the metrics necessary for line layout, including advanced width, relative to the image glyph’s origin on the baseline. When it comes time to draw CTFontDrawImageFromAdaptiveImageProviderAtPoint will position the image within those bounds. That’s all there is to it! This was just a brief look at some of the exciting changes to the emoji experience available across all Apple platforms, including a brand new emoji keyboard, custom emoji creation with Genmoji, and multiple ways to support expressive images in your app with NSAdaptiveImageGlyph. Whether using standard rich text views or a managing a fully custom typesetting solution, I encourage you to check out the latest SDK and see how easy it is to open up a whole new world of self-expression in your app with Genmoji. Thanks for watching!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:30",
+      "title": "Enable support for NSAdaptiveImageGlyph in a UITextView",
+      "language": "swift",
+      "code": "let textView = UITextView()\n    textView.supportsAdaptiveImageGlyph = true"
+    },
+    {
+      "timestamp": "4:41",
+      "title": "Read and write attributed string for serialization",
+      "language": "swift",
+      "code": "// Extract contents of text view as an attributed string\nlet textContents = textView.textStorage\n\n// Serialize as data for storage or transport\nlet rtfData = try textContents.data(from: NSRange(location: 0, length: textContents.length),\n              documentAttributes: [.documentType: NSAttributedString.DocumentType.rtfd])\n\n\n// Create attributed string from serialized data\nlet textFromData = try NSAttributedString(data: rtfData, documentAttributes: nil)\n\n// Set on text view\ntextView.textStorage.setAttributedString(textFromData)"
+    },
+    {
+      "timestamp": "6:08",
+      "title": "Decompose and recompose an attributed string",
+      "language": "swift",
+      "code": "// Decompose an attributed string\n\nfunc decomposeAttributedString(_ attrStr: NSAttributedString) -> (String, [(NSRange, String)], [String: Data]) {\n    let string = attrStr.string\n    var imageRanges: [(NSRange, String)] = []\n    var imageData: [String: Data] = [:]\n    attrStr.enumerateAttribute(.adaptiveImageGlyph, in: NSMakeRange(0, attrStr.length)) { (value, range, stop) in\n        if let glyph = value as? NSAdaptiveImageGlyph {\n            let id = glyph.contentIdentifier\n            imageRanges.append((range, id))\n            if imageData[id] == nil {\n                imageData[id] = glyph.imageContent\n            }\n        }\n    }\n    return (string, imageRanges, imageData)\n}\n    \n// Recompose an attributed string\n\nfunc recomposeAttributedString(string: String, imageRanges: [(NSRange, String)], imageData: [String: Data]) -> NSAttributedString {\n    let attrStr: NSMutableAttributedString = .init(string: string)\n    var images: [String: NSAdaptiveImageGlyph] = [:]\n    for (id, data) in imageData {\n        images[id] = NSAdaptiveImageGlyph(imageContent: data)\n    }\n    for (range, id) in imageRanges {\n        attrStr.addAttribute(.adaptiveImageGlyph, value: images[id]!, range: range)\n    }\n    return attrStr\n}"
+    },
+    {
+      "timestamp": "6:30",
+      "title": "Convert NSAttributedString to HTML",
+      "language": "swift",
+      "code": "// Converting NSAttributedString to HTML\n\nlet htmlData = try textContent.data(from: NSRange(location: 0, length: textContent.length),\n               documentAttributes: [.documentType: NSAttributedString.DocumentType.html])"
+    },
+    {
+      "timestamp": "7:33",
+      "title": "Support Genmoji in communication notifications",
+      "language": "swift",
+      "code": "func didReceive(_ request: UNNotificationRequest,\n      withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {\n\n  ...\n  let message: NSAttributedString = _myAttributedMessageStringWithGlyph\n  let context = UNNotificationAttributedMessageContext(sendMessageIntent: sendMessageIntent,\n                                                       attributedContent: _message)    \n\n  do {\n    let messageContent = try request.content.updating(from: context)\n    contentHandler(messageContent)\n  } catch {\n    // Handle error\n  }\n}"
+    },
+    {
+      "timestamp": "9:45",
+      "title": "Render NSAdaptiveImageGlyph in custom typesetting solution",
+      "language": "swift",
+      "code": "// Find typographic bounds for image in NSAdaptiveImageGlyph\n\nlet provider = adaptiveImageGlyph\n\nlet bounds = CTFontGetTypographicBoundsForAdaptiveImageProvider(font, provider)\n\n// Draw it at the typographic origin point on the baseline\n\nCTFontDrawImageFromAdaptiveImageProviderAtPoint(font, provider, point, context)"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "AppKit",
+        "url": "https://developer.apple.com/documentation/AppKit"
+      },
+      {
+        "title": "Forum: UI Frameworks",
+        "url": "https://developer.apple.com/forums/topics/ui-frameworks?cid=vf-a-0010"
+      },
+      {
+        "title": "UIKit",
+        "url": "https://developer.apple.com/documentation/UIKit"
+      },
+      {
+        "title": "WKWebView",
+        "url": "https://developer.apple.com/documentation/WebKit/WKWebView"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10220/5/66D08ED4-B7A1-415E-AB43-79704F82CE41/downloads/wwdc2024-10220_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10220/5/66D08ED4-B7A1-415E-AB43-79704F82CE41/downloads/wwdc2024-10220_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10124",
+      "year": "2024",
+      "title": "What’s new in AppKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10124"
+    },
+    {
+      "id": "10118",
+      "year": "2024",
+      "title": "What’s new in UIKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10118"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:52:08.329Z"
+}

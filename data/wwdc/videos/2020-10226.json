@@ -1,0 +1,64 @@
+{
+  "id": "10226",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10226/",
+  "title": "Record stereo audio with AVAudioSession",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nHi. I'm Peter Raffensperger, and I'm gonna tell you how you can record stereo from the built-in microphones. AVAudioSession is how your app communicates to the system how you intend to use audio in your app, including configuration for audio recording. New in iOS 14 and iPadOS 14 is the option to record stereo audio from the built-in microphones on supported hardware. That's right, you asked for stereo recording, and now you can have it.\n\nThe benefit of stereo is that you can tell what direction a sound comes from. Let's say I'm recording with your app. My listeners could be my friends, family or fans, and stereo lets me bring them closer to my expression, my art and my life. So we recommend that you write your app to take advantage of the option to record stereo whenever possible so that you get the most immersive audio recording experience.\n\nIn this talk, I'll explain how you can adopt this new API feature and also how to address the new special consideration for stereo recording that we call \"inputOrientation.\" But first, we need to go back to the basics of AVAudioSession's microphone and beam selection.\n\nMany Apple devices have multiple microphones, and our fantastic acoustics design team works hard to optimize the microphone arrays on each product. AVAudioSession lets you choose which of those device microphones you want to record from. Actually, in the API, we say that you can choose different data sources, not different mics, because you can choose a polar pattern that gets you a kind of virtualized microphone. So, say you select that upper front data source. You can either get that individual microphone by selecting the omni polar pattern, or you can choose to get a cardioid beamformer. Let's have a closer look at how this works. When you record from the upper front data source with the cardioid beam pattern, actually you're using both of those upper microphones and in tandem to get a better directional response. So that when a sound wave arrives from the front and arrives at that front microphone before it arrives at the back microphone, we can make that sound wave louder than if it comes from the other direction. So we get a kind of pattern like this-- it's louder in the forward direction, quieter in the back. Okay, so if we swap the roles of those two microphones around, we can get upper back subcardioid, and that lets us listen more in the other direction. It's not quite the same shape, because we don't want to null out the user if they talk. This is great. We can focus audio in particular directions.\n\nBut it's mono. To get stereo, we actually record from all the device microphones simultaneously. And we apply a special modeling process that results in a binaural stereo experience. And we apply some special processing to that front direction to make it a little bit louder than the back direction, similar to how a cardioid beam works.\n\nThe result is this. Left and right are in distinct directions, and the forward direction is in the look direction of that back camera. So you're gonna choose this data source if you want to get stereo audio with your recording made on the back camera. Similar to cardioid and subcardioid, if we want to look in the other direction, we can choose upper front stereo. Notice that left and right are now in the opposite direction. Left is now the edge of the device with the lock button. And right is the edge of the device with the volume buttons. So you're gonna choose this data source to go with videos you've made on the front camera. However, users can hold the device in many different possible orientations. And we can't do the same thing in landscape as we did in portrait because if we did, then left and right would be up and down. So we're gonna actually repeat this modeling process once for each different way the user can hold the phone. And you have to tell the system which of those you want. And that brings us to the new property, inputOrientation for AVAudioSession. Now, there are four possible values here-- portrait, portrait upside-down, landscape left and landscape right. And there are two different data sources. So there are a total of eight distinct cases, each with a unique combination of that forward beam direction and left and right directions relative to the edges of the device.\n\nHere's the first four of those eight possibilities. First, you're gonna choose which direction is forward based on your selection of the data source. And then, left and right are determined by the new inputOrientation property. Okay, here's the second four. You need to design your app logic to select that stereo input orientation and data source so that these directions match what your users are expecting. Now, you'll only need to do this for stereo polar patterns because for mono, the input orientation makes no difference. There are a lot of options here, so let me help you out. If your app records video, then select the input orientation that makes left and right in the audio match left and right in the video. Refer to the documentation for details on how to match the input orientation, camera direction and video rotation. If your app doesn't record video, then we think it makes the most sense to match your stereo input orientation to your UI orientation because that's how users are expecting the device to be. The other thing is, when you're recording to a file, especially if it's a video file, then you should keep that orientation fixed for the entire duration of the recording. That ensures there are no strange changes in the directions during your recording.\n\nUltimately, though, the number one principle is that you should anticipate the expectations of the end listener of your users' recordings. And one size doesn't fit all here. You've gotta figure out the logic that's right for your app.\n\nHere's a bunch of principles, and they all lead to getting audio in the correct directions. The main idea is that the app audio directions are related to the edges of the device and the microphone placements. And we need to know how that relationship works. First, you're gonna choose that forward direction with the data source selection, and then you're gonna figure out which way left and right are based on the data source and that input orientation in combination. The other thing is that we recommend you test your app comprehensively here. So, record a sound coming from the left and then a sound coming from the right, and listen back. Make sure that is how you expect it to be. Then repeat that test for each orientation and data source selection that you intend to use. Okay, so that's the basic principles. Let's have a look at how this appears in code.\n\nHere's some code from a sample project. You can look at the sample project on line. The first thing we need to do is record from the built-in microphone. So this is all existing use of the API. First we're gonna find that built-in mic port. And then we're gonna set that as our preferred input port.\n\nOkay, here's the new stuff. First, we're gonna choose that stereo polar pattern. You'll see this new pattern on devices that support stereo recording. But you need to be ready for the case when the device doesn't support stereo. So, size your buffers dynamically. The right way to do that is, activate your audio session and check that input channel count property.\n\nThen we're gonna choose what data source we want. Remember, there's two options for stereo here-- one for the front, one for the back. You're gonna choose the direction that focuses audio where you want it to go.\n\nAnd here's the call to the new inputOrientation property. You'll notice that it's the PreferredInputOrientation. And that's because if there's some other app that happens to be in control of routing, you might not get what you prefer here. To get the best chance at your preference, choose a non-mixable option when you set up your session. Okay, so I talked about what values that you should set. Now I'm gonna expand a little bit about when you should set the data source and inputOrientation. If your app records video, then you should set the inputOrientation before you start recording video.\n\nBut the sample app doesn't record video, and your app might not, so we're gonna listen to when the UI is rotated.\n\nYou might also have your focus direction based on user input, for example, derived from the camera that your user selected. In the sample app, it's a little picker, so that's what gets called here. The other thing I mentioned before is if you're recording, then now is probably not the time to be changing that inputOrientation or the dataSource selection.\n\nSo, here we're just gonna call the function from the previous slide with the chosen data source and the orientation of the window. All right. At this point, you're ready to record stereo using any of our audio APIs, like AVAudioRecorder or AVAudioEngine. Take your time to study that sample app. See how it applies in your use case. So what can we take away from all this? The main thing is, record in stereo. That'll get you the most immersive experience.\n\nChoose that data source to match where you want to focus audio. And then set your inputOrientation so that the sounds come from directions that match the user's expectations. And that's recording stereo\nfrom the built-in mic.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "6:57",
+      "title": "How to set up recording from the built-in mic",
+      "language": "swift",
+      "code": "// How to set up recording from the built-in mic\n\nprivate func enableBuiltInMic() {\n    ...   \n    // Find the built-in microphone.\n    guard let availableInputs = session.availableInputs,\n          let builtInMic = availableInputs.first(where: { $0.portType == .builtInMic }) \n    else {\n        print(\"The device must have a built-in microphone.\")\n        return\n    }  \n    ...   \n    do {\n        try session.setPreferredInput(builtInMic)\n        ...  \n    } catch {\n        ...\n    }\n}"
+    },
+    {
+      "timestamp": "7:16",
+      "title": "Configure stereo recording",
+      "language": "swift",
+      "code": "// Configure stereo recording\n\nfunc selectDataSource(...) {\n    ...\n    // Set the preferred polar pattern to stereo.\n    try newDataSource.setPreferredPolarPattern(.stereo)\n\n    // Set the preferred data source and polar pattern.\n    try preferredInput.setPreferredDataSource(newDataSource)\n        \n    // Update the input orientation to match the current user interface orientation.\n    try session.setPreferredInputOrientation(orientation.inputOrientation)\n    ...\n}"
+    },
+    {
+      "timestamp": "8:22",
+      "title": "When to select a data source & updated the stereo input orientation",
+      "language": "swift",
+      "code": "// When to select a data source & updated the stereo input orientation\n\noverride func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {\n    updateDataSource()\n}\n\n@IBAction func updateDataSourceSelection(_ sender: Any) {\n    updateDataSource()\n}\n\nprivate func updateDataSource() {\n    // Don't update the data source if the app is currently recording.\n    guard controller.state != .recording else { return }\n\n    let dataSourceName = dataSources[dataSourceChooser.selectedSegmentIndex]\n    controller.selectDataSource( named: dataSourceName,    \n        orientation:Orientation(windowOrientation)) { layout in\n        self.layoutView.layout = layout\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Capturing stereo audio from built-In microphones",
+        "url": "https://developer.apple.com/documentation/AVFAudio/capturing-stereo-audio-from-built-in-microphones"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10226/5/C8C3C21B-7FB6-4655-A9C9-7879416D0435/wwdc2020_10226_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10226/5/C8C3C21B-7FB6-4655-A9C9-7879416D0435/wwdc2020_10226_sd.mp4?dl=1"
+  },
+  "extractedAt": "2025-07-18T09:25:21.753Z"
+}

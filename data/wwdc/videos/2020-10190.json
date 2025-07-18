@@ -1,0 +1,114 @@
+{
+  "id": "10190",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10190/",
+  "title": "Create quick interactions with Shortcuts on watchOS",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": false,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nHi, everyone. My name is Conrad and welcome to my crib. I'm very excited to tell you today about the new Shortcuts experience in watchOS 7. First, I'm going to introduce you to the all-new Shortcuts app on Apple Watch. Then my colleague Alex will walk you through what you can do as a developer to craft a delightful Shortcuts experience on watchOS. Last year, in watchOS 6, we brought some exciting new updates to Shortcuts in Siri. We added the ability for shortcuts to have parameters which means that Siri can ask follow-up questions. You can see here that Siri is asking which items to add to my Walmart cart.\n\nYou can also run shortcuts right from the Siri watch face. Shortcuts are suggested on the face when they become relevant, and you can run them with a tap at just the right moment. This year, I am really excited to share with you all the new Shortcuts app on watchOS 7. The Shortcuts app on watchOS naturally complements its iOS counterpart and you can run shortcuts with a single tap right from your wrist. The Shortcuts that you know and love on iOS work just as well in Shortcuts on watchOS. For example, here is a great shortcut from the Shortcuts Gallery that automatically texts someone an ETA of how long it will take to get home, running right on the watch.\n\nIn the new Shortcuts app, you can organize and edit your Apple Watch collection to determine which shortcuts should sync via iCloud to your watch. If a shortcut asks a question, you can answer those questions inline inside of the Shortcuts app. For example, here, I am prompted to choose which event I want to get directions to in my Directions to Event shortcut. We're also very excited to support complications for the new Shortcuts app on watchOS. You can see here that I can launch the Shortcuts app in just a single tap, straight from the watch face. But that's not all. You can also set up complications that launch a specific shortcut directly. You can see here that I can send my ETA right from my watch face. I just tap on the complication, tap run, and there is my message. That message looks good, so I'll go ahead and send it.\n\nBy supporting Shortcuts inside of your app, your app's shortcuts could also be available right from the watch face.\n\nNow, I am going to hand it over to my colleague Alex, who will explain how you can build an awesome experience for Shortcuts on watchOS. Alex. Thanks, Conrad. Hi, everyone. Let's start with a quick recap about how you can offer shortcuts in your apps, so that you can take full advantage of this great new Shortcuts experience on watchOS.\n\nJust like in iOS, your apps can support Shortcuts by using the APIs from the SiriKit suite of frameworks and the NSUserActivity API. If you are new to Shortcuts or SiriKit, you should start with watching these great sessions from the previous years' conferences. Now, let's talk about how running shortcuts on the watch is different from running them on iOS devices.\n\nAs you may know, Shortcuts are seamlessly synced across all of your devices via iCloud. This means that people can configure shortcuts on an iOS device, put some shortcuts into the Apple Watch collection, and will expect to run those shortcuts on their Apple Watch.\n\nSo what happens when someone runs a shortcut on their watch? The flow will be different depending on how the shortcut is implemented.\n\nFor shortcuts that you offer via the NSUserActivity API, we need to open the app to handle the activity.\n\nBut we cannot open the app if it's not installed on the watch, and in that case, attempting to run such a shortcut would result in an error.\n\nLet's now take a look at intent-based shortcuts. Now, intents are handled by Intents extensions. If an Intents extension is installed on the watch, and it supports this intent, we just hand the intent over to that.\n\nIf not, we will try to run this intent remotely, on the paired phone. We call this remote execution. Note how this is in contrast to NSUserActivity-based shortcuts, which can only be run directly on the watch.\n\nBut if the Intents extension on the phone tells us that it needs to continue in the app, then, just like for user activity-based shortcuts, we won't be able to open the app remotely on the phone, and an error will be shown. Otherwise, the shortcut is executed remotely on the phone.\n\nAnd here's what the overall decision process for running shortcuts on the watch looks like.\n\nYou should design your shortcuts to avoid these \"error\" nodes, to ensure that people using your apps have a great experience on the watch, and we'll go over how you can do that further in this session. And now, let's take a closer look at remote execution and see what it means for you and the people who use your shortcuts.\n\nIf an Intent is supported natively on the watch, we'll launch the associated watchOS Intents extension and let it handle the intent.\n\nSimilarly, user activity-based shortcuts will be opened in their corresponding watchOS app if it is installed.\n\nIf, on the other hand, we have to send the intent over to the paired phone, we introduce an additional hop for sending the data to the phone, which inevitably increases the overall time it takes to perform the task.\n\nAs you can see, even if you don't have a watch app yet, or you are not supporting all of the intents in your watchOS Intents extension, we will still run the shortcuts based on your intent, but it will be slower than running locally. Best experience is achieved when the intent can be handled directly on the watch.\n\nNow that we've seen how running shortcuts on watchOS is different from iOS, let's take a look at what your options are when supporting shortcuts on the watch.\n\nThe best approach by far is to have a watchOS app and have that app support the same user activities or intents that you support in your iOS app.\n\nThis will ensure the best Shortcuts experience on the watch. And if you don't offer a watch app yet, consider building one.\n\nIf for some reason a watchOS app is not an option for you, you can instead ensure that your shortcuts work well with remote execution. Now, while remote execution is great for running shortcuts for those of you who don't offer a watch app yet, your shortcuts need to satisfy a few requirements in order to work well with it. First, remote execution is only supported for intent-based shortcuts, not NSUserActivity-based ones. This is because user activity-based shortcuts require the app to be open in order to run, and opening an app on another device would be a very jarring experience. And second, only those intents that can perform the task entirely in background, without opening the app, can be executed remotely.\n\nThis means that you need to not return \".continueInApp\" in your intent handling code.\n\nAdditionally, you would need to check the \"supports background execution\" checkbox in the Suggestions section of the Xcode intent editor for all parameter combinations that you are using in your interaction donations.\n\nLet's now go over some of the best practices for implementing shortcuts. As I mentioned earlier, there are two ways to support shortcuts in your app. The first is through the NSUserActivity API. And the second is using the Intents framework.\n\nAnd for all new shortcuts adopters, we recommend to implement shortcuts using Intents, because it provides richer and much more flexible APIs and allows you to offer shortcuts that support parameters and can run in background.\n\nAnother very important part is to make sure to compile your Intents extension not only for iOS but also for watchOS. This usually means creating a separate Intents extension target in your Xcode project and bundling that extension with your watchOS app.\n\nAs we've talked about previously, the best experience is achieved when shortcuts can run locally on the watch and don't need to rely on remote execution. And for that, you really want to strive to support as many intents in your watchOS Intents extension as you can.\n\nIdeally, on watchOS, you should support all of the intents that you support on iOS.\n\nAs you may know, the great thing about shortcuts is that any shortcut that you see in the Shortcuts app can also be run in Siri with your voice.\n\nAnd on Watch, it is especially important to provide carefully constructed dialogs in your intents because Intents UI extensions are not supported on watchOS.\n\nHere's an example of a Siri confirmation UI for an intent-based ordering shortcut that is using the default confirmation prompt.\n\nThis is what you would see if you return a default intent response with code \"ready\" from your \"confirm()\" method. But it doesn't provide a lot of information beyond the fact that you're about to order a soup.\n\nIn contrast to the previous example, here we use a custom confirm response and provide the person ordering the soup with the order total before they make the purchase.\n\nBut custom responses are very flexible and you can provide any additional information in your dialogs that you think can be relevant or helpful to people using your shortcut in Siri. For information on how to make your shortcuts work great in Siri, please refer to these past years' sessions. Another great spot to showcase your app on the watch is the Siri watch face. You should see whether the shortcuts that your app supports can be relevant in various circumstances and offer them on the Siri watch face.\n\nAnd to do that, you can use the relevant shortcut APIs from the Intents framework. To learn more, watch the \"Siri Shortcuts on the Siri Watch Face\" session from WWDC 2018. Let's recap what we've covered today. First, to make your shortcuts work on watchOS, you should either build a watch app or develop your shortcuts to work with remote execution.\n\nSecond, if you're just starting to adopt shortcuts in your apps, prefer to implement them using the richer Intents API.\n\nNext, don't forget to compile your Intents extension for watchOS and to bundle it with your watch app.\n\nYou should also construct your dialogs carefully to ensure a great voice experience for your shortcuts when people run them in Siri.\n\nAnd finally, consider offering your shortcuts on the Siri watch face.\n\nThank you all for your time, and we can't wait to see what great shortcuts you will build. [chimes]",
+    "segments": []
+  },
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10190/4/4E8B17DE-486E-44AC-BC2C-EA4E4DB20E6E/wwdc2020_10190_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10190/4/4E8B17DE-486E-44AC-BC2C-EA4E4DB20E6E/wwdc2020_10190_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10074",
+      "year": "2020",
+      "title": "Decipher and deal with common Siri errors",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10074"
+    },
+    {
+      "id": "10086",
+      "year": "2020",
+      "title": "Design for intelligence: Apps, evolved",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10086"
+    },
+    {
+      "id": "10088",
+      "year": "2020",
+      "title": "Design for intelligence: Discover new opportunities",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10088"
+    },
+    {
+      "id": "10087",
+      "year": "2020",
+      "title": "Design for intelligence: Make friends with \"The System\"",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10087"
+    },
+    {
+      "id": "10200",
+      "year": "2020",
+      "title": "Design for intelligence: Meet people where they are",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10200"
+    },
+    {
+      "id": "10060",
+      "year": "2020",
+      "title": "Design high quality Siri media interactions",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10060"
+    },
+    {
+      "id": "10073",
+      "year": "2020",
+      "title": "Empower your intents",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10073"
+    },
+    {
+      "id": "10071",
+      "year": "2020",
+      "title": "Evaluate and optimize voice interaction for your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10071"
+    },
+    {
+      "id": "10061",
+      "year": "2020",
+      "title": "Expand your SiriKit Media Intents to more platforms",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10061"
+    },
+    {
+      "id": "10084",
+      "year": "2020",
+      "title": "Feature your actions in the Shortcuts app",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10084"
+    },
+    {
+      "id": "10083",
+      "year": "2020",
+      "title": "Integrate your app with Wind Down",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10083"
+    },
+    {
+      "id": "10068",
+      "year": "2020",
+      "title": "What's new in SiriKit and Shortcuts",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10068"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:16:49.839Z"
+}

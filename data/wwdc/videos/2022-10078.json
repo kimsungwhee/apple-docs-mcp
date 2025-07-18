@@ -1,0 +1,110 @@
+{
+  "id": "10078",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10078/",
+  "title": "Reduce networking delays for a more responsive app",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "System Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Mellow instrumental hip-hip music ♪ ♪ Hi, I am Vidhi Goel, and in this video, I will talk about how to reduce networking delays in your apps and make them more responsive. First, I will explain why reducing latency is crucial in making your apps responsive. Next, I will go over a list of things that you can do in your app and on your server to get rid of unnecessary delays. Finally, I will show what you can do to reduce delays in the network itself. Network latency is the time it takes for data to get from one endpoint to another. It determines how quickly content can be delivered to your app. All apps that use networking can be affected by slow network transactions that result in a poor app experience. For example, video calls can sometimes freeze or become laggy, which can interrupt meetings. To address this, people often call up their service provider to upgrade their bandwidth, and yet, the problem still exists. To get to the root cause of this problem, you need to understand how your app's packets travel in a network. When your app or framework requests data from a server, packets are sent out by the networking stack. It is often assumed that the packets go directly to the server with no delays in the network. But, in reality, the slowest link of the network usually has a large queue of packets to process. So, the packet from your app actually waits behind this large queue until the packets ahead of it are processed. This queuing at the slowest link increases the duration of each round trip between your app and your server. This problem is aggravated when it takes multiple round trips to get the first response for your app's request. For example, the time to get the first response packet when using TLS 1.2 over TCP is the duration of each round trip multiplied by four trips. Given that each round-trip time is already inflated by queuing in the network, the resulting total time is simply too long. There are two factors that multiply together to determine your app's responsiveness: the duration of each round trip and the number of round trips. Reducing these will lower your app's latency, and increase your app's responsiveness. There was a study examining the impact of increasing bandwidth versus decreasing latency on page load time. In the first test, latency is kept fixed and bandwidth is increased incrementally from 1 to 10Mbps. At first, increasing the bandwidth from 1 to 2Mbps reduces page load time by almost 40 percent, which is great. But after 4Mbps, each incremental increase results in almost no improvement in the page load time. This is why apps can be slow even after upgrading to Gigabit Internet. On the other hand, the results for the latency test show that for every 20 millisecond decrease in latency, there is a linear improvement in page load time. And these results apply to all network activity in your apps. Now, I will go over a few simple actions you can take to reduce latency and make your app more responsive. You can reduce your app's latency significantly by adopting modern protocols such as IPv6, TLS 1.3 and HTTP/3. And all you need to do is use URLSession and Network.framework APIs in your app and these protocols will be used automatically once they are enabled on your server. Since its rollout, we have seen a constant increase in HTTP/3 usage, and within just a year, 20 percent of web traffic already uses HTTP/3, and it continues to grow. Comparing Safari traffic for different HTTP versions, HTTP/3 is the fastest of them all. HTTP/3 requests take a little over half the time as compared to HTTP/1, when looking at median request completion time as a multiple of round-trip time. This means your app's requests will complete much faster. When a device moves from Wi-Fi to cellular, it takes time to reestablish new connections and that can make your application stall. Using connection migration eliminates those stalls. To opt in, set the multipathServiceType property to .handover on your URLSession configuration, or on your NWParameters. Enable this option and make sure it works with your app. If you design your own protocol that uses UDP directly, iOS 16 and macOS Ventura introduce a better way to send datagrams. QUIC datagrams provide many benefits over plain UDP, the most important being that QUIC datagrams react to congestion in the network which keeps the round-trip time low and reduces packet loss. To opt in on the client, set isDatagram to true on your QUIC options and set the maximum datagram frame size you want to use. After creating the datagram flow, you can send and receive on it just like any other QUIC stream. Now you know what to do in your app to reduce latency. Next, I will explain how servers impact your app's responsiveness. Despite often running on top-of-the-line hardware, it is possible that your server actually becomes the reason for slowness in your app. We introduced the network quality tool in macOS Monterey, and you can use this tool to measure buffer bloat in your service provider's network as well as on your server. You need to configure your server to act as a destination for the network quality tool. Once you have done that, run the networkQuality tool, first against Apple's default server and then against your own configured server. If the tool scores well using the default server, but not so well when talking to your own server, there may be room to improve the responsiveness of your server. Now, I will show you an example where we used this technique to improve something that all of you are doing right now -- streaming video.\n\nYou may have had the experience where you skip ahead to a different place in a video and you end up waiting a long time while it rebuffers. So, we investigated the reason for this slowness in random access. We used the network quality tool to test the behavior of a streaming server and we found that the responsiveness score was poor. On the right side, I streamed a WWDC video. Then, I skipped ahead in the video. The screen didn't display anything while the video rebuffered. After a few seconds, the video showed up. With the help of detailed output from the network quality tool on macOS, we found that there was huge queuing at the server. So we took a look at the server configuration. Specifically we looked at TCP, TLS, and HTTP buffer sizes, which were configured to 4MB, 256KB, and 4MB, respectively. The buffers were huge because RAM is plentiful. But just because some buffering is good, doesn't always mean that more buffering is better. Our responsiveness measurements highlighted this exact issue -- a newly generated packet was queued behind stale data in these large buffers, and this created a lot of additional delay in delivering the most recent packet. So, we reduced the buffer size to 256KB for HTTP, 16KB for TLS, and 128KB for TCP.\n\nThis is the config file for Apache Traffic Server which shows the options that were configured. TCP not-sent low-water mark was set to 128KB along with other options that were enabled to lower buffering. For TLS, we enabled dynamic record sizes and for HTTP/2, we reduced the low-water mark and buffer block size. We recommend using these configurations for your Apache Traffic Server, and if you are using a different web server, look for its equivalent options. After making these changes, we ran the network quality tool again. And this time we got a high RPM score! On the right, I streamed the same video, but this time when I skipped ahead, the video resumed instantly. By getting rid of unnecessary queuing at the server, we made random access much more responsive. Regardless of how your app uses networking, these changes on your server can make your app more responsive and deliver a better user experience. That's how to improve your app and update your server. There is a third factor that affects responsiveness greatly; the network itself. Apple introduced the network quality tool in iOS 15 and macOS Monterey. Since then, others have used the same methodology to develop network quality tests. Waveform has launched a Bufferbloat test. There's an open source implementation of the responsiveness test, written in Go. And Ookla has added a responsiveness measurement to their Speedtest app. Ookla's app shows round trip time in milliseconds, and if you divide 60,000 by that number, you get the number of round trips per minute, or RPM. You can use these tools to measure how well your own network is performing. The best way to understand delays in a network is with a delay-sensitive application. So, I will show you my screen sharing experience to a remote machine. I set up network conditions to mimic a representative access network, with traffic from other devices sharing that network. Here, I logged on to my remote machine using Screen Sharing.\n\nI clicked on different Finder menus but the display of each menu was very sluggish. To check how much this interaction was delayed, I launched an app that displays time on my local machine, and I launched the same app on my remote machine. Even though time on these computers is synchronized, my remote screen didn't update regularly and showed time delayed by a few seconds. The reason for this delayed update was the presence of a large queue at the slowest link of the network and packets from the Screen Sharing app were stuck in this large queue.\n\nTo solve this queuing issue, Apple is working with the networking community on a new technology called L4S. It is available as a beta in iOS 16 and macOS Ventura. L4S reduces queuing delay significantly and also achieves zero congestion loss. To keep a consistently short queue, the network explicitly signals congestion instead of dropping packets, and the sender adjusts its sending rate based on the congestion feedback from the network. This makes it possible to keep very low queuing in the network without any packet loss, and that will make your app highly responsive. Now, let's look at how L4S improved Screen Sharing. Here, I used the same machines and the same network except this time, I enabled L4S. When I clicked on different Finder menus, they opened immediately. I launched the Time app on both the machines. And now, time on both the remote screen and the local machine is almost perfectly in sync. This technology is not just for screen sharing. L4S improves all of today's apps, and opens the door for future apps that wouldn't even be possible today. This chart plots the observed average round trip time of packets from the Screen Sharing app which was running concurrently with traffic from other devices sharing the same network. Comparing classic queuing versus L4S shows that there is a massive reduction in round trip time with L4S. This is the primary reason for the dramatic improvement in my screen-sharing experience. Test your app that uses HTTP/3 or QUIC with L4S. You can enable L4S in iOS 16 inside Developer settings or on macOS Ventura via a defaults write. To test using a Linux server, your QUIC implementation needs to support accurate ECN and a scalable congestion control algorithm. To ensure that you are ready when L4S-capable networks are deployed, test your app for compatibility with L4S, and provide feedback with any issues you might encounter. Now you know that reducing latency is crucial to improve your app's responsiveness. So, adopt HTTP/3 and QUIC, to reduce the number of round trips and for faster delivery of content to your app. Eliminate unnecessary queuing on your server to provide a more responsive interaction. Test your app's compatibility with L4S by enabling it in Developer settings and provide feedback. And finally, talk to your server provider about enabling L4S support. Thanks for watching! ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "6:21",
+      "title": "Enable connection migration on URLSessionConfiguration for HTTP/3",
+      "language": "swift",
+      "code": "let configuration = URLSessionConfiguration.default\nconfiguration.multipathServiceType = .handover"
+    },
+    {
+      "timestamp": "6:29",
+      "title": "Enable connection migration on NWParameters for QUIC",
+      "language": "swift",
+      "code": "let parameters = NWParameters.quic(alpn: [\"myproto\"])\nparameters.multipathServiceType = .handover"
+    },
+    {
+      "timestamp": "7:08",
+      "title": "Opt-in to QUIC datagrams",
+      "language": "swift",
+      "code": "// Only one datagram flow can be created per connection\nlet options = NWProtocolQUIC.Options()\noptions.isDatagram = true\noptions.maxDatagramFrameSize = 65535"
+    },
+    {
+      "timestamp": "8:12",
+      "title": "Network quality tool in MacOS",
+      "language": "swift",
+      "code": "networkQuality -s -C https://myserver.example.com/config"
+    },
+    {
+      "timestamp": "10:59",
+      "title": "Recommended configuration for Apache Traffic Server",
+      "language": "swift",
+      "code": "% cat /opt/ats/etc/trafficserver/records.config\n\n# Set not-sent low-water mark trigger threshold to 128 kilobytes\nCONFIG proxy.config.net.sock_notsent_lowat INT 131072\n\n# Set Socket Options flag to the sum of the options we want\n# TCP_NODELAY(1) + TCP_FASTOPEN(8) + TCP_NOTSENT_LOWAT(64) = 73\nCONFIG proxy.config.net.sock_option_flag_in INT 73\n\n...\n\n# Enable Dynamic TLS record sizes\nCONFIG proxy.config.ssl.max_record_size INT -1\n\n...\n\n# Reduce low-water mark and buffer block size for HTTP/2\nCONFIG proxy.config.http2.default_buffer_water_mark INT  32768\nCONFIG proxy.config.http2.write_buffer_block_size   INT 262144"
+    },
+    {
+      "timestamp": "12:52",
+      "title": "Responsiveness tests",
+      "language": "swift",
+      "code": "https://www.waveform.com/tools/bufferbloat\nhttps://github.com/network-quality/goresponsiveness\nhttps://www.speedtest.net/"
+    },
+    {
+      "timestamp": "17:12",
+      "title": "Enable L4S for QUIC on Mac",
+      "language": "swift",
+      "code": "defaults write -g network_enable_l4s -bool true"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10078/4/688F144C-0F4D-4F7B-B77A-F10A56978C49/downloads/wwdc2022-10078_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10078/4/688F144C-0F4D-4F7B-B77A-F10A56978C49/downloads/wwdc2022-10078_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10004",
+      "year": "2023",
+      "title": "Reduce network delays with L4S",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10004"
+    },
+    {
+      "id": "10117",
+      "year": "2022",
+      "title": "Enhance voice communication with Push to Talk",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10117"
+    },
+    {
+      "id": "10094",
+      "year": "2021",
+      "title": "Accelerate networking with HTTP/3 and QUIC",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10094"
+    },
+    {
+      "id": "10239",
+      "year": "2021",
+      "title": "Reduce network delays for your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10239"
+    }
+  ],
+  "extractedAt": "2025-07-18T11:02:32.538Z"
+}

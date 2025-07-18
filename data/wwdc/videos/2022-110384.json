@@ -1,0 +1,73 @@
+{
+  "id": "110384",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/110384/",
+  "title": "Support multiple users in tvOS apps",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services",
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ instrumental hip hop music ♪ Hi, my name is Felipe. I'm a software engineer on the tvOS team. Today I'm excited to share with you the improvements we've made in tvOS 16 to make it easier to support multiple users in your apps. Apple TV is designed to be used by everyone. We've been improving multiple users on Apple TV since tvOS 13. In tvOS 16 we have new features that will make it easier to support multiple users in all apps. I'll start with an overview of the multiple users features on Apple TV. Showing how easy it is personalize apps on a device used by everyone. Then I'll demonstrate how simple it is to store the profile selection for each user of a streaming app. Finishing with recommendations for the best approach for your own app. In tvOS 16 we are making it easier to have the entire family on Apple TV.\n\nWhen you press and hold the TV button on your Siri Remote, Control Center shows up. At the top is the list of users that are on this Apple TV. New in tvOS 16, the list of users includes iCloud Family members that haven't been added yet, making it easier than ever to have the entire family on Apple TV.\n\nHere, Anne isn't on the Apple TV yet. The plus icon indicates a suggested user. To have Anne join, we can simply select the suggested user.\n\nAll Anne needs to do is bring their iPhone to the same room as the Apple TV, and on the iPhone confirm the connection. And that is all. Anne has now access to their data on Apple TV. Now let's go back to Anne's iPhone for a moment. Let's take a look at Anne's favorite video streaming app. The app is used by the entire family and each person has their own profile. When the app first launches, it presents a profile picker, Anne picks her profile. The app, running on a personal device, can simply store the preferred profile in NSUserDefaults, or even put in CloudKit to have it synced to all devices.\n\nThe iPhone of each member of the family remembers that person's preferred profile. There is no need to keep asking which profile to use when the app opens. Apple TV is a device shared by the entire family, and we think it is really important that everyone who uses Apple TV is able to access their own content and data.\n\nIn tvOS 14 we introduced the ability for apps to run as the current user. With a single checkbox to add the \"Runs as Current User\" entitlement, and no code changes at all, apps can access each user's own data, just like on iPhone.\n\nYour iOS code, calling those APIs, can run as is on Apple TV, behaving like each person is using their own personal Apple TV. When the app launches, tvOS takes care of everything. Privacy and security, all handled by the system. The \"runs as current user\" entitlement is perfect for games and any apps that are all about individual progress. Media apps with profiles, though, need a little bit more. In my example so far, I skipped an important part: the sign-in. We believe signing in needs to be as easy and infrequent as possible. In tvOS 15 we introduced a feature that allows people to use their iPhone or iPad to seamlessly sign in on your tvOS apps. It is a first-class sign-in experience, where the devices work together to offer the most convenient way to sign in on Apple TV. Features not directly available on Apple TV, like your passwords in iCloud Keychain, are just a tap away. To learn how to build great sign-in experiences, watch \"Simplify sign-in for your tvOS apps\" from WWDC 2021.\n\nAnd this year we're introducing support for OAuth and passkeys on tvOS. Passkeys are an awesome new authentication technology for replacing passwords in your apps and websites. To learn more about passkeys, watch the \"Meet Passkeys\" video. But ease and convenience isn't all. It is still important to have sign-in happen only once. To achieve this optimal user experience, with \"Runs as Current User,\" we're introducing a simple new API in tvOS 16. It is a new constant in Keychain Services that allows apps to access a user-independent Keychain. Items stored using this new key are always accessible by all users on Apple TV. Let's look at an example. Here is a method that saves an item in the Keychain, with username and password. To save the item to the user-independent Keychain, all you have to do is add a new key to the attributes dictionary that is passed to the function SecItemAdd. We simply pass true as the value for the key kSecUseUserIndependentKeychain.\n\nWith the user-independent Keychain set, the items you read and write will be visible to all users. The combination of both the new Keychain API and \"Runs as Current User\" entitlement allows your apps to have the best of iPhone and the best of Apple TV: simple per-user data separation on a shared device while maintaining the single sign-in experience on Apple TV. In tvOS 16 we've deprecated the methods to manually map profiles to system users in TVUserManager. There is no need for you to maintain a map of users to profiles anymore. The system will handle it for you. The same APIs you use on iOS can be used, as is, on Apple TV. It is so much easier. Let me show you it all in action with a demo. I'll walk you through a sample app that represents media apps with profiles. This is my streaming video app. Currently it doesn't use any of the features I talked about. It doesn't run as the current user, and it doesn't use the new Keychain API. I'll go ahead and sign in to show you.\n\nAfter sign-in I'm presented with a list of profiles. The current user is Mei, so I'll pick her profile.\n\nPicking a profile shows the personalized contents Mei wants to see.\n\nLater, Anne sits on the couch to watch TV. They open Control Center by long pressing the TV button on the Siri Remote. Here at the top in Control Center is the list of users. The green checkmark indicates the current user. I'm going to switch to Anne now and open the app.\n\nAs expected, the app presents the profile picker again. So Anne can select their profile.\n\nBut watch what happens when switching back to Mei.\n\nThe app stays in Anne's profile. It doesn't remember that Mei had picked her preferred profile before. With the new features in tvOS 16, the user experience can be much better. I want people using the app to not have to select again who is watching. Let's go to Xcode, and I'll show you how easy it is. Making my app executes as the current user is simple. All I have to do is add one capability to my app's target. Here in my app's target, I'll go over to the Signing & Capabilities tab. Just under the tab, on the top left here, I'll click the Add Capability button. It opens the list of capabilities. The one I'm interested in is called User Management. So I'll type \"user\" to filter the list.\n\nNow I just double-click the capability I want to add to my app.\n\nDown here the \"Runs as Current User\" checkbox is selected by default. That is exactly what I need. With this entitlement, my app's process will always be launched as the currently selected user. The system will make sure that the data for each user is distinct. All of it, including the Keychain. But for my app, having a distinct Keychain per user, would have an unexpected side-effect. It would require each user to sign in separately. In tvOS 16 we can maintain the experience of having a single account for all users while running as the current user. By using the new Keychain API to access the user-independent Keychain. I'll go now to my KeychainController class, I use it to read and write to the Keychain.\n\nHere I have the property baseQuery which has the keys I need to access the credentials for my app in the Keychain. To update it to use the new user-independent Keychain, all I have to do is add a new element to the dictionary. I'll add the new kSecUseUserIndependentKeychain, and set it to true.\n\nAnd that is all I need to change to make the app share its credentials with all users. Nothing else. It is important to note, though, all other data is still distinct per user. Like UserDefaults, which I'm going to use to remember the profile selection for each user.\n\nNow let's open my ProfileData class. This file is shared between my iOS and tvOS projects. In fact, the iOS version of my app already stores the profile selection in UserDefaults, but only when running on iOS. And that is because iPhones are personal devices. But now that my app runs as the current user, Apple TV can be as personal. I can remove the iOS-check and have the code work the same way on Apple TV. The system will make sure to use the correct UserDefaults for each user. When I run the new version of the app, it is launched as the current user, which is Mei. Mei signs in and pick her profile. With the app running as the current user, it behaves like Apple TV is, at that moment, a personal device. Mei's device. Mei's profile selection gets stored in her UserDefaults. When it's time for Anne to watch, they switch to their user using Control Center. The system will put up a switching user UI, while it gives time to your process to finish any last tasks before it is relaunched. tvOS now relaunches the app as Anne. Now Apple TV is Anne's device. The sign-in prompt is skipped, because the credentials are stored in the user-independent Keychain, accessible by all users. But Anne doesn't have a profile selection stored in their UserDefaults yet, and the profile picker is shown. Picking Anne's profile, saves the selection in their UserDefaults. Okay now, at this point Mei and Anne both have selected their profile. When switching users, the app won't show any interstitial prompts anymore. It will always go straight to the content, automatically selecting the correct profile for each person. Every time. That is how, in tvOS 16, we've made it much easier to remember each user's profiles. A simple new API to access the user-independent Keychain, with the system handling separating each user's data. Now that you've seen how to remember each user's profile selection without requiring everyone to sign in separately, let's review how apps work on Apple TV. Apps without the runs as current user entitlement use the resources of the Default User. You can think of it as being the Apple TV's own resources. Switching users have no influence on the app's process. Here are my recommendations for when you do want to personalize. This table shows the available capabilities depending on which features you use on your tvOS apps. If your app is a media app, or like one, shows personalized content through profiles; while having a single account shared between everyone using the Apple TV, you adopt the Runs as Current User entitlement and use the new user-independent Keychain API. If, like a game, your app is all about individual progress, all you have to do is adopt the Runs as Current User entitlement, tvOS will handle the rest. And for all other apps, apps that present the same content to all users– like for example, a recipe app– you don't have to do anything. Just create a new tvOS app project in Xcode. To learn more about running as the current user, watch our session from WWDC 2020. We believe a streamlined direct-to-content experience is the best one for a tvOS app. I hope all these features help you implement great big-screen experiences in your apps. Thanks for watching, and enjoy the conference.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "5:25",
+      "title": "Save item in user independent keychain",
+      "language": "swift",
+      "code": "func save(username: String, password: String) {\n    guard let passwordData = password.data(using: .utf8) else {\n        return\n    }\n\n    let attributes: [CFString: AnyObject] = [\n        kSecAttrService: \"MyApp\" as AnyObject,\n        kSecClass: kSecClassGenericPassword,\n        kSecAttrAccount: username,\n        kSecValueData: passwordData,\n        kSecUseUserIndependentKeychain: kCFBooleanTrue\n    ]\n\n    let status = SecItemAdd(attributes as CFDictionary, nil)\n    if status == errSecSuccess else {\n        self.credentials = (username, password)\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Mapping Apple TV users to app profiles",
+        "url": "https://developer.apple.com/documentation/TVServices/mapping-apple-tv-users-to-app-profiles"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/110384/6/1F377839-E110-4222-BBC2-B0424F6E635C/downloads/wwdc2022-110384_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/110384/6/1F377839-E110-4222-BBC2-B0424F6E635C/downloads/wwdc2022-110384_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10092",
+      "year": "2022",
+      "title": "Meet passkeys",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10092"
+    },
+    {
+      "id": "10279",
+      "year": "2021",
+      "title": "Simplify sign in for your tvOS apps",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10279"
+    },
+    {
+      "id": "10645",
+      "year": "2020",
+      "title": "Support multiple users in your tvOS app",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10645"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:14:57.719Z"
+}

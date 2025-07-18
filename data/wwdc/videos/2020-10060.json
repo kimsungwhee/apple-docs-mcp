@@ -1,0 +1,148 @@
+{
+  "id": "10060",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10060/",
+  "title": "Design high quality Siri media interactions",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services",
+    "Audio & Video",
+    "Developer Tools"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello, and welcome to WWDC. Hi, I'm Danny Mandel, and I'm here to talk about how we make sure your SiriKit Media apps have the highest-quality Siri experience possible. Why do we care about quality? I think we all want to build things people will enjoy using, and nobody enjoys using bad voice implementations. Additionally, the trust barrier for voice assistants is even higher than with a traditional user interface. So the reliability needs to be even better to maintain usage. If you're going to take the time to build SiriKit Media support, take the time to make it good.\n\nThis might sound kind of silly, but the single most important thing you can do is play something when someone asks to play.\n\nAnd think about it. If the first time someone is excited to use your app with voice and nothing plays, they probably won't ask again. So having a robust playback stack is the first place you're going to want to invest your Siri engineering resources.\n\nAnd the next thing we want to do is make sure that we start playback quickly. Over the past year, we've learned that one of the single biggest failure cases in SiriKit Media apps are timeouts.\n\nParticularly in environments like CarPlay, starting playback quickly is really important. In cases like CarPlay, when you're hands-free on the road, we can be more aggressive with timeouts, and your app will get killed off if it doesn't start playback quickly. To help, we added a couple new options for performance enhancements this year, so make sure to check out \"Expand your SiriKit Media Intents to More Platforms\" for more details.\n\nAnother way to make a high-quality experience is to let Siri understand your listeners' preferences. The way you do this is by adopting the Siri user vocabulary API. Similarly, you can help Siri to understand your app's catalog by adopting Siri's global vocabulary API. We'll do a deep dive on both of these topics a little later in this talk.\n\nWhen you're choosing the perfect thing to play, you're going to want to allow people to ask in different ways. The more utterances you can support in your app, the more likely people are going to want to use it in their everyday lives. After all, the promise of Siri is that it's an intelligent assistant. And it's only truly intelligent if we support a wide variety of natural-language utterances. So let's take a look at some of the most common natural-language patterns we see across all SiriKit Media apps. What do we mean by perfect-ish? Ultimately, perfect-ish is the best guess when you don't know what someone wants. And we see greater than half of all SiriKit Media requests follow this kind of pattern. Requests as simple as \"play your app\" or \"play music on your app.\" And that makes this generic case, when someone doesn't tell you specifically what they actually want, the single most important use case to get right. By making sure you handle this scenario, you can service a huge amount of listeners off the bat. It's up to you to decide what perfect-ish means for your app. But make sure it does something that will give people that classic surprise and delight. The way you'll know someone asked for these very generic cases is you'll either get a nil media search or a media search containing a media type of music. Our next important use case is the \"play something\" use case, where people specify the title of what it is they want to play. They won't say what the media type is, so it could be a song, album, artist, podcast, you won't know. It's important that when you implement this case, you accommodate for different media types and execute a very broad search.\n\nThe way you'll recognize this kind of request is that there will only be a media name populated in the media-search object. We see about 30% of queries like this. Moving down the list, we start to see more precise queries, with a combination of artist and some other search field. So make sure you support these compound searches with artists. In this case, you'll get a populated media name with the title of what someone asked for, and then also an artist's name with the artist they're looking for. As we start to get more specific in the query types, we do see the usage start to go down and see usage of this pattern at around five percent of requests. A final category where we see a lot of usage is playlists. So make sure you support playlist searching. Again, this is one of the more specific queries, and we do see its usage at around five percent of the time. When someone includes a playlist query in their utterance, we'll get the media-name property populated with the playlist query and the media-type property will be set to \"playlist.\" The list does continue, as there's a number of other search fields in INMediaSearch. But you can see with just these four use cases, we've captured more than 90% of the current SiriKit Media traffic. Please do implement as many other fields as makes sense for your app. But it does make sense to prioritize your engineering and QA around the popular use cases, as these are what people are most likely to use. And one final note on this. We've also seen that the better your Siri support is, the more likely it is that people will make more complicated Siri requests. So as you make it better, expect the usage patterns to change. That's a good thing. That means they like using your app with Siri. We just looked at the high-traffic utterances and saw how we can capture the vast majority of usage with just a few intents. So let's look at those intents in the debugger, and see what the media search looks like in each case.\n\nAll right, we're gonna put a breakpoint here, so we can see what the media search looks like.\n\nThe first utterance we'll look at is the empty play case. \"Play ControlAudio.\" All right. Looking at our breakpoint, we can see that in this case, there is no media search. This makes sense because we didn't specify any search criteria. Now let's look at \"play music in ControlAudio\".\n\nIn this case, we can see that we have the music media type set, and all the other fields are empty. Now a sample case of \"play Special Disaster Team in ControlAudio\".\n\nAnd as we expected, we see \"Special Disaster Team\" in our media name. Now let's try a more advanced case and include both a title and an artist.\n\nAll right, here we can see that we have a media name of \"Maybe Sometime.\" And similarly, \"Special Disaster Team\" in artist name. And the rest of the fields aren't populated. The last one to check was playlists. So we're going to try \"play my WWDC playlist in ControlAudio\".\n\nSince we included the word \"playlist\" in the utterance, we can see we have the playlist media type as a parameter and then we also have a media name of WWDC. With just those few intents, we can capture the vast majority of Siri traffic in our intent handler. Now let's do a deep dive on SiriKit Media vocabulary features. Siri's natural-language-processing system is a machine-learned system. And what that means is there's a probabilistic model that will try and predict someone's intent when they ask Siri to perform a particular action. What it also means is that the model has been trained to recognize particular features.\n\nFor example, you don't need to teach Siri about music genres, media types, sorts, or release dates, because the Siri model has already been trained to recognize these features when people ask. And generally speaking, this is good from an engineering and a usage perspective. For engineering, it means that we don't need to do additional model training every time a new app adopts SiriKit Media Intents. And from a usage perspective, it's also nice, because if someone knows how to use one SiriKit Media app, they know how to use them all. However, like with all systems, sometimes this can cause problems.\n\nFor example, in ControlAudio, say we have a playlist called \"70s punk classics.\" By default, the Siri model is probably going to parse this as a media release date corresponding to the 1970s and a media name of punk classics. So ControlAudio is going to get an intent that doesn't exactly map to the name of that playlist.\n\nThe way we solve this is to sync additional vocabulary to Siri, so that Siri knows that \"70s punk classics\" is the name of a playlist in ControlAudio. Now let's look at two different ways to accomplish this. The first way we can teach Siri about our catalog is by using Siri's user vocabulary feature. You're going to want to use the user vocabulary feature for things that apply only to a particular person, as opposed to all people that use your app. You share the vocabulary with Siri using the INVocabulary API. So let's take a quick look at that.\n\nYou just get a reference to the shared instance of INVocabulary.\n\nCreate an ordered set with the values you want to store. One note here. Make sure the important ones are at the beginning of the set, as Siri does pay attention to the order.\n\nThen call setVocabularyStrings on the type you want to store, which, in this case, is mediaPlaylistTitle. When you're working with INVocabulary, you'll generally want to focus on user-created content like someone's playlists. However, you could also use it to bias speech-and-natural-language recognition towards the taste profile around music artists or subscribed podcasts. Global vocabulary, on the other hand, is appropriate for things that are available for all people that use your app. And unlike user vocabulary, since global vocabulary is static, you package it up in a .plist that you distribute as part of your app. Note that you only need to include things that are particular to your app. So you don't need to include popular music or podcast entities, as those are generally already recognized by Siri as part of its NL model. So here's an example of a global vocabulary .plist. The first thing to note is that this example is syncing data to the INPlayMediaIntent.playlistTitle field. The next thing to note is that the identifier for the vocabulary item is \"70s punk anthems\". The identifier is the value that you'll receive from Siri, in the INMediaSearch mediaName field. This identifier is going to be the key to let Siri know that the string \"70s punk anthems\" matches up to a playlist in your app catalog.\n\nAs you can see here, we have a number of different types of vocabulary that you'll want to use depending on the media types your application supports. You'll note that the data type for user vocabulary and the key in global vocabulary have different naming, but they ultimately sync to Siri in the same place. For music apps, we have playlistTitle's and musicArtistName's. For audiobook apps, we have audiobookTitle's and audiobookAuthorName's. And radio and podcasting apps can use the showTitle type. Let's take a look at how using the Siri vocabulary features can influence the intent Siri delivers to your app. We'll use the example, \"Put on some '70s punk classics\" as an intent that Siri could deliver that might not match up with what your app expects. So let's take a look at that in the debugger.\n\nAll right. So now we're gonna go set the scheme and test with that utterance.\n\nAnd we'll run it.\n\nOkay. So the intent we got isn't quite matching up with the playlist title that we were hoping for. We have a genre name of \"punk,\" we have a decade of the '70s. So let's go fix that. All right. So we're going to add the vocabulary into our app delegate. One important thing to note about this code is that the vocabulary is an ordered set. And the reason for this is that Siri is going to prioritize the items at the beginning of the list. So make sure that the most important items are at the beginning, as there are a limit to the number of items that Siri will recognize. Now that it's set up, let's run the ControlAudio app and make sure it has a chance to sync up to the Siri server. A note about this. In a real-world scenario, it may take a bit of time before the vocabulary is synced up to the Siri server as it's subject to network and power conditions.\n\nAll right. It synced up, so let's run the intent handler again with the same phrase and look at the intent we get.\n\nOkay. The first thing to note is that we got the media type of playlist set in the media search. Siri recognized it got a user vocabulary hit, and it set the media type for us. And the media name is as we hoped, and it has the full string \"'70s punk classics\" in it. That's user vocabulary. Let's take a similar look at global vocabulary. As a reminder, global vocabulary .plist is available to everyone using your app as opposed to user vocabulary, which is on a per-user basis. So the first thing we're gonna do is we're gonna add our vocabulary .plist to ControlAudio.\n\nAnd let's take a look at it.\n\nAll right. Let's focus on the parameter vocabularies key. The first thing we'll do is look at the parameter names. In this case, we're defining vocabulary for playlist titles, so we see the value is INPlayMediaIntent.playlistTitle.\n\nNow we can see that the parameter vocabulary has a value for Vocabulary Item Identifier. The identifier is the value you'll receive in the Intents Media Search. And in this case, we tweaked it from the previous example and called it \"'70s punk anthems.\" So now that we have the global vocabulary file added, let's give it a whirl and see what we get in the intent handler.\n\nOkay. Looking at the intent again, we can see that we got the playlist media type...\n\nand we see our expected playlist title of '70s punk anthems.\n\nAnd that's how you can use Siri global vocabulary to make sure that Siri knows about the entities that are important to everyone using your app. One of the bigger Siri use cases we see with media apps are Now Playing controls, so you're going to want to make sure to test these out. iOS's Now Playing support is implemented using the MPRemoteCommandCenter class. The way this works is you register a command handler for a particular Now Playing command. Some examples of Now Playing commands are \"play,\" \"pause,\" \"next track\" or \"previous track.\" The basic idea is that if there's a button in control center or on the CarPlay Now Playing screen, then there's a corresponding Now Playing command class. And there's a really great existing sample code project that dives into the details of the Now Playing API called Becoming a Now Playable App. And I'd encourage you to take a look at that if you're interested in more details about how this all works.\n\nSiri acts as a simple voice interface on top of particular Now Playing commands. This behavior isn't new. In fact, it's been around for many years now. So, what happens when you issue a Now Playing command to Siri? Like most Siri commands, the first thing that happens is Siri recognizes what someone says. In this case, the utterance is \"next track.\" Once Siri does that, it sends a command to the MPRemoteCommandCenter. In this case, because the person said, \"Next track,\" it's going to send the next-track command. Finally, your app's registered handler for next-track command is invoked and you have the opportunity to handle the next-track command. Note that since this implementation is the same thing that's handling button presses, your Siri handling and Now Playing button presses will have identical implementations. In most cases, this is probably okay. It's just something you'll want to keep in mind as you're implementing them. Let's walk through a few of the commands and how you invoke them via Siri. Note that the utterance examples we're using here are just one of the many natural-language utterances Siri supports to accomplish these actions. When you're implementing your Now Playing support, Siri takes care of that for you so you don't need to worry about it. You just need to make sure that your MPRemoteCommandCenter implementation works correctly with Siri.\n\nFirst up is the pause command. You invoke it with Siri by saying something like \"pause,\" and it routes to MPRemoteCommandCenter's pause command.\n\nNext we have play, and you can use this to resume music when it's paused. You invoke it with Siri by saying something like \"resume,\" and it routes to MPRemoteCommandCenter's playCommand.\n\nNext we have previous track. You invoke it with Siri by saying something like \"previous track,\" and it routes to the previousTrackCommand.\n\nNext we have next track. You invoke it with Siri when you say something like \"next track,\" and it routes to the nextTrackCommand. Moving on, we have skip forward. When you say something like \"skip forward,\" it goes to the skipForwardCommand. Something interesting about skip forward is that someone can tell Siri how far they want to skip forward. Siri will package this up in the command's interval property. Next we have skip back. When someone says something like \"skip back,\" it routes to the skipBackwardCommand. Like skip forward, people can say how far they want you to go back, and you'll receive this in the command's interval property. There are a few more commands that don't show up on the lock screen that you want to be aware of. changeRepeatMode and changeShuffleMode take an argument as to whether the mode should be enabled or disabled. Also, note that these are only used to turn the repeat and shuffle settings on or off. If you want to start playback shuffled or on repeat, use INPlayMediaIntent for that. changePlaybackRate also takes an argument as you can say what speed you want to play something at. For example, \"Play it slower,\" or \"Play at half speed.\" Similar to the way we can control Now Playing interactions by implementing the Now Playing commands, we can help Siri answer questions people ask about what's playing by setting properties in MPNowPlayingInfoCenter. A few of the supported properties are MPMediaItemPropertyTitle, which you can use by saying, \"What song is this?\" MPMediaItemPropertyArtist, which you could get with, \"What band is this?\" And MPMediaItemPropertyAlbumTitle, which you'd similarly get by asking, \"What album is this?\" And when it comes to errors, there's three ways you can let someone know that you don't support the command. You might want to do it a couple different ways depending on what's appropriate for your app.\n\nThe easiest way is to just not implement the command. If you don't install a handler in MPRemoteCommandCenter, Siri will still gracefully give an error dialogue.\n\nYou can also temporarily disable the command. And this might be useful in a context where you normally support something, but don't in certain circumstances. For instance, maybe you disable the next-track command if you're playing an advertisement on an ad-supported music stream.\n\nFinally, you can fail the command which will generate a generic error dialogue. Typically, you'll only do this in exceptional cases, but Siri will still handle this. One last thing.\n\nA quality SiriKit Media experience is one that people know about. This is a challenge with any voice integration. Sometimes people are unaware of the hard work that you've put into making an awesome voice experience because, you know, out of sight, out of mind.\n\nBut we also see that people are more likely to use Siri when they know about the functionality. How much more likely? We've seen Siri engagement increase up to ten times when there's some education about the feature in the app. Of course, you'll want to present this in your style and match your app's overall look and feel. But if you want people to use your app more easily by just asking Siri, you're definitely going to want to tell them about it. Thanks for watching. We really want people to have a great experience using your app and a great experience using Siri. So don't forget. A high-quality Siri experience is one people will actually use. And I hope you really enjoyed WWDC20.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "5:46",
+      "title": "resolveMediaItems method",
+      "language": "swift",
+      "code": "func resolveMediaItems(for intent: INPlayMediaIntent, with completion: @escaping ([INPlayMediaMediaItemResolutionResult]) -> Void) {\n    let mediaSearch = intent.mediaSearch\n    resolveMediaItems(for: mediaSearch) { optionalMediaItems in\n        guard let mediaItems = optionalMediaItems else {\n            return\n        }\n        completion(INPlayMediaMediaItemResolutionResult.successes(with: mediaItems))\n    }\n}"
+    },
+    {
+      "timestamp": "10:21",
+      "title": "User vocabulary",
+      "language": "swift",
+      "code": "let vocabulary = INVocabulary.shared()\nlet playlistNames = NSOrderedSet(objects: \"70s punk classics\")\nvocabulary.setVocabularyStrings(playlistNames, of: .mediaPlaylistTitle)"
+    },
+    {
+      "timestamp": "11:28",
+      "title": "Global vocabulary example",
+      "language": "swift",
+      "code": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n\t<key>ParameterVocabularies</key>\n\t<array>\n\t\t<dict>\n\t\t\t<key>ParameterNames</key>\n\t\t\t<array>\n\t\t\t\t<string>INPlayMediaIntent.playlistTitle</string>\n\t\t\t</array>\n\t\t\t<key>ParameterVocabulary</key>\n\t\t\t<array>\n\t\t\t\t<dict>\n\t\t\t\t\t<key>VocabularyItemSynonyms</key>\n\t\t\t\t\t<array>\n\t\t\t\t\t\t<dict>\n\t\t\t\t\t\t\t<key>VocabularyItemPhrase</key>\n\t\t\t\t\t\t\t<string>70s punk anthems</string>\n\t\t\t\t\t\t</dict>\n\t\t\t\t\t</array>          \n\t\t\t\t\t<key>VocabularyItemIdentifier</key>\n\t\t\t\t\t<string>70s punk anthems</string>\n\t\t\t\t</dict>\n\t\t\t</array>\n\t\t</dict>\n\t</array>\n</dict>\n</plist>"
+    },
+    {
+      "timestamp": "13:31",
+      "title": "User vocabulary syncing",
+      "language": "swift",
+      "code": "// Set our playlist title in user vocabulary so we get the proper Siri intent\nlet vocabulary = INVocabulary.shared()\nlet playlistNames = NSOrderedSet(objects: \"70s punk classics\")\nvocabulary.setVocabularyStrings(playlistNames, of: .mediaPlaylistTitle)"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10060/9/B52BD896-A151-4C63-B521-62611009D046/wwdc2020_10060_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10060/9/B52BD896-A151-4C63-B521-62611009D046/wwdc2020_10060_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10190",
+      "year": "2020",
+      "title": "Create quick interactions with Shortcuts on watchOS",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10190"
+    },
+    {
+      "id": "10074",
+      "year": "2020",
+      "title": "Decipher and deal with common Siri errors",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10074"
+    },
+    {
+      "id": "10086",
+      "year": "2020",
+      "title": "Design for intelligence: Apps, evolved",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10086"
+    },
+    {
+      "id": "10088",
+      "year": "2020",
+      "title": "Design for intelligence: Discover new opportunities",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10088"
+    },
+    {
+      "id": "10087",
+      "year": "2020",
+      "title": "Design for intelligence: Make friends with \"The System\"",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10087"
+    },
+    {
+      "id": "10200",
+      "year": "2020",
+      "title": "Design for intelligence: Meet people where they are",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10200"
+    },
+    {
+      "id": "10073",
+      "year": "2020",
+      "title": "Empower your intents",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10073"
+    },
+    {
+      "id": "10071",
+      "year": "2020",
+      "title": "Evaluate and optimize voice interaction for your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10071"
+    },
+    {
+      "id": "10061",
+      "year": "2020",
+      "title": "Expand your SiriKit Media Intents to more platforms",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10061"
+    },
+    {
+      "id": "10084",
+      "year": "2020",
+      "title": "Feature your actions in the Shortcuts app",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10084"
+    },
+    {
+      "id": "10083",
+      "year": "2020",
+      "title": "Integrate your app with Wind Down",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10083"
+    },
+    {
+      "id": "10068",
+      "year": "2020",
+      "title": "What's new in SiriKit and Shortcuts",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10068"
+    },
+    {
+      "id": "207",
+      "year": "2019",
+      "title": "Introducing SiriKit Media Intents",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/207"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:16:38.625Z"
+}

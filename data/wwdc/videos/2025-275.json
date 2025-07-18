@@ -1,0 +1,264 @@
+{
+  "id": "275",
+  "year": "2025",
+  "url": "https://developer.apple.com/videos/play/wwdc2025/275/",
+  "title": "Explore new advances in App Intents",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Machine Learning & AI"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, my name is Jeff, an engineer on the App Intents team. Today, we’ll be exploring new advances in App Intents.\n\nApp Intents gives your app the ability to integrate its features throughout people’s devices, including in places like Shortcuts, Spotlight, and Visual Intelligence.\n\nIf you're not familiar with the framework, I suggest checking out the “Get to know App Intents” session first. I'll be glad to have you back anytime. We have lots to go over today, including new experiences you can build with interactive snippets, additional ways your app can leverage App Intents throughout the system, more features you can use to refine your app’s user experiences, and various convenience APIs we've added to enhance your developer experience. Let’s get started with the interactive snippets.\n\nSnippets let your app display tailored views with your App Intents, either to ask for confirmation or display a result.\n\nYou can now bring those snippets to life with interactivity.\n\nFor example, you can build a gardening snippet that suggests turning on the sprinklers when the soil is too dry. Or configure a food order before sending it to the restaurant. Ooh, how about integrating with other system features like Live Activities to immediately start following the sports game after checking the score.\n\nLet me give you a quick demo of an interactive snippet with our sample app. Then we'll explore its implementation.\n\nThe TravelTracking app contains lots of landmarks across the world.\n\nI’ll tap on the control that runs an App Intent to find the closest landmark.\n\nAfter locating it, the intent will show a snippet displaying the landmark with a heart button next to the title. I’m from Toronto. Niagara Falls is practically in my backyard, so I’ll tap the heart button to add it to my favorites.\n\nThe snippet will immediately update to show its new status.\n\nThis is built by adopting the new Snippet Intent protocol. These intents render views according to their parameters and the state of the app. You can use them to show results after an action or request confirmation. Let’s first explore how result snippets work. Any intent in your app can return a snippet intent filled with parameter values as part of its result. This is used by the system every time it needs to refresh the snippet.\n\nWhen that happens, the system will populate the parameters on the snippet intent with values you specified. If any of them are app entities, they’ll be fetched from their queries.\n\nThen the system runs the Snippet Intent’s perform method. There, the intent can access its parameters and the app state to render the view, then return that as part of the result. The view can associate buttons or toggles with any App Intents from your app.\n\nIn the example, the heart button runs the Update Favorites Intent, and the find tickets button runs the Find Tickets Intent. You don’t have to create these intents just for snippets. You can actually reuse existing ones without modifying them.\n\nWhen the hard button is tapped, the system runs the corresponding intent and waits for it to complete. This ensures the favorite status is up to date. Once that finishes, the system will use the parameterized snippet intent that you returned earlier to trigger another update.\n\nSame as before, you’ll populate the parameters with values that you specified. Any app entities will also be fetched from their queries again. Then the system will run the perform method, which gives the snippet intent a chance to render an updated view.\n\nIn this case, the heart icon is now filled in.\n\nAny changes in the view will be animated according to the contentTransition APIs from SwiftUI.\n\nThe cycle continues until the snippet is dismissed.\n\nLet’s implement returning a snippet intent.\n\nFirst, I take the existing intent and add ShowsSnippetIntent to its return type.\n\nThen provide the snippet intent using the new parameter on the result method. This tells the system to populate the parameter with the given landmark every time the snippet intent is used.\n\nNow let’s implement the snippet intent itself.\n\nFirst of all, it needs to conform to the SnippetIntent protocol. Then I’ll add the variables it needs to render the view correctly. They must be marked as parameters, otherwise they won’t be populated by the system. And since it’s an App Intent, it also has access to AppDependencies. In the perform methods return type, add ShowsSnippetView.\n\nAnd in the body, use methods to fetch the states needed to produce the view, then return that using the view parameter in a result method.\n\nSimilar to SwiftUI views, your snippet intent will be created and run many times during its lifecycle. Therefore, ensure it doesn’t mutate the app state.\n\nThe system might even run it additional times to react to device changes, such as going to dark mode.\n\nAlso, make sure to render your views quickly so they don't feel unresponsive.\n\nAnd since you only specify parameter values once, you should only use them for App Entities, which are queried every time, and primitive values that will never change. All other values should be fetched in the perform method.\n\nWith the snippet built, let’s now explore how the SwiftUI view triggers intents.\n\nIn the view body, LandmarkView uses the Button initializer to associate their corresponding App Intents. Similar APIs exist for toggles as well.\n\nThese APIs were introduced with interactive widgets alongside the contentTransition modifier to customize animations.\n\nIf you would like to learn more, Check out Luca's talk from 2023. Now, let’s implement the find tickets feature using a confirmation snippet.\n\nIf I tap on the Find Tickets button, it’ll ask me how many tickets I want to search for. I'll increase it to four because I have friends coming along, then start search.\n\nEventually, it’ll show the cheapest price it can find using a result snippet.\n\nLet's go over it step by step.\n\nStarting with the result snippet, if your buttons or toggles trigger intents that present their own snippets, it'll replace the original one. Keep in mind, this only works if the original was showing a result.\n\nThe follow up intent can present either kinds of snippets, but here we're using request confirmation to present the configuration view.\n\nTo do so, simply call the requestConfirmation method.\n\nYou can customize the action name and provide the snippet intent that drives your confirmation experience.\n\nThis method will throw an error if the snippet is canceled at any time. Don’t try to catch it, just let it terminate your perform method.\n\nThen every interaction with the view will go through the same update cycle as the result snippet.\n\nIn the example, the snippet intent is always showing the updated number of tickets. How does it do that? Well, because I’ve modeled search request as an AppEntity, the system will always fetch the newest value from the query when populating this parameter. So I can just pass it to my view and automatically get the latest values.\n\nThe system won’t terminate your app as long as your snippet is visible, so feel free to retain states in memory. There’s no need to store them in a database.\n\nAfter all the interactions, when the search action is finally tapped, the original App Intents execution is resumed.\n\nSometimes you might want your snippet to update in the middle of a task because there's a new state.\n\nIn these scenarios, simply call the static reload method on the snippet intent that should be updated.\n\nCheck out this session to learn more about designing the best interactive snippets.\n\nSnippets was just the beginning. Let’s now explore even more ways App Intents can help you integrate your app throughout the system. The first of which is image search. This feature allows people to perform searches directly from a camera capture or a screenshot. New in iOS 26, your app’s search results can show up too.\n\nHere, I have a screenshot of a landmark. I’ll highlight it to perform an image search, and the system will show a search panel.\n\nI can select the TravelTracking app to see its results. Then when I tap on a result, it’ll open the app to the corresponding landmark page.\n\nTo support image search, implement a query that conforms to the IntentValueQuery protocol. It will accept the SemanticContentDescriptor type as input, and return an array of App Entities. Image Search will display your AppEntities using their display representations.\n\nWhen a result is tapped, the corresponding AppEntity will be sent to its OpenIntent for your app to handle it.\n\nThis OpenIntent must exist, otherwise your app won’t show up.\n\nTo implement the query, start with a struct that conforms to the IntentValueQuery protocol. The values method must have SemanticContentDescriptor as its input. It contains the pixels of the selected area.\n\nYou can use APIs from Video Toolbox or CoreImage to convert it into a familiar type, such as CGImage.\n\nAfter you perform the search, return an array of the matched entities.\n\nNext, implement an intent that conforms to the OpenIntent protocol to support tapping on the result.\n\nThe target parameter must have the same entity type as the results.\n\nOpenIntents aren’t just for supporting Image Search. They can also be called in other places like Spotlight, giving your users an easy way to navigate to an entity in your app.\n\nPeople will have the best experience if they can find what they’re looking for quickly. So return a few pages of results to increase the likelihood of the perfect match showing up in the system UI.\n\nYou can use your servers to query a larger dataset. However, don't search for too long. Otherwise, you'll feel unresponsive.\n\nFinally, allow them to continue the search experience in your app if they don’t find what they’re looking for. Let’s add that to TravelTracking.\n\nWhen I don’t see the result I want in the list, I can tap the more results button, which opens my app and navigates to the search view.\n\nTo implement this, use the new AppIntent macro to specify the semanticContentSearch schema. This is the new API that replaces AssistantIntent macro because we’ve expanded schemas to features outside of the assistant, like visualIntelligence. Add the semantic content property required by the schema. The macro will automatically mark it as an intent parameter for you.\n\nIn the perform method, process the search metadata, then navigate to the search view.\n\nAs an additional feature, I want TravelTracking to show collections that contain the matched landmarks. But how can I have one query that returns a mixture of LandmarkEntity and CollectionEntity? The answer is UnionValues.\n\nFirst, declare a UnionValue with each case representing a type of entity that the query might return. Then, change the result type to be an array of them. Now it’s possible for me to return a mixture of both. Of course, don’t forget to implement an OpenIntent for each type of entity. To learn more about UnionValues, check out Kenny’s App Intents session from 2024.\n\nIt’s great that your app’s content is searchable outside of the app, but there’s more you can do with Apple Intelligence when your app is active. Let’s talk about onscreen entities. By using NSUserActivities, your app has the ability to associate entities with onscreen content. This allows people to ask ChatGPT about things currently visible in your app.\n\nIn the TravelTracking app, while looking at Niagara Falls, I can ask Siri if this place is near the ocean. Siri will figure out I’m referring to the view on the screen and will offer to send a screenshot to ChatGPT. But LandmarkEntity supports PDF, so I’ll choose the full content option instead. I can give it a quick preview, then send it over.\n\nThe response will be displayed, and I've learned that while big, the Great Lakes are NOT an ocean.\n\nTo associate an entity with a view, we’ll start by adding the userActivity modifier to the LandmarkDetailView. Then in the update closure, associate an entity identifier with the activity.\n\nNext, we need to support converting LandmarkEntity into a data type that ChatGPT can understand, like a PDF.\n\nWe do this by first conforming it to the Transferable protocol, then providing the PDF data representation.\n\nOther supported types include plain text and rich text.\n\nCheck out this App Intents documentation to learn more about on screen entities.\n\nSpeaking of surfacing your app’s content to the system, I want to briefly talk about Spotlight. Now that we support running actions directly from Spotlight on Mac, there are a few things you can do with App Intents to provide the best experience.\n\nFirst, make your app entities conform to IndexedEntity and donate them to Spotlight. This allows Spotlight search to drive the filtering experience for your parameters.\n\nTo associate entity properties with the Spotlight keys, you can now use the new indexingKey parameter on the property attribute. In this example, I gave continent a customIndexingKey. This will allow people to search for Asian landmarks by simply typing \"Asia\" in the text field.\n\nAs a bonus for adopting the API, this allows Shortcuts app automatically generate find actions for your entities.\n\nSecond, annotate your on screen content with entities, so these entities will be prioritized in suggestions when their views are visible. Third, implement PredictableIntent so the system can learn and provide suggestions for your intents based on intents and parameters from previous user behavior. You can even provide tailored descriptions depending on their values.\n\nIf you would like to learn more about this feature, check out this session on Shortcuts and Spotlight.\n\nNow that you have all these features in your app, let me show you some new ways to refine your app’s user experiences. Let’s start with Undo. People are more likely to try different things if they know they can change their mind. That's why it's important they can reverse actions performed with your app. With the new UndoableIntent protocol, you can easily allow people to undo your App Intents with gestures they already know.\n\nHere are some of my collections in the TravelTracking app.\n\nI’ll use Type to Siri to run one of my custom shortcuts to delete the Sweet Deserts collection. After confirming the deletion, it’s removed from the app. If I change my mind now, I can swipe left with three fingers to trigger undo and restore the collection.\n\nDeleteCollectionIntent participates in the undo stack by first conforming to the UndoableIntent protocol, which provides an optional undoManager property that you can register the undo actions with. Other operations like setActionName are available as well.\n\nThe system gives your intent the most relevant undo manager through this property, even when those intents are run in your extensions. This ensures your app’s undo actions across UI and App Intents stay in sync, so they can be undone in the correct order. Let’s polish this intent even more by providing alternatives to deletion.\n\nWe can use the new multiple-choice API to present several options for people to choose from. I’ll run the intent that deletes the collection again.\n\nThis time, instead of just asking me to confirm deletion, it provides an additional option to archive it.\n\nHmm, this collection brings back memories. I think I'll archive it instead.\n\nIn the perform method, present the multiple choice snippet by calling the requestChoice method and provide an array of options using the between parameter. Options can be created with custom titles. You can also specify a style which tells the system how to render it.\n\nThen, you can customize the snippet with a dialog and a custom SwiftUI view.\n\nWhen an option is picked, it’s returned from the requestChoice method, except for cancellation which throws an error that terminates the perform method. You shouldn’t catch this error. If a request is canceled, the intent should stop immediately.\n\nThen as follow up, use a switch statement to branch on the chosen option. You can use the original options that you’ve created as the expected values.\n\nLet’s talk about one more area of polish. Supported Modes gives your intents greater control over foregrounding the app. This allows them to behave differently depending on how the user is interacting with the device. For example, if I were driving, I want intents to give me information via voice only. But if I were looking at the device, it should take me directly to the app because it can show me more information there. With this feature, I can implement one App Intent that does both of these things. Let me show you.\n\nHere’s the intent to get the crowd status for Niagara Falls.\n\nI’ll turn off the Open When Run option. This resembles scenarios where foregrounding is not possible, like using Siri while wearing headphones. When I run it, you’ll only show a dialog, which can also be read by Siri.\n\nBut if I run it by turning off the dialog and enabling Open When Run, you’ll take me directly to the landmark page that shows the occupancy as well as the current weather.\n\nLet's add this feature to the intent.\n\nFirst, I’ll add the supported modes with the static variable. If I set it to background only, it tells the system the app will never be foregrounded by the intent. However, I also want the intent to take me to the app if possible. So I’ll add the foreground mode, which asks the system to launch the app before running the intent.\n\nThen I can use the new currentMode property to check if we’re in the foreground. If we are, we can navigate accordingly.\n\nHmm, wait a minute. Why is it saying there’s no one at the landmark? Oh, it's closed. Let’s modify the intent so it doesn’t open the app in this scenario.\n\nIn the perform method, I can check to see if the landmark is open and exit early if it's closed. In this case, I don't want the app to be foregrounded by the system before running the intent. So I’ll modify the foreground mode to be dynamic. The available supported modes include background and three foreground modes. There’s immediate, which tells the system to foreground the app before running the intent. Dynamic, which allows the intent to decide whether or not to launch the app. And deferred, which indicates the intent will eventually foreground the app, just not immediately.\n\nGetCrowdStatus might not launch the app, so dynamic is the perfect choice.\n\nFor these two modes, the intent can use the continueInForeground method to control exactly when to bring the app forward.\n\nAfter we are sure the landmark is open, we can use the new property on systemContext to check if we can foreground the app.\n\nIf we can, we’ll call the continueInForeground method to bring it forward.\n\nBy setting alwaysConfirm to false, the system will avoid prompting if there was activity in the last few seconds.\n\nIf launching the app was successful, we can finally navigate to the crowd status view.\n\nHowever, if the launch request is denied, either by the system or the user, the method will throw an error. You can catch it and handle it accordingly. Before we wrap up, I want to go over some ways we’ve made developing with App Intents easier for you.\n\nIf your App Intents want to perform UI navigation, they need to have access to all the app states driving the views. This can only be done with globally shared objects like AppDependencies or singletons. But with the new view control APIs, you can remove UI code from App Intents and let the views handle it themselves. Let’s use it to refactor our open landmark intent. First of all, we have to conform the intent to the TargetContentProvidingIntent protocol. In the SwiftUI view, I have a path property that’s used to programmatically modify the NavigationStack. Since it’s marked as a state, it can only be accessed from the view body. This is where the onAppIntentExecution view modifier comes in. It takes the type of App Intent you want to handle, and an action closure with the intent passed in. Inside, I can reference the intent’s parameters and modify the UI accordingly.\n\nWith this code in place, we can remove UI code from the intent itself, or remove the perform method entirely, as well as the dependency we no longer need. How lovely is that? The system runs your action closure shortly before foregrounding the app. Therefore, you can only read the parameter values from the intent. All other operations like requesting values are not supported.\n\nAnd if multiple views have the same modifier, all of them will be run, so each view can respond accordingly. If your app supports several scenes or windows, you might want to control which one runs a particular intent. For example, when I’m editing a collection in the TravelTracking app, I wouldn’t want it to navigate to a landmark with that scene. It'll be very disruptive. Thankfully, I can control this by using the handlesExternalEvents APIs. A target content providing intent has the contentidentifier property, which defaults to its persistentidentifier. And usually it's the intent's struck name.\n\nYou can always customize this value to be even more specific.\n\nWe can use this with the HandlesExternalEvents modifiers on scenes to set the activation condition, which tells the system to use the scene to execute the App Intent. It’ll create one if it doesn’t exist already.\n\nMake sure the identifier in the array matches the content identifier property of the intent you want to handle. But if the activation conditions are dynamic, you can use the same modifier on views instead. Here, I’m only allowing the scene to handle OpenLandmarkIntent if we are not editing a collection.\n\nYou can learn more about SwiftUI scenes and activation conditions from these two sessions.\n\nFor UIKit, you can conform intents to the UISceneAppIntent protocol, which gives them the ability to access UIScene with these members. Or your scene delegate can respond to an intent execution after conforming to AppIntentSceneDelegate.\n\nFinally, you can also use activation conditions to decide which scene will handle an App Intent. The next improvement is the new ComputedProperty macro that lets you avoid storing values on AppEntities. Here’s my SettingsEntity that copies the defaultPlace from UserDefaults. I want to avoid storing a duplicate value on the struct like this. Instead, it should be derived directly from the source of truth.\n\nWith the new ComputedProperty macro, I can achieve this by accessing UserDefaults directly from the getter.\n\nWe’ve also added a new DeferredProperty macro to lower the cost of instantiating an AppEntity. In LandmarkEntity, there’s a crowdStatus property whose value comes from a network server, so fetching it is relatively expensive. I want to fetch it only if the system explicitly requests it.\n\nBy marking this property as DeferredProperty, I can provide an asynchronous getter.\n\nInside, I can call methods that make the network calls.\n\nThis async getter will only be called if system features like Shortcuts requests it, not when LandmarkEntity is created and passed around.\n\nHere are some key differences between the three property types. Overall, choose ComputedProperty over Deferred due to its lower system overhead. Only fallback to Deferred if that property is too expensive to calculate.\n\nLast but not least, you can now put your App Intents in Swift Packagess.\n\nPreviously, we’ve enabled packaging your AppIntents code with frameworks and dynamic libraries. Now you can put them in Swift Packages and static libraries. To learn more about how to use the AppIntentsPackage protocol, check out the “Get to know App Intents” session.\n\nI hope you enjoyed learning about these features with me. As next steps, try out interactive snippets to see what they can do for your intents. Associate entities with onscreen content so the system can automatically suggest them to the user.\n\nProvide more options for people to choose from using the multiple choice API. Support multiple modes to ensure your intents provide the best experience no matter how they run.\n\nFinally, to dig into the code further, check out our sample app on the developer website.\n\nI’m so excited to finally share all this with you. I can’t wait to see all the creative ideas you’ll come up with.\n\nThat's it for now. Thanks for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:08",
+      "title": "Returning a Snippet Intent",
+      "language": "swift",
+      "code": "import AppIntents\nimport SwiftUI\n\nstruct ClosestLandmarkIntent: AppIntent {\n    static let title: LocalizedStringResource = \"Find Closest Landmark\"\n\n    @Dependency var modelData: ModelData\n\n    func perform() async throws -> some ReturnsValue<LandmarkEntity> & ShowsSnippetIntent & ProvidesDialog {\n        let landmark = await self.findClosestLandmark()\n\n        return .result(\n            value: landmark,\n            dialog: IntentDialog(\n                full: \"The closest landmark is \\(landmark.name).\",\n                supporting: \"\\(landmark.name) is located in \\(landmark.continent).\"\n            ),\n            snippetIntent: LandmarkSnippetIntent(landmark: landmark)\n        )\n    }\n}"
+    },
+    {
+      "timestamp": "4:31",
+      "title": "Building a SnippetIntent",
+      "language": "swift",
+      "code": "struct LandmarkSnippetIntent: SnippetIntent {\n    static let title: LocalizedStringResource = \"Landmark Snippet\"\n\n    @Parameter var landmark: LandmarkEntity\n    @Dependency var modelData: ModelData\n\n    func perform() async throws -> some IntentResult & ShowsSnippetView {\n        let isFavorite = await modelData.isFavorite(landmark)\n\n        return .result(\n            view: LandmarkView(landmark: landmark, isFavorite: isFavorite)\n        )\n    }\n}"
+    },
+    {
+      "timestamp": "5:45",
+      "title": "Associate intents with buttons",
+      "language": "swift",
+      "code": "struct LandmarkView: View {\n    let landmark: LandmarkEntity\n    let isFavorite: Bool\n\n    var body: some View {\n        // ...\n        Button(intent: UpdateFavoritesIntent(landmark: landmark, isFavorite: !isFavorite)) { /* ... */ }\n\n        Button(intent: FindTicketsIntent(landmark: landmark)) { /* ... */ }\n        // ...\n    }\n}"
+    },
+    {
+      "timestamp": "6:53",
+      "title": "Request confirmation snippet",
+      "language": "swift",
+      "code": "struct FindTicketsIntent: AppIntent {\n\n    func perform() async throws -> some IntentResult & ShowsSnippetIntent {\n        let searchRequest = await searchEngine.createRequest(landmarkEntity: landmark)\n\n        // Present a snippet that allows people to change\n        // the number of tickets.\n        try await requestConfirmation(\n            actionName: .search,\n            snippetIntent: TicketRequestSnippetIntent(searchRequest: searchRequest)\n        )\n\n        // Resume searching...\n    }\n}"
+    },
+    {
+      "timestamp": "7:24",
+      "title": "Using Entities as parameters",
+      "language": "swift",
+      "code": "struct TicketRequestSnippetIntent: SnippetIntent {\n    static let title: LocalizedStringResource = \"Ticket Request Snippet\"\n\n    @Parameter var searchRequest: SearchRequestEntity\n\n    func perform() async throws -> some IntentResult & ShowsSnippetView {\n        let view = TicketRequestView(searchRequest: searchRequest)\n\n        return .result(view: view)\n    }\n}"
+    },
+    {
+      "timestamp": "8:01",
+      "title": "Updating a snippet",
+      "language": "swift",
+      "code": "func performRequest(request: SearchRequestEntity) async throws {\n    // Set to pending status...\n   \n    TicketResultSnippetIntent.reload()\n\n    // Kick off search...\n\n    TicketResultSnippetIntent.reload()\n}"
+    },
+    {
+      "timestamp": "9:24",
+      "title": "Responding to Image Search",
+      "language": "swift",
+      "code": "struct LandmarkIntentValueQuery: IntentValueQuery {\n\n    @Dependency var modelData: ModelData\n\n    func values(for input: SemanticContentDescriptor) async throws -> [LandmarkEntity] {\n        guard let pixelBuffer: CVReadOnlyPixelBuffer = input.pixelBuffer else {\n            return []\n        }\n\n        let landmarks = try await modelData.searchLandmarks(matching: pixelBuffer)\n\n        return landmarks\n    }\n}"
+    },
+    {
+      "timestamp": "9:51",
+      "title": "Support opening an entity",
+      "language": "swift",
+      "code": "struct OpenLandmarkIntent: OpenIntent {\n    static var title: LocalizedStringResource = \"Open Landmark\"\n\n    @Parameter(title: \"Landmark\")\n    var target: LandmarkEntity\n\n    func perform() async throws -> some IntentResult {\n        /// ...\n    }\n}"
+    },
+    {
+      "timestamp": "10:53",
+      "title": "Show search results in app",
+      "language": "swift",
+      "code": "@AppIntent(schema: .visualIntelligence.semanticContentSearch)\nstruct ShowSearchResultsIntent {\n    var semanticContent: SemanticContentDescriptor\n\n    @Dependency var navigator: Navigator\n\n    func perform() async throws -> some IntentResult {\n        await navigator.showImageSearch(semanticContent.pixelBuffer)\n\n        return .result()\n    }\n\n    // ...\n}"
+    },
+    {
+      "timestamp": "11:40",
+      "title": "Returning multiple entity types",
+      "language": "swift",
+      "code": "@UnionValue\nenum VisualSearchResult {\n    case landmark(LandmarkEntity)\n    case collection(CollectionEntity)\n}a\n\nstruct LandmarkIntentValueQuery: IntentValueQuery {\n    func values(for input: SemanticContentDescriptor) async throws -> [VisualSearchResult] {\n        // ...\n    }\n}\n\nstruct OpenLandmarkIntent: OpenIntent { /* ... */ }\nstruct OpenCollectionIntent: OpenIntent { /* ... */ }"
+    },
+    {
+      "timestamp": "13:00",
+      "title": "Associating a view with an AppEntity",
+      "language": "swift",
+      "code": "struct LandmarkDetailView: View {\n\n    let landmark: LandmarkEntity\n\n    var body: some View {\n        Group{ /* ... */ }\n        .userActivity(\"com.landmarks.ViewingLandmark\") { activity in\n            activity.title = \"Viewing \\(landmark.name)\"\n            activity.appEntityIdentifier = EntityIdentifier(for: landmark)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "13:21",
+      "title": "Converting AppEntity to PDF",
+      "language": "swift",
+      "code": "import CoreTransferable\nimport PDFKit\n\nextension LandmarkEntity: Transferable {\n    static var transferRepresentation: some TransferRepresentation {\n        DataRepresentation(exportedContentType: .pdf) {landmark in\n            // Create PDF data...\n            return data\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "14:05",
+      "title": "Associating properties with Spotlight keys",
+      "language": "swift",
+      "code": "struct LandmarkEntity: IndexedEntity {\n\n    // ...\n\n    @Property(indexingKey: \\.displayName)\n    var name: String\n\n    @Property(customIndexingKey: /* ... */)\n    var continent: String\n\n    // ...\n}"
+    },
+    {
+      "timestamp": "15:49",
+      "title": "Making intents undoable",
+      "language": "swift",
+      "code": "struct DeleteCollectionIntent: UndoableIntent {\n    // ...\n\n    func perform() async throws -> some IntentResult {\n\n        // Confirm deletion...\n\n        await undoManager?.registerUndo(withTarget: modelData) {modelData in\n            // Restore collection...\n        }\n        await undoManager?.setActionName(\"Delete \\(collection.name)\")\n\n       // Delete collection...\n    }\n}"
+    },
+    {
+      "timestamp": "16:52",
+      "title": "Multiple choice",
+      "language": "swift",
+      "code": "struct DeleteCollectionIntent: UndoableIntent {\n    func perform() async throws -> some IntentResult & ReturnsValue<CollectionEntity?> {\n        let archive = Option(title: \"Archive\", style: .default)\n        let delete = Option(title: \"Delete\", style: .destructive)\n\n        let resultChoice = try await requestChoice(\n            between: [.cancel, archive, delete],\n            dialog: \"Do you want to archive or delete \\(collection.name)?\",\n            view: collectionSnippetView(collection)\n        )\n\n        switch resultChoice {\n        case archive: // Archive collection...\n        case delete: // Delete collection...\n        default: // Do nothing...\n        }\n    }\n    // ...\n}"
+    },
+    {
+      "timestamp": "18:47",
+      "title": "Supported modes",
+      "language": "swift",
+      "code": "struct GetCrowdStatusIntent: AppIntent {\n\n    static let supportedModes: IntentModes = [.background, .foreground]\n\n    func perform() async throws -> some ReturnsValue<Int> & ProvidesDialog {\n        if systemContext.currentMode == .foreground {\n            await navigator.navigateToCrowdStatus(landmark)\n        }\n\n        // Retrieve status and return dialog...\n    }\n}"
+    },
+    {
+      "timestamp": "19:30",
+      "title": "Supported modes",
+      "language": "swift",
+      "code": "struct GetCrowdStatusIntent: AppIntent {\n    static let supportedModes: IntentModes = [.background, .foreground(.dynamic)]\n\n    func perform() async throws -> some ReturnsValue<Int> & ProvidesDialog {\n        guard await modelData.isOpen(landmark) else { /* Exit early... */ }\n\n        if systemContext.currentMode.canContinueInForeground {\n            do {\n                try await continueInForeground(alwaysConfirm: false)\n                await navigator.navigateToCrowdStatus(landmark)\n            } catch {\n                // Open app denied.\n            }\n        }\n\n        // Retrieve status and return dialog...\n    }\n}"
+    },
+    {
+      "timestamp": "21:30",
+      "title": "View Control",
+      "language": "swift",
+      "code": "extension OpenLandmarkIntent: TargetContentProvidingIntent {}\n\nstruct LandmarksNavigationStack: View {\n\n    @State var path: [Landmark] = []\n\n    var body: some View {\n        NavigationStack(path: $path) { /* ... */ }\n        .onAppIntentExecution(OpenLandmarkIntent.self) { intent in\n            self.path.append(intent.landmark)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "23:13",
+      "title": "Scene activation condition",
+      "language": "swift",
+      "code": "@main\nstruct AppIntentsTravelTrackerApp: App {\n    var body: some Scene {\n        WindowGroup { /* ... */ }\n\n        WindowGroup { /* ... */ }\n        .handlesExternalEvents(matching: [\n            OpenLandmarkIntent.persistentIdentifier\n        ])\n    }\n}"
+    },
+    {
+      "timestamp": "23:33",
+      "title": "View activation condition",
+      "language": "swift",
+      "code": "struct LandmarksNavigationStack: View {\n    var body: some View {\n        NavigationStack(path: $path) { /* ... */ }\n        .handlesExternalEvents(\n            preferring: [],\n            allowing: !isEditing ? [OpenLandmarkIntent.persistentIdentifier] : []\n        )\n    }\n}"
+    },
+    {
+      "timestamp": "24:23",
+      "title": "Computed property",
+      "language": "swift",
+      "code": "struct SettingsEntity: UniqueAppEntity {\n\n    @ComputedProperty\n    var defaultPlace: PlaceDescriptor {\n        UserDefaults.standard.defaultPlace\n    }\n\n    init() {\n    }\n}"
+    },
+    {
+      "timestamp": "24:48",
+      "title": "Deferred property",
+      "language": "swift",
+      "code": "struct LandmarkEntity: IndexedEntity {\n    // ...\n\n    @DeferredProperty\n    var crowdStatus: Int {\n        get async throws {\n            await modelData.getCrowdStatus(self)\n        }\n    }\n\n    // ...\n}"
+    },
+    {
+      "timestamp": "25:50",
+      "title": "AppIntentsPackage",
+      "language": "swift",
+      "code": "// Framework or dynamic library\npublic struct LandmarksKitPackage: AppIntentsPackage { }\n\n// App target\nstruct LandmarksPackage: AppIntentsPackage {\n    static var includedPackages: [any AppIntentsPackage.Type] {\n        [LandmarksKitPackage.self]\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Accelerating app interactions with App Intents",
+        "url": "https://developer.apple.com/documentation/AppIntents/AcceleratingAppInteractionsWithAppIntents"
+      },
+      {
+        "title": "Adopting App Intents to support system experiences",
+        "url": "https://developer.apple.com/documentation/AppIntents/adopting-app-intents-to-support-system-experiences"
+      },
+      {
+        "title": "App intent domains",
+        "url": "https://developer.apple.com/documentation/AppIntents/app-intent-domains"
+      },
+      {
+        "title": "App Intents",
+        "url": "https://developer.apple.com/documentation/AppIntents"
+      },
+      {
+        "title": "App Shortcuts",
+        "url": "https://developer.apple.com/documentation/AppIntents/app-shortcuts"
+      },
+      {
+        "title": "Building a workout app for iPhone and iPad",
+        "url": "https://developer.apple.com/documentation/HealthKit/building-a-workout-app-for-iphone-and-ipad"
+      },
+      {
+        "title": "Creating your first app intent",
+        "url": "https://developer.apple.com/documentation/AppIntents/Creating-your-first-app-intent"
+      },
+      {
+        "title": "Integrating actions with Siri and Apple Intelligence",
+        "url": "https://developer.apple.com/documentation/AppIntents/Integrating-actions-with-siri-and-apple-intelligence"
+      },
+      {
+        "title": "Making actions and content discoverable and widely available",
+        "url": "https://developer.apple.com/documentation/AppIntents/Making-actions-and-content-discoverable-and-widely-available"
+      },
+      {
+        "title": "PurchaseIntent",
+        "url": "https://developer.apple.com/documentation/StoreKit/PurchaseIntent"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/275/5/354f4cf3-69e7-40de-b8ac-a7a5ce248c11/downloads/wwdc2025-275_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/275/5/354f4cf3-69e7-40de-b8ac-a7a5ce248c11/downloads/wwdc2025-275_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "281",
+      "year": "2025",
+      "title": "Design interactive snippets",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/281"
+    },
+    {
+      "id": "260",
+      "year": "2025",
+      "title": "Develop for Shortcuts and Spotlight with App Intents",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/260"
+    },
+    {
+      "id": "244",
+      "year": "2025",
+      "title": "Get to know App Intents",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/244"
+    },
+    {
+      "id": "10133",
+      "year": "2024",
+      "title": "Bring your app to Siri",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10133"
+    },
+    {
+      "id": "10210",
+      "year": "2024",
+      "title": "Bring your app’s core features to users with App Intents",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10210"
+    },
+    {
+      "id": "10176",
+      "year": "2024",
+      "title": "Design App Intents for system experiences",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10176"
+    },
+    {
+      "id": "10134",
+      "year": "2024",
+      "title": "What’s new in App Intents",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10134"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:39:09.920Z"
+}

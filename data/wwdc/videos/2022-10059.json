@@ -1,0 +1,162 @@
+{
+  "id": "10059",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10059/",
+  "title": "The craft of SwiftUI API design: Progressive disclosure",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Sam Lazarus: Hi my name is Sam, and I'm an engineer on the SwiftUI team. When designing SwiftUI, we've always strived to make decisions based on clearly defined principles, and today, we're going to highlight one of them: progressive disclosure. On the SwiftUI team, we spend a lot of time thinking about and building new API, but what you might not have realized is that the moment you build a reusable component or abstraction, you, too, are an API designer. In this talk, we wanted to peel back the curtains on our design process and share what we've learned about progressive disclosure, so the next time you're building a reusable component, or abstraction, you have a new tool in your tool belt.\n\nLet's start by talking about what progressive disclosure actually means. As it turns out, it's not unique to the design of APIs! In fact, you can see it in action in one of the most common macOS UIs: the save dialog.\n\nWhen you're first shown a save dialog, there's a default location already populated for you. Additionally, the dialog shows you a drop-down with some common locations, so locations you're likely to select are easy to reach. And finally, if you need to browse the filesystem to find the right path, you can expand the dialog to reveal a more complex but more powerful UI. There are different layers of complexity here that can be revealed when needed. This is the same experience that we want to provide with our APIs. The code equivalent to providing a nice UI experience is making your APIs feel great to use.\n\nAs developers, we're used to looking at our code from the perspective of where we write it: the declaration site. But to make code feel great to use, we have to look at it from a different perspective: where the code actually gets used, or what we refer to as the call site.\n\nProgressive disclosure, then, is designing APIs so that the complexity of the call site grows with the complexity of the use case.\n\nAn ideal API is both simple and approachable but also be able to accommodate powerful use cases.\n\nThis has real benefits for developers. First, it minimizes the time to the the first build and run, letting you make use of your API quickly. It also lowers the learning curve of your code, preventing APIs from getting bogged down by concepts that aren't relevant in all use cases.\n\nFinally, it creates a tight feedback loop. With APIs that embrace progressive disclosure, you can add pieces bit by bit, seeing what you've created at each step.\n\nAll of these things together make building apps a cycle of quick refinements rather than a single, large, up-front investment.\n\nSo progressive disclosure is a useful guiding light, but how can we design specific API so they embrace that principle? On the SwiftUI team, we start by considering common use cases. In order to progressively disclose functionality, we need to identify what the simple cases should be.\n\nWe also strive to provide intelligent defaults, so those common cases can specify only what they need to. Next, we aim to optimize the call site, ensuring every character of your call site has a purpose. And finally, we design our APIs so they compose pieces rather than enumerating possibilities.\n\nLet's dive right in and take a look at some examples from SwiftUI, starting with how we consider common use cases. One place where SwiftUI does this particularly well is with labels.\n\nWhen you create a button, for example, we require that you provide a label for the button. Most of the time, that label will just be some text, describing the purpose of the button, and SwiftUI provides you a concise way to spell that. But if you want to customize the button further, SwiftUI provides another overload. which takes an arbitrary view as a label.\n\nThis allows you to build complex functionality out of this simple control. But because this API carefully considers its common use cases, 99% percent of the time, you only need the simple version.\n\nThis label pattern shows up everywhere in SwiftUI. And when I say everywhere, I really mean it.\n\nSo considering common use cases is something we do across the entire framework. Next, let's look at providing intelligent defaults. In order to streamline our common use cases, we have to provide intelligent defaults for all the things we don't specify explicitly. And there's no better example of this than one of the most commonly used APIs in all of SwiftUI: Text.\n\nText is such a great example of intelligent defaults that you've probably written code like this hundreds of times without thinking about everything you don't have to specify.\n\nJust with this code, SwiftUI will localize your text by looking up the localized string in your app bundle with the environment locale. It will automatically adapt to the current color scheme, supporting dark mode right out of the box. And it will automatically scale the text up or down depending on the current accessibility dynamic type size.\n\nWe've talked about these behaviors before, but text is doing even more behind the scenes than that.\n\nWhen you put two texts next to each other into a stack, for example, the space between the texts is automatically adjusted to the correct line spacing for text in the current context.\n\nAll that behavior can be manually specified, but SwiftUI's intelligent defaults mean that when they aren't relevant to your use case, they don't appear at the call site.\n\nText is an example of an API where the simplest case is extremely minimal, but intelligent defaults apply to all sorts of call sites. Take toolbar, for example. Here, we have a toolbar with a bunch of buttons. Without having to explicitly specify their position, the toolbar buttons are placed according to platform convention. On macOS, they'll appear in the leading edge of the toolbar, but on iOS, they'll appear in the navigation bar, starting from the trailing edge. And finally, on watchOS, only the first item appears, pinned under the navigation bar. This works great for the large majority of cases, but if you do need more control, we provide additional API to explicitly specify the placement of items. Again, the customization is there if you need it, but intelligent defaults handle the majority of cases.\n\nConsidering common use cases and providing intelligent defaults create some really great experiences, but if using those APIs feels clunky, or unrefined, it can ruin the whole effect. That brings us to our last strategy: optimize the call site. And for that, let's look at another API: Table.\n\nMulti-column tables are a very feature-rich control. There's lots to configure and lots of functionality. But the large majority of tables are much simpler and don't need all those features. We want table to be capable of this more complex behavior, and in its most verbose format, it has that. It has support for sorting, multiple columns with rich cell content, sectioned rows, and much, much more.\n\nBut we also want to provide a great experience in the more common cases, so let's take a look at the fully specified code for this simpler table and see how we can optimize its call site. First, let's break down this example. Table starts by specifying how it generates the data for each row.\n\nHere, I'm iterating over each book we're currently reading and creating a table row for each of those books. Next, it specifies how to populate the columns from the data for each row. Here, I create a Title column and an Author column.\n\nIt also takes a binding to the sort order to allow table to change the sort when users click on the table column headers.\n\nFinally, I've added some code which re-sorts the table's data whenever the sort order changes. That's a lot of information, so let's take a look at how to optimize this call site to really embrace progressive disclosure.\n\nOne common use case that stands out right away has to do with rows. Most of the time, the rows field will look just like it does in this example: a ForEach over a collection, providing a table row for each item.\n\nThe developer doesn't need to loop through all of this themselves, so SwiftUI provides a convenience that handles this under the hood. By passing the collection directly to table, the ForEach behavior can be provided behind the scenes, drastically simplifying our call site, but this can still be simplified further. What are other common use cases? Well, most of the time, when one of the values I want to show in a table is a string, I'll just use a text to display it in the column.\n\nWe optimize the call site for this case too.\n\nWhenever the value keypath points to a string, we allow the view associated with the TableColumn to be omitted.\n\nThat's another significant simplification, but there's still more to optimize! There's information in the call site which not all tables need to concern themselves with: the sort order. The simplest use case for table doesn't care about sorting at all! So we provide a version of table which doesn't concern itself with sorting either. And this brings us to our final iteration. Much simpler! Every character of this call site serves a clear purpose, and we got here by asking ourselves two key questions at every step: \"What are the most common use cases that we should build conveniences for?\" and \"What is the essential information that should always be required?\" These guiding questions are great for helping you optimize your call sites, but they need to be applied carefully. If you don't think through their implications for your API, they can lead you astray. That brings us to our final strategy: Compose, don't enumerate. And to illustrate this, let's talk about the design of a part of SwiftUI's layout system: stacks, in particular, HStack. First, let's think about what the essential information is for an HStack. Well, it needs to know what content should be in the stack and how that content should be arranged within the stack. We already have view builders to specify the content of the HStack, so let's focus on the arrangement. Going back to the guiding questions we highlighted, what are the most common use cases when arranging elements in an Hstack? Well, sometimes I want to show a stack like this one that shows the boxes one after another, starting from the leading edge.\n\nAnother common case is wanting to center the elements. And finally, I might want to align the elements against the trailing edge.\n\nVStack already has an API with similar cases to this, alignment, so it might seem tempting to create a similar enum for the arrangement of elements within the stack. This supports all the cases we mentioned! By specifying the arrangement of an HStack, I could select a leading, trailing, or centered arrangement, depending on which I wanted. But now what if I want to space the elements out evenly or put spacing only between the elements or put space only before the last element? This is getting really messy! But more importantly, it's unsustainable. I have to add an enum case for every behavior we want, and we might not think of all the useful cases! When you find yourself enumerating common cases rather than providing conveniences for them, try breaking your API apart into composable pieces that can build a solution: Compose, don't enumerate.\n\nIn the case of stacks, SwiftUI provides Spacer and lets you compose it with the elements of your stack to build all of the spacing schemes we enumerated, and many, many more, which is how we arrived at the API we have today.\n\nDesigning the best experience for progressive disclosure here wasn't just about minimizing the call site, but also involved careful thought about how that call site should scale to handle all its cases: in this case, through composition.\n\nWhen writing code yourself, it can be incredibly helpful to apply the same kind of careful consideration for the components you create. And to recap, that starts by considering common use cases. By applying progressive disclosure, the code you write will save you time in the most common use cases. Intelligent defaults will mean you won't have to think about the details in those common cases. Working to optimize the call sites you build will allow you to iterate quickly.\n\nAnd finally, utilizing composition will let you build APIs that are flexible enough to accommodate all their use cases.\n\nAnd because you are an API designer, you can apply these lessons to the code you write every day, whether it's being designed for someone else, or just for you to use.\n\nThank you for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:59",
+      "title": "Declaration Site Example",
+      "language": "swift",
+      "code": "struct BookView: View {\n    let pageNumber: Int\n    let book: Book\n\n    init(book: Book, pageNumber: Int) {\n        self.book = book\n        self.pageNumber = pageNumber\n    }\n\n    var body: some View { ... }\n}"
+    },
+    {
+      "timestamp": "2:13",
+      "title": "Call Site Example",
+      "language": "swift",
+      "code": "VStack {\n    BookView(book: favoriteBook, page: 1)\n    BookView(book: savedBook, page: 234)\n}"
+    },
+    {
+      "timestamp": "4:18",
+      "title": "Button Label",
+      "language": "swift",
+      "code": "Button(\"Next Page\") {\n    currentPage += 1\n}"
+    },
+    {
+      "timestamp": "4:36",
+      "title": "Button label expanded",
+      "language": "swift",
+      "code": "Button {\n    currentPage += 1\n} label: {\n    Text(\"Next Page\")\n}"
+    },
+    {
+      "timestamp": "4:43",
+      "title": "Button label advanced case",
+      "language": "swift",
+      "code": "Button {\n    currentPage += 1\n} label: {\n    HStack {\n        Text(\"Next Page\")\n        NextPagePreview()\n    }\n}"
+    },
+    {
+      "timestamp": "5:30",
+      "title": "Text example",
+      "language": "swift",
+      "code": "Text(\"Hello WWDC22!\")"
+    },
+    {
+      "timestamp": "6:12",
+      "title": "Stacks of Text",
+      "language": "swift",
+      "code": "VStack {\n    Text(\"Hello WWDC22!\")\n    Text(\"Call to Code.\")\n}"
+    },
+    {
+      "timestamp": "6:46",
+      "title": "Toolbar",
+      "language": "swift",
+      "code": ".toolbar {\n    Button {\n        addItem()\n    } label: {\n        Label(\"Add\", systemImage: \"plus\")\n    }\n\n    Button {\n        sort()\n    } label: {\n        Label(\"Sort\", systemImage: \"arrow.up.arrow.down\")\n    }\n\n    Button {\n        openShareSheet()\n    }: label: {\n        Label(\"Share\", systemImage: \"square.and.arrow.up\")\n    }\n}"
+    },
+    {
+      "timestamp": "7:20",
+      "title": "Toolbar with explicit placement",
+      "language": "swift",
+      "code": ".toolbar {\n    ToolbarItemGroup(placement: .navigationBarLeading) {\n        Button {\n            addItem()\n        } label: {\n            Label(\"Add\", systemImage: \"plus\")\n        }\n\n        Button {\n            sort()\n        } label: {\n            Label(\"Sort\", systemImage: \"arrow.up.arrow.down\")\n        }\n\n        Button {\n            openShareSheet()\n        }: label: {\n            Label(\"Share\", systemImage: \"square.and.arrow.up\")\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "8:09",
+      "title": "Advanced use case table",
+      "language": "swift",
+      "code": "@State var sortOrder = [KeyPathComparator(\\Book.title)]\n\nvar body: some View {\n    Table(sortOrder: $sortOrder) {\n        TableColumn(\"Title\", value: \\Book.title) { book in\n            Text(book.title).bold()\n        }\n        TableColumn(\"Author\", value: \\Book.author) { book in\n            Text(book.author).italic()\n        }\n    } rows: {\n        Section(\"Favorites\") {\n            ForEach(favorites) { book in\n                TableRow(book)\n            }\n        }\n        Section(\"Currently Reading\") {\n            ForEach(currentlyReading) { book in\n                TableRow(book)\n            }\n        }\n    }\n    .onChange(of: sortOrder) { newValue in\n        favorites.sort(using: newValue)\n        currentlyReading.sort(using: newValue)\n    }\n}"
+    },
+    {
+      "timestamp": "8:41",
+      "title": "Simpler table use case",
+      "language": "swift",
+      "code": "@State var sortOrder = [KeyPathComparator(\\Book.title)]\n\nvar body: some View {\n    Table(sortOrder: $sortOrder) {\n        TableColumn(\"Title\", value: \\Book.title) { book in\n            Text(book.title)\n        }\n        TableColumn(\"Author\", value: \\Book.author) { book in\n            Text(book.author)\n        }\n    } rows: {\n        ForEach(currentlyReading) { book in\n            TableRow(book)\n        }\n    }\n    .onChange(of: sortOrder) { newValue in\n        currentlyReading.sort(using: newValue)\n    }\n}"
+    },
+    {
+      "timestamp": "9:58",
+      "title": "Table collection convenience",
+      "language": "swift",
+      "code": "@State var sortOrder = [KeyPathComparator(\\Book.title)]\n\nvar body: some View {\n    Table(currentlyReading, sortOrder: $sortOrder) {\n        TableColumn(\"Title\", value: \\.title) { book in\n            Text(book.title)\n        }\n        TableColumn(\"Author\", value: \\.author) { book in\n            Text(book.author)\n        }\n    }\n    .onChange(of: sortOrder) { newValue in\n        currentlyReading.sort(using: newValue)\n    }\n}"
+    },
+    {
+      "timestamp": "10:23",
+      "title": "Table string key path convenience",
+      "language": "swift",
+      "code": "@State var sortOrder = [KeyPathComparator(\\Book.title)]\n\nvar body: some View {\n    Table(currentlyReading, sortOrder: $sortOrder) {\n        TableColumn(\"Title\", value: \\.title)\n        TableColumn(\"Author\", value: \\.author)\n    }\n    .onChange(of: sortOrder) { newValue in\n        currentlyReading.sort(using: newValue)\n    }\n}"
+    },
+    {
+      "timestamp": "10:51",
+      "title": "Table without sorting",
+      "language": "swift",
+      "code": "var body: some View {\n    Table(currentlyReading) {\n        TableColumn(\"Title\", value: \\.title)\n        TableColumn(\"Author\", value: \\.author)\n    }\n}"
+    },
+    {
+      "timestamp": "13:37",
+      "title": "Stack example: leading",
+      "language": "swift",
+      "code": "struct StackExample: View {\n    var body: some View {\n        HStack { // leading\n            Box().tint(.red)\n            Box().tint(.green)\n            Box().tint(.blue)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "13:40",
+      "title": "Stack example: centered",
+      "language": "swift",
+      "code": "struct StackExample: View {\n    var body: some View {\n        HStack { // centered\n            Spacer()\n            Box().tint(.red)\n            Box().tint(.green)\n            Box().tint(.blue)\n            Spacer()\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "13:42",
+      "title": "Stack example: evenly spaced",
+      "language": "swift",
+      "code": "struct StackExample: View {\n    var body: some View {\n        HStack { // evenly spaced\n            Spacer()\n            Box().tint(.red)\n            Spacer()\n            Box().tint(.green)\n            Spacer()\n            Box().tint(.blue)\n            Spacer()\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "13:43",
+      "title": "Stack example: space only between elements",
+      "language": "swift",
+      "code": "struct StackExample: View {\n    var body: some View {\n        HStack { // space only between elements\n            Box().tint(.red)\n            Spacer()\n            Box().tint(.green)\n            Spacer()\n            Box().tint(.blue)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "13:46",
+      "title": "Stack example: space only before last element",
+      "language": "swift",
+      "code": "struct StackExample: View {\n    var body: some View {\n        HStack { // space only before last element\n            Box().tint(.red)\n            Box().tint(.green)\n            Spacer()\n            Box().tint(.blue)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "13:47",
+      "title": "Stack example: space only after first element",
+      "language": "swift",
+      "code": "struct StackExample: View {\n    var body: some View {\n        HStack { // space only after first element\n            Box().tint(.red)\n            Spacer()\n            Box().tint(.green)\n            Box().tint(.blue)\n        }\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10059/3/689200F0-E14A-4B93-A3B2-7D95D747540F/downloads/wwdc2022-10059_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10059/3/689200F0-E14A-4B93-A3B2-7D95D747540F/downloads/wwdc2022-10059_sd.mp4?dl=1"
+  },
+  "extractedAt": "2025-07-18T10:53:20.851Z"
+}

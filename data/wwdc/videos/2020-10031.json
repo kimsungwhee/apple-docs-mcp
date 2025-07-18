@@ -1,0 +1,145 @@
+{
+  "id": "10031",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10031/",
+  "title": "Stacks, Grids, and Outlines in SwiftUI",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Swift",
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nHello and welcome to \"Stacks, Grids and Outlines in SwiftUI.\" I'm Cody, an engineer working on SwiftUI. And later in this talk, I'll be joined by my colleague Curt. SwiftUI has a variety of built-in layout primitives for arranging collections of views in horizontal and vertical sequences. These primitives can be used on their own to address basic layout needs, or they can be combined together to build out complex views with custom behavior. The new Notification Center in macOS was implemented with SwiftUI, and it serves as a great example of this compositional process at work. Simple Stacks and Grids work together using hierarchy, alignment and spacing to organize a lot of information, and the result is both beautiful and usable. When developing your own apps, I encourage you to think in similar terms. SwiftUI's layout primitives were designed with composition in mind. Generally, when a simple type doesn't do everything you need it to do, the path forward involves combining it with another simple type that has complementary behavior. In this talk, I'm going to cover some new additions to SwiftUI's family of layout primitives. I'll start with a review of the most basic types, horizontal and vertical Stacks, and introduce a new pair of types for creating grid layouts that grow lazily.\n\nThen I'll look at a new feature of the existing Lists type that allows for the presentation of hierarchical data. And finally, Curt will do a deep dive into Outlines and Forms and show some techniques for the progressive display of user interface controls. I'll begin with Stacks, which are the simplest layout primitives in SwiftUI. But first, in order to talk about Stacks, I need to talk about sandwiches. If you caught the \"Introduction to SwiftUI\" talk, you'll know that my friend Jacob has been hard at work on an app for making sandwiches. I fancy myself something of a sandwich connoisseur, and I thought it would be fun to put together a gallery view for Jacob's app to showcase photos of especially memorable lunches. The data model I'm going to use is pretty simple, just an ID, a name, a star rating and a heroImage for the gallery. The view for displaying an individual sandwich in the gallery is equally simple. It displays a resizable heroImage.\n\nAnd it adds an overlay containing information about the sandwich.\n\nThe BannerView that overlays each heroImage uses a VStack to arrange the sandwich's title and star rating indicator.\n\nAnd the star rating is just a horizontal stack of images.\n\nMy initial implementation is pretty straightforward. I'm presenting my gallery using a vertical stack of sandwich views. My sandwich list is going to grow dynamically as I take more pictures, so I need to include a ForEach view that will enumerate every sandwich and make a view for each one. Also, Stacks don't scroll on their own, so I need to wrap everything in a ScrollView. I'm pretty happy with this so far, but as I go about loading in my back catalog of sandwich photos, I start to notice a problem. The more photos my gallery needs to display, the longer it takes for the screen to become responsive when presented. What I want is a Lazy Stack that builds itself out incrementally, so that initially only the first screenful of images need to be rendered. The rest can be loaded on demand as the user scrolls through the gallery. We are introducing two new SwiftUI stack types that address this problem directly: LazyVStack and LazyHStack. Lazy Stacks are just like their VStack and HStack counterparts, except that they render their content incrementally as it becomes visible. This is perfect for my needs. The view won't block the main thread loading and measuring every single image and the app's memory footprint won't grow unnecessarily large. All I need to do is replace my VStack with a LazyVStack...\n\nand now my gallery loads incrementally.\n\nThere's one other point I want to make here. If you recall from the definition of \"rating view,\" the vertical stack that defines the gallery of HeroViews isn't the only stack on screen here.\n\nEach HeroView has its own horizontal stack to lay out the star rating indicator as well as a ZStack to overlay the rating on top of the heroImage. So, it's worth asking, since I made my outer stack lazy, should these stacks be lazy too? In this case, the answer is no. While I want the vertical stack to be lazy, specifically because it scrolls, I don't want to spend the time it takes to render everything up front when most of the content can't be seen without scrolling.\n\nOn the other hand, making the stacks within a given HeroView lazy doesn't actually confer any benefits. The content is all visible at once as soon as the view lands on screen. So, everything has to be loaded at once, regardless of the container's default behavior. As a rule, if you aren't sure which type of stack to use, use VStack or HStack. Adopt Lazy Stacks as a way to resolve performance bottlenecks that you find after profiling with Instruments. Now I'd like to talk about a new set of types, Lazy Grids. Let's return to my sandwich gallery.\n\nI'm liking how this looks on iPhone, but how does it fare on a bigger screen? Let's move it to an iPad and find out.\n\nIt's the same thing, just bigger. Not exactly the look I'm going for. With all this extra screen real estate, what I really want is to get more sandwiches on the screen.\n\nIf I could change this from a single column of images to a grid with multiple columns, I'd be able to increase my overall sandwich density quite a bit. Sounds like a job for two new types we're adding to SwiftUI's family of layout primitives, named LazyVGrid and LazyHGrid. As the names imply, these types build out grids of content and are similar in use to Stacks.\n\nUsing a LazyVGrid, I can easily implement a multi-column layout to increase the sandwich density of my view. Let's take a look at how this works.\n\nHere's the same Lazy Stack we saw earlier, scaled up for iPad. I'll update it to make it three columns of sandwiches instead of one. The main difference from the earlier example is my layout container. I'm using a LazyVGrid instead of a LazyVStack and I'm passing in a collection of values that tells SwiftUI how to compute the width of the columns in my grid. More on that in a second. Apart from the column descriptions, I define my grid just like I would define a stack, by passing in a view builder to generate the individual views that comprise the grid. To describe my grid's columns, I create an array of GridItem values. Each item specifies how an individual column's width is computed. Here, I'm defining three columns. Grid items are flexible by default, so this arrangement will fill the grid with columns of equal width.\n\nAnd here's the same thing in landscape orientation. The number of columns is the same, they're just wider. Grid layouts can also adapt to the space available to create a variable number of columns. Here, for example, I've declared an adaptive GridItem which produces as many equally wide columns as it can while maintaining a specified minimum column width. It's great for landscape mode where there's room for additional columns.\n\nAdaptive grid items are also great on macOS where windows can be resized arbitrarily. I'm really excited about the expressive power of these new primitives. The last topic I wanna cover before handing off to Curt is Lists. Lists are more than just basic layout primitives. They are interactive, with support for selection management and scrolling. List contents are always loaded lazily. Now, I don't know about you, but at this point, I've pretty much had my fill of sandwiches. Let's take a look at a cool new app that Curt's been working on called \"ShapeEdit.\" ShapeEdit is a document-based app that runs on macOS, iPadOS and iOS. If we zoom in, we can see the window sidebar view in ShapeEdit, where we've used a List to enumerate the shapes on the canvas.\n\nWe have an array of the graphics currently on the canvas, and we use our graphics array to populate rows of content in the sidebar, producing a flat list of shapes. Super cool. I've been having a lot of fun playing around with this app, so much so that I was inspired to add a feature to collect shapes into groups. Groups can also contain other groups, so our flat list now needs to represent an arbitrarily deep tree of elements. We've added a new feature to Lists that's perfect for this, and I'm really excited to talk about it. To turn my list into an outline, I just need to tell the list how to traverse the data tree. I'll use a new initializer to provide the children key path on the graphic model, and SwiftUI will do the rest. With this one change, my sidebar now shows the complete shape hierarchy. Awesome. As you might imagine, there's a lot of interesting work happening under the hood to automate the creation of this outline. I'll now hand off to Curt who will show you how to use the same tools List uses to implement progressive disclosure in your own UI. Curt? Thanks, Cody. Converting a list to an outline like that is super cool. I'd like to dive into how that works. I think the details are pretty great, and you can use some of the pieces in your own apps too. Cody showed us how ShapeEdit can display an outline of the graphics in the sidebar by passing the children key path to the List. I've been thinking it would be cool to support multiple canvases in our app and sketched a mock-up. This mock-up uses a different section for each canvas and has a separate outline inside each section. Let's see how we can implement a custom outline like this.\n\nAs Cody mentioned, Lists are a high level structure that help manage selection. So, we keep that bit. Then, inside the List, we use a ForEach to iterate over the canvases. For each canvas, we use Section to add a header showing the name of the canvas. And finally, the content of the Section is a view new to SwiftUI: an OutlineGroup. An OutlineGroup is similar to a ForEach, except that instead of iterating over a flat collection, OutlineGroup traverses tree structure data. Here, it takes an array of graphics and the children key path. The OutlineGroup generates an outline where each item is a GraphicRow.\n\nLet's switch to Xcode and see how this works live. Here's our outline of graphics showing in preview. Not only do SwiftUI outlines work on macOS, they work on iOS too. It's great to have powerful, built-in outline capabilities on iPad and iPhone. Let's go to Live Preview and see how these groups work.\n\nI can tap the disclosure indicators to expand and collapse the groups. Let's update this view to show all the canvases. First, we'll add an OutlineGroup inside our List, wrapping this GraphicRow.\n\nThen I'll move these first two arguments from List to the OutlineGroup.\n\nNotice how our preview hasn't changed yet. An OutlineGroup directly inside a List is the same as a List that uses the children parameter. Next, let's change our view to use canvases instead of graphics. I'll wrap this OutlineGroup in a ForEach by Command clicking and choosing Repeat.\n\nThen I'll replace the argument with the canvases from my model.\n\nAnd rename this parameter.\n\nFinally, I'll change the OutlineGroup to iterate over the graphics from a single canvas. Now we see the graphics from all our canvases, but they all run together. Let's add some section headers. I can hit Shift+Command+L to open the Library, then filter to Show Section. I can just drag the Section in, then make the header show the canvas name.\n\nNotice that because we're using a SidebarListStyle, we get these beautiful bold headers introduced in iOS 14. We can expand and collapse these too.\n\nI think this is so cool. With hierarchical Lists and OutlineGroups, SwiftUI provides two great new tools on mac and iOS for progressive display of information. Sometimes an app calls for hiding and showing controls or other information that doesn't follow a regular hierarchy, like this Inspector popover. For cases like this, I'm happy to introduce a third new tool: DisclosureGroups. A DisclosureGroup provides a disclosure indicator, a label and content. When your user taps or clicks on the disclosure indicator, the content is revealed. When they tap or click it again, the content is hidden. Let's see how we can use it. Here's our Inspector. We have controls for adjusting the fill, shadow and text properties. All this is wrapped in a Form, which is a perfect choice for collections of controls like this. You can use Forms in your new Settings Scenes on macOS too. Let's take a quick look at how the Inspector works in the app.\n\nShapeEdit works great on iPad. I can select a shape and then open the Inspector.\n\nI can change the color, add a shadow...\n\nand even change the shape.\n\nLet's go back to the code.\n\nThis Inspector works great, but it's a little busy. Let's see if we can tidy things up a bit. First, I'll wrap all these fill controls in a DisclosureGroup.\n\nI'll grab a DisclosureGroup from the Library.\n\nAnd set the title to Fill.\n\nNotice that the fill controls are now collapsed together in the Inspector. Just like with Outlines, we can expand and collapse the disclosure group.\n\nThis group could really use an icon. We can use a label for that. We just remove this convenience property and add a trailing closure for the label.\n\nI can put any view here, but the new Label type is a convenient way to semantically combine a title and an icon.\n\nI can use one of the great SF Symbol images here. One of my favorites is rectangle.3.offgrid.fill.\n\nThat's looking great. Let's give the shadow and text controls the same treatment.\n\nWith that done, this Inspector is looking pretty good. There's just one more thing I'd like to change. I think my users will adjust the fill settings a lot, so I'd like them to be visible when they open the Inspector. Let's do that now. Disclosure groups in SwiftUI can take a binding to a Boolean property that controls expansion. I'll add Boolean state to act as the source of truth.\n\nAnd make it default to true.\n\nThen I'll configure the DisclosureGroup to take a binding to our new state.\n\nNow our fill controls default to expanded. Nice. We've seen how you can use Outline and DisclosureGroups to manage progressive disclosure of information in your apps. Before I wrap up, let's look at how OutlineGroup actually works. It's a great example of the principle of composition that Cody mentioned. It's not necessary to understand this bit to use Outline and DisclosureGroups, but I think it's pretty cool and hope you will too. Here we have an OutlineGroup over a collection of graphics. SwiftUI expands the OutlineGroup into a ForEach over that same collection of graphics. The body of that ForEach is a DisclosureGroup.\n\nNotice that the label of each DisclosureGroup is generated with a single element of the original collection, while the content of each DisclosureGroup is another OutlineGroup, this time over the children of that single element. This unwinding process continues until we find a graphic with no children. But because SwiftUI only evaluates the content of a DisclosureGroup after someone opens it, only the minimum amount of the process is actually executed. As I mentioned, you don't need to understand this unwinding to use Outline and DisclosureGroups, but I just love the combination of recursion and composition that makes OutlineGroup possible. Practically, I hope this tour of SwiftUI's tools for displaying your data has been helpful. We saw that HStack and VStack are the right tool for controlling the placement of a fixed set of items. The new Lazy Stacks work great inside a scroll view for displaying variable, potentially large sets of items. Lazy Grids provide a convenient new way to display your collections in a grid. Lists are a powerhouse, giving you support for selection, scrolling, lazy loading of content and, new this year, display of hierarchical data. Use Forms for settings and other lists of controls like we saw in the Inspector example. And finally, the new Outline and DisclosureGroups give you the power to tailor the progressive display of information that's just right for your app.\n\nTo learn more about how best to show data in your app, you can download the code for ShapeEdit from developer.apple.com. Also be sure to check out \"App Essentials in SwiftUI\" for more on creating Settings Scenes in your apps and \"Data Essentials in SwiftUI\" for the details on connecting your model to your views. And for more about sandwiches, check out \"Introduction to SwiftUI\" from WW 20. Thanks for watching. Be well. [chimes]",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:08",
+      "title": "Sandwich and HeroView",
+      "language": "swift",
+      "code": "// Sandwich model and gallery item view\n\nstruct Sandwich: Identifiable {\n    var id = UUID()\n    var name: String\n    var rating: Int\n    var heroImage: Image { … }\n}\n\nstruct HeroView: View {\n    var sandwich: Sandwich\n    var body: some View {\n        sandwich.heroImage\n            .resizable()\n            .aspectRatio(contentMode: .fit)\n            .overlay(BannerView(sandwich: sandwich))\n    }\n}"
+    },
+    {
+      "timestamp": "2:26",
+      "title": "Sandwich Info Banner",
+      "language": "swift",
+      "code": "// Banner overlay view for sandwich info\n\nstruct BannerView: View {\n    var sandwich: Sandwich\n    var body: some View {\n        VStack(alignment: .leading, spacing: 10) {\n            Spacer()\n            TitleView(title: sandwich.name)\n            RatingView(rating: sandwich.rating)\n        }\n        .padding(…)\n        .background(…)\n    }\n}"
+    },
+    {
+      "timestamp": "2:34",
+      "title": "Sandwich Rating View",
+      "language": "swift",
+      "code": "// Sandwich rating view\n\nstruct RatingView: View {\n    var rating: Int\n    var body: some View {\n        HStack {\n            ForEach(0..<5) { starIndex in\n                StarImage(isFilled: rating > starIndex)\n            }\n            Spacer()\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "2:39",
+      "title": "Scrollable Stack of HeroViews",
+      "language": "swift",
+      "code": "// Fetch sandwiches from the sandwich store\nlet sandwiches: [Sandwich] = …\n\nScrollView {\n    VStack(spacing: 0) {\n        ForEach(sandwiches) { sandwich in\n            HeroView(sandwich: sandwich)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "3:57",
+      "title": "Scrollable Lazy Stack of HeroViews",
+      "language": "swift",
+      "code": "// Fetch sandwiches from the sandwich store\nlet sandwiches: [Sandwich] = …\n\nScrollView {\n    LazyVStack(spacing: 0) {\n        ForEach(sandwiches) { sandwich in\n            HeroView(sandwich: sandwich)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "6:18",
+      "title": "Three-Column Grid of Sandwiches",
+      "language": "swift",
+      "code": "// Fetch sandwiches from the sandwich store\nlet sandwiches: [Sandwich] = …\n\n// Define grid columns\nvar columns = [\n    GridItem(spacing: 0),\n    GridItem(spacing: 0),\n    GridItem(spacing: 0)\n]\n\nScrollView {\n    LazyVGrid(columns: columns, spacing: 0) {\n        ForEach(sandwiches) { sandwich in\n            HeroView(sandwich: sandwich)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "7:13",
+      "title": "Adaptive Grid of Sandwiches",
+      "language": "swift",
+      "code": "// Fetch sandwiches from the sandwich store\nlet sandwiches: [Sandwich] = …\n\n// Define grid columns\nvar columns = [\n    GridItem(.adaptive(minimum: 300), spacing: 0)\n]\n\nScrollView {\n    LazyVGrid(columns: columns, spacing: 0) {\n        ForEach(sandwiches) { sandwich in\n            HeroView(sandwich: sandwich)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "8:47",
+      "title": "Outline of GraphicRows",
+      "language": "swift",
+      "code": "struct GraphicsList: View {\n    var graphics: [Graphic]\n    var body: some View {\n        List(\n            graphics,\n            children: \\.children\n        ) { graphic in\n            GraphicRow(graphic)\n        }\n        .listStyle(SidebarListStyle())\n    }\n}"
+    },
+    {
+      "timestamp": "9:52",
+      "title": "Customizing your outlines",
+      "language": "swift",
+      "code": "// Customizing your outlines\n\nList {\n    ForEach(canvases) { canvas in\n        Section(header: Text(canvas.name)) {\n            OutlineGroup(canvas.graphics, children: \\.children)\n            { graphic in\n                GraphicRow(graphic)\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "13:10",
+      "title": "DisclosureGroup",
+      "language": "swift",
+      "code": "// Progressive display of information\nForm {\n    DisclosureGroup(isExpanded: $areFillControlsShowing) {\n       Toggle(\"Fill shape?\", isOn: isFilled)\n       ColorRow(\"Fill color\", color: fillColor)\n    } label: {\n       Label(\"Fill\", …)\n    }\n    …\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "View Layout and Presentation",
+        "url": "https://developer.apple.com/documentation/swiftui/layout-fundamentals"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10031/4/CC07F299-2B37-486D-9BA2-F305684689A2/wwdc2020_10031_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10031/4/CC07F299-2B37-486D-9BA2-F305684689A2/wwdc2020_10031_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10248",
+      "year": "2023",
+      "title": "Analyze hangs with Instruments",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10248"
+    },
+    {
+      "id": "10056",
+      "year": "2022",
+      "title": "Compose custom layouts with SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10056"
+    },
+    {
+      "id": "10037",
+      "year": "2020",
+      "title": "App essentials in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10037"
+    },
+    {
+      "id": "10040",
+      "year": "2020",
+      "title": "Data Essentials in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10040"
+    },
+    {
+      "id": "10041",
+      "year": "2020",
+      "title": "What's new in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10041"
+    },
+    {
+      "id": "216",
+      "year": "2019",
+      "title": "SwiftUI Essentials",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/216"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:49:37.727Z"
+}

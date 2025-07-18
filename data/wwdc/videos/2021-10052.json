@@ -1,0 +1,224 @@
+{
+  "id": "10052",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10052/",
+  "title": "What's new in Mac Catalyst",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Essentials"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Welcome to What's new in Mac Catalyst. My name is Jason Beaver, and I'll be joined later by my colleague Nick Teissler. Mac Catalyst is the technology that lets you bring your existing iOS applications to macOS, allowing them to take full advantage of the Mac's larger display, integrated keyboard, and mouse or trackpad.\n\nThousands of developers have used Mac Catalyst to bring their iOS applications to macOS, and the results have been incredible. Let me tell you about a few of the recent Apple Award-winning Mac Catalyst apps.\n\nShapr3D is an industrial-strength CAD tool, supported on both Mac and iPad. While the iPad version was designed as a multi-touch and Pencil experience, the new Mac version, built with Mac Catalyst, takes advantage of mouse and keyboard support, just as desktop users would expect.\n\nInstapaper is a very popular app for reading articles offline, and because of Mac Catalyst, it's made its debut on the Mac. Notability is an outstanding note-taking app. Replacing the existing Mac version, the new version of the app gives users all the cool features of iPad, but optimized to take advantage of Mac's screen size, keyboard, and faster speed. It even supports Sidecar with Apple Pencil. We're going to start with an overview of new APIs, and then cover APIs that we've enhanced in macOS Monterey. Finally, we'll show these new APIs in action when Nick adopts them in our demo app. Let's start with an overview of the new APIs in macOS Monterey.\n\nPreviously, in macOS Big Sur, we added support for attaching a menu to a button with the showsMenuAsPrimaryAction property. This allowed you to create a pull-down menu.\n\nNow, in macOS Monterey, we've added support for pop-up buttons, with a new property called changesSelectionAsPrimaryAction, that causes the title of the button to track the selection in the menu. With these two properties, there are now four ways that we can configure our button.\n\nWith both properties set to false, we get a standard push button. Note that this can still display a menu if one is set when you click and hold on the button. The code to create that button is shown below.\n\nIf only changesSelectionAsPrimaryAction is set to true, you get a toggle button that can clicked to turn on and off. This can be used to indicate state in your application.\n\nIf only showsMenuAsPrimaryAction is set to true, you get a pull-down menu. And if both properties are set to true, you get the new pop-up button. Now, for buttons configured to show a menu as the primary action, the buttons will show the menus immediately with the primary interaction, which is a left click in macOS. However, for buttons that are not configured to show a menu as the primary action, the behavior depends on the app's idiom. In the iPad idiom, menus are triggered with the secondary interaction, which is a right click in macOS. But if the application adopts the Mac idiom, the menu is triggered by a long press on the button.\n\nYou can find out more about what's new with buttons in the \"Meet the UIKit button system\" video.\n\nWe've now made ToolTips available to Mac Catalyst apps. A ToolTip is a small, floating window that will appear when the cursor hovers over a view in your application. And it can be used to provide context or additional detail about your content. To add a ToolTip to any UIView, use UIToolTipInteraction. All you need to do is create a UIToolTipInteraction with a text string, and then add that interaction to your view.\n\nOne common use of ToolTips, however, is to clarify the behavior of controls in your UI. This is a common enough pattern that we've added a convenience property to UIControl to let you quickly set a ToolTip.\n\nLabels are used throughout iOS apps to display non-editable strings. When the contents of a label are too long to fit, the label has to truncate the text. Now, in macOS Monterey, we've added support for expansion ToolTips so that the full contents of the label are available. In this sample UI, the title label's contents are too long to fit. By enabling expansion ToolTips, when we hover the mouse over the label, it shows the full title. You can enable this with a new property on UILabel called showsExpansionTextWhenTruncated.\n\nWe've introduced a new info.plist key called UIApplicationSupports PrintCommand that you can add to your info.plist. If set to true, we will automatically add \"Print,\" and \"Export as PDF\" menu items to your Mac Catalyst application at launch. This plist key can also be added to your iOS applications and will result in just the \"Print\" option on the iPadOS shortcuts overlay and will also show the \"Print\" and \"Export as PDF\" menu items when your iOS application is run on M1 Macs.\n\nWhile this plist key tells the operating system that you want the \"Print,\" and \"Export as PDF\" menu items, it is only half of the story. You still need to explicitly implement print support in your code. To do that, there is a new UIResponder action called printContent. You can implement this on any UIResponder, and the responder chain search is used to find the appropriate print target. When your implementation of printContent is invoked, simply set up and use a UIPrintInteractionController as you normally would. We now have support for adding a subtitle to your window. This could be used to provide auxiliary information about the state of your application. This can be set with a new property on UIScene called subtitle.\n\nIn macOS Monterey, the Shortcuts application is now available on the Mac. If your application adopts custom intents on iOS, they will now be available with Siri and Shortcuts on the Mac. Both in-app intent handling and Intents extensions are available. So, if you've previously disabled building your Intents extension in your Mac Catalyst app, you can now re-enable it. You can find out more in the \"Meet Shortcuts for macOS\" video. That wraps up the overview of our APIs that are new in macOS Monterey. Let's move on to an overview of the APIs that we've enhanced in macOS Monterey. If you have custom buttons or sliders that you've written to fit the theme of your app, you can keep those in Mac Catalyst when you adopt the Mac idiom by opting out of the native controls, but you'll need to take care of your own scaling down to 77%. Now, we don't recommend doing this app-wide, but only for certain controls that are key to your app's experience. The new button system can also be used to create buttons that fit with your app's theme in a more cross-platform way. And you can find out more about this in the \"Meet the UIKit button system\" video. UIBehavioralStyle is the new enum that makes this possible. UIButton and UISlider have two new properties each: preferredBehavioralStyle is readwrite, and behavioralStyle is the readonly resolved value for this property. On iOS, the resolved value for behavioralStyle won't change, so it's easy to set this line of code to .pad or ,mac explicitly to handle the Mac Catalyst case without affecting your iOS app.\n\nFor document-based apps, there's a new plist property called UIApplicationSupports TabbedSceneCollection to opt out of window tabbing. When set to false, window tabbing will be disabled, and the default tab-related menu items will not be added. We now support UIPointerLockState for hiding the cursor and locking it so that it doesn't move outside the Mac window. This is really useful for games, so that the user doesn't inadvertently click outside the game and bring another application to the front. It temporarily unlocks the window when you switch apps or windows, and relocks it when you click the window.\n\nWe also support UIPointerShape, which can be used to get iBeam cursors in either the horizontal or vertical axes. When you use this API on macOS, you'll get one of the canonical NSCursor shapes.\n\nFinally, we support a pointer style of hidden to allow you to hide the cursor when necessary in your app. We've gone over a number of new and enhanced UIKit APIs. Now, I'll hand it over to Nick to take us through how we'll use these new and enhanced APIs to make our Mac Catalyst app feel even more at home on the Mac. Thanks, Jason! Those new features are very intriguing. I've already had the chance to try them out. I'm going to walk you through a demo of an app that the Catalyst team has developed. It turns out the Catalyst team moonlights as travel writers. And so, we developed Trip Planner for the iPhone and iPad. Here is Trip Planner running on a 13-inch MacBook Pro with M1.\n\nWe opted our app in to running on M1 Macs so we could have the app available to as many users as possible. Let me give you a tour of the app's features. Trip Planner is an app that lists some great places to visit across the globe and allows you to redeem reward points for various frequent-traveler programs. Its UI is based around a three-column split-view controller. Using the sidebar, I can navigate between lodgings, restaurants, and sites in my favorite countries, or select a rewards program to review and spend my points. When I select something in the sidebar, if it's a category, Trip Planner shows its content in the supplementary column of the split-view controller. The supplementary-view controller populates with sights, restaurants, and lodgings in Japan, Spain, Brazil, and Tanzania. If I instead select a leaf item in the sidebar or an item in the supplementary-view controller, the secondary-view controller shows details for that item. I'll select one of my favorite cafes in Japan, Extreme Matcha. The detail-view controller includes some text about the cafe, buttons to help me plan my trip, and a map view showing where Extreme Matcha is located. In the case of Trip Planner, everything just worked out of the box on M1 Macs. However, being an iOS app, there was only so much we could do to make it feel at home on the Mac. To go further, we needed to check that checkbox and make it a Mac Catalyst app. This checkbox, to be specific. Can we zoom? And enhance your app by checking the check box. Here is Trip Planner optimized for Mac Catalyst. We've added Mac-specific functionality, like double-tap gesture recognizers to open new windows, custom title bar appearances, and we've gone all-in by optimizing for the Mac giving us native controls and sharp text. Watch the \"Qualities of a great Mac Catalyst app\" and the \"Optimize the interface of your Mac Catalyst app\" for the full story on that process. In the final version of Trip Planner, I've adopted the new APIs Jason just told you about. I'll cover the adoption of each one. I highly recommend you download the sample project. All of the snippets I'll show here are taken directly from that code. Here's the app completely updated for macOS Monterey. I have Extreme Matcha selected again. You may notice some color in the UI in the form of macOS-style buttons with a background color. But I'll come back to those. I'd like to talk about scene subtitles first. I'm using the new UIScene subtitle property to do two things. First, I'm using the subtitle to show the detail-view controller's title in a way that feels more at home on the Mac. A window subtitle is more Mac-like than a navigation item's title is. Second, I'm changing the subtitle to provide some helpful context as a user navigates the app. In Trip Planner, I'll select Japan and Tanzania.\n\nSo, the window's subtitle reads \"Countries.\" If I select this little camping spot, here in the supplementary-view controller, the subtitle changes to let me know I've selected Glamp Kilimanjaro. And if I select the whole Rewards Programs section... The subtitle changes again to Countries & Rewards Programs, adding context for the user. Think about how subtitles might help to add context to your Catalyst apps, too. Also note that the subtitle is displayed differently for each UITitlebar toolbarStyle. Experiment with this to find the best look for your app.\n\nTo set the subtitle, start with a string value, get a reference to the scene, and then set the subtitle property. You can either set this at scene connection time, or later by accessing the scene of a view's window. Next, I'll show you how I adopted ToolTips in Trip Planner. A very common interaction pattern on macOS is momentarily hovering the mouse over something to get more detail about that something. This technique is a long-established way of educating the user without cluttering your app's UI. ToolTips also can also show a truncated label's full text.\n\nHere, I've selected Iguaçu Falls in Brazil. Hovering the mouse over the image for a moment reveals a ToolTip! \"A lush, deep green forest surrounds the roaring Iguaçu Falls on an overcast day.\" What a nice description. We've used the new UIToolTipInteraction API to add this functionality to all of our images, and it really makes the app feel more at home on the Mac.\n\nI've also used the UILabel API to allow expansion of these labels that get truncated due to the internationalized currency formatting, making them a bit longer than expected.\n\nAs Jason went over earlier, there are various forms of ToolTip API. In the hero image case, using the UIToolTipInteraction API without a UITooltipInteractionDelegate fit my need because I wanted to attach constant text as the ToolTip to an arbitrary view.\n\nFor the currency text, I used the showsExpansionTextWhenTruncated property on UILabel. And if I want to attach a ToolTip to an arbitrary control, the ToolTip property on UIControl is the right API to use.\n\nI'll move on to the wide variety of new buttons available in Catalyst on macOS Monterey. I recommend you check out the \"Meet the UIKit button system\" video for an introduction to the new iOS 15 UIButtonConfiguration APIs. Many of those new UIButtonConfiguration properties have their own manifestations in Catalyst apps optimized for Mac. And even better, just like on iOS, the properties defined on UIButton can be mixed and matched with those on UIButtonConfiguration. I'm going to show you a bunch of buttons, and then after, I'll show how each one was configured in code.\n\nI'll pick a new destination to show off the new button background color. How about Copacabana? The buttons here are using the filled configuration, and so they pick up the tint color of their environment, automatically getting a color that matches the image and background blur well. Now, I'll navigate to a rewards detail-view controller. I'll bring up my programs from the sidebar...\n\nAnd select the Diamond Dubloons Rewards Program. The purpose of this view is to allow me to redeem points I've earned from traveling and choose what to redeem them on.\n\nI can use the slider to choose how many points I'm spending. I can use this toggle button to activate the points multiplier, and even choose my multiplier with the attached menu. I feel like choosing the biggest number as my points multiplier only makes sense. So, I'll choose six. I wonder what the catch is. I can toggle these larger buttons to select the categories to redeem.\n\nI can choose between redeeming, cashing out, or donating my points. And when I'm finally ready to submit, I can click the submit button in the bottom right, or click this reset button to start over. There are a quite a few new buttons here. I'll show you how to configure each one.\n\nI'll first cover the one we're all familiar with: the push button. In the detail-view controller, this was the submit button. This is just a UIButton of the system type, introduced in Big Sur, with its role set to primary.\n\nUp next, I have the points multiplier menu button. This button toggles its state on primary click and shows a menu on long press. I know I'll want a custom background color eventually, so I'll use the filled configuration and set the title to \"Points Multiplier.\" To get the toggle behavior, I'll use the new boolean property Jason told us about, changesSelectionAsPrimaryAction. Set that to true. Now, our button's background color will toggle between the app's tint color and the standard colorless appearance.\n\nI'll attach a menu, as well, configured with our multiplier values and some UIActions.\n\nAnd finally, in our menu's action handlers, if the user selects the biggest points multiplier, we will conditionally change the toggle's background color to a system red.\n\nNow to configure the Reset button.\n\nI can use the plain configuration to get the borderless appearance. This configuration looks very similar to the iPadOS appearance.\n\nI'll set the button's role to destructive, which tells the system to do some event handling that prevents accidentally triggering its action. And set its tintColor to a systemRed. That's it for that button. For the pop-up button in the bottom left of the view that lets me select between Redeem, Cash Out, and Donate, there's no need to use the button configuration API. I'll just create a system button and set changesSelectionAsPrimaryAction to true. Semantically, that's what a pop-up button does.\n\nNext, I want to set showsMenuAsPrimaryAction to true because that is also semantically what a pop-up button does. But what gives? The button hasn't changed. Actually, it has. We've achieved another toggle button. But the default state is, of course, off.\n\nWe are missing a non-null menu property. That is critical to getting the pop-up appearance new in Mac Catalyst. Now that we've set the menu to something, our pop-up button is fully functional.\n\nFinally, focus on these big, panel-like toggle buttons. This layout takes advantage of how iPad-style buttons stretch to fill the space they are laid out in. Buttons using the Mac style don't behave this way. I was able to keep the iPad behavior, even while Trip Planner was set to Optimize for Mac, and here's how. I started with yet another filled-button configuration.\n\nI then used the configuration to set an image, with no need to specify a button state for the image.\n\nBy specifying the .pad behavioral style, I get the layout behavior I would on iPad. Namely, the button's background stretches to fill its frame.\n\nThe symbol needed to be a bit bigger, so I set a preferred symbol configuration on the button with a larger point size.\n\nAs before, I set changesSelectionAsPrimaryAction to true and provided a colorUpdateHandler to specify a selected and unselected color, based off the button's isSelected property.\n\nI know you're as excited as I am for all of these new options. The long-standing members of UIButton's API and shiny, brand-new properties can be mixed and matched in many, many ways to create a plethora of buttons that are all right at home on the Mac. The last feature of Trip Planner I'd like to show you is printing. Printing is easier than it's ever been on Catalyst with the new built-in key command support. I was able to enhance the printing experience in Trip Planner by using the responder chain to select the most appropriate object to handle printing. Let me demonstrate what I mean by that. Back in the newest version of Trip Planner, I've selected one of my most beloved restaurants in Spain, Charcuterie Bored. I'll interact with the map view by clicking on the Catalyst-specific zoom controls.\n\nNow, application focus and first responder status have moved into this detail-view controller. When I select File Print from the menu, a Print dialog comes up...\n\nOffering to print just this one item. Now, I'll also select Parque Guell and Hotel Barcelona to complete my planning for the day.\n\nI'll use the built-in shortcut command+P to print.\n\nThe Print dialog that comes up now offers to print all three of my selected items...\n\nNot just the current detail-view controller. Lastly, if I Shift+Tab focus over to countries in the sidebar and have nothing selected in the supplementary or detail-view controllers...\n\nAnd then try to print, Trip Planner knows what to do and prints every item I've selected in the sidebar.\n\nSo, how do I achieve this? First and foremost, the new info.plist key Jason introduced must be set to let the system know Trip Planner supports printing and would like the menu item added. In the detail-view controller, I've overridden two methods from UIResponder. Print content does the actual printing, and UIKit looks for objects that can perform this action in the responder chain. In some cases, dictated by application business logic, the detail-view controller may not want to print.\n\nSo, I've used the method canPerformAction to inform the responder chain whether or not the detail-view controller can print. This method is called before printContent, and if it returns false, the detail-view controller will be skipped over, as UIKit climbs the responder chain looking for an object that can perform that action. In the BrowserSplitViewController, which is the application's root-view controller, and therefore almost always near the top of the responder chain, I've implemented another UIResponder method, targetForAction:withSender. This lets the split-view controller choose which object should handle the printing. This is useful when the user's selection and business logic dictate we should be printing some set of pages, but the object that implements that specific printing isn't part of the responder chain. This is much preferred over forcing that object into the responder chain by sending becomeFirstResponder to that object, which would be an anti-pattern if used in this scenario. And that's it for printing. Looks like I'm ready to travel off the grid. In this video, Jason introduced us to new Mac Catalyst APIs and enhanced Mac Catalyst APIs that help bring your app to the Mac better than ever before. Then, I showed how to adopt them in Trip Planner. In most cases, they are just new properties, a single line to set, that bring quintessential Mac features to your Catalyst app. Go try these out for yourself. Make some minor code changes, and watch how your Mac Catalyst app gets some major improvements. Thanks for watching. [percussive music]",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:26",
+      "title": "Push Button",
+      "language": "swift",
+      "code": "let button = UIButton(type: .system)"
+    },
+    {
+      "timestamp": "2:29",
+      "title": "Toggle Button",
+      "language": "swift",
+      "code": "let button = UIButton(type: .system)\nbutton.changesSelectionAsPrimaryAction = true"
+    },
+    {
+      "timestamp": "2:40",
+      "title": "Pull-down Menu",
+      "language": "swift",
+      "code": "let button = UIButton(type: .system)\nbutton.menu = UIMenu()\nbutton.showsMenuAsPrimaryAction = true"
+    },
+    {
+      "timestamp": "2:48",
+      "title": "Pop-up Button",
+      "language": "swift",
+      "code": "let button = UIButton(type: .system)\nbutton.menu = UIMenu()\nbutton.showsMenuAsPrimaryAction = true\nbutton.changesSelectionAsPrimaryAction = true"
+    },
+    {
+      "timestamp": "3:50",
+      "title": "UIToolTipInteraction",
+      "language": "swift",
+      "code": "let toolTipInteraction = UIToolTipInteraction(defaultToolTip: string)\nview.addInteraction(tooltipInteraction)"
+    },
+    {
+      "timestamp": "4:06",
+      "title": "UIControl ToopTip",
+      "language": "swift",
+      "code": "control.toolTip = \"Enable updates\""
+    },
+    {
+      "timestamp": "4:44",
+      "title": "ToolTips: UILabel",
+      "language": "swift",
+      "code": "label.showsExpansionTextWhenTruncated = true"
+    },
+    {
+      "timestamp": "4:52",
+      "title": "Printing APIs",
+      "language": "swift",
+      "code": "<key>UIApplicationSupportsPrintCommand</key>\n</true>"
+    },
+    {
+      "timestamp": "5:44",
+      "title": "Print Support",
+      "language": "swift",
+      "code": "func printContent(_ sender: Any?) {\n    let printInteractionController = UIPrintInteractionController.shared\n    ...\n}"
+    },
+    {
+      "timestamp": "6:01",
+      "title": "Window Subtitle",
+      "language": "swift",
+      "code": "scene.subtitle = \"My subtitle\""
+    },
+    {
+      "timestamp": "7:34",
+      "title": "Behavioral Style",
+      "language": "swift",
+      "code": "let button = UIButton(configuration: config)\nbutton.preferredBehavioralStyle = .pad"
+    },
+    {
+      "timestamp": "7:43",
+      "title": "Window Tab Opt-Out",
+      "language": "swift",
+      "code": "<key>UIApplicationSceneManifest</key>\n\t<dict>\n\t\t<key>UIApplicationSupportsMultipleScenes</key>\n\t\t<true/>\n\t\t<key>UIApplicationSupportsTabbedSceneCollection</key>\n\t\t<false/>\n\t</dict>"
+    },
+    {
+      "timestamp": "8:23",
+      "title": "UIPointerShape",
+      "language": "swift",
+      "code": "UIPointerShape.beam(preferredLength:0 axis: .horizontal)\nUIPointerShape.beam(preferredLength:0 axis: .vertical)"
+    },
+    {
+      "timestamp": "8:33",
+      "title": "Hidden Cursor",
+      "language": "swift",
+      "code": "UIPointerStyle.hidden"
+    },
+    {
+      "timestamp": "13:25",
+      "title": "Scene subtitles",
+      "language": "swift",
+      "code": "let subtitle: String = \"...\"\nlet scene: UIScene = ...\nscene.subtitle = subtitle"
+    },
+    {
+      "timestamp": "14:54",
+      "title": "ToolTips",
+      "language": "swift",
+      "code": "// ToolTip Interaction\nlet imageView: UIImageView = UIImageView(frame: .zero)\nlet interaction = UIToolTipInteraction(defaultToolTip: \"...\")\nimageView.addInteraction(interaction)\n\n// ToolTips - Label Expansion Text\nlet label: UILabel = UILabel()\nlabel.text = \"...\"\nlabel.showsExpansionTextWhenTruncated = true\n\n// ToolTips — On UIControls\nlet switchControl = UISwitch()\nswitchControl.toolTip = \"...\""
+    },
+    {
+      "timestamp": "17:49",
+      "title": "Primary button",
+      "language": "swift",
+      "code": "let submitButton = UIButton(type: .system)\nsubmitButton.role = .primary\nsubmitButton.setTitle(\"Submit\", for: .normal)"
+    },
+    {
+      "timestamp": "18:06",
+      "title": "Toggle button with menu",
+      "language": "swift",
+      "code": "// Toggle button with menu\nlet toggleButton = UIButton(configuration: .filled(), primaryAction: nil)\ntoggleButton.configuration?.title = \"Points Multiplier\"\ntoggleButton.changesSelectionAsPrimaryAction = true\ntoggleButton.menu = ...\n\n// Elsewhere...\ntoggleButton.configuration?.baseBackgroundColor = .systemRed"
+    },
+    {
+      "timestamp": "19:09",
+      "title": "Plain, destructive button",
+      "language": "swift",
+      "code": "let resetButton = UIButton(configuration: .plain(), primaryAction: nil)\nresetButton.configuration?.title = \"Reset\"\nresetButton.role = .destructive\nresetButton.tintColor = .systemRed"
+    },
+    {
+      "timestamp": "19:36",
+      "title": "Pop-up button",
+      "language": "swift",
+      "code": "let popup = UIButton(type: .system)\npopup.changesSelectionAsPrimaryAction = true\npopup.showsMenuAsPrimaryAction = true\npopup.menu = ..."
+    },
+    {
+      "timestamp": "21:01",
+      "title": "iPad behavioral style toggle",
+      "language": "swift",
+      "code": "let button = UIButton(configuration: .filled(), primaryAction: nil)\nbutton.configuration?.image = UIImage(systemName: \"leaf\")\nbutton.preferredBehavioralStyle = .pad\nbutton.configuration?.preferredSymbolConfigurationForImage =   \n    UIImage.SymbolConfiguration(pointSize: 60)\nbutton.changesSelectionAsPrimaryAction = true\nbutton.configurationUpdateHandler = colorUpdateHandler"
+    },
+    {
+      "timestamp": "24:21",
+      "title": "Printing",
+      "language": "swift",
+      "code": "override func printContent(_: Any?) {\n    ...\n}\n\noverride func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool {\n    if action == #selector(self.printContent(_:)) {\n        ...\n    } else {\n        return super.canPerformAction(action, withSender: sender)\n    }\n}\n\noverride func target(forAction action: Selector, withSender sender: Any?) -> Any? {\n    switch action {\n    case #selector(UIResponder.printContent(_:)):\n        ...\n    default:\n        return super.target(forAction: action, withSender: sender)\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Building and improving your app with Mac Catalyst",
+        "url": "https://developer.apple.com/documentation/UIKit/building-and-improving-your-app-with-mac-catalyst"
+      },
+      {
+        "title": "Human Interface Guidelines: Mac Catalyst",
+        "url": "https://developer.apple.com/design/human-interface-guidelines/mac-catalyst"
+      },
+      {
+        "title": "Mac Catalyst",
+        "url": "https://developer.apple.com/documentation/UIKit/mac-catalyst"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10052/3/AEC7031C-E8E6-4F09-B845-F0DE96310C4D/downloads/wwdc2021-10052_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10052/3/AEC7031C-E8E6-4F09-B845-F0DE96310C4D/downloads/wwdc2021-10052_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10232",
+      "year": "2021",
+      "title": "Meet Shortcuts for macOS",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10232"
+    },
+    {
+      "id": "10064",
+      "year": "2021",
+      "title": "Meet the UIKit button system",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10064"
+    },
+    {
+      "id": "10053",
+      "year": "2021",
+      "title": "Qualities of a great Mac Catalyst app",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10053"
+    },
+    {
+      "id": "10056",
+      "year": "2021",
+      "title": "Qualities of great iPad and iPhone apps on Macs with M1",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10056"
+    },
+    {
+      "id": "10059",
+      "year": "2021",
+      "title": "What's new in UIKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10059"
+    },
+    {
+      "id": "205",
+      "year": "2019",
+      "title": "Introducing iPad Apps for Mac",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/205"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:27:07.286Z"
+}

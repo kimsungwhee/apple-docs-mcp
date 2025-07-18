@@ -1,0 +1,123 @@
+{
+  "id": "10114",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10114/",
+  "title": "Display EDR content with Core Image, Metal, and SwiftUI",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video",
+    "Graphics & Games"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ instrumental hip hop music ♪ Welcome, everyone. My name is David Hayward, and I am a software engineer on the Core Image team. Today I will describe how you can display Extended Dynamic Range content in your Core Image application. My talk will be broken up into four parts. First, I'll introduce some of the important terminology for EDR on our platforms. Second, I'll describe a new Core Image sample project, which I will then use to demonstrate how to add support for EDR. Lastly, I will show you how to use CIFilters to create images that produce EDR content.\n\nSo let's start with some key terminology. SDR, or Standard Dynamic Range, is the traditional way to represent RGB colors using the normalized range of 0 for black to 1 for white. In contrast, EDR, or Extended Dynamic Range, is the recommended way to represent RGB colors beyond the normal range.\n\nAs with SDR, 0 represents black, and 1 represents the same brightness as SDR white. But with EDR, values greater than 1 can be used to represent even brighter pixels.\n\nBut keep in mind that, while values greater than one are allowed, values above the headroom will be clipped.\n\nHeadroom is derived from the display's current maximum Nits divided by the Nits of SDR white.\n\nNote that the headroom value can vary between displays or as the ambient conditions or display brightness changes.\n\nI recommend that you watch the \"Explore EDR on iOS\" presentation for a deeper discussion of these concepts. There are several sources for EDR content that you can present in your application. First, some file formats, such as TIFF and OpenEXR, can store floating point values for EDR.\n\nAlso, you can use AVFoundation to obtain frames from HDR video formats.\n\nThe Metal APIs can be used to render EDR environments to a texture. Also, ProRAW DNG files can be rendered to reveal EDR highlights.\n\nThe 2021 presentation \"Capture and process ProRAW images\" describes this in detail.\n\nFor the next part of my presentation, I will describe how to use Core Image with Metal in a SwiftUI application. Later, I will outline how to add EDR support to this application.\n\nWe have recently released a new sample code project that demonstrates best practices for how to combine Core Image and a Metal Kit View in a SwiftUI multiplatform app. I recommend you download the sample and look at the code, but let me take this opportunity to show you how it looks and works.\n\nThe sample draws an animated, procedural CIImage that is displayed into a Metal view. For optimal performance, the sample uses an MTKView. To keep the code simple, the app displays an animated checkerboard CIImage as a proxy for whatever content that your app desires.\n\nAlso, the app uses SwiftUI so that a common code base can be used across macOS, iOS, and iPadOS platforms.\n\nThe project is built from a few short source files, so let me describe how the classes interact.\n\nThere are three important pieces in this application. The first and and most critical is the \"MetalView.\" It provides a SwiftUI-compatible View implementation that wraps the MTKView class.\n\nBecause the MTKView class is based on NSView on macOS and UIView on other platforms, the MetalView implementation uses a ViewRepresentable to bridge between SwiftUI and the platform-specific MTKView classes.\n\nThe MTKView, however, is not directly responsible for the rendering. Instead, it uses its delegate to do that work.\n\nIn this app, the Renderer class is the delegate for the MTKView. It responsible for initializing the graphics state objects such as the Metal command queue and the Core Image context.\n\nIt also implements the draw() method that is required to be a MetalView delegate.\n\nThe Renderer, however, is not directly responsible for determining what image to draw. Instead, it uses its imageProvider block to get a CIImage to draw.\n\nIn this app, the ContentView class implements the block of code that provides the CIImage to be rendered.\n\nTo summarize briefly, the MetalView calls its delegate to draw. The Renderer draw() method calls the ContentView to provide the image to draw. Let me talk in a bit more detail about the code in these three classes, starting with the makeView() code in the MetalView class. When makeView() is called to create a MTKView, it sets the view's delegate to the Renderer state object. This is the canonical approach to implement a SwiftUI view that wraps a NSView or UIView.\n\nNext, it sets preferredFramesPerSecond to specify how frequently the view should be rendered. This property is important because it determines what drives the drawing of the view. Let me describe how this works.\n\nThis sample is an animated application, so the code sets view.preferredFramesPerSecond to the desired frame rate.\n\nBy setting this, the MTKView is configured so that the view itself drives the timing of the draw events.\n\nThis causes view's render delegate to draw() periodically, which, in turn, will ask the content provider to create a CIImage for the current time.\n\nAnd the process will repeat and repeat until the animation is paused.\n\nIn other cases, such as for an image editing app, it is best for user interactions with controls to drive when the view should be drawn.\n\nBy setting enableSetNeedsDisplay to true, the MTKView is configured so that controls can drive the timing of the draw events. When a control is moved, the updateView() method should be called.\n\nThen, the view's delegate will be called to draw() once.\n\nand each draw will ask the content provider to create a CIImage for the current control state.\n\nThis approach is also appropriate when the arrival of frames of video should drive the draw events.\n\nThat wraps up my discussion of the MetalView class. Moving on, the most important code in the Renderer delegate is the draw() method.\n\nThe renderer's draw() method is called at a periodic frame rate. When the draw() method is called, it needs to determine the content scale factor that reflects the resolution of the display that the view is on. This is needed because CIImages are measured in pixels, not points. It is important to do this every time the draw() method is called because this property can change if the view is moved to a different display.\n\nNext, it creates a CIRenderDestination with a mtlTextureProvider.\n\nThen it calls the content provider to make a CIImage to use for the current time and scale factor. This returned image is then centered in the view's visible area and blended over an opaque background, and then we start the task to render the CIImage to the view destination.\n\nThe most important code in the ContentView class is the init() method.\n\nThe init() method is responsible for creating the body of the Content view. Doing this will establish the connections to the Renderer and MetalView classes.\n\nFirst, it creates a Renderer object with an image provider block.\n\nThat block is responsible for returning a CIImage for the requested time and scale.\n\nAnd lastly, it sets the body of the ContentView to the MetalView which uses that Renderer.\n\nOkay, now that's done, we have a simple SwiftUI app that can render using Core Image. Next let’s see how you can modify this app to support rendering with EDR headroom.\n\nIt is really easy to add EDR support to this application. Step 1 is to initialize the view for EDR, step 2 is to calculate the headroom before every render, and step 3 is to build a CIImage that uses the available headroom. Let me show you the actual code for these additions. First, one small addition is needed in the MetalView class. When you make the view, you need to tell the layer it wantsExtendedDynamicRangeContent and tell the view that its pixelFormat should be .rgba16Float and its colorspace should be extended and linear.\n\nSecond, some changes are needed in the draw() method of the Renderer class.\n\nIn the draw() method, we need to add code that gets the current screen for the view and then asks the screen for the current EDR headroom.\n\nThen the headroom is passed as a parameter to the image provider block. Note that it is important to do this every time the draw() method is called. Headroom is a dynamic property that will change depending on how the ambient conditions or display brightness changes.\n\nAnd the third change is to the provider block in the ContentView class.\n\nHere we need to add the headroom argument to the image provider block declaration. We can then use the headroom with CIFilters to return a CIImage that will look wonderful on the user's EDR display. So to summarize, these were the three simple steps to add EDR support to this application: initialize the view for EDR, determine the headroom before every render, and build a CIImage to display given the headroom. This will be the topic of the rest of this presentation. Now that the app supports EDR, let's make it display some EDR content using CIFilters to make CIImages. Over 150 of the filters built into Core Image support EDR. This means that all these filters can either generate images with EDR content or process images that contain EDR content. For example, the CIColorControls and CIExposureAdjust filters can allow your app to alter the brightness, hue, saturation, and contrast of images with EDR colors. And several filters, such as the gradient filters, can generate images given EDR color parameters.\n\nThe three new filters we added this year also support EDR images. Most notably, CIAreaLogarithmicHistogram can produce a histogram for an arbitrary range of brightness values.\n\nThe CIColorCube filters are examples of filters that we updated this year to work better with EDR input images.\n\nAll these built-in filters just work because the Core Image working color space is unclamped and linear, which allows RGB values outside the 0-to-1 range. As you develop your app, you can check if a given filter supports EDR.\n\nTo do this, you create an instance of a filter, then ask the filter's attributes for its categories, and then check if the array contains kCICategoryHighDynamicRange. Also, a new feature that we added is Xcode QuickLook debugging support for CIFilter variables. This will show the documentation for each Filter class, including the categories and requirements of each input parameter.\n\nGiven all these EDR filters, there is an infinite variety of effects that your app can apply to its content. In the example that I will describe today, I will add a ripple effect with a bright specular reflection to the checkerboard pattern from the sample app.\n\nTo create this effect, we need an instance of the rippleTransition filter.\n\nNext, we set both the input and target image to be the checker image.\n\nThen we set the filter inputs that control the center and transition time of the ripple...\n\nAnd set the shadingImage to be a gradient that will produce a specular highlight on the ripple.\n\nAnd finally, we ask the filter for the outputImage given all the filter inputs we set.\n\nLet me also describe how to create the shadingImage that will be used to create the specular highlight for the ripple effect. We could create this image from bitmap data, but to get even better performance, we can generate this CIImage procedurally.\n\nTo do this, we create an instance of the linearGradient filter. This filter creates a gradient given two points and two CIColors.\n\nWe want the specular to be white, with a brightness based on the current headroom but limited to a reasonable maximum.\n\nThe limit that you use will depend on the look of the effect that you wish to apply.\n\nThe color0 should be made using that white level in an unclamped linear colorspace.\n\nThe color1 is set to the clear color.\n\nPoint0 and point1 are set to coordinates so that the specular will appear from the upper left direction.\n\nAnd then the filter's outputImage is cropped to the size needed by the ripple filter.\n\nThe resulting ripple with specular effect is just a simple proxy for what you could do in your app. It does illustrate an important principle, however. It is usually best to use bright pixels in moderation. Less is more. The bright pixels will be more impactful that way.\n\nWe now have a working app that uses two built-in CIFilters for an EDR effect. Please feel free to experiment with the other built-in EDR filters. Next, I'd like to take a few minutes to discuss how best to use the CIColorCube filters as well as some dos and don'ts when writing your own custom filters.\n\nOne very popular filter is CIColorCubeWithColorSpace. Traditionally, this filter is used to apply looks to SDR images. This filter even is used to implement effects in the Photos app like Process, Instant, and Tonal.\n\nTraditionally, the cube data used in looks like this have a critical limitation: the data only inputs and outputs RGB colors in the 0-to-1 range.\n\nOne way to avoid this limitation is to tell the CIColorCubeWithColorSpace filter to use an EDR colorspace such as HLG or PQ.\n\nThis can yield the best results for EDR content, but this will require creating new cube data that is valid over the colorspace range. Also, you may need to increase the cube dimensions. Instead, you may want to continue to use SDR cube data on EDR images: New this year, you can tell the filter to extrapolate SDR cube data. To enable this feature, set the SDR cube data as you normally would. Then set the new extrapolate property of the filter.\n\nWith this set to 'true', you can give the filter an EDR input image and get an EDR output image.\n\nThe last topic I'd like to cover today are some best practices if you are creating your own custom CIKernels.\n\nFirst, review your kernel code for math that limits RGB values to the 0-to-1 range by using functions like clamp, min, or max.\n\nIn many cases, these limits can be safely removed, and the kernel will work correctly.\n\nSecond, even though RGB values can go beyond the 0-to-1 range, the alpha value must be between 0 and 1, or you will get undefined behavior when blending or displaying images.\n\nIn this example, the kernel is inadvertently multiplying the alpha channel by 5, when the correct behavior is to only multiply the RGB values by 5.\n\nThat concludes my presentation. To wrap up, today we learned how to add support for EDR headroom to a Core Image SwiftUI application as well how to use a variety of built-in CIFilters to create and modify EDR content. Thank you for watching! ♪ instrumental hip hop music ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "5:17",
+      "title": "Metal View",
+      "language": "swift",
+      "code": "// Metal View\n\nstruct MetalView: ViewRepresentable {\n    \n    @StateObject var renderer: Renderer\n    \n    func makeView(context: Context) -> MTKView {\n        let view = MTKView(frame: .zero, device: renderer.device)\n       \n        view.delegate = renderer\n\n        // Suggest to Core Animation, through MetalKit, how often to redraw the view.\n        view.preferredFramesPerSecond = 30\n       \n        // Allow Core Image to render to the view using Metal's compute pipeline.\n        view.framebufferOnly = false\n        \n       return view\n    }"
+    },
+    {
+      "timestamp": "7:12",
+      "title": "Renderer",
+      "language": "swift",
+      "code": "// Renderer\n\nfunc draw(in view: MTKView) {\n  if let commandBuffer = commandQueue.makeCommandBuffer(),\n     let drawable = view.currentDrawable {\n      // Calculate content scale factor so CI can render at Retina resolution.\n  #if os(macOS)\n      var contentScale = view.convertToBacking(CGSize(width: 1.0, height: 1.0)).width\n  #else\n      var contentScale = view.contentScaleFactor\n  #endif\n\n      let destination = CIRenderDestination(width: Int(view.drawableSize.width),\n                          height: Int(view.drawableSize.height), \n                          pixelFormat: view.colorPixelFormat,\n                          commandBuffer: commandBuffer,\n                          mtlTextureProvider: { () -> MTLTexture in\n                                   return drawable.texture\n                          })\n       \n      let time = CFTimeInterval(CFAbsoluteTimeGetCurrent() - self.startTime)\n\n      // Create a displayable image for the current time.\n      var image = self.imageProvider(time, contentScaleFactor)\n\n      image = image.transformed(by: CGAffineTransform(translationX: shiftX, y: shiftY))\n      image = image.composited(over: self.opaqueBackground)\n                \n      _ = try? self.cicontext.startTask(toRender: image, from: backBounds,\n                                             to: destination, at: CGPoint.zero)"
+    },
+    {
+      "timestamp": "8:09",
+      "title": "ContentView",
+      "language": "swift",
+      "code": "// ContentView\n\nimport CoreImage.CIFilterBuiltins\n\ninit(struct ContentView: View {\n    var body: some View {\n       // Create a Metal view with its own renderer.\n       let renderer = Renderer(\n            imageProvider: { (time: CFTimeInterval, scaleFactor: CGFloat) -> CIImage in\n            \n            var image: CIImage\n\n            // create image using CIFilter.checkerboardGenerator...\n\n            return image\n        })\n        MetalView(renderer: renderer)\n    }\n}"
+    },
+    {
+      "timestamp": "9:17",
+      "title": "MetalView changes",
+      "language": "swift",
+      "code": "if let caMtlLayer = view.layer as? CAMetalLayer  {\n    caMtlLayer.wantsExtendedDynamicRangeContent = true\n    view.colorPixelFormat = MTLPixelFormat.rgba16Float\n    view.colorspace = CGColorSpace(name: CGColorSpace.extendedLinearDisplayP3)\n}"
+    },
+    {
+      "timestamp": "9:35",
+      "title": "Get headroom",
+      "language": "swift",
+      "code": "let screen = view.window?.screen;\n#if os(macOS)\n     let headroom = screen?.maximumExtendedDynamicRangeColorComponentValue ?? 1.0\n#else\n     let headroom = screen?.currentEDRHeadroom ?? 1.0\n#endif\n     var image = self.imageProvider(time, contentScaleFactor, headroom)"
+    },
+    {
+      "timestamp": "10:05",
+      "title": "Use headroom",
+      "language": "swift",
+      "code": "imageProvider: { (time: CFTimeInterval, scaleFactor: CGFloat,\n                              headroom: CGFloat) -> CIImage in\n           var image: CIImage\n\n           // Use CIFilters to create image for time / scale / headroom / ...\n           return image\n        })"
+    },
+    {
+      "timestamp": "12:42",
+      "title": "Ripple effect",
+      "language": "swift",
+      "code": "let ripple = CIFilter.rippleTransition()\nripple.inputImage = image\nripple.targetImage = image\nripple.center = CGPoint(x: 512.0, y: 384.0)\nripple.time = Float(fmod(time*0.25, 1.0))\nripple.shadingImage = shading\nimage = ripple.outputImage"
+    },
+    {
+      "timestamp": "13:34",
+      "title": "Generating the shading image",
+      "language": "swift",
+      "code": "let gradient = CIFilter.linearGradient()\nlet w = min( headroom, 8.0 )\ngradient.color0 = CIColor(red: w, green: w, blue: w, \n                          colorSpace: CGColorSpace(name: CGColorSpace.extendedLinearSRGB)!)!\ngradient.color1 = CIColor.clear\ngradient.point0 = CGPoint(x: sin(angle)*90.0 + 100.0, y: cos(angle)*90.0 + 100.0)\ngradient.point1 = CGPoint(x: sin(angle)*85.0 + 100.0, y: cos(angle)*85.0 + 100.0)\nlet shading = gradient.outputImage?.cropped(to: CGRect(x: 0, y: 0, width: 200, height: 200))"
+    },
+    {
+      "timestamp": "16:13",
+      "title": "CIColorCube and EDR",
+      "language": "swift",
+      "code": "let f = CIFilter.colorCubeWithColorSpace()\nf.cubeDimension = 32\nf.cubeData = sdrData\nf.extrapolate = true\nf.inputImage = edrImage\nlet edrResult = f.outputImage"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Core Image",
+        "url": "https://developer.apple.com/documentation/CoreImage"
+      },
+      {
+        "title": "Generating an animation with a Core Image Render Destination",
+        "url": "https://developer.apple.com/documentation/CoreImage/generating-an-animation-with-a-core-image-render-destination"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ]
+  },
+  "relatedVideos": [
+    {
+      "id": "110565",
+      "year": "2022",
+      "title": "Display HDR video in EDR with AVFoundation and Metal",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110565"
+    },
+    {
+      "id": "10113",
+      "year": "2022",
+      "title": "Explore EDR on iOS",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10113"
+    },
+    {
+      "id": "10017",
+      "year": "2022",
+      "title": "Explore the machine learning development experience",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10017"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:23:09.421Z"
+}

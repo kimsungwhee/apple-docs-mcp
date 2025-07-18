@@ -1,0 +1,138 @@
+{
+  "id": "10062",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10062/",
+  "title": "Meet Transferable",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Essentials"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Mellow instrumental hip-hop music ♪ ♪ Hello and welcome to the session \"Meet Transferable.\" My name is Julia. I am a SwiftUI engineer, and I am excited to introduce Transferable, a declarative way to support drag and drop, copy/paste, and other functionality in your app.\n\nApart from SwiftUI and developing applications for Mac, I'm also interested in the story of women in computer science.\n\nI think it's important that we know our heroes.\n\nSo I decided to create a catalog application where I can view, add, and edit a list of the female inventors', engineers', and scientists' profiles.\n\nI want this application to seamlessly support drag and drop of the scientists' portraits to and from the app, being able to use the clipboard content to paste interesting facts.\n\nAnd for the first time, my app can support sharing on watchOS! My potential users say that they would love to be able to share a personality profile from their watch.\n\nAlso, via SwiftUI, sharing is now available on iOS and Mac, which also got this brand-new design for ShareSheet this year.\n\nUnder the hood, enabling all these features require the models that we already have to support being sent over to a receiver inside our app or even in other applications.\n\nThe profile structure contains all the information that we have about a single personality.\n\nAll the profiles packed in an archive can be shared among friends.\n\nWe store fun facts about the personality in strings and even can attach videos.\n\nAnd there's a great new easy way to make all these model types to be shared.\n\nMeet Transferable! It is a Swift-first declarative way to describe how your models can be serialized and deserialized for sharing and data transfer.\n\nToday, we are going to be talking about what Transferable is and what is going on behind the scenes when we use it; how to conform custom types; and at the end, I'll share some advanced tips and tricks that can help to customize Transferable to do exactly what you need.\n\nLet's start! Say there are two applications running, and the user wants to pass some information from one app to another via copy/paste, ShareSheet, just drag, or use some other app feature.\n\nWhen you send something between two different apps, there's all this binary data that goes across.\n\nAn important part of sending this data is determining what it corresponds to.\n\nIt could be text, a video, my favorite female engineer profile, or whole archive.\n\nAnd there's the UTType that describes what the data is for.\n\nLet's take a closer look at how apps generate this binary data.\n\nAll the types that can be shared with other apps, or even within a single application, have to provide two pieces of information: ways to convert them to and from binary data, and the content type that corresponds to the structure of the binary data and tells the receiver what they actually got.\n\nThe content type -- otherwise known as uniform type identifiers -- is an Apple-specific technology that describes identifiers for different binary structures as well as abstract concepts.\n\nThe identifiers form a tree, and we can also define custom identifiers.\n\nFor example, one for the binary structure used by our profiles.\n\nIn order to declare a custom identifier, first, add its declaration to the Info.plist file.\n\nIt is also a good idea to add a file extension.\n\nIf the data is saved on disk, the system will know that your app can open that file.\n\nSecondly, declare it in code.\n\nTo learn more about content types, I invite you to watch a video: \"Uniform Type Identifiers -- A reintroduction.\" Personally, I love it, and it gives a clear idea what are uniform type identifiers and how to use them.\n\nGood news is that many standard types already conform to Transferable; for example, string, data, URL, attributed string, image.\n\nYou need only a couple of lines of code to paste fun facts to a profile with the new SwiftUI paste button interface, support dragging images from a view, or receiving a dropped image from Finder or other apps.\n\nUsing the br and-new ShareLink, we can now implement sharing experience from the watch.\n\nWe covered the basics, and now you have an idea how to use Transferable and what it is.\n\nLet's see how to add Transferable conformance to the models in our application.\n\nAs I mentioned earlier, there are four model types in our app that are going to be shared.\n\nOne of them -- string -- already conforms to Transferable; we don't need to do anything more.\n\nBut what about the single profile, ProfilesArchive, and the video that I want to share as well? To conform a type to Transferable, there's only one property to implement: TransferRepresentation.\n\nIt describes how the model is going to get transferred.\n\nThere are three important representations to be aware of: CodableRepresentation, DataRepresentation, and FileRepresentation.\n\nWe'll talk about each of them.\n\nBut first, meet our central model, Profile structure.\n\nIt has an id, a name, a bio, maybe some fun facts, a portrait, and a video.\n\nIt already conforms to Codable.\n\nBecause of that, we can include CodableRepresentation in our Transferable conformance.\n\nCodable representation uses an encoder to convert the profile into binary data, and a decoder to convert it back.\n\nBy default, it uses JSON, but you can also provide your own encoder/decoder pair.\n\nTo learn more about the Codable protocol and how encoders and decoders work, I invite you to watch a WWDC session where this protocol was first introduced: \"Data you can trust.\" Back to our profile.\n\nThe only thing Codable requires is knowing the desired content type.\n\nSince this is going to be a custom format, we will use a custom declared uniform type identifier.\n\nAfter adding the profile content type, we're good to go.\n\nProfile now conforms to Transferable! Now, let's take look at another case: ProfilesArchive.\n\nIt already supports converting to CSV data.\n\nI can export the list of the women profiles in CSV files and then share with friends or import it on another computer.\n\nThe archive can be converted to and from data, and it means that we can use the DataRepresentation.\n\nIf we peek inside, we'll see that DataRepresentation uses the conversion functions to directly create binary representation and to reconstruct the value for the receiver.\n\nThis is how easy it is to conform to Transferable using the DataRepresentation.\n\nAll it takes is calling the two functions that we already have: the initializer and the converter to CSV.\n\nIf a personality profile has a video attached, I want to be able to drag or share it as well.\n\nBut videos can be large; I don't want to load it into memory.\n\nThis is where FileRepresentation comes in.\n\nAnd again, if we lift the curtain, we'll see that FileRepresentation passes the provided URL to the receiver and uses it to reconstruct the Transferable item for them.\n\nFileRepresentation allows us to share items backed by a binary representation written to disk: file.\n\nLet's summarize.\n\nIf you want to pick just a single representation for a simple use case, first check if the model has the Codable conformance and doesn't have any specific binary format requirements.\n\nUse CodableRepresentation if it is the case.\n\nIf not, check if it is stored in memory or on disk.\n\nDataRepresentation works best for the former, and FileRepresetnation for the latter.\n\nTransferable is meant to cover not only simple use cases, but also complex ones.\n\nAnd most of the time, with just a few lines of code.\n\nSee it for yourself! Previously, we have added Transferable conformance to the profile, but let's go further.\n\nWhen the profile is copied to the pasteboard and pasted into any text field, I want to paste the profile's name.\n\nThis means we need to add another representation.\n\nProxyRepresentation allows other Transferable types to represent our model.\n\nOne line, and Profile can be pasted as text.\n\nNotice that I added the ProxyRepresentation after Codable; the order is important.\n\nThe receiver will use the first representation with the content type they support.\n\nIf the receiver is aware of our custom content type Profile, they should use it.\n\nIf not, but they support text, let them use the ProxyRepresentation instead.\n\nNow, Profile supports both encoder/decoder conversions and a conversion to text.\n\nThe ProxyRepresentation in this case describes only exporting to text, but not reconstructing the profile from it.\n\nAny representation can describe both conversions, or just one.\n\nNow, when we know about ProxyRepresentations, do we really need the FileRepresentation for the video? We could have proxy with a URL.\n\nThe difference is subtle.\n\nFileRepresentation is intended to work with the URLs written to disk, and ensure receivers' access to this file or its copy by granting a temporary sandbox extension.\n\nProxyRepresentation treats URLs the same way as any other Transferable items, like strings.\n\nIt doesn't have any of these additional capabilities that we need for files.\n\nIt means that we can have both.\n\nThe first one, FileRepresentation, allows the receiver to access the movie file with its contents.\n\nThe second one will work when I paste the copied video in a text field.\n\nSo the URL is treated very differently by file and proxy representations.\n\nIn the first case, the actual payload is the asset on disk, and in the second, the payload is the URL structure itself that can point to a remote website.\n\nAnother model that I'd like to upgrade is the ProfilesArchive.\n\nThere are cases when it doesn't support converting to CSV, and I'd like to reflect that in code.\n\nLet's see.\n\nWe add a Boolean property that tells us if we can export to CSV and conversion functions to and from data.\n\nTo express this idea in code, we can use .exportingCondition.\n\nIf given archive doesn't support CSV, it won't be exported in this format.\n\nWith this API, you can even build custom TransferRepresentation, just like custom Views in SwiftUI.\n\nThe only requirement is to provide the body property where you can have other representations configured the way you need.\n\nIt is useful if you want to reuse a combination of representations, or you have some private data representation that you don't want to expose publicly.\n\nTransferable helped me to quickly build this application with all the functionality that I wanted to have.\n\nI hope it is going to help you building feature-rich apps in less time than ever before.\n\nThank you for joining me for this session and keep building amazing apps! ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:36",
+      "title": "Declaring a custom content type",
+      "language": "swift",
+      "code": "import UniformTypeIdentifiers\n\n// also declare the content type in the Info.plist\nextension UTType {\n    static var profile: UTType = UTType(exportedAs: \"com.example.profile\")\n}"
+    },
+    {
+      "timestamp": "5:10",
+      "title": "PasteButton interface",
+      "language": "swift",
+      "code": "import SwiftUI\n\nstruct Profile {\n    private var funFacts: [String] = []\n    mutating func addFunFacts(_ newFunFacts: [String]) {\n        funFacts.append(newFunFacts)\n    }\n}\n\nstruct PasteButtonView: View {\n    @State var profile = Profile()\n    var body: some View {\n        PasteButton(payloadType: String.self) { funFacts in\n            profile.addFunFacts(funFacts)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "5:19",
+      "title": "Drag and Drop",
+      "language": "swift",
+      "code": "import SwiftUI\n\nstruct PortraitView: View {\n    @State var portrait: Image\n    var body: some View {\n        portrait\n            .cornerRadius(8)\n            .draggable(portrait)\n            .dropDestination(payloadType: Image.self) { (images: [Image], _) in\n                if let image = images.first {\n                    portrait = image\n                    return true\n                }\n                return false\n            }\n    }\n}"
+    },
+    {
+      "timestamp": "5:27",
+      "title": "Sharing",
+      "language": "swift",
+      "code": "import SwiftUI\n\nstruct Profile {\n    var name: String\n}\n\nstruct ProfileView: View {\n    @State private var portrait: Image\n    var model: Profile\n\n    var body: some View {\n        VStack {\n            portrait\n            Text(model.name)\n        }\n        .toolbar {\n            ShareLink(item: portrait, preview: SharePreview(model.name))\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "6:34",
+      "title": "Profile structure",
+      "language": "swift",
+      "code": "import Foundation\n\nstruct Profile: Codable {\n    var id: UUID\n    var name: String\n    var bio: String\n    var funFacts: [String]\n    var video: URL?\n    var portrait: URL?\n}"
+    },
+    {
+      "timestamp": "7:31",
+      "title": "CodableRepresentation",
+      "language": "swift",
+      "code": "import CoreTransferable\nimport UniformTypeIdentifiers\n\nstruct Profile: Codable {\n    var id: UUID\n    var name: String\n    var bio: String\n    var funFacts: [String]\n    var video: URL?\n    var portrait: URL?\n}\n\nextension Profile: Codable, Transferable {\n    static var transferRepresentation: some TransferRepresentation {\n        CodableRepresentation(contentType: .profile)\n    }\n}\n\n// also declare the content type in the Info.plist\nextension UTType {\n    static var profile: UTType = UTType(exportedAs: \"com.example.profile\")\n}"
+    },
+    {
+      "timestamp": "8:30",
+      "title": "DataRepresentation",
+      "language": "swift",
+      "code": "import CoreTransferable\nimport UniformTypeIdentifiers\n\nstruct ProfilesArchive {\n    init(csvData: Data) throws { }\n    func convertToCSV() throws -> Data { Data() }\n}\n\nextension ProfilesArchive: Transferable {\n    static var transferRepresentation: some TransferRepresentation {\n        DataRepresentation(contentType: .commaSeparatedText) { archive in\n            try archive.convertToCSV()\n        } importing: { data in\n            try ProfilesArchive(csvData: data)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "9:14",
+      "title": "FileRepresentation",
+      "language": "swift",
+      "code": "import CoreTransferable\n\nstruct Video: Transferable {\n    let file: URL\n    static var transferRepresentation: some TransferRepresentation {\n        FileRepresentation(contentType: .mpeg4Movie) { \n            SentTransferredFile($0.file)\n        } importing: { received in\n            let destination = try Self.copyVideoFile(source: received.file)\n            return Self.init(file: destination)\n        }\n    }\n  \n    static func copyVideoFile(source: URL) throws -> URL {\n        let moviesDirectory = try FileManager.default.url(\n            for: .moviesDirectory, in: .userDomainMask,\n            appropriateFor: nil, create: true\n        )\n        var destination = moviesDirectory.appendingPathComponent(\n            source.lastPathComponent, isDirectory: false)\n        if FileManager.default.fileExists(atPath: destination.path) {\n            let pathExtension = destination.pathExtension\n            var fileName = destination.deletingPathExtension().lastPathComponent\n            fileName += \"_\\(UUID().uuidString)\"\n            destination = destination\n                .deletingLastPathComponent()\n                .appendingPathComponent(fileName)\n                .appendingPathExtension(pathExtension)\n        }\n        try FileManager.default.copyItem(at: source, to: destination)\n        return destination\n    }\n}"
+    },
+    {
+      "timestamp": "10:05",
+      "title": "ProxyRepresentation",
+      "language": "swift",
+      "code": "import CoreTransferable\nimport UniformTypeIdentifiers\n\nstruct Profile: Codable {\n    var id: UUID\n    var name: String\n    var bio: String\n    var funFacts: [String]\n    var video: URL?\n    var portrait: URL?\n}\n\nextension Profile: Transferable {\n    static var transferRepresentation: some TransferRepresentation {\n        CodableRepresentation(contentType: .profile)\n        ProxyRepresentation(exporting: \\.name)\n    }\n}\n\n// also declare the content type in the Info.plist\nextension UTType {\n    static var profile: UTType = UTType(exportedAs: \"com.example.profile\")\n}"
+    },
+    {
+      "timestamp": "11:34",
+      "title": "Proxy and file representations",
+      "language": "swift",
+      "code": "import CoreTransferable\n\nstruct Video: Transferable {\n    let file: URL\n    static var transferRepresentation: some TransferRepresentation {\n        FileRepresentation(contentType: .mpeg4Movie) { SentTransferredFile($0.file) }\n           importing: { received in\n               let copy = try Self.copyVideoFile(source: received.file)\n               return Self.init(file: copy) }\n        ProxyRepresentation(exporting: \\.file)\n  }\n\n    static func copyVideoFile(source: URL) throws -> URL {\n        let moviesDirectory = try FileManager.default.url(\n            for: .moviesDirectory, in: .userDomainMask,\n            appropriateFor: nil, create: true\n        )\n        var destination = moviesDirectory.appendingPathComponent(\n            source.lastPathComponent, isDirectory: false)\n        if FileManager.default.fileExists(atPath: destination.path) {\n            let pathExtension = destination.pathExtension\n            var fileName = destination.deletingPathExtension().lastPathComponent\n            fileName += \"_\\(UUID().uuidString)\"\n            destination = destination\n                .deletingLastPathComponent()\n                .appendingPathComponent(fileName)\n                .appendingPathExtension(pathExtension)\n        }\n        try FileManager.default.copyItem(at: source, to: destination)\n        return destination\n    }\n}"
+    },
+    {
+      "timestamp": "12:57",
+      "title": "Exporting condition",
+      "language": "swift",
+      "code": "import CoreTransferable\nimport UniformTypeIdentifiers\n\nstruct ProfilesArchive {\n    var supportsCSV: Bool { true }\n    init(csvData: Data) throws {  }\n    func convertToCSV() throws -> Data { Data() }\n}\n\nextension ProfilesArchive: Transferable {\n    static var transferRepresentation: some TransferRepresentation {\n        DataRepresentation(contentType: .commaSeparatedText) { archive in\n            try archive.convertToCSV()\n        } importing: { data in\n            try Self(csvData: data)\n        }\n        .exportingCondition { $0.supportsCSV }\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "ShareLink",
+        "url": "https://developer.apple.com/documentation/SwiftUI/ShareLink"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10062/4/004375E4-2295-45FB-9D6D-20F1B8C3834C/downloads/wwdc2022-10062_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10062/4/004375E4-2295-45FB-9D6D-20F1B8C3834C/downloads/wwdc2022-10062_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10133",
+      "year": "2022",
+      "title": "Build a productivity app for Apple Watch",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10133"
+    },
+    {
+      "id": "10095",
+      "year": "2022",
+      "title": "Enhance collaboration experiences with Messages",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10095"
+    },
+    {
+      "id": "10093",
+      "year": "2022",
+      "title": "Integrate your custom collaboration app with Messages",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10093"
+    },
+    {
+      "id": "10052",
+      "year": "2022",
+      "title": "What's new in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10052"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:24:35.049Z"
+}

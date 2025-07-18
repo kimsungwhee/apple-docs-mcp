@@ -1,0 +1,82 @@
+{
+  "id": "110345",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/110345/",
+  "title": "What’s new in Endpoint Security",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Business & Education"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Mellow instrumental hip-hop music ♪ ♪ Hey, my name is Daniel, and I'm on the Security Engineering and Architecture team. I'm going to give you an update on Endpoint Security. Endpoint Security is an API that we provide, so you can build security products for the Mac. It is a C API, providing a rich security event stream to third-party anti-virus, Endpoint Detection and Response, and data-leakage prevention solutions. We first introduced Endpoint Security in macOS Catalina as a replacement for the deprecated KAuth KPI, the unsupported MAC Kernel Framework, and the also deprecated OpenBSM audit trail. By making this functionality available in the Endpoint Security API, we removed the need for you to have to develop kernel extensions. The introduction of Endpoint Security has been a resounding success. We are thrilled with the positive feedback we receive and with the security products that it is enabling. For an introduction to Endpoint Security, refer to the WWDC 2020 session \"Build an Endpoint Security app.\" In this session, we'll be covering new events added in macOS Ventura, improvements to muting functionality, as well as a new utility called eslogger. Let's start with the new events. As of macOS Monterey, Endpoint Security supports over a hundred event types. Up until now, these events focused on critical events that happen within the kernel, such as forking a process or opening a file. In macOS Ventura, we're expanding the set of observable events to include security-relevant events happening in user space. Specifically, we are adding visibility into authentication, login and logout, and Gatekeeper's XProtect. The new authentication event covers the situation where a user authenticates to the operating system. This includes logging into local user accounts, but also authenticating in other places, such as to authorize an operation as an administrator. These events are typically used by security products that wish to observe suspicious access patterns. Previously, if you wished to observe authentication events, you still had to rely on the deprecated OpenBSM audit trail to do so; this will now no longer be necessary. And compared to their audit counterparts, these new events are much richer in information, and also provide visibility into Auto Unlock using Apple Watch, which wasn't available in audit. In a similar vein, we're adding visibility into user sessions. Login events cover situations where someone or something logs on to the system, either locally at the console or remotely over one of the supported methods of remote access. These events go substantially beyond what was available with the OpenBSM audit trail. They allow you to gain more comprehensive visibility into access to systems, including lateral movement across enterprise fleets. Part of Gatekeeper's mission is to detect and block known malicious software. Starting with macOS Ventura, Endpoint Security will provide visibility into both the detection of malicious software and into actions taken to stop and remove malicious software. This information was previously unavailable in a structured way. It is now available through the Endpoint Security API. We expect that with these additions, most Endpoint Security clients no longer need to rely onto the deprecated OpenBSM audit trail at all. The audit trail has been deprecated since macOS Big Sur and will be removed in a future version of macOS. Let's move on to muting. Since macOS Catalina, we have supported muting processes by audit token or executable image path. Muting is an important tool we give you to prevent deadlocks, hangs, and watchdog timeouts, and to manage the performance impact of your solutions based on Endpoint Security. In macOS Monterey last year, we started to address frequent causes of system instability by muting some event types for a small set of executables by default. You are free to unmute those, but we do recommend you keep them muted in the interest of system stability. In macOS Ventura, we are taking muting one step further by introducing muting based on target path. For many real-world use cases, this allows for scalpel-like precision over muting. You can now mute file events pertaining to certain paths or path prefixes that your application is not interested in receiving. This shows how you might mute all events having a target path under /var/log when you're not interested in events for log files. The second example shows how you might use es_mute_path_events to mute only write events to a single file, such as /dev/null. And what's more, we're even introducing the possibility to invert muting logic. Instead of suppressing events based on specified process, executable path, or target path, we now allow you to invert any of these three types of muting. Effectively, you can now select processes, executable paths, or target paths you are interested in to only receive events that match -- instead of don't match -- anything you've muted. For example, this now allows you to select file events only for certain persistence locations. Here's how you would use es_invert_muting to invert muting for target paths. You would then proceed to remove previously existing target paths from the mute set, and then select only events with the target-path prefix that you are interested in. We expect this to allow for much improved muting strategies, and ultimately, to make it easier to provide a great user experience with products based on Endpoint Security. And finally, we're introducing eslogger. We have had many requests for a capability to provide Endpoint Security events without the need to write a native client. Starting in macOS Ventura, you will be able to harness the power of Endpoint Security via a command-line utility that brings deep introspection into the OS. eslogger taps into the Endpoint Security event stream for specific events and emits JSON-formatted event data to standard output or to the unified logging system. Data is structured just like the C representation native clients use. eslogger supports all 80 NOTIFY events that Endpoint Security supports in macOS Ventura. We hope eslogger will be useful not only for engineers working on Endpoint Security clients, but also for security analysts and other security practitioners who need visibility into security-relevant events on macOS.\n\neslogger ships with the OS and is already entitled for Endpoint Security. Like all Endpoint Security clients, eslogger must be run as superuser and requires the user to have authorized the responsible process for Full Disk Access, such as Terminal.app or SSH. eslogger is not intended to be used by applications. Its output is subject to change in software updates. It is neither meant to provide the same performance characteristics, nor the same feature set, as natively interfacing with the Endpoint Security API does. Applications will continue to interface natively. With that out of the way, let's use eslogger to explore some of the new events. I'm going to use eslogger to log the start and end of an SSH session by subscribing to the openssh_login and _logout events and redirecting output to a file.\n\nNow in this other tab, I'm using SSH to locally log in and log out again.\n\nBack in the first tab, I'm interrupting eslogger.\n\nLet's have a look at the Endpoint Security event data in its raw JSON form.  It's very likely that you will have your own favorite way to work with JSON data. Here, I will use jq to examine the events further.  This is a lot of information. I'll just drill down to some interesting fields. Like all Endpoint Security events, we have information on the process that emitted them.  We can see that both events were emitted by the SSH daemon. We can also inspect, for instance, its audit token to glean the PID of the process that emitted the events.  And finally, let's have a look at the event-specific fields of these events.  We can see that this was a successful SSH login into my user account, followed by a logout. I love how I can get visibility into Endpoint Security events this way, whether I want to observe malicious software behavior, or to just quickly prototype a detection approach. We look forward to seeing your security solutions take advantage of the new events as well as of the improved muting capabilities. Thanks for joining us at WWDC. ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:29",
+      "title": "Target path muting",
+      "language": "swift",
+      "code": "// Mute events operating on /var/log\nes_mute_path(client, \"/private/var/log\", ES_MUTE_PATH_TYPE_TARGET_PREFIX)\n\n// Mute write events to /dev/null\nvar events = [ ES_EVENT_TYPE_NOTIFY_WRITE ]\nes_mute_path_events(client, \"/dev/null\", ES_MUTE_PATH_TYPE_TARGET_LITERAL,\n                    &events, events.count)"
+    },
+    {
+      "timestamp": "5:08",
+      "title": "Mute inversion",
+      "language": "swift",
+      "code": "// Invert muting for target paths\nes_invert_muting(client, ES_MUTE_INVERSION_TYPE_TARGET_PATH)\n\n// Select only events pertaining to /Library/LaunchDaemons\nes_unmute_all_target_paths(client)\nes_mute_path(client, \"/Library/LaunchDaemons\", ES_MUTE_PATH_TYPE_TARGET_PREFIX)"
+    },
+    {
+      "timestamp": "8:08",
+      "title": "Use eslogger to observe ssh login and logout events",
+      "language": "swift",
+      "code": "sudo eslogger openssh_login openssh_logout >out.jsonl"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Endpoint Security",
+        "url": "https://developer.apple.com/documentation/EndpointSecurity"
+      },
+      {
+        "title": "Monitoring System Events with Endpoint Security",
+        "url": "https://developer.apple.com/documentation/EndpointSecurity/monitoring-system-events-with-endpoint-security"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/110345/4/D78059C0-3932-4CAA-8B45-098BEB4ACF45/downloads/wwdc2022-110345_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/110345/4/D78059C0-3932-4CAA-8B45-098BEB4ACF45/downloads/wwdc2022-110345_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10159",
+      "year": "2020",
+      "title": "Build an Endpoint Security app",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10159"
+    },
+    {
+      "id": "702",
+      "year": "2019",
+      "title": "System Extensions and DriverKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/702"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:26:55.136Z"
+}

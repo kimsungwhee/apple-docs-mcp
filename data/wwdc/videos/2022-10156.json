@@ -1,0 +1,95 @@
+{
+  "id": "10156",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10156/",
+  "title": "Meet ScreenCaptureKit",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video",
+    "Graphics & Games"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Ernest: Hello and welcome. My name is Ernest, and I'm a software engineer on the ScreenCaptureKit team. Over the past couple of years, we all have been more reliant on remote collaboration, which often involves screen sharing.\n\nOn top of that, streaming gameplay using a recording application like OBS Studio, and content creation as a whole, has been a continually growing area for people's education and entertainment.\n\nWith this in mind, we created a framework that meets developers' needs for performant and robust screen capture. Meet ScreenCaptureKit! ScreenCaptureKit is a brand-new framework on macOS that is designed to help you create your application's screen sharing experience. ScreenCaptureKit provides APIs that will let you choose the content you want to capture, with developer controls and toggles for your application's needs. And all of the filters and controls can be updated on the fly. The framework delivers high quality and performance up to the native resolution and frame rate of your display, all while having privacy in mind with global safeguards. In this session, I'll help you get started with the ScreenCaptureKit framework. Once you have the basics down, take a look at \"Take ScreenCaptureKit to the next level\" for more advanced topics. First, I'll go over the key features of the framework. Next, I'll cover the main ScreenCaptureKit constructs in an API overview. Then, I'll show you how to set up your stream with a filter and configuration. And finally, I'll walk you through how to stream video and audio samples to your application. Let's start with the key features of ScreenCaptureKit. ScreenCaptureKit lets you specify the type of content you want to share or filter out. You can capture screen content from any combination of displays, applications, and windows as well as the audio that goes with it.\n\nScreenCaptureKit supports a variety of developer controls, including pixel format, color space, frame rate, and resolution, and on the audio side, controls such as sample rate and channel count.\n\nAnd all of these filters and configurations can be adjusted on the fly, allowing for more flexibility in application design.\n\nAnd in order to deliver audio samples up to 48kHz stereo and video samples at up to your display's native resolution and frame rate, ScreenCaptureKit is performance focused and leverages the power of Mac GPUs with a lower CPU overhead than existing capture methods. And of course, ScreenCaptureKit is built with privacy in mind, providing global privacy safeguards for all applications using the framework.\n\nThe framework will require consent before capturing video and audio content, and the choice will be stored in the Screen Recording privacy setting in system preferences. Now that you've seen what ScreenCaptureKit is all about, I'll show you some of the most important concepts in the API. The ScreenCaptureKit framework is centered on SCStream. SCStream handles control methods like start and stop and is created along with SCShareableContent, SCContentFilter, and SCStreamConfiguration. These objects determine what content you want to capture and how you want to capture it. Once created and started, media samples will be delivered to your application through the SCStreamOutput protocol. I'll explain more about that a bit later.\n\nNow, I'll show you how to use the API to set up a stream in your application.\n\nHere are the objects you want to get familiar with when setting up your stream.\n\nThese are the objects that will determine what you capture and the quality and the performance of the capture. The first one I want to go into is SCShareableContent.\n\nOn this desktop, there are windows, applications, and the display itself. ScreenCaptureKit has a corresponding class for each of these that you can use to build the content you want to share.\n\nFirst, let's take a look at SCDisplay. ScreenCaptureKit categorizes displays as SCDisplays, with read-only properties including display identifier and size properties width and height.\n\nWithin the display, there may be many different running applications, and each of these will have a corresponding SCRunningApplication.\n\nSCRunningApplications have read-only properties for application-level information such as bundle identifier, application name, and its process identifier.\n\nIn the example here, there will be an SCRunningApplication for Keynote and Safari. And, of course, these applications have windows. These windows will have a corresponding SCWindow with read-only properties that define the window such as window id, frame, title, and if the window is on screen or minimized. The SCWindow will also have an owning application. In this case, both Safari SCWindows will have the same Safari owning application.\n\nSCWindows, SCRunningApplications, and SCDisplays combine together to give you the possible content you can share in SCShareableContent. You can get a list of all shareable content on the device, or you can specify certain parameters.\n\nSuppose you'd like to list all the applications and windows that are on screen so people can choose which ones they'd like to share. Well, ScreenCaptureKit has a simple API for that.\n\nThis short code snippet is from the capture sample code available on developer.apple.com. Only windows that are on screen are returned with the SCShareableContent, which includes the associated SCWindows, SCApplications and SCDisplays. And now that you have the shareable content, you can create a filter.\n\nThere are two main types of SCContentFilters: A display independent window filter, which will capture the window as you move it across multiple displays, and display dependent filters, with options to include or exclude specific windows and applications. A quick note here is that audio capture can only be filtered at an application level. I'll walk you through some examples to demonstrate what a filter is Imagine you're only interested in sharing a keynote window.\n\nYou would choose a display independent window filter that will capture the window as it moves across displays. Even if you wanted to share all of the content on a display, there may be certain content you'd like to exclude. For example, you'll want to avoid the hall of mirrors effect by excluding your own capture application.\n\nThere may also be sensitive information in a particular window or application, and you'd want to exclude that from the capture as well. All these scenarios will be handled by SCContentFilter, so let's jump into the code and see how to do this.\n\nHere is the code snippet I showed previously. After the shareable content is queried, the code looks for the application with the same bundleIdentifier as the capture sample app. Then, a display dependent content filter excludes the app from the stream.\n\nIn addition to content filters, ScreenCaptureKit provides quality and performance controls that can be adjusted per stream. These controls can be set in SCStreamConfiguration.\n\nSome of the video controls include output resolution, frame rate, and whether or not to show the mouse cursor.\n\nOn the audio side, you can enable audio, change the sample rate, and adjust the channel count. I'll take you through some scenarios where these parameters might come into play.\n\nWhen sharing low-motion screen content where text clarity is important, such as from notes or a spreadsheet, set output resolution of the capture to 4k, at 10 frames per second.\n\nAnd because the content doesn't have any audio, you can leave audio disabled. But in the case of high motion content, such as sharing a video of a recent vacation, you should prioritize frame rate over resolution by lowering the output resolution to 1080p and increasing the frames per second to 60.\n\nAnd since cursor movement could be distracting, you may want to hide the cursor.\n\nYou can also have audio capture enabled for a more immersive experience. All of these controls can be set through the different properties in SCStreamConfiguration.\n\nHere's one possible configuration for sharing high motion content.\n\nIn this code sample, the output resolution of the capture is set to 1080p. Then, the minimum frame interval is set to 1/60 in order to capture at 60 frames per second. And finally, the stream configuration will hide the cursor.\n\nOn the audio side, first enable audio by setting capturesAudio to true, then, set the sample rate to 48kHz and the channel count to 2.\n\nWith an SCContentFilter and an SCStreamConfiguration, you have the information you need to set up screen capture to your application's needs. Together, you can now create an SCStream.\n\nLet's go back to the overview. You will need to initialize the stream with your desired filter and configuration. And you can also pass in an optional delegate in order to handle errors. Once set up, you can call start capture, and ScreenCaptureKit will provide the SCStream with samples when they are available. With a filter and configuration created, starting a stream in code is easy. Let me show you.\n\nOnce again, with the filter and configuration you want, you can initialize an SCStream object.\n\nIn the capture sample project, self is passed as the error handling delegate.\n\nWith an SCStream created, you can now call startCapture.\n\nOnce you've initialized and started a stream, the next step is to get media samples to your application.\n\nAudio and video samples are sent to your application in the form of CMSampleBuffers. In order to get those media samples from your stream, you will need to add an object that implements the SCStreamOutput protocol to your stream. When you add your stream output, you may also specify a handler queue.\n\nThis may be useful if you want your sample to be delivered in a particular queue without needing an extra dispatch.\n\nIf you don't specify a queue, a default queue will be used.\n\nWith a stream started and an output added, ScreenCaptureKit will provide a callback when a new sample is available. Now, I'll show you how to get media samples in code.\n\nHere's an implementation of the SCStreamOutputProtocol which will be called when new media samples are available. ScreenCaptureKit delivers these samples as CMSampleBuffers and provides the stream and sample type.\n\nAfter implementing sample buffer handlers, you simply need to add your streamOutput.\n\nAnd with that, media samples from the stream, with the content you want, in the format you want, will be delivered to your application.\n\nScreenCaptureKit delivers samples in the form of a CMSampleBuffers, so let's talk a little bit about how to use them.\n\nOn the video side, the CMSampleBuffer is IOSurface backed. ScreenCaptureKit also provides attachments to the CMSampleBuffer in SCStreamFrameInfo.\n\nThis attachment provides information about the video sample you're receiving.\n\nCheck frame status for the current state of the stream. A complete frame status indicates that there is a new video frame. An idle frame status means the video sample hasn't changed, so there's no new IOSurface. Otherwise, the sample provided is like any CMSampleBuffer, so you can use existing CMSampleBuffer utilities. ScreenCaptureKit includes APIs to help you get filtered screen audio and video content. On top of that, the framework provides many different developer controls to suit your application's needs. I also covered some basics to get you started with the different screen capture experiences you will create.\n\nWith the release of ScreenCaptureKit, older capture frameworks CGDisplayStream and CGWindowList will be deprecated in the future.\n\nI hope you're as excited as I am with this introduction of ScreenCaptureKit! When you're ready to look at more advanced topics, please hop over to \"Take ScreenCaptureKit to the next level.\" Thanks for watching!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "6:53",
+      "title": "Creating a SCShareableContent object",
+      "language": "swift",
+      "code": "// Creating a SCShareableContent object\n\n// Get the content that's available to capture.\nlet content = try await SCShareableContent.excludingDesktopWindows(\n    false,\n    onScreenWindowsOnly: true\n)"
+    },
+    {
+      "timestamp": "8:32",
+      "title": "Creating a SCContentFilter object",
+      "language": "swift",
+      "code": "// Creating a SCContentFilter object\n\n// Get the content that's available to capture.\nlet content = try await SCShareableContent.excludingDesktopWindows(\n    false,\n    onScreenWindowsOnly: true\n)\n\n// Exclude the sample app by matching the bundle identifier.\nlet excludedApps = content.applications.filter { app in\n    Bundle.main.bundleIdentifier == app.bundleIdentifier\n}\n\n// Create a content filter that excludes the sample app.\nfilter = SCContentFilter(display: display,\n                         excludingApplications: excludedApps,\n                         exceptingWindows: [])"
+    },
+    {
+      "timestamp": "10:23",
+      "title": "Creating a SCStreamConfiguration object",
+      "language": "swift",
+      "code": "// Creating a SCStreamConfiguration object\nlet streamConfig = SCStreamConfiguration()\n        \n// Set output resolution to 1080p\nstreamConfig.width = 1920\nstreamConfig.height = 1080\n\n// Set the capture interval at 60 fps\nstreamConfig.minimumFrameInterval = CMTime(value: 1, timescale: CMTimeScale(60))\n\n// Hides cursor\nstreamConfig.showsCursor = false\n\n// Enable audio capture\nstreamConfig.capturesAudio = true\n\n// Set sample rate to 48000 kHz stereo\nstreamConfig.sampleRate = 48000\nstreamConfig.channelCount = 2"
+    },
+    {
+      "timestamp": "11:46",
+      "title": "Creating and starting a SCStream object",
+      "language": "swift",
+      "code": "// Creating and starting a SCStream object\n\n// Create a capture stream with the filter and stream configuration\nstream = SCStream(filter: filter, configuration: streamConfig, delegate: self)\n\n// Start the capture session\ntry await stream?.startCapture()      \n\n\n// ...\n// Error handling delegate \nfunc stream(_ stream: SCStream, didStopWithError error: Error) {\n    DispatchQueue.main.async {\n        self.logger.error(\"Stream stopped with error: \\(error.localizedDescription)\")\n        self.error = error\n        self.isRecording = false\n   }\n}"
+    },
+    {
+      "timestamp": "13:07",
+      "title": "Getting media samples",
+      "language": "swift",
+      "code": "// SCStreamOutput protocol implementation\nfunc stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {\n    switch type {\n    case .screen:\n        handleLatestScreenSample(sampleBuffer)\n    case .audio:         handleLatestAudioSample(sampleBuffer)\n    }\n}\n\n// ...\n// Create a capture stream with the filter and stream configuration\nstream = SCStream(filter: filter, configuration: streamConfig, delegate: self)\n\n// Add a stream output to capture screen and audio content\ntry stream?.addStreamOutput(self, type: .screen, sampleHandlerQueue: screenFrameOutputQueue)\ntry stream?.addStreamOutput(self, type: .audio, sampleHandlerQueue: audioFrameOutputQueue)\n\n// Start the capture session\ntry await stream?.startCapture()"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Capturing screen content in macOS",
+        "url": "https://developer.apple.com/documentation/ScreenCaptureKit/capturing-screen-content-in-macos"
+      },
+      {
+        "title": "ScreenCaptureKit",
+        "url": "https://developer.apple.com/documentation/ScreenCaptureKit"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10156/3/740DABB6-6584-492E-AA71-A628E023B346/downloads/wwdc2022-10156_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10156/3/740DABB6-6584-492E-AA71-A628E023B346/downloads/wwdc2022-10156_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10136",
+      "year": "2023",
+      "title": "What’s new in ScreenCaptureKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10136"
+    },
+    {
+      "id": "10155",
+      "year": "2022",
+      "title": "Take ScreenCaptureKit to the next level",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10155"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:22:49.306Z"
+}

@@ -1,0 +1,106 @@
+{
+  "id": "10002",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10002/",
+  "title": "Ready, set, relay: Protect app traffic with network relays",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "System Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Keith Holleman: Hi, my name is Keith Holleman, and I’m part of the Internet Technologies team here at Apple. Today I’ll be talking about how you can use network relays to enhance the privacy and security of your apps. We will start this session by exploring the technology used for network relays. Relays are used across many privacy features at Apple. We love how this technology is both effective and easy to use, and now you will have two ways to use relays in your apps as well. First, you can configure relays within an app to protect the network traffic for your app. Second, you can extend relays to the device for accessing private resources in an enterprise, as an alternative to a VPN. Let’s dive in and get started. Relays form the basis of great features, such as iCloud Private Relay, Mail privacy protection, and hiding IP addresses from trackers in Safari. Your app may also handle sensitive information about users that they want to keep private, and you may want to ensure that your own servers can’t associate that information with client IP addresses. Now, your app can use relays that you select to provide strong privacy protections for all of your users.\n\nA relay is a special type of proxy that is optimized for performance, uses the latest transport and security protocols, and is natively built into the modern network stack available on Apple platforms. There are two standard protocols defined by the IETF that these relays use: MASQUE and Oblivious HTTP. MASQUE relays are a great way to enhance the privacy of your app or access private resources. You can send any TCP or UDP connection through a relay without needing to modify the back-end server. You can chain relay servers together so that no single entity can combine an IP address and browsing activity into a detailed profile of a user. This is the cornerstone technology behind iCloud Private Relay. Relays are also a great way to access enterprise resources. A relay provides a better user experience, is more performant, and is easier to manage than a VPN. MASQUE relays use TLS 1.3 to secure all traffic to the proxy, unlike legacy proxy protocols. MASQUE uses QUIC, the latest transport protocol, and HTTP/3 to efficiently proxy and multiplex many connections over a single tunnel. And for cases where QUIC is blocked by a network, they can fall back to using HTTP/2.\n\nIf your app sends HTTP requests that you want to make sure are private and not linked to any other requests, such as anonymous metrics reports, database lookups, or DNS queries, you can also use Oblivious HTTP. With Oblivious HTTP, you can get great performance and privacy with only a single relay hop. Unlike MASQUE relays, Oblivious HTTP doesn't work with arbitrary servers; your server needs to explicitly support it. To learn more about Oblivious HTTP, watch the session \"What’s new in Privacy.\" You can use both of these relay types to proxy connections made by your app. This allows you to use specific relay servers that you choose in order to increase your app’s privacy. The new ProxyConfiguration class allows you to define your relays in Network framework, URLSession, and WebKit. All three APIs use this common class in a similar manner and let you define relays for your entire app or just specific connections. Within the ProxyConfiguration object, you can define proxies based on five different protocols. This is where you can specify the new relay types for both MASQUE and Oblivious HTTP. The same object can also be used to configure legacy proxy types. If you were configuring proxies on URLSession or WebKit with dictionaries before, now is a great time to switch to using this new object. For legacy proxy types, you can configure HTTP CONNECT, with newly added support for TLS to the proxy, as well as SOCKSv5. Here is how you define a ProxyConfiguration that will be used to connect to a MASQUE relay over HTTP/3. First, use an NWEndpoint to specify the server name or URL, and use it to define a relay hop. For these relay hops, you can specify support for HTTP/3, HTTP/2, or both. The HTTP/2 server will be used as a backup in case access to HTTP/3 using the QUIC protocol is blocked by a network. Then, create a proxy configuration by passing your relay to a \"relayHops\" array parameter. If you want to define a multi-hop relay configuration, you can pass two relays here. To use your ProxyConfiguration with an NWConnection from Network framework, create a PrivacyContext or use the default context and add the proxy configuration to that context. Set the context on your NWParameters, and then pass these parameters when you create and start the connection. Now this connection is sending all of its traffic through the proxy.\n\nYou can also use this same proxy configuration we already defined directly in URLSession. To do this, add your configuration to the proxyConfigurations array on your URLSessionConfiguration. Then, run tasks in your URLSession as you would normally, and they will now also use the proxy. The same proxy configuration object can also be used to proxy connections made in a WebKit view! First, initialize a web view configuration, add a data store, and add your proxy configuration to the data store. Then initialize a web view with your configuration. Once that’s done, you can load the requested URL and use the WebKit view as you normally would. Now, this Webkit view is also sending its traffic through the relay.\n\nBesides adding relays to your own apps, in iOS 17, you can configure them for the whole device. In addition to letting you build privacy features, this is a great way to use relays to provide access to private enterprise network resources.\n\nYou may be using a VPN to provide access to your enterprise resources. Relays are an alternative to VPNs that can provide a better user experience and are easier to manage. A network relay does not require complex session negotiation and often requires fewer round trips before actual user data is transferred. This ensures that a user’s first load of a private resource is the most responsive interaction possible. A relay also avoids the usage of tunnels, virtual interfaces, and additional IP addresses that are associated with VPNs. Since you can configure multiple relays simultaneously, it is easier to access different private domains located in different networks. Enterprise companies that want to use relay servers as an alternative to VPNs now have options to use them with their own infrastructure. Cisco is providing an enterprise relay service as part of the Cisco Secure Edge offering. We are excited to see enterprises adopt this option for providing remote access for their users.\n\nThere are two ways to install a MASQUE relay configuration on a device. Enterprise organizations can push a configuration via Mobile Device Management, or MDM, to define relays using a new relay payload type. These payloads can apply to managed apps, domains, or the entire device. Second, you can write an app that uses the NERelayManager API to define your relay. These configurations can apply to specific domains or the entire device. Both of these are available in macOS, iOS, iPadOS, and tvOS. And now that Network Extension support is added to tvOS, VPNs are also newly supported in tvOS 17.\n\nHere's how you configure a relay using a configuration profile. Just like in the ProxyConfiguration API for your apps, you define the relay URL. Just like in VPN profiles, you can use a client certificate for authentication to your enterprise servers by referring to a certificate payload in the same profile. You can have the relay apply to specific domains by adding them in the MatchDomains portion of the payload.\n\nNext, we will see how an app can use the NERelayManager API to add relays to a device programmatically. To define a relay, you will need to initialize a NERelay object and then configure the URLs of your relays. Here, I am using the same relay for both HTTP/2 and HTTP/3. If your relay requires additional HTTP headers, add them to the NERelay object. You will also need to access to the shared NERelayManager object, as this is where you will store the NERelay object you just created. If you want your relay to apply to only specific domains instead of the whole device, add those domains to the matchDomains array. The final step is to make sure your relay is enabled, and install your NERelayManager object into the system preferences. Let’s look at relays in action. I really love mountain biking and I even opened my very own bike shop. My shop has an online store and an internal website where I can track all of my orders. That website is on my internal network and only available to employees. If I open Safari and attempt to look at my open orders, I can’t see them because I’m not on my internal network. Once I install a relay configuration, I’ll be able to access my internal network from anywhere. If I open my sample relay app with the code we just walked through, I can configure the entire device to use my shop’s relay while accessing my internal domain. This configuration will now also be visible in Settings, and we can see that it will be using the relay when I access internal.example.com. Now, when I return back to Safari and again attempt to look at my open orders, now I can see them and just how many orders I need to get shipped out. It’s that simple, fast, and responsive on the first load.\n\nRelays are modern, standards-based proxies that can improve the security and privacy of your app without compromising performance. Directly adopt MASQUE relays and Oblivious HTTP relays in your app to enhance privacy for your users. And for enterprises, start replacing the use of VPNs with relays that are easier to manage and provide a more seamless user experience. Thank you taking the time to watch today. I can’t wait to see how you use relays.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:52",
+      "title": "Configuring a relay",
+      "language": "swift",
+      "code": "import Network\n\nlet relayEndpoint = NWEndpoint.url(URL(string: \"https://relay.example.com\")!)\nlet relayServer = ProxyConfiguration.RelayHop(http3RelayEndpoint: relayEndpoint)\n\nlet relayConfig = ProxyConfiguration(relayHops: [relayServer])"
+    },
+    {
+      "timestamp": "5:40",
+      "title": "Configuring a relay in Network framework",
+      "language": "swift",
+      "code": "import Network\n\nlet relayEndpoint = NWEndpoint.url(URL(string: \"https://relay.example.com\")!)\nlet relayServer = ProxyConfiguration.RelayHop(http3RelayEndpoint: relayEndpoint)\n\nlet relayConfig = ProxyConfiguration(relayHops: [relayServer])\n\nvar context = NWParameters.PrivacyContext(description: \"my relay\")\ncontext.proxyConfigurations = [relayConfig]\n\nlet parameters = NWParameters.tls\nparameters.setPrivacyContext(context)\n\nlet connection = NWConnection(host: \"www.example.com\", port: 443, using: parameters)\nconnection.start(queue: .main)"
+    },
+    {
+      "timestamp": "6:07",
+      "title": "Configuring a relay in URLSession",
+      "language": "swift",
+      "code": "import Network\n\nlet relayEndpoint = NWEndpoint.url(URL(string: \"https://relay.example.com\")!)\nlet relayServer = ProxyConfiguration.RelayHop(http3RelayEndpoint: relayEndpoint)\n\nlet relayConfig = ProxyConfiguration(relayHops: [relayServer])\n\nlet config = URLSessionConfiguration.default\nconfig.proxyConfigurations = [relayConfig]\n\nlet mySession = URLSession(configuration: config)\nlet url = URL(string: \"https://www.example.com/api/v1/employees\")!\nlet (data, response) = try await mySession.data(from: url)"
+    },
+    {
+      "timestamp": "6:30",
+      "title": "Configuring a relay in WebKit",
+      "language": "swift",
+      "code": "import Network\n\nlet relayEndpoint = NWEndpoint.url(URL(string: \"https://relay.example.com\")!)\nlet relayServer = ProxyConfiguration.RelayHop(http3RelayEndpoint: relayEndpoint)\n\nlet relayConfig = ProxyConfiguration(relayHops: [relayServer])\n\nlet webkitConfig = WKWebViewConfiguration()\nwebkitConfig.websiteDataStore = WKWebsiteDataStore.nonPersistent()\nwebkitConfig.websiteDataStore.proxyConfigurations = [relayConfig]\nlet webView = WKWebView(frame: .zero, configuration: webkitConfig)\n\nlet url = URL(string: \"https://www.example.com/api/v1/employees\")!\nwebView.load(URLRequest(url: url))"
+    },
+    {
+      "timestamp": "9:15",
+      "title": "Configuring a relay on the device with a configuration profile",
+      "language": "swift",
+      "code": "<dict>\n    <key>PayloadType</key>\n    <string>com.apple.relay.managed</string>\n    <key>Relays</key>\n    <array>\n        <dict>\n            <key>HTTP3RelayURL</key>\n            <string>https://relay.example.com</string>\n            <key>PayloadCertificateUUID</key>\n            <string>5AB702EC-32F3-48A9-94FE-8EA1C67ACF46</string>\n        </dict>\n    </array>\n    <key>MatchDomains</key>\n    <array>\n        <string>internal.example.com</string>\n    </array>\n</dict>"
+    },
+    {
+      "timestamp": "9:42",
+      "title": "Configuring a relay on the device with NetworkExtension",
+      "language": "swift",
+      "code": "import NetworkExtension\n\nlet newRelay = NERelay()\nlet relayURL = URL(string: \"https://relay.example.com:443/\")\nnewRelay.http3RelayURL = relayURL\nnewRelay.http2RelayURL = relayURL\n\nnewRelay.additionalHTTPHeaderFields = [\"Authorization\" : \"PrivateToken=123\"]\n\nlet manager = NERelayManager.shared()\nmanager.relays = [newRelay]\nmanager.matchDomains = [\"internal.example.com\"]\n\nmanager.isEnabled = true\ndo {\n    try await manager.saveToPreferences()\n} catch let saveError {\n    // Handle error\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "ProxyConfiguration",
+        "url": "https://developer.apple.com/documentation/Network/ProxyConfiguration"
+      },
+      {
+        "title": "Relays",
+        "url": "https://developer.apple.com/documentation/NetworkExtension/relays"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10002/5/F08830EB-6B56-4461-837E-ADE708BAA71C/downloads/wwdc2023-10002_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10002/5/F08830EB-6B56-4461-837E-ADE708BAA71C/downloads/wwdc2023-10002_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10040",
+      "year": "2023",
+      "title": "What’s new in managing Apple devices",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10040"
+    },
+    {
+      "id": "10053",
+      "year": "2023",
+      "title": "What’s new in privacy",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10053"
+    },
+    {
+      "id": "10096",
+      "year": "2021",
+      "title": "Get ready for iCloud Private Relay",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10096"
+    }
+  ],
+  "extractedAt": "2025-07-18T11:01:10.726Z"
+}

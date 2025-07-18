@@ -1,0 +1,141 @@
+{
+  "id": "10050",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10050/",
+  "title": "Complications and widgets: Reloaded",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services",
+    "Essentials"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Mellow instrumental hip-hop music ♪ ♪ Hi! My name is Devon. I'm an engineer on the watchOS team, and today, I'll be talking about iOS. And I'm Graham, an engineer from iOS, and today, I'll be talking about watchOS. We'll be talking about API additions to WidgetKit that enable you to write accessory widgets for the Lock Screen and complications for watchOS. We'll show how you can develop both together, along with additions to SwiftUI to help you along the way. If you're unfamiliar with widgets, timelines, and reloading, I encourage you to seek out prior WidgetKit sessions. First, we'll talk about the history of complications and how they've evolved. Then, we'll talk about new API to color your widgets and complications in their new environments. After that, Graham will demo how to get started making your own widgets and moving your existing widget extension to watchOS. Next, Graham will walk you through how to make the most of these smaller views. And lastly, we'll talk about the different privacy environments your widgets may appear in. Complications are a key piece of the watchOS platform, presenting quick, glanceable information on the watch face. They convey immediately accessible, high-value information and a tap takes you to the relevant location in the app. In watchOS 2, ClockKit enabled you to create your own complications. Complications have come a long way since then.\n\nRich complications were introduced in watchOS 5, with graphic content and a suite of new families. SwiftUI complications and multiple complications were introduced in watchOS 7, which enabled you to take your complications to the next level and provide more options than ever. Today, complications have been reimagined and remade with WidgetKit, embracing SwiftUI and bringing the glanceable complication experience to iOS in the form of widgets. With WidgetKit in iOS 16 and watchOS 9, you can build great glanceable widgets and complications across both platforms, enabling you to write your code once and share infrastructure with your existing Home Screen widgets. To do this, we've added new widget families to the existing WidgetFamily type, prefixed with the word \"accessory.\" The new accessoryRectangular family can be used to show multiple lines of text or small graphs and charts, similar to the existing ClockKit graphicRectangular family. The accessoryCircular family is great for brief information, gauges, and progress views. This family also replaces the graphicCircular ClockKit family. The all-new accessoryInline is a text-only slot present on many faces on watchOS and above the time on iOS. The inline slot comes in many sizes, and we'll talk about how to make the best use of them all later on.\n\nSpecific to watchOS is the new accessoryCorner family, mixing a small circle of widget content with gauges and text. This talk focuses on families common between iOS and watchOS. For more details on this new watchOS family and complication-specific features, check out the \"Go further with WidgetKit complications\" session. Let's talk about colors and rendering modes. You may have noticed that accessory widgets take on a few different appearances. The system controls the look of accessory family widgets, and we've given you some tools to help adapt them to the rendering style. There are three different rendering modes your widget may be shown in. Your widget can be full color, accented, or vibrant. We've introduced the WidgetRenderingMode type to represent these three different presentations. You can access this value from the Environment, using the widgetRenderingMode keypath. After that, you can change your content conditionally to make sure it looks just right everywhere that it'll show up. In watchOS's full-color mode, your content is displayed exactly as you specify. Many existing complications take on a colorful appearance in full color, like the gradient in Weather's gauges, or the Activity rings' colors. In the accented rendering mode, your views are split into two groups and colored independently. The two coloring groups are flatly colored, preserving only their original opacities. You can tell the system how to group your views with the .widgetAccentable() view modifier, or switch out your content based on the Widget Rendering Mode environment value to look perfect when flattened. Note that the system can tint your content in a number of ways, some of which are inverted. Some are on a black background, while others are on the new full-color backgrounds in watchOS 9. In the iOS vibrant rendering mode, your content is desaturated then colored appropriately for the Lock Screen background. The system maps your greyscale content in to a material appearance. This material is adaptive to the content behind it, appearing just right in its environment. Additionally, the Lock Screen can be configured to give the vibrant rendering mode a colored tint. A light source color ends up mostly opaque and brighter. On the other end, a dark source color appears as a less prominent blur of the background behind it, with only a slight amount of brightening. To ensure legibility, avoid using transparent colors in this mode. Instead, use darker colors or black to represent less prominent content while maintaining legibility. To help you with some of this nuance, we've also introduced the AccessoryWidgetBackground view to give a consistent backdrop to widgets that need them, like this circular calendar. While most accessory widgets have no background, some styles can be enhanced with one. The background view takes on different appearances in the various widget rendering modes and is tuned by the system to look right for the style of the face or Lock Screen. This is a soft transparent view in full color and accented, and black in the vibrant environment, which results in a low brightness and full blur. Graham is super excited to get started making some new widgets for the Lock Screen and complications on watchOS -- I'll hand it off to him. Hi again! I'll be adding support for our new widget families to an existing app -- Emoji Rangers -- which some of you might be familiar with from WWDC2020's \"Widgets Code-along.\" Before I begin, a note for those with existing widget-free projects. You can get started by adding the Widget Extension target to your project, which already exists on iOS and has been brought to watchOS. But I know that many of you have apps with widgets already, so today let's start there and talk about adding new widgets and complications.\n\nWe'll continue the Emoji Rangers project. This app keeps track of our favorite Emoji Rangers and keeps you up to date with their health and recharge time with the use of Home Screen widgets. We've already brought Emoji Rangers over to watchOS, bringing our favorite app to our wrists. Today we'll be extending Emoji Rangers with support for our new widget families and bringing its widget extension to the watch. Let's get started with getting the widget extension onto the watch. We'll add a new watchOS target that shares code with the existing iOS target. We'll duplicate the iOS widget extension target, give it a better name, change the bundle identifier to be prefixed with the watch app's, target watchOS, and embed our new extension in our watch app.\n\nNow we need to get our code building on watchOS -- let's get on with that.\n\nGlancing through the EmojiRangerWidget code, we can see the timeline provider, which is used when the system reloads content, the view which uses SwiftUI to generate content for our different families, the widget configuration, and the Xcode preview provider. The Emoji Rangers app already supports iOS Home Screen widgets. It offers the system small and medium families, and here in the widget configuration, I'm going to add the new families.\n\nBecause system families are unavailable on the watch, we'll need to use a platform macro to specify our supportedFamilies.\n\nIn the preview provider, I'm going to add previews for the new families.\n\nNext, we need to implement the new IntentRecommendation API before we can successfully build for watchOS. While Intents are fully configurable in the widgets editing UI on iOS, on watchOS, we need to provide a preconfigured list. We can do that by overriding the new recommendations method on our IntentTimelineProvider.\n\nNow we're building successfully. Let's resume the previews and see what our circular widget looks like.\n\nThe content intended for even a small widget doesn't fit well inside our new form factor. The new widget families are smaller than iOS widgets found on the Home Screen, and you'll need to consider the content of your complications. Now let's talk about some new views we can use to make our complications stand out. Let's go to the view. We can see code for the systemSmall and other widgets; let's add code for the accessoryCircular case. I think it would look good just with the avatar.\n\nThis provides a quick shortcut in to our app but doesn't offer users any information. Let's add a progress view around the edge, which will give the users an idea of when the Ranger will be ready for combat again.\n\nTrouble is animating this progress view to be current will require a lot of timeline entries in short succession. Instead, we can use SwiftUI's new auto-updating ProgressView. That takes a date interval over which our Ranger will be fully healed. The system will keep our progress view updated, meaning we only need one timeline entry here.\n\nMuch better. Now let's add the rectangular family.\n\nWe'll select the rectangular preview. This gives us more space, so we'll make a three-line view in the style of a complication. First the character's name, then their level, and then the time until fully healed, for which we'll use an auto-updating date field. I'd like the character's name to stand out, so I'll size the text, using a font style of headline, and add the widgetAccentable modifier which will adjust its color.\n\nOur view looks great here in vibrant, now let's see how it looks in our other rendering modes on the watch.\n\nYou can see how the character's name takes on the accent color. To make your widgets and complications feel at home in their environment, it's important that you use the default font parameters and make use of font styles. The font styles and sizes are different between iOS and watchOS. iOS uses the regular text design, while watchOS uses a rounded design with a heavier weight. Your widgets and complications will sit onscreen adjacent to others. And so they look consistent, we recommend using the font styles Title, Headline, Body, and Caption.\n\nXcode's preview shows we still have room leftover to add the avatar too.\n\nLet's see how this looks on the iPhone.\n\nThat looks great! Finally, let's add the third style, accessoryInline, which displays a line of text and optionally an image. Note that inline accessories are drawn according to system-defined coloring and font. Let's select the preview.\n\nLet's show our hero's name and recharge countdown.\n\nThis text is too long for our watch slot. So now's a good time to show you ViewThatFits. I can supply multiple views, from lengthy to concise, and ViewThatFits will choose the first content view that fits the available space without truncation or clipping. Let's shorten the text.\n\nEven that might be too long for the shortest watch slot, so let's offer a third alternative by switching out the avatar for the name.\n\nLet's see what that looks like.\n\nRefer to the \"Compose Custom layouts with SwiftUI\" session for more about this. Awesome! Even Emoji Rangers like to enjoy some privacy, so I'll hand it back to Devon to talk about that. Hello again! Let's talk about privacy. So far in this talk, we've discussed the active state of your widgets and complications. However, across our platforms, you'll need to consider whether the device is redacting content or in a low-luminance state. On the iOS Lock Screen, the default behavior is to show your content even while the device is locked, which is the top-left cell in our grid here. However, this is configurable in Settings, and users can choose to redact their widget when locked, much like Notifications. On watchOS, the device stays unlocked as long as the watch is being worn. When inactive, the watch transitions into always-on, with content in a low-luminance presentation and a lower update cadence. By default, your content is not redacted in low luminance, which is the state on the bottom left. Like the Lock Screen, your users can configure their complication content to be redacted in this always-on state. In this state, you'll need to make sure your content is prepared for both redaction and low luminance. Together, the platforms cover each of the four states shown here. Consider all these possible states and ensure your complications and widgets work well in all cases. Let's talk about how you can do that. On the watch, your widget needs to support the always-on display experience. You can adapt your content for always-on with the \\.isLuminanceReduced environment value. If you're coming from ClockKit, note that you now can prepare always-on content for every timeline entry, not just one. When in always-on, your time-relative text and progress views will change to a reduced fidelity mode to support the low update cadence of always-on. To support this mode, use the environment value to remove any time-sensitive content and optimize your content for the lower update frequency. Now let's talk about redaction. By default, the privacy mode will show a redacted version of the placeholder view your TimelineProvider creates. If you have some elements that are sensitive and others that don't need to be redacted, you can use the .privacySensitive modifier to mark only some of the views to be redacted. In this example, we've redacted the heart rate in our widget but left the image unredacted. Now you're ready to make awesome widgets for the Lock Screen and WidgetKit complications. For more on what's new in SwiftUI, check out the \"Compose Custom Layouts with SwiftUI\" talk. Thanks for watching. ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:07",
+      "title": "widgetAccentable",
+      "language": "swift",
+      "code": "VStack(alignment: .leading) {\n    Text(\"Headline\")\n        .font(.headline)\n        .widgetAccentable()\n    Text(\"Body 1\")\n    Text(\"Body 2\")\n}.frame(maxWidth: .infinity, alignment: .leading)"
+    },
+    {
+      "timestamp": "5:24",
+      "title": "AccessoryWidgetBackground",
+      "language": "swift",
+      "code": "ZStack {\n     AccessoryWidgetBackground()\n     VStack {\n        Text(\"MON\")\n        Text(\"6\")\n         .font(.title)\n    }\n}"
+    },
+    {
+      "timestamp": "9:02",
+      "title": "Xcode Previews",
+      "language": "swift",
+      "code": "EmojiRangerWidgetEntryView(entry: SimpleEntry(date: Date(), relevance: nil, character: .spouty))\n                .previewContext(WidgetPreviewContext(family: .accessoryCircular))\n                .previewDisplayName(\"Circular\")\n            EmojiRangerWidgetEntryView(entry: SimpleEntry(date: Date(), relevance: nil, character: .spouty))\n                .previewContext(WidgetPreviewContext(family: .accessoryRectangular))\n                .previewDisplayName(\"Rectangular\")\n            EmojiRangerWidgetEntryView(entry: SimpleEntry(date: Date(), relevance: nil, character: .spouty))\n                .previewContext(WidgetPreviewContext(family: .accessoryInline))\n                .previewDisplayName(\"Inline\")\n\n#if os(iOS)"
+    },
+    {
+      "timestamp": "9:38",
+      "title": "recommendations method",
+      "language": "swift",
+      "code": "return recommendedIntents()\n            .map { intent in\n                return IntentRecommendation(intent: intent, description: intent.hero!.displayString)\n            }"
+    },
+    {
+      "timestamp": "11:05",
+      "title": "ProgressView",
+      "language": "swift",
+      "code": "ProgressView(interval: entry.character.injuryDate...entry.character.fullHealthDate,\n                         countdown: false,\n                         label: { Text(entry.character.name) },\n                         currentValueLabel: {\n                Avatar(character: entry.character, includeBackground: false)\n            })\n            .progressViewStyle(.circular)"
+    },
+    {
+      "timestamp": "11:26",
+      "title": "Rectangular",
+      "language": "swift",
+      "code": "case .accessoryRectangular:\n        HStack(alignment: .center, spacing: 0) {\n            VStack(alignment: .leading) {\n                Text(entry.character.name)\n                    \n                Text(\"Level \\(entry.character.level)\")\n                Text(entry.character.fullHealthDate, style: .timer)\n            }.frame(maxWidth: .infinity, alignment: .leading)\n            Avatar(character: entry.character, includeBackground: false)\n        }"
+    },
+    {
+      "timestamp": "14:03",
+      "title": "ViewThatFits",
+      "language": "swift",
+      "code": "ViewThatFits {\n                Text(\"\\(entry.character.name) is resting, combat-ready in \\(entry.character.fullHealthDate, style: .relative)\")\n                Text(\"\\(entry.character.name) ready in \\(entry.character.fullHealthDate, style: .timer)\")\n                Text(\"\\(entry.character.avatar) \\(entry.character.fullHealthDate, style: .timer)\")\n            }"
+    },
+    {
+      "timestamp": "16:18",
+      "title": "isLuminanceReduced",
+      "language": "swift",
+      "code": "@Environment(\\.isLuminanceReduced)\nvar isLuminanceReduced\n\nvar body: some View {\n    if isLuminanceReduced {\n        Text(\"🙈\").font(.title)\n    } else {\n        Text(\"🐵\").font(.title)\n    }\n}"
+    },
+    {
+      "timestamp": "16:52",
+      "title": "privacySensitive",
+      "language": "swift",
+      "code": "VStack(spacing: -2) {\n    Image(systemName: \"heart\")\n        .font(.caption.bold())\n        .widgetAccentable()\n    Text(\"\\(currentHeartRate)\")\n        .font(.title)\n        .privacySensitive()\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Creating accessory widgets and watch complications",
+        "url": "https://developer.apple.com/documentation/WidgetKit/Creating-accessory-widgets-and-watch-complications"
+      },
+      {
+        "title": "Emoji Rangers: Supporting Live Activities, interactivity, and animations",
+        "url": "https://developer.apple.com/documentation/WidgetKit/emoji-rangers-supporting-live-activities-interactivity-and-animations"
+      },
+      {
+        "title": "WidgetKit",
+        "url": "https://developer.apple.com/documentation/WidgetKit"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10050/5/358B551F-283C-4CD1-8172-DAC014727969/downloads/wwdc2022-10050_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10050/5/358B551F-283C-4CD1-8172-DAC014727969/downloads/wwdc2022-10050_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10027",
+      "year": "2023",
+      "title": "Bring widgets to new places",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10027"
+    },
+    {
+      "id": "10056",
+      "year": "2022",
+      "title": "Compose custom layouts with SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10056"
+    },
+    {
+      "id": "10051",
+      "year": "2022",
+      "title": "Go further with Complications in WidgetKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10051"
+    },
+    {
+      "id": "10048",
+      "year": "2021",
+      "title": "Principles of great widgets",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10048"
+    },
+    {
+      "id": "10028",
+      "year": "2020",
+      "title": "Meet WidgetKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10028"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:15:12.031Z"
+}

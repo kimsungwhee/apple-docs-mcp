@@ -1,0 +1,86 @@
+{
+  "id": "10102",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10102/",
+  "title": "Meet the Location Button",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Essentials"
+  ],
+  "hasTranscript": true,
+  "hasCode": false,
+  "transcript": {
+    "fullText": "Hello. I'm Cindy Clarissa. I'm a software engineer with Core Location. Today, I'll be talking about some cool new things for Core Location this year. We are introducing two new features that may let you power location-based functionality in your apps without confronting people with the need to grant them as much authorization.\n\nStarting with the first feature, we are bringing Region-based user notifications to watchOS 8. Now your Apple Watch app can remind people to start a workout when they arrive at the gym or feed the dog when they get home. For example, here we have App in the Air using this new feature to notify people about their flights when they arrive at the airport. With Region-based user notifications, the system can present spatially relevant information on behalf of your app without it having \"always\" authorization. To learn more about how you can adopt Region-based user notifications for watchOS, check out the session \"What's New in watchOS.\" Now let's talk about the main topic of this session. We're introducing a new way to request location that gives people more control over their data but, at the same time, gives more functionalities to your app. I'll begin by talking about today's state of location authorization and the motivation behind our new feature. In iOS 14, when an app requests for location authorization, an initial prompt shows up and people have the ability to choose from Allow Once, While in Use, or Don't Allow authorization. And with last year's new feature, people have the ability to control their precision of the location being sent to your app.\n\nSome of you may have noticed that people select Allow Once on your app, and it could be that they don't think giving when-in-use authorization is necessary to your app. For example, a pet store app might request location authorization to determine the closest pet store near them, but it doesn't require their location when they are just browsing for different cat food options. In this case, people using this app might be more likely to select Allow Once or Don't Allow authorization. If people select Allow Once, we would grant location authorization for the duration that they are using your app. But your app will lose authorization when it enters the background. This could lead to multiple location authorization requests, which may negatively impact the user experience. In another case, you might notice that someone who is tired of the prompts might select Don't Allow to prevent the prompts from being shown again. This could result in having to send people to Settings to authorize for locations later. As privacy continues to be an important priority for Apple, we thought, \"How can we give more controls without hindering user-experience?” Can we provide an easy and friendly way to authorize location only at the moment when its needed? Starting in iOS 15, we're introducing CLLocationButton for UIKit and LocationButton for SwiftUI to tackle the pain points I've mentioned. Here, we have a Park Finder app that finds the closest park nearby. At the bottom, we have a blue Location Button with the title \"Current Location\" next to the arrow glyph. When I press on the button, Park Finder is able to get my current location and show a map view of all the parks nearby. A location arrow at the top left will turn blue to call to the user's attention to the authorization they just have granted.\n\nOne thing to note is that Location Button is actually giving your app Allow-Once authorization without making people go through the prompt each time. Later, I will go over about how this would affect your existing authorization status. We'll be bringing Location Button to watchOS, iOS, macOS with Catalyst, and iPad apps on Mac. Now, let's dive into the API and how you can add CLLocationButton to your app. CLLocationButton is part of the CoreLocationUI framework. Similar to the UIButton, CLLocationButton is derived from UIControls. So, you're able to use UIControl functionalities with the button. In addition, we have four properties that are specific to our button. We have CLLocationButtonIcon to set the type of the arrow, CLLocationLabel to set the label of the button, a cornerRadius to set the roundness of the button, and lastly, we have fontSize to set the size of the label.\n\nNow that I went through a brief overview, you might wonder, \"How can I receive location with CLLocationButton?\" Well, it's similar to requesting location with a UIButton. I think it's easier to understand with an example. Let me demonstrate how you can replace your UIButton with CLLocationButton. In this UIButton example, I will create a simple button that requests for location by first requesting when-in-use authorization upon button tap. I'll begin by instantiating a UIButton and setting it's title to \"Current Location”. I wanna add a target-action that calls a function and do the necessary action we want every time a button is tapped. In this case, I wanna display all the parks nearby. So let's call this function \"showNearByParks”.\n\nIn this showNearByParks function, I will use locationManager to call requestWhenInUseAuthorization and startUpdatingLocation. Within this function, I will also add additional logic to render the map view accordingly. But, for simplicity, let's omit that. Let's begin by replacing UIButton by removing the first two lines and replacing it with an instantiation of CLLocationButton and then setting the label to \".currentLocation”. Lastly, we can comment out the call to requestWhenInUseAuthorization, and that's because the Location Button will grant a one-time authorization on your behalf every time a button is successfully tapped.\n\nSo if you have an existing UIButton, replacing it will be as simple as shown here. But we wanna make it even easier, so you can see an example of the Park Finder app attached to this talk.\n\nFor those with SwiftUI apps, the Location Button is also in SwiftUI. You can use LocationButton as shown in the example here. I'd like to point out that I am using SwiftUI's new \"symbolVariant\" to set the arrow type, and \"tint\" to set the background color of the button.\n\nLet's go through some examples on how you can customize Location Button. With our Location Button, you are able to customize the background color, the text and glyph color, the rounded corners, and so forth. Here are just some example styles that you can create with our button. Let's go through step-by-step examples of customizing Location Button. Let's start with our default button. The default look has \"Current Location\" title in white and a systemBlue background color, as shown here.\n\nWe can set the button icon to arrowFilled.\n\nNext, we can change the foreground color of the icon by setting tintColor from white to black... and then setting the backgroundColor to white. And lastly, I can set the corner radius to have rounded corners by setting it to 25.0.\n\nAnd depending on how you set the constraints and the sizing for the button, if the button's width is equal to the height, you can create a perfect circle when the corner radius is half of the width. Now, we turned our default location button into a white circular button with just simple adjustments. We've just gone through some stylistic changes that you can add to Location Button. You can customize the button to create the perfect look that fits your app. However, with great power comes great responsibility. When customizing your Location Button, there are some restrictions that you might encounter to ensure that your Location Button is clear and visible. I wanna talk about some examples that you can expect if your button does not seem to be drawn correctly or receive any location. If that's the case, while your target-action will be called, you won't get authorization.\n\nBut don't worry. We'll give plenty of feedback with log messages to help you figure out what restrictions you're encountering. For example, these are just different log messages that refer to the insufficiency of the button sizing, alpha value, and color contrast between tintColor and backgroundColor. Now let's go through some examples of what feedback you can expect if you're using Interface Builder in Xcode. Continuing with the button I have created earlier, if I was to change the existing button to have a white tintColor, people will not be able to see this because the button's background color is already white. So if you do this, you will see this issue shown in the navigation pane under the Issue tab in Xcode. Instead, let's revert our original button and try to change the opacity, or alpha, of this button. Maybe you can see this, but to others, it's a little too transparent, and so it fails our accessibility guidelines. A similar issue statement is produced in Xcode, recommending you to increase the alpha value. Another issue you might encounter is insufficient button sizing. This is when the content of the button is too small or too large for the button size. Depending on the user's localization setting, the button's text length can change. Now let's increase the text size by changing the language.\n\nDepending on whether your implementation is Auto-layout friendly, if we change the language, the size of the text could outgrow the button. Notice that the text does not fit the button in German. If this happens, look at the log messages for feedback. Don't forget to test your Location Button with really small or really large text sizes, as well as testing it in different languages to ensure that your button is working in all cases. So, when customizing your button, remember that it's imperative that it's clear and visible. If your button does not seem to be drawn correctly or receive location, it could be that it's no longer legible. If that's the case, we provide log messages for guidance to help you determine what could be wrong.\n\nNow that you know how to implement Location Button, you might wonder how it will affect your existing authorization status. As I mentioned before, Location Button is essentially giving you Allow-Once authorization. If your app does not have any authorization status of any kind, it will have \"NotDetermined\" authorization with \"When I Share\" selected in Privacy Settings.\n\nIf this is your app's current state, then the very first time each user presses a Location Button, this prompt will ask them to confirm that they're on board. However, if your app is already authorized for location, such as \"While Using the App\" state, then using Location Button will not change your existing state and will behave like any other UIButton. Where it works, Location Button can feel magical and also reassuring, because you're letting people decide when and whether their location will be used each time. Since Location Button is much more comfortable, we think people will be more likely to give your app location via Location Button than they were previously. So we wanna give users and your app another chance to get off on the right foot.\n\nIf someone, who has chosen \"Don't Allow\" authorization on your app in the past taps our new Location Button, they will see this button introduction prompt and have the opportunity to move your app back to NotDetermined and use Location Button going on forward. So in this session, I talked about bringing more dynamic abilities to your watchOS apps with Region-based user notifications. If you're interested in learning more, don't forget to view the resources with the session. We've also covered some cool new features that can change the game of how you can ask for location.\n\nGiving people more control over their data privacy is important to Apple. People are increasingly more aware of how their data is being shared. When designing your app to provide the most amazing user experience, but also build trust with your customers, you might want to ask yourself: \"Does my app require traditional authorization, or would a one-time location authorization with Location Button be more suitable?\" And the answer, in some cases, might be that once is enough. With Location Button, you can gain trust with people by giving more control about when they want to share their location. Thank you. [music]",
+    "segments": []
+  },
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Core Location",
+        "url": "https://developer.apple.com/documentation/CoreLocation"
+      },
+      {
+        "title": "CoreLocationUI",
+        "url": "https://developer.apple.com/documentation/CoreLocationUI"
+      },
+      {
+        "title": "Human Interface Guidelines: Accessing User Data",
+        "url": "https://developer.apple.com/design/human-interface-guidelines/ios/app-architecture/accessing-user-data/"
+      },
+      {
+        "title": "Requesting authorization to use location services",
+        "url": "https://developer.apple.com/documentation/CoreLocation/requesting-authorization-to-use-location-services"
+      },
+      {
+        "title": "Sharing Your Location to Find a Park",
+        "url": "https://developer.apple.com/documentation/CoreLocationUI/sharing-your-location-to-find-a-park"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10102/10/F5A7B735-EFE5-4520-AA23-9624428F33D1/downloads/wwdc2021-10102_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10102/10/F5A7B735-EFE5-4520-AA23-9624428F33D1/downloads/wwdc2021-10102_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10085",
+      "year": "2021",
+      "title": "Apple’s privacy pillars in focus",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10085"
+    },
+    {
+      "id": "10059",
+      "year": "2021",
+      "title": "What's new in UIKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10059"
+    },
+    {
+      "id": "10002",
+      "year": "2021",
+      "title": "What's new in watchOS 8",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10002"
+    },
+    {
+      "id": "10660",
+      "year": "2020",
+      "title": "What's new in location",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10660"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:27:11.576Z"
+}

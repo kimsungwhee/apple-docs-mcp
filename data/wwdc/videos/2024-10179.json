@@ -1,0 +1,203 @@
+{
+  "id": "10179",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10179/",
+  "title": "Meet Swift Testing",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools",
+    "Essentials"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi! I’m Stuart Montgomery, and I’m thrilled to introduce Swift Testing to you. Quality and reliability are crucial for delivering a great user experience. Automated testing is a proven way to achieve and maintain software quality over time. That’s why this year we’re introducing a brand new set of tools which make testing Swift code easier and more powerful than ever. Meet Swift Testing, a new open source package for testing your code using Swift. It includes powerful capabilities for describing and organizing your tests; it gives actionable details when a failure occurs; and it scales to large codebases elegantly. Swift Testing was designed for Swift, embracing modern features like concurrency and macros. It supports all major platforms, including Linux and Windows. And it has an open development process, providing opportunities for you and the rest of the community to shape its evolution. In this session we’ll start by talking about the building blocks of Swift Testing, the core concepts you need to know. Then, we’ll discuss several common workflows, including ways to customize tests or repeat them with different arguments. We’ll cover how Swift Testing and XCTest relate to each other. And we’ll finish by talking about this new project’s role in the open source community. Let’s get started by taking a tour of the building blocks of Swift Testing. If you’ve never written tests for your app before, the first step is to add a test bundle target to your project. Choose File > New > Target.\n\nThen search for Unit Testing Bundle in the Test section.\n\nSwift Testing is now the default choice of testing system for this template in Xcode 16. Just choose a name for your new target and click Finish. This app already has a test target though, so let’s write our first test there. We'll start by importing the Testing module.\n\nThen, we’ll write a global function.\n\nAnd we’ll add the @Test attribute to it.\n\nThe @Test attribute is the first building block. It indicates that a function is a test. Once we add that, Xcode recognizes it and shows a Run button alongside it. Test functions are just ordinary Swift functions that have the @Test attribute. They can be global functions or methods in a type. They can be marked async or throws, or be isolated to a global actor if needed. Next, let's make our test actually validate something by filling out the body of the function. We’ll make this test check that the metadata for a video file are what we expect. We’ll start by initializing the video we want to check and its expected metadata. Now, we’re getting an error because these types are declared this app's module so we need to import that first.\n\nNote that we use the lowercase @testable attribute on this import.\n\nThis is a general language feature, not part of Swift Testing, but it allows us to reference types like these whose access level is internal. Next, we'll use the #expect macro to check that the video metadata are correct.\n\nThe #expect macro performs an expectation, and this is the second building block of Swift Testing. You can use an expectation like the #expect macro to validate that an expected condition is true. It accepts ordinary expressions and language operators. And it captures the source code and the values of subexpressions if it fails. Let's run our test for the first time and see how it goes.\n\nIt looks like it failed, indicated by the red X icon. We can click the test failure message and choose Show to see more about what went wrong on this line.\n\nThis results view shows details about the expression that was passed to the #expect macro, including its sub-values. If we expand the metadata, we can compare their properties.\n\nIt looks like both the duration and resolution fields are non-equal. Looking at this gives me an idea: I think the Video type might not be loading the metadata after it's initialized. We can fix this by going to the Video initializer in a split editor, and ensure that property is assigned.\n\nNow, let's re-run the test.\n\nAnd it succeeded! Great. The #expect macro is really flexible. You can pass any expression, including operators or method calls, and it will show you detailed results if it fails. Here are a few examples. You can use the == operator, and the left and right hand sides will be captured and shown if there’s a failure. You can access properties like .isEmpty. And you can even call methods like .contains on an array. Notice how the error shows you the contents of the numbers array automatically. You don’t need to learn specialized APIs to do any of this — just use the #expect macro. Sometimes, you may want to end a test early if an expectation fails. For this, you can use the #require macro. Required expectations are similar to regular expectations. But they have the try keyword and throw an error if the expression is false, causing the test to fail and not proceed any further. Another way you can use the #require macro is to try unwrapping an optional value safely, and stop the test if it’s nil. This example shows using the #require macro to access the .first property of a collection, and afterward it checks a property on the element. The “first” property is optional, but the second line of our test relies on that value, so this test stops early because it doesn’t make sense to continue if the unwrapped value is nil. Required expectations are a great tool for this pattern. Before we commit this test to the project, let’s make its purpose more clear. We can do that by passing a custom display name in the @Test attribute. That name will then be shown in the Test Navigator and other places in Xcode.\n\nA display name is an example of a trait, which is the third building block. Traits can do several things: they can add descriptive information about a test; they can customize when or whether a test runs; or they can modify how a test behaves.\n\nHere are some examples. In addition to adding information with the display name, you can also reference related bugs or add custom tags. When you only want to run a test in certain conditions, you can use traits to control that. And some traits influence how a test actually behaves, such as imposing a time limit or executing one at a time. We've finished writing our first test, and now let’s add a second one to validate another aspect of the Video type. This time, let’s use the built-in test snippet in Xcode 16 to quickly add an empty test function.\n\nLet’s name this test rating.\n\nAnd in the body, we'll create a video just like before, and #expect that its contentRating is the default value. It would be nice to group these two tests together so we can find them more easily in the project. We can do that by wrapping them into a struct, which we’ll call VideoTests.\n\nAs soon as we do that, the hierarchy is reflected in the Test Navigator, and we can even click to run them as a group. A type like this which contains tests is called a test suite, and that's the fourth and final building block. Suites are used to group related test functions or other suites. They can be annotated explicitly using the @Suite attribute, although any type which contains @Test functions or @Suites is considered a @Suite itself, implicitly. Suites can have stored instance properties. They can use init or deinit to perform logic before or after each test. And a separate @Suite instance is created for every instance @Test function it contains to avoid unintentional state sharing. These two tests start the same way: their first lines of code for creating a video are identical. Now that these tests are in a suite, we can reduce repetition by factoring out that line into a stored property like this.\n\nAnd now we can delete that line from the second test.\n\nSince each test function is called on a new instance of its containing suite type, each one will get its own video instance and they can never share state accidentally. So let’s review the building blocks. We talked about test functions, expectations, traits, and suites. They were designed to feel right at home in Swift, in several ways: Test functions integrate seamlessly with Swift concurrency by supporting async/await and actor isolation. Expectations can use async/await too, and they accept all the built-in language operators. Both expectations and traits leverage Swift macros, allowing you to see detailed failure results and specify per-test information directly in code. And suites embrace value semantics, encouraging the use of structs to isolate state.\n\nLet’s now apply those building blocks to some common problems in testing and discuss workflows for addressing them. We’ll discuss controlling when tests run; associating tests which have things in common; and repeating tests more than once with different arguments each time. First, tests with conditions. Some tests should only be run in certain circumstances — such as on specific devices or environments. For those, you can apply a condition trait such as .enabled(if: ...). You pass it a condition to be evaluated before the test runs, and if the condition is false, the test will be marked as skipped. Other times, you might want a test to never run. For this, you can use the .disabled(...) trait. Disabling a test is preferable over other techniques, like commenting out the test function, since it verifies the code inside the test still compiled. The .disabled(...) trait accepts a comment, which you can use to explain the reason why the test is disabled. And comments always appear in the structured results, so they can be shown in your CI system for visibility. Oftentimes, the reason a test is disabled is because of an issue which is tracked in a bug-tracking system. In addition to a comment, you can include a .bug(...) trait along with any other trait to reference related issues with a URL. Then, you can see that bug trait in the Test Report in Xcode 16 and click to open its URL.\n\nWhen the entire body of a test can only run on certain OS versions, you can place the @available(...) attribute on that test to control which versions it will run on. Use the @available(...) attribute rather than checking at runtime using #available. The @available(...) attribute allows the testing library to know that a test has an OS version condition, so this can be reflected in the results more accurately.\n\nNext, let’s talk about how you can associate tests which have characteristics in common, even if they’re in different suites or files. Swift Testing supports assigning custom tags to tests. I've already begun using tags in this project. The Test Navigator shows all the tags at the bottom. To view the tests which each of these tags have been applied to, we can switch to the new Group By: Tag mode.\n\nLet’s apply a tag to one of the tests we wrote earlier. To do this, we’ll add a tags trait to the test via the @Test attribute. This test is validating some data formatting logic. There’s already another test in this project which relates to formatting, so let’s add the formatting tag to this test too.\n\nOnce we do that, it shows in the Test Navigator under that tag.\n\nI wrote another test which also validates data formatting, which I’ll add here.\n\nSince these two tests are about the formatting of Video information, let’s group them into a sub-suite.\n\nNow, we can move the formatting tag up to the @Suite, so it will be inherited by all the tests it contains. Finally, we can delete the tags from each individual @Test function, since they’re now inherited.\n\nYou can associate tags with tests which have things in common. As an example, you might apply a common tag to all the tests which validate a particular feature or subsystem. This lets you run all the tests with a particular tag. It also lets you filter them in the Test Report, and even see insights there such as when multiple tests with the same tag begin failing. Tags themselves can be applied to tests in different files, suites, or targets. They can even be shared among multiple projects.\n\nWhen using Swift Testing, prefer tags over specific names of tests when including or excluding them from a test plan. For best results, always use the most appropriate type of trait for each circumstance. Not every scenario should use tags. For example, if you’re trying to express a runtime condition, use .enabled(if ...) as we discussed earlier.\n\nTo learn more about using test tags in Xcode, see \"Go further with Swift Testing\".\n\nThe last workflow I’d like to show is my favorite. Repeating tests with different arguments each time. Here's an example of why that can be useful. In this project there are several tests which check the number of continents that various videos mention. Each of them follows a similar pattern: it creates a fresh videoLibrary, looks up a video by name, and then uses the #expect macro to check how many continents it mentions.\n\nThese tests work, but they're very repetitive and the more videos we add a test for, the harder it will be to maintain them due to all the duplicated code. Also, when using this pattern we’re forced to give each test a unique function name, but these names are hard to read and they might get out-of-sync with the name of the video they're testing. Instead, we can write all of these as a single test using a feature called parameterized testing. Let’s transform this first test into a parameterized one. The first step is to add a parameter to its signature.\n\nAs soon as we do this, an error appears telling us that we must specify the arguments to pass to this test, so let’s fix that.\n\nFor now, let’s include the names of just three videos.\n\nI like to split arguments over multiple lines so they're easier to read, but you can format them however you like. The last step is to replace the name of the video being looked up with the passed-in argument.\n\nSince this test now covers multiple videos, let’s generalize its name.\n\nThe full name of this test now includes its parameter label.\n\nBut we can still give it a display name or other traits if we want, by passing them before the arguments.\n\nNow let's run the test and see how it goes.\n\nGreat! It succeeded, and the Test Navigator shows each individual video below it as if it were a separate test. This structure makes it really easy to add more arguments and expand test coverage. Let’s add all the remaining videos to this list — and even a couple new ones.\n\nAt this point, we can delete the old @Test functions since they're no longer necessary.\n\nLet's run the test one more time and make sure it's still passing.\n\nHm, it looks like one of the new videos we added near the end is causing a failure now. By clicking the argument, we can see details about it, and the expectation which failed. To investigate this problem, it would help to re-run it with the debugger, but I'd prefer to only re-run the argument that failed to save some time. In Xcode 16 we can now run an individual argument by clicking its run button in the Test Navigator. But before we do this, let’s add a breakpoint to the beginning of the test.\n\nAnd now let’s re-run it.\n\nThe videoName shown in the debugger is \"Scotland Coast”, so we know we’re running this test with exactly the argument we're interested in. From here, we could continue debugging further and identify the reason for the failure. Conceptually, a parameterized test is similar to a single test that is repeated multiple times using a for…in loop. Here’s an example: it has an array of videoNames that it loops over to perform the test. However, using a for...in loop like this has some downsides.\n\nParameterized testing allows you see the details of each individual argument clearly in the results. The arguments can be re-run independently for fine-grained debugging. And they can be executed more efficiently by running each argument in parallel, so you can get results more quickly.\n\nParameterized tests can be used in even more advanced ways than we saw here, such as by testing all combinations of two sets of inputs. Check out \"Go further with Swift Testing\" to learn more.\n\nWhenever you see a test using this pattern, it’s best to transform it into a parameterized test function. Just add a parameter to the function, get rid of the for...in loop, move the arguments up to the @Test attribute, and you’re done! Next, let’s talk about how Swift Testing and XCTest relate to one another. If you’ve already written some XCTests, you might be wondering how this new testing system compares, or how to migrate your tests. Swift Testing has some similarities to XCTest, but it also some important differences to be aware of. Let’s compare three of the building blocks from earlier, test functions, expectations, and suites.\n\nTests in XCTest are any method whose name begins with “test”. But Swift Testing uses the @Test attribute to denote them explicitly, so there’s no ambiguity.\n\nSwift Testing supports more kinds of functions, so you can still use instance methods in a type, but also static or global functions if you prefer. Unlike XCTest, Swift Testing supports traits for specifying information either per-test or per-suite. And Swift Testing takes a different approach to parallelization: it runs in-process using Swift Concurrency, and supports physical devices like iPhone and Apple Watch.\n\nExpectations are very different between these two systems. XCTest refers to this concept as assertions, and it uses many functions beginning with XCTAssert to denote them. Swift Testing takes a different approach: it has just two basic macros — #expect and #require. Instead of needing many specialized functions, you can pass in ordinary expressions and language operators to #expect or #require. For example, you can use double-equals to check equality, or the greater-than operator to compare two values.\n\nAnd you can easily use the opposite operator to negate any expectation.\n\nHalting a test after a test failure occurs is also handled differently. In XCTest, you assign the continueAfterFailure property to false, and then any subsequent assertion which fails will cause the test to halt. In Swift Testing, any expectation can be made into a required one by using #require instead of #expect, and it will throw an error upon failure. This lets you choose which expectations should halt the test, and even alternate as the test progresses.\n\nWhen it comes to suite types, XCTest only supports classes and they must inherit from XCTestCase. In Swift Testing, you can use a struct, actor, or class, and a struct is encouraged since it uses value semantics and avoids bugs due to unintentional state sharing.\n\nSuites may be denoted explicitly by the @Suite attribute, although it’s implicit for any type which contains test functions or nested suites. It is only required when specifying a display name or other trait.\n\nTo perform logic before each test runs, XCTest offers several setUp methods, but Swift Testing uses the type’s initializer for this purpose, and it can be async or throws.\n\nIf you need to perform logic after each test, you can include a de-initializer. Deinitializers can only be used when the suite type is an actor or class, and that’s the most common reason to use a reference type instead of a struct for a suite.\n\nFinally, in Swift Testing, you can group tests into subgroups via nested types.\n\nXCTest and Swift Testing tests can co-exist in a single target, so if you choose to migrate, you can do so incrementally and you don’t need to create a new target first. When migrating multiple XCTest methods which have a similar structure, you can consolidate them into one parameterized test as we discussed earlier. For any XCTest classes with only one test method, consider migrating them to a global @Test function. And when naming tests, the word “test” is no longer necessary at the beginning.\n\nPlease continue using XCTest for any tests which use UI automation APIs like XCUIApplication or use performance testing APIs like XCTMetric as these are not supported in Swift Testing. You must also use XCTest for any tests which can only be written in Objective-C. You can use Swift Testing to write tests in Swift that validate code written in another language, however. Finally, avoid calling XCTest assertion functions from Swift Testing tests, or the opposite — the #expect macro from XCTests.\n\nCheck out “Migrating a test from XCTest” in our documentation. It has lots of details about how to translate assertions, handle asynchronous waiting conditions, and more.\n\nWe’ve gone over the features of Swift Testing and shown several ways to use it. This is just the beginning for this new package, and I’m so excited that it will continue to evolve in the community. Swift Testing is open source and hosted on GitHub. Soon it will transition to the recently announced swiftlang organization. It works on all Apple operating systems which support Swift Concurrency, as well as on Linux and Windows. And importantly, it has a common codebase across all these platforms! This is a significant improvement over XCTest which had multiple implementations. It means your tests behave much more consistently when moving between platforms, and there will be better functional parity between them.\n\nSwift Testing is integrated into major tools and IDEs in the Swift ecosystem, including Swift Package Manager on the command-line, as well as Xcode 16 and VS Code with recent versions of the Swift extension. Let’s take a look at Swift Testing’s command-line experience. Here’s a simple package I created using the New Package template included in Xcode 16. We can run the tests for this package from the Terminal by typing swift test.\n\nThis causes both XCTest and Swift Testing tests to run. The console shows pass and fail results using colorful output, and includes detailed failure messages similar to the ones shown in Xcode. Swift Testing has an open feature proposal process and we discuss its evolution on the Swift Forums. We invite you to get involved by writing or participating in feature proposals, improving the documentation, or even filing bug reports. All contributions are welcome! So that’s Swift Testing. Use its powerful features like expectations and parameterized testing to improve the quality of your code; customize your tests using traits; and join us on GitHub and the Forums to shape this package’s future. Don’t forget to check out \"Go further with Swift Testing\" to learn even more ways you can improve your tests. Thank you so much for watching!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:54",
+      "title": "Write your first @Test function",
+      "language": "swift",
+      "code": "import Testing\n\n@Test func videoMetadata() {\n    // ...\n}"
+    },
+    {
+      "timestamp": "2:35",
+      "title": "Validate an expected condition using #expect",
+      "language": "swift",
+      "code": "import Testing\n@testable import DestinationVideo\n\n@Test func videoMetadata() {\n    let video = Video(fileName: \"By the Lake.mov\")\n    let expectedMetadata = Metadata(duration: .seconds(90))\n    #expect(video.metadata == expectedMetadata)\n}"
+    },
+    {
+      "timestamp": "4:24",
+      "title": "Fix a bug in the code being tested",
+      "language": "swift",
+      "code": "// In `Video.init(...)`\nself.metadata = Metadata(forContentsOfUrl: url)"
+    },
+    {
+      "timestamp": "6:06",
+      "title": "Add a display name to a @Test function",
+      "language": "swift",
+      "code": "@Test(\"Check video metadata\") func videoMetadata() {\n    let video = Video(fileName: \"By the Lake.mov\")\n    let expectedMetadata = Metadata(duration: .seconds(90))\n    #expect(video.metadata == expectedMetadata)\n}"
+    },
+    {
+      "timestamp": "6:58",
+      "title": "Add a second @Test function",
+      "language": "swift",
+      "code": "@Test func rating() async throws {\n    let video = Video(fileName: \"By the Lake.mov\")\n    #expect(video.contentRating == \"G\")\n}"
+    },
+    {
+      "timestamp": "7:18",
+      "title": "Organize @Test functions into a suite type",
+      "language": "swift",
+      "code": "struct VideoTests {\n\n    @Test(\"Check video metadata\") func videoMetadata() {\n        let video = Video(fileName: \"By the Lake.mov\")\n        let expectedMetadata = Metadata(duration: .seconds(90))\n        #expect(video.metadata == expectedMetadata)\n    }\n\n    @Test func rating() async throws {\n        let video = Video(fileName: \"By the Lake.mov\")\n        #expect(video.contentRating == \"G\")\n    }\n\n}"
+    },
+    {
+      "timestamp": "8:04",
+      "title": "Factor a common value into a stored property in the suite",
+      "language": "swift",
+      "code": "struct VideoTests {\n    let video = Video(fileName: \"By the Lake.mov\")\n\n    @Test(\"Check video metadata\") func videoMetadata() {\n        let expectedMetadata = Metadata(duration: .seconds(90))\n        #expect(video.metadata == expectedMetadata)\n    }\n\n    @Test func rating() async throws {\n        #expect(video.contentRating == \"G\")\n    }\n\n}"
+    },
+    {
+      "timestamp": "9:32",
+      "title": "Specify a runtime condition trait for a @Test function",
+      "language": "swift",
+      "code": "@Test(.enabled(if: AppFeatures.isCommentingEnabled))\nfunc videoCommenting() {\n    // ...\n}"
+    },
+    {
+      "timestamp": "9:49",
+      "title": "Unconditionally disable a @Test function",
+      "language": "swift",
+      "code": "@Test(.disabled(\"Due to a known crash\"))\nfunc example() {\n    // ...\n}"
+    },
+    {
+      "timestamp": "10:15",
+      "title": "Include a bug trait with a URL along with other traits",
+      "language": "swift",
+      "code": "@Test(.disabled(\"Due to a known crash\"),\n      .bug(\"example.org/bugs/1234\", \"Program crashes at <symbol>\"))\nfunc example() {\n    // ...\n}"
+    },
+    {
+      "timestamp": "10:33",
+      "title": "Conditionalize a test based on OS version",
+      "language": "swift",
+      "code": "@Test\n@available(macOS 15, *)\nfunc usesNewAPIs() {\n    // ...\n}"
+    },
+    {
+      "timestamp": "10:42",
+      "title": "Prefer @available on @Test function instead of #available within the function",
+      "language": "swift",
+      "code": "// ❌ Avoid checking availability at runtime using #available\n@Test func hasRuntimeVersionCheck() {\n    guard #available(macOS 15, *) else { return }\n\n    // ...\n}\n\n// ✅ Prefer @available attribute on test function\n@Test\n@available(macOS 15, *)\nfunc usesNewAPIs() {\n    // ...\n}"
+    },
+    {
+      "timestamp": "11:22",
+      "title": "Add a tag to a @Test function",
+      "language": "swift",
+      "code": "@Test(.tags(.formatting)) func rating() async throws {\n    #expect(video.contentRating == \"G\")\n}"
+    },
+    {
+      "timestamp": "11:48",
+      "title": "Add another data formatting-related test with the same tag",
+      "language": "swift",
+      "code": "@Test(.tags(.formatting)) func formattedDuration() async throws {\n    let videoLibrary = try await VideoLibrary()\n    let video = try #require(await videoLibrary.video(named: \"By the Lake\"))\n    #expect(video.formattedDuration == \"0m 19s\")\n}"
+    },
+    {
+      "timestamp": "11:56",
+      "title": "Group related tests into a sub-suite",
+      "language": "swift",
+      "code": "struct MetadataPresentation {\n    let video = Video(fileName: \"By the Lake.mov\")\n\n    @Test(.tags(.formatting)) func rating() async throws {\n        #expect(video.contentRating == \"G\")\n    }\n\n    @Test(.tags(.formatting)) func formattedDuration() async throws {\n        let videoLibrary = try await VideoLibrary()\n        let video = try #require(await videoLibrary.video(named: \"By the Lake\"))\n        #expect(video.formattedDuration == \"0m 19s\")\n    }\n}"
+    },
+    {
+      "timestamp": "12:05",
+      "title": "Move common tags trait to @Suite attribute, so the suite's @Test functions will inherit the tag",
+      "language": "swift",
+      "code": "@Suite(.tags(.formatting))\nstruct MetadataPresentation {\n    let video = Video(fileName: \"By the Lake.mov\")\n\n    @Test func rating() async throws {\n        #expect(video.contentRating == \"G\")\n    }\n\n    @Test func formattedDuration() async throws {\n        let videoLibrary = try await VideoLibrary()\n        let video = try #require(await videoLibrary.video(named: \"By the Lake\"))\n        #expect(video.formattedDuration == \"0m 19s\")\n    }\n}"
+    },
+    {
+      "timestamp": "13:27",
+      "title": "Example of some repetitive tests which can be consolidated into a parameterized @Test function",
+      "language": "swift",
+      "code": "struct VideoContinentsTests {\n\n    @Test func mentionsFor_A_Beach() async throws {\n        let videoLibrary = try await VideoLibrary()\n        let video = try #require(await videoLibrary.video(named: \"A Beach\"))\n        #expect(!video.mentionedContinents.isEmpty)\n        #expect(video.mentionedContinents.count <= 3)\n    }\n\n    @Test func mentionsFor_By_the_Lake() async throws {\n        let videoLibrary = try await VideoLibrary()\n        let video = try #require(await videoLibrary.video(named: \"By the Lake\"))\n        #expect(!video.mentionedContinents.isEmpty)\n        #expect(video.mentionedContinents.count <= 3)\n    }\n\n    @Test func mentionsFor_Camping_in_the_Woods() async throws {\n        let videoLibrary = try await VideoLibrary()\n        let video = try #require(await videoLibrary.video(named: \"Camping in the Woods\"))\n        #expect(!video.mentionedContinents.isEmpty)\n        #expect(video.mentionedContinents.count <= 3)\n    }\n\n    // ...and more, similar test functions\n}"
+    },
+    {
+      "timestamp": "14:07",
+      "title": "Refactor several similar tests into a parameterized @Test function",
+      "language": "swift",
+      "code": "struct VideoContinentsTests {\n\n    @Test(\"Number of mentioned continents\", arguments: [\n        \"A Beach\",\n        \"By the Lake\",\n        \"Camping in the Woods\",\n        \"The Rolling Hills\",\n        \"Ocean Breeze\",\n        \"Patagonia Lake\",\n        \"Scotland Coast\",\n        \"China Paddy Field\",\n    ])\n    func mentionedContinentCounts(videoName: String) async throws {\n        let videoLibrary = try await VideoLibrary()\n        let video = try #require(await videoLibrary.video(named: videoName))\n        #expect(!video.mentionedContinents.isEmpty)\n        #expect(video.mentionedContinents.count <= 3)\n    }\n\n}"
+    },
+    {
+      "timestamp": "16:29",
+      "title": "Example of using a for…in loop to repeat a test, instead of a parameterized @Test function (not recommended)",
+      "language": "swift",
+      "code": "// Using a for…in loop to repeat a test (not recommended)\n@Test func mentionedContinentCounts() async throws {\n    let videoNames = [\n        \"A Beach\",\n        \"By the Lake\",\n        \"Camping in the Woods\",\n    ]\n\n    let videoLibrary = try await VideoLibrary()\n    for videoName in videoNames {\n        let video = try #require(await videoLibrary.video(named: videoName))\n        #expect(!video.mentionedContinents.isEmpty)\n        #expect(video.mentionedContinents.count <= 3)\n    }\n}"
+    },
+    {
+      "timestamp": "17:15",
+      "title": "Refactor a test using a for…in loop into a parameterized @Test function",
+      "language": "swift",
+      "code": "@Test(arguments: [\n    \"A Beach\",\n    \"By the Lake\",\n    \"Camping in the Woods\",\n])\nfunc mentionedContinentCounts(videoName: String) async throws {\n    let videoLibrary = try await VideoLibrary()\n    let video = try #require(await videoLibrary.video(named: videoName))\n    #expect(!video.mentionedContinents.isEmpty)\n    #expect(video.mentionedContinents.count <= 3)\n}"
+    },
+    {
+      "timestamp": "22:47",
+      "title": "A newly-created Swift package with two simple @Test functions",
+      "language": "swift",
+      "code": "import Testing\n@testable import MyLibrary\n\n@Test func example() throws {\n    #expect(\"abc\" == \"abc\")\n}\n\n@Test func failingExample() throws {\n    #expect(123 == 456)\n}"
+    },
+    {
+      "timestamp": "22:56",
+      "title": "Running all tests for the package from Terminal",
+      "language": "swift",
+      "code": "> swift test"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Adding tests to your Xcode project",
+        "url": "https://developer.apple.com/documentation/Xcode/adding-tests-to-your-xcode-project"
+      },
+      {
+        "title": "Forum: Developer Tools & Services",
+        "url": "https://developer.apple.com/forums/topics/developer-tools-and-services?cid=vf-a-0010"
+      },
+      {
+        "title": "Improving code assessment by organizing tests into test plans",
+        "url": "https://developer.apple.com/documentation/Xcode/organizing-tests-to-improve-feedback"
+      },
+      {
+        "title": "Running tests and interpreting results",
+        "url": "https://developer.apple.com/documentation/Xcode/running-tests-and-interpreting-results"
+      },
+      {
+        "title": "Swift Testing",
+        "url": "https://developer.apple.com/documentation/Testing"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10179/4/E0A34162-D87D-4510-A438-67CBEABAB16B/downloads/wwdc2024-10179_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10179/4/E0A34162-D87D-4510-A438-67CBEABAB16B/downloads/wwdc2024-10179_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10195",
+      "year": "2024",
+      "title": "Go further with Swift Testing",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10195"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:40:30.583Z"
+}

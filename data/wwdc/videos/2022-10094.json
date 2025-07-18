@@ -1,0 +1,92 @@
+{
+  "id": "10094",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10094/",
+  "title": "Add Shared with You to your app",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Karthik: Hi, I'm Karthik, an engineer on the Messages team. In this video, I'm going to introduce Shared with You, and how to adopt it in your app.\n\nShared with You was announced in iOS 15. It is designed to make it easier for you to revisit links that friends and family send you in Messages. System applications that have adopted Shared with You are Safari, News, Music, Podcasts, the TV app and Photos. Shared with You meets you where you're consuming content. Many times content is received when we are not ready to consume it. For example, a friend sends a recommendation for a TV show while you are out grocery shopping, and then it's forgotten in the course of the day. Shared with You makes it easier to discover this TV show later on when you are browsing for TV shows to watch in the TV app Shared with You makes it convenient to pick up a Messages conversation right from within the app, allowing you to stay in context of shared content without leaving the app.\n\nYour content can be pinned in Messages. It elevates the content in Shared with You and Search. This is a signal that content is important, and starts the flow of automatic sharing consent. More on that later. In iOS 16, Shared with You is extended to include your apps, links, and content. This takes the convenience of Shared with You and puts it in your apps.\n\nI'll first talk about the design of Shared with You in your app, then show you how it works, and then walk you through how to adopt Shared with You.\n\nStarting with design. There are two parts of Shared with You that are part of your app experience: The Shared with You shelf, and the Shared with You attribution view. The Shared with You shelf is a dedicated space in your app's browsing experience that highlights content that was shared in Messages. For example, the TV app's \"Watch Now\" tab has a Shared with You shelf. So does the Listen Now tab in Music and Podcasts.\n\nThe content provided by Shared with You is a ranked and ordered list. I'll go over that later in the video. For each item in the Shared with You shelf, show a rich preview along with an attribution view. A rich preview has thumbnail, a title, and a subtitle if applicable. In this example, the rich preview consists of podcast art, episode name, and the show name. There is also an attribution view for each shared content in the Shared with You shelf. This is the all of the information that allows context to be gleaned at a glance.\n\nHave a Show More element that can expand the view or navigate to showing all of your app's Shared with You content. The Attribution view is an out of process view that securely displays the names and avatars of who shared it. It also shows if the content was pinned in Messages. Show the attribution view in the details view of your content. This allows people to connect content in your app back to the Messages conversation it was shared in. For example, when I'm browsing for a TV show to watch, the attribution view helps me recall that a friend had recommend it. I can quickly tell my friend that I'm about to watch the show. All this happens right in app, and after replying, I'm right back at the content. The attribution view is interactive. Tapping on the view takes you to the Messages conversation right from within the application. The attribution view also presents contextual menu options such as \"Reply\" and \"Remove\". The \"Reply\" content menu option functions similar to tapping the view. The \"Remove\" context menu option is a way to tell the Shared with You not to surface a piece of content going forward. The same contextual menus are made available to you to add to your content's contextual menus. The title for the Remove context menu can be customized. For example in Safari, the contextual menu for the web page shows \"Remove Link\". I'll go over how you can do this in your app later on in this video. Now you know where to present a Shared with You shelf and where to show the Attribution View. Let me show you how Shared with You works. Links shared by friends and family in Messages are surfaced in Shared with You. Links in group conversations are surfaced when at least one participant is a contact. Shared with You is based on the same technology behind Universal Links. Universal Links allows for seamless linking to content in your app or on your website. Users have granular control over Shared with You content.\n\nThey can choose what content is shared outside of Messages on a per conversation basis, per app, or globally. This permission doesn't need to be requested in advance. It happens organically. Pinning links is implicit permission to surface the content in Shared with You. Pinned content is always available to Shared with You in your app. Based on heuristics when content for your app is pinned in Messages, an option to enable automatic sharing is presented. When automatic sharing is turned on, further content is automatically available to Shared with You in your app.\n\nContent in Shared with You is ordered. The first item in the Shared with You shelf is curated by Siri Suggestions based on various signals from the system. This is followed by Pinned items and the remainder of the list is chronologically ordered.\n\nSiri Suggestions uses signals such as \"Has the user viewed or interacted with the content?\" Is the content Pinned? In which context is the content being presented? Your app plays a part in providing this feedback. I'll go over in detail a little later on in the video. All this is done to ensure that content is not too transient or stale. In a conversation when a link is shared multiple times, Shared with You surfaces only the most recent message. When a link is shared in multiple Messages conversations, Shared with You visually represents that via the attribution view. For example, both Enrique and Sarah have shared the Top 25 Chicago playlist. The attribution view shows both their contact avatars. Tapping on the attribution view presents a disambiguation menu, allowing you to choose which Messages conversation to reply to. Security and Privacy was a primary consideration and focus when designing Shared with You. The attribution views and disambiguation views are drawn on your behalf out of process. Shared with You protects your app's content via the Universal Links association so it is accessible to only your app. Apps do not have access to Messages recipients and conversations.\n\nNow you know how Shared with You works. On to the most exciting part– how to adopt Shared with You in your app. First, adopt Universal Links. Then, add the new Shared with You Capability, under the Capabilities tab in Xcode. Then, put a Shared with You shelf in your app, and add attribution view to your content. Let me briefly talk about adopting Universal Links.\n\nUniversal Links allows your users to intelligently follow links to content in your app or to your website. Take the following steps to support universal links. First create a two-way association between your app and your website and specify the URLs that your app handles. You create them by adding the Associated Domains entitlement to your app, and by adding a JSON file to your web server. Next, update your app delegate to respond to the user activity object the system provides when a universal link routes to your app. For more information, please watch the \"What's new in Universal Links\" video. In iOS 16 we have introduced a new Framework called Shared with You. There are three main classes in the Shared with You Framework: SWHighlightCenter, SWHighlight, and SWAttributionView. SWHighlightCenter is the class that helps you get Shared with You content for your app. SWHighlight is a model object that wraps your app's shared content. SWAttributionView is the view that helps connect your content back to a Messages conversation and displays attribution information.\n\nThe highlight center is a simple object that consists of: Highlights, which is an array of SWHighlight objects; and a delegate property by which apps get notified when there is content added, removed, or updated by Shared with You. A highlight is represented by the SWHighlight class. It is used to pass the URL for your app's content that was shared in Messages. You use it to refer to your content, render a rich preview, and navigate to the content in your app. Let me show you how to enumerate Shared with You content in your app.\n\nFirst create an instance of SWHighlightCenter. Then set the delegate property. Implement the SWHighlightCenterDelegate method. Use the highlights property on the highlight center to access your app's Shared with You content. Apps can choose to keep the previous list of highlights in order to quickly diff that list against the latest list.\n\nUse the URL property on each highlight to generate a Rich preview of your app's content. And it's as easy as that to enumerate Shared with You content in your app. Next, I'll show you how to add and customize the Attribution View to your app's Shared with You content. SWAttributionView is the view that shows the names and avatars of who shared the content. Each highlight has a corresponding attribution view. Setting the highlight Property on the attribution view triggers the out of process rendering of the attribution information.\n\nSpecify a maximum width the attribution view can take. The attribution view will fill or fit the space as needed. Set the alignment of the attribution view within the maximum space. Let me show you an example.\n\nCreate an instance of SWAttributionView and set the highlight property. Set the preferredMaxLayoutWidth. In this example it spans the bottom of the shared content thumbnail. Constrain this view's width anchor or set its frame width to control the maximum width of its contents. Set the maximum AX content size category for the view as necessary using: minimumContentSizeCategory or maximumContentSizeCategory properties on UIView. Provide enough vertical space around this view. The view's height is dependent on the preferredContentSizeCategory, and the resulting font size. If the view's height is unnecessarily constrained, then the view might be clipped or not get drawn. The horizontalAlignment is set to leading in this case. It can also be set to Center or Trailing. Next, let me show you how to customize the Attribution view. Setting a display context helps inform the system about how the user is consuming the attributed content. It also influences ranking of Shared with You content for your app. Set this before it's added to a window. The background style of the attribution view can be customized based on the content's background it is being used against. Let me show you an example. The default value for displayContext property is summary. This indicates that the content is being shown for consumption. Set the displayContext to detail when the user is actively consuming the content, like watching a movie or listening to a podcast. Setting the displayContext is the feedback your app can provide. This'll help Siri Suggestions rank content for you app. Set the background style for the attribution view to color when placing the attribution view over monochrome backgrounds like in this example. Use material when placing the attribution view over multicolored backgrounds. This sets a material background blur for the view's contents. In this example, Safari's landing page has a background image. The contents of the attribution view are more visible by setting the correct background style. Next let me show you how to add Shared with You Contextual Menus to your app's content and customize the title. The existing contextual menu attached to your app's content can be supplemented by the attribution view's menu. This menu should be added inline with or at the end of the contextual menu it augments. A custom title for the Remove contextual menu option can be provided. The string should include the word \"Remove\", localized correctly. In this example, Safari has customized the Remove menu title to \"Remove Link\" in its content's context menu at the end. Let me show you how to do this via an example. First create an instance of the attribution view and set the highlight property. Provide a custom title for the Remove context menu via the menuTitleForHideAction. When configuring your content's context menu, get the menu from the attribution view via the supplementalMenu property. Then append them to your content's context menu. These easy steps allow your app to add the context menu option available on the attribution view to your content's context menus. Now you know all that is needed to adopt Shared with You in your app. Let's recap the three easy steps to adopt Shared with You in your app. Go adopt Universal Links. Then add the new Shared with You Capability in Xcode for your app. Import and use the new Shared with You framework. I'm looking forward to sharing your content in Messages and using Shared with You in your app. Thank you for your time and attention.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "12:06",
+      "title": "Enumerate Shared with You shelf",
+      "language": "swift",
+      "code": "// Enumerate Shared with You shelf\n\nclass SharedWithYouViewController: UIViewController, SWHighlightCenterDelegate {\n    let highlightCenter = SWHighlightCenter()\n    \n    override func viewDidLoad() {\n        super.viewDidLoad()\n        highlightCenter.delegate = self\n    }\n    \n    func highlightCenterHighlightsDidChange(_ highlightCenter: SWHighlightCenter) {\n        for highlight in highlightCenter.highlights {\n            let highlightURL = highlight.url\n            // Generate a rich preview for the Highlight\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "13:42",
+      "title": "Setting appearance of Attribution View",
+      "language": "swift",
+      "code": "// Setting appearance of Attribution View\n\nlet attributionView = SWAttributionView()\nattributionView.highlight = self.highlightCenter.highlights[index]\nattributionView.preferredMaxLayoutWidth = maximumWidthForView"
+    },
+    {
+      "timestamp": "14:36",
+      "title": "Horizontal Alignment for Attribution View",
+      "language": "swift",
+      "code": "// Horizontal Alignment for Attribution View\n\nlet attributionView = SWAttributionView()\nattributionView.highlight = self.highlightCenter.highlights[index]\nattributionView.preferredMaxLayoutWidth = maximumWidthForView\nattributionView.horizontalAlignment = .leading"
+    },
+    {
+      "timestamp": "15:19",
+      "title": "Display Context for Attribution View",
+      "language": "swift",
+      "code": "// Display Context for Attribution View\n\nlet attributionView = SWAttributionView()\nattributionView.highlight = self.highlightCenter.highlights[index]\nattributionView.preferredMaxLayoutWidth = maximumWidthForView\nattributionView.horizontalAlignment = .center\nattributionView.displayContext = .summary"
+    },
+    {
+      "timestamp": "17:12",
+      "title": "Add Shared with You Content Menu to your app’s content",
+      "language": "swift",
+      "code": "// Add Shared with You Content Menu to your app’s content\n\nlet attributionView = SWAttributionView()\nattributionView.highlight = self.highlightCenter.highlights[index]\nattributionView.menuTitleForHideAction = \"Remove Item\"\n\nlet contextMenuConfig = UIContextMenuConfiguration(identifier: nil,previewProvider: nil) { [weak self] _ in\n        let additionalMenu = attributionView.supplementalMenu\n        // Append additionalMenu items to your content’s menu items\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10094/4/6D2459BF-7717-4646-BE9A-E73C7E602DB9/downloads/wwdc2022-10094_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10094/4/6D2459BF-7717-4646-BE9A-E73C7E602DB9/downloads/wwdc2022-10094_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10095",
+      "year": "2022",
+      "title": "Enhance collaboration experiences with Messages",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10095"
+    },
+    {
+      "id": "10093",
+      "year": "2022",
+      "title": "Integrate your custom collaboration app with Messages",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10093"
+    },
+    {
+      "id": "10098",
+      "year": "2020",
+      "title": "What's new in Universal Links",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10098"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:15:26.338Z"
+}

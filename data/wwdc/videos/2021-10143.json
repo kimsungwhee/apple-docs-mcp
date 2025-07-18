@@ -1,0 +1,110 @@
+{
+  "id": "10143",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10143/",
+  "title": "Explore HLS variants in AVFoundation",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Bass music playing ♪  Nishant Nelogal: Hello, and welcome to WWDC.\n\nMy name is Nishant, and I’m an engineer on the AVFoundation team.\n\nToday, we will be looking at HLS Variants.\n\nFirst, we will look at how you can inspect HLS variants, using AVFoundation APIs, and later on, we will see how we can use the HLS variants with downloads.\n\nSo let's start with variant inspection.\n\nYou all must be familiar with what a typical master playlist looks like.\n\nHere is an example.\n\nIn this particular playlist, we have two variants.\n\nOne of the variants is an SDR variant with stereo audio, and the other one is a Dolby Vision variant with Dolby Atmos audio.\n\nThe asset representing this particular playlist may be presented something like this in your app.\n\nLooking closely, you see that the asset has 4K, Dolby Vision, and Dolby Atmos badges.\n\nEarlier, you had to get such information out of the band.\n\nNow in iOS 15, you can directly inspect the HLS playlist to infer them.\n\nFor that, you start with an AVURLAsset pointing to the location of your master playlist.\n\nLater on, you can obtain the HLS playlist via the variant's property.\n\nThis AVAssetVariant, as we see here, represents an HLS variant as is from the master playlist.\n\nSo it has multiple properties representing different media attributes.\n\nSome of the attributes, such as the media bitrate, can be accessed directly.\n\nOther attributes, such as those related to video and audio renditions, are grouped together in their own subclasses.\n\nThey are called as VideoAttributes and AudioAttributes, respectively.\n\nAs you see, each of them has relevant properties, which you can use to understand your asset.\n\nNow you know how to inspect HLS variants in AVFoundation.\n\nLet's see how we can use them with downloads.\n\nDownloading HLS content for offline playback has been supported since 2016.\n\nIf you're not familiar with HLS download APIs, I would suggest you check out our earlier talk on the topic from WWDC 2020.\n\nIn iOS 15, we are taking our HLS download APIs and making them even more powerful.\n\nTypically, you would like to influence the HLS variants selected for the download.\n\nThis may be due to business requirements, or you just want to provide more choice to your users.\n\nBefore, you could provide such input via downloadTask options.\n\nWe had an option for HDR, an option for lossless audio, and a few other attributes.\n\nIn iOS 15, we are expanding the variant selection with the use of NSPredicates.\n\nYou may be already familiar with using predicates from Core Data.\n\nIf not, don’t worry, you will learn about them today.\n\nSo to get started, let me introduce the variant qualifier interface.\n\nThis interface allows you to specify your variant preferences to AVFoundation.\n\nAnd, as I said, they can be constructed using NSPredicates.\n\nLet’s understand by looking at few examples.\n\nHere, we have a NSPredicate which expresses peak bitrate to be less than five megabits.\n\nYou use this to construct your variant qualifier, which instructs AVFoundation to prefer variants under five megabits.\n\nSimple enough, right? Let’s take a look at another example.\n\nHere we create an NSPredicate for HDR video range.\n\nAnd similarly as before, you can construct a variant qualifier for it.\n\nYou can also combine multiple predicates to create a compound predicate and use them to create your variant qualifier.\n\nAny property on variant can be used to create a predicate against.\n\nFor properties such as audio channel count, which cannot be easily expressed using the predicate format string, we have custom constructors.\n\nYou can look them up in our header doc for variant qualifier.\n\nOnce you have your variant qualifier, you use it to create something called as content configuration.\n\nEach content configuration represents a set of video, audio, and subtitle renditions.\n\nOK, let's understand with an example.\n\nHere is the variant qualifier which combines the two predicates we saw earlier.\n\nEh, this is compounding. Ha-ha.\n\nIt informs AVFoundation to prefer HDR variants under five megabits.\n\nWe also have a set of media selections representing English and French audio, and English subtitle renditions.\n\nBoth of these can be used to create a content configuration object.\n\nYou can create multiple of these content configurations and provide it to the downloadTask.\n\nThese multiple content configurations are tied together by the download configuration interface.\n\nThis is the root which holds everything together.\n\nIt is created with an AVURLAsset and needs an asset name, and optionally, an image.\n\nThe asset name and image are displayed in the Settings app.\n\nThis allows your users to manage all of their downloads in one place in the Settings app.\n\nAnd of course, the downloadTask can be configured with multiple content configurations.\n\nLooking closely, one of the content configurations will be designated as primary and the rest will be auxiliary.\n\nThe difference between the two is you typically want to download a primary set of video, audio, and subtitle renditions and then complement them with additional audio or subtitle renditions.\n\nBy specifying your additional renditions as auxiliary content configurations, you instruct AVFoundation to optimize and avoid downloading multiple video renditions.\n\nIt becomes more clear as we go over an example.\n\nHere is the complete example.\n\nFirst, we start by creating a download configuration with AVURLAsset and a title.\n\nThe primary content configuration is the same one we saw earlier.\n\nIt is configured to download HDR variants under five megabits, with English and French audio and English subtitle renditions.\n\nIn this particular example, we would like to complement it with an auxiliary content configuration to download English audio in lossless format.\n\nNow we have both our content configurations, which we want to download.\n\nMake sure to set optimizesAuxiliary ContentConfigurations to true.\n\nBy the way, it is true by default, and it allows AVFoundation to choose lossless variant, such that the lossless variant’s video rendition is the same as the primary content configuration.\n\nSetting it to false may cause lossless variant to be evaluated independently, which may cause duplicate video renditions to be downloaded.\n\nThis may increase your download size, which we don’t want.\n\nOK, once you have the download configuration, you can use it to create the downloadTask.\n\nYou resume the downloadTask to start the download.\n\nStarting in iOS 15, you can also observe the progress of the downloadTask using NSProgress interface.\n\nThe NSProgress object is KVO-observable, and you can use it to update your user interface.\n\nMoving on.\n\nWe understand that some of you may have business logic for selecting variants, which may be harder to express via predicates.\n\nFor such cases, you can also choose to choose the variants you want to download explicitly.\n\nHere in this example, we have already picked our primary and auxiliary variant and the media selections to go with it.\n\nWe can instruct AVFoundation to download them as is, by creating a qualifier with the variant directly.\n\nBe careful to select variants so that they are playable on the device where they are downloaded.\n\nThat's all we have today, folks.\n\nTo wrap up, we looked at how you can inspect HLS variants and use them to configure the downloadTask.\n\nAlong the way, we encountered different interfaces for downloadTask configuration.\n\nThe first one was variant qualifier.\n\nThis is used to express your variant preferences.\n\nThen we saw content configuration interface.\n\nThe content configuration ties together your variant preferences and your media selection choices.\n\nFinally, we saw the download configuration.\n\nThe download configuration is the root interface which ties everything together.\n\nLast, but not the least, we also learned that you can monitor your downloadTask using NSProgress.\n\nFor more information, check our header docs.\n\nThey're very well commented.\n\nThank you for watching and bye-bye! ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "0:40",
+      "title": "HLS Master Playlist",
+      "language": "swift",
+      "code": "#EXTM3U\n#EXT-X-VERSION:7\n#EXT-X-INDEPENDENT-SEGMENTS\n\n#EXT-X-MEDIA:TYPE=AUDIO,NAME=\"English\",GROUP-ID=\"stereo\",LANGUAGE=\"en\",DEFAULT=YES, AUTOSELECT=YES,CHANNELS=\"2\",URI=\"en_stereo.m3u8\"\n#EXT-X-MEDIA:TYPE=AUDIO,NAME=\"French\",GROUP-ID=\"stereo\",LANGUAGE=\"fr\",DEFAULT=NO, AUTOSELECT=YES,CHANNELS=\"2\",URI=\"fr_stereo.m3u8\"\n\n#EXT-X-MEDIA:TYPE=AUDIO,NAME=\"English\",GROUP-ID=\"atmos\",LANGUAGE=\"en\",DEFAULT=YES, AUTOSELECT=YES,CHANNELS=\"16/JOC\",URI=\"en_atmos.m3u8\"\n#EXT-X-MEDIA:TYPE=AUDIO,NAME=\"French\",GROUP-ID=\"atmos\",LANGUAGE=\"fr\",DEFAULT=NO, AUTOSELECT=YES,CHANNELS=\"16/JOC\",URI=\"fr_atmos.m3u8\"\n\n#EXT-X-STREAM-INF:BANDWIDTH=14516883,VIDEO-RANGE=SDR,CODECS=\"avc1.64001f,mp4a.40.5\", AUDIO=\"stereo\",FRAME-RATE=23.976,RESOLUTION=1920x1080\nsdr_variant.m3u8\n\n#EXT-X-STREAM-INF:BANDWIDTH=34516883,VIDEO-RANGE=PQ,CODECS=\"dvh1.05.06,ec-3\", AUDIO=\"atmos\",FRAME-RATE=23.976,RESOLUTION=3840x1920\ndovi_variant.m3u8"
+    },
+    {
+      "timestamp": "3:38",
+      "title": "Peak bitrate cap predicate",
+      "language": "swift",
+      "code": "let peakBitRateCap = NSPredicate(format: \"peakBitRate < 5000000\")\n\nlet peakBitRateCapQualifier = AVAssetVariantQualifier(predicate: peakBitRateCap)"
+    },
+    {
+      "timestamp": "3:55",
+      "title": "HDR predicate",
+      "language": "swift",
+      "code": "let hdrOnlyPredicate = NSPredicate(format: \"videoAttributes.videoRange == %@\", argumentArray: [AVVideoRange.pq])\n\nlet hdrOnlyQualifier = AVAssetVariantQualifier(predicate: hdrOnlyPredicate)"
+    },
+    {
+      "timestamp": "4:46",
+      "title": "Content configuration",
+      "language": "swift",
+      "code": "let variantPref = AVAssetVariantQualifier(predicate: NSPredicate(format: \"videoAttributes.videoRange == %@ && peakBitRate < 5000000\", argumentArray: [AVVideoRange.pq]))\n\nlet myMediaSelections : [AVMediaSelection] = [enAudioMS, frAudioMS, enLegibleMS] //English, French audio and English subtitle renditions \n\nlet contentConfig = AVAssetDownloadContentConfiguration()\n\ncontentConfig.variantQualifiers = [variantPref]\n\ncontentConfig.mediaSelections = myMediaSelections"
+    },
+    {
+      "timestamp": "6:29",
+      "title": "Download configuration",
+      "language": "swift",
+      "code": "let asset = AVURLAsset(url: URL(string: \"http://example.com/master.m3u8\")!)\nlet dwConfig = AVAssetDownloadConfiguration(asset: asset, title: \"my-title\")\n\n/* Primary content config */\nlet varPref = NSPredicate(format: \"videoAttributes.videoRange == %@ && peakBitRate < 5000000\", argumentArray: [AVVideoRange.pq])\nlet varQf = AVAssetVariantQualifier(predicate: varPref)\n\ndwConfig.primaryContentConfiguration.variantQualifiers = [varQf]\ndwConfig.primaryContentConfiguration.mediaSelections = [enAudioMS, frAudioMS, enLegibleMS] //English, French audio and English subtitle renditions \n\n/* Aux content config */\nlet auxVarPref = NSPredicate(format: \"%d IN audioAttributes.formatIDs\", argumentArray: [kAudioFormatAppleLossless])\nlet auxVarQf = AVAssetVariantQualifier(predicate: auxVarPref)\n\nlet auxContentConfig = AVAssetDownloadContentConfiguration()\nauxContentConfig.variantQualifiers = [auxVarQf]\nauxContentConfig.mediaSelections = [enAudioMS] //english audio\ndwConfig.auxiliaryContentConfigurations = [auxContentConfig]\n\ndwConfig.optimizesAuxiliaryContentConfigurations = true"
+    },
+    {
+      "timestamp": "7:42",
+      "title": "Download task",
+      "language": "swift",
+      "code": "let myAssetDownloadDelegate = MyDownloadDelegate()\nlet avurlsession = AVAssetDownloadURLSession(configuration: URLSessionConfiguration.background(withIdentifier: \"my-background-session\"), assetDownloadDelegate: myAssetDownloadDelegate, delegateQueue: OperationQueue.main)\n\nlet asset = AVURLAsset(url: URL(string: \"http://example.com/master.m3u8\")!)\nlet dwConfig = AVAssetDownloadConfiguration(asset: asset, title: “my-title”)\n\n...\n\nlet downloadTask = avurlsession.makeAssetDownloadTask(downloadConfiguration: dwConfig)\n\ndownloadTask.resume()\n\nlet progress = downloadTask.progress"
+    },
+    {
+      "timestamp": "8:10",
+      "title": "Direct variant selection",
+      "language": "swift",
+      "code": "/* Example for direct variant selection */\n\nlet asset = AVURLAsset(url: URL(string: \"http://example.com/master.m3u8\")!)\nlet dwConfig = AVAssetDownloadConfiguration(asset: asset, title: \"my-title\")\n\n/* Primary content config */\nlet myVariant : AVAssetVariant = ...\nlet myMediaSelections : [AVMediaSelection] = ...\n\nlet variantQf = AVAssetVariantQualifier(variant: myVariant)\n\ndwConfig.primaryContentConfiguration.variantQualifiers = [variantQf]\ndwConfig.primaryContentConfiguration.mediaSelections = myMediaSelections\n\n/* Aux content config */\nlet myAuxVariant : AVAssetVariant = ...\nlet myAuxMediaSelections : [AVMediaSelection] = ...\n\nlet auxVariantQf = AVAssetVariantQualifier(variant: myAuxVariant)\n\nlet auxContentConfig = AVAssetDownloadContentConfiguration()\nauxContentConfig.variantQualifiers = [auxVariantQf]\nauxContentConfig.mediaSelections = myAuxMediaSelections\ndwConfig.auxiliaryContentConfigurations = [auxContentConfig]"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10143/8/02A20AB5-0C7F-4E9F-B252-75A25D1261ED/downloads/wwdc2021-10143_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10143/8/02A20AB5-0C7F-4E9F-B252-75A25D1261ED/downloads/wwdc2021-10143_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10265",
+      "year": "2021",
+      "title": "Immerse your app in Spatial Audio",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10265"
+    },
+    {
+      "id": "10142",
+      "year": "2021",
+      "title": "Transition media gaplessly with HLS",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10142"
+    },
+    {
+      "id": "10146",
+      "year": "2021",
+      "title": "What’s new in AVFoundation",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10146"
+    },
+    {
+      "id": "10655",
+      "year": "2020",
+      "title": "Discover how to download and play HLS offline",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10655"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:23:34.673Z"
+}

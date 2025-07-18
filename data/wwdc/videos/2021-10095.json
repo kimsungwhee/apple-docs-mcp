@@ -1,0 +1,121 @@
+{
+  "id": "10095",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10095/",
+  "title": "Use async/await with URLSession",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Swift",
+    "System Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Bass music playing ♪  ♪ Guoye Zhang: Hi, I'm Guoye. My coworker Zhenchao and I work on HTTP frameworks. I'm sure you've heard a lot about Swift concurrency by now. If you haven't, check out \"Meet async/await in Swift\". I'm going to jump into how async/await works with URLSession. What I like most about Swift concurrency is that it makes your code linear, concise, and it supports native Swift error handling. Networking is inherently asynchronous, and in iOS 15 and macOS Monterey we introduced a set of new APIs in URLSession for you to take advantage of Swift concurrency features. To show you our new APIs, here is an app we are working on to adopt async/await. It's a photo-sharing app just for dog lovers, and we can favorite these photos. Here is our existing code that fetches a dog photo. It's using the completionHandler-based convenience method on URLSession. The code seems straightforward, and it worked in my limited testing. However, it has at least three mistakes. Let's dive in. First, let's follow the control flow. We create a data task and resume it. Then once the task is done, we jump into the completion handler, we check the response, create an image, and that's where the control flow ends. Hm, we are jumping back and forth. What about threading? It is surprisingly complex for this small piece of code. We have three different execution contexts in total. The outmost layer runs on whatever thread or queue of the caller, URLSessionTask completionHandler runs on session's delegate queue, and the final completion handler runs on the main queue. Since the compiler cannot help us here, we have to use extreme caution to avoid any threading issues such as data races. Now, I noticed something wrong. The calls to the completionHandler are not consistently dispatched to the main queue. This could be a bug. Also, we are missing an early return here. The completionHandler can be called twice if we got an error. This could violate assumptions made by the caller. Finally, this might not be very obvious, but UIImage creation can fail. If the data is in an incorrect format, this UIImage initializer returns nil, so we would have called the completionHandler with both nil image and nil error. This is likely not expected. Now this is the new version using async/await. Wow, it's so much simpler! The control flow is linear from top to bottom, and we know that everything in this function runs in the same concurrency context, so we no longer need to worry about threading issues. Here, we used the new async data method on URLSession. It suspends the current execution context without blocking, and it returns data and response on successful completion, or throws an error. We also used the throw keyword to throw errors when the response is unexpected. This allows the caller to catch and handle the error using Swift native error handling. Lastly, the compiler would bark if we try to return an optional UIImage from this function, so it essentially forces us to handle nil correctly. Here are the signatures of the methods we just used to fetch data from the network. URLSession.data methods accept either a URL or a URLRequest. They are equivalent to existing data task convenience methods. We also provide upload methods where you can upload data or upload a file. They are equivalent to existing upload task convenience methods. Be sure to set the correct HTTP method before sending the request since the default method GET does not support upload. Download methods store the response body as a file rather than in memory. Different from download task convenience methods, these new methods do not automatically delete the file, so don't forget to do so yourself. In this example, we are moving the file to a different location for further processing. Swift concurrency's cancellation works with URLSession async methods. One way to cancel is to use a concurrency Task.Handle. Here, we call async to create a concurrency Task loading two resources one by one. Later, we can use the Task.Handle to cancel its current running operation. Please note that concurrency Task is unrelated to URLSessionTask, even though they share the name \"Task.\" The methods we just talked about -- data, upload, download -- wait for the entire response body to arrive before returning. What if we want to receive the response body incrementally? I'm happy to introduce URLSession.bytes methods. They return when the response headers have been received and deliver the response body as an AsyncSequence of bytes. To show you how it works, my colleague Zhenchao will demo how he's adopting it in the Dogs app. Zhenchao Li: Thanks, Guoye! Hi, I'm Zhenchao. I have been working on a new feature of the Dogs app that shows how many people favorited a dog photo.\n\nRight now, I can pull down the scroll view to refresh favorite counts. I would like to update these favorite counts in real time. That way, the app feels much more interactive. To do that, our back-end engineers have built a real-time events endpoint that gives us live updates to photos. I'm going to check out the endpoint to examine the response. Each line of the response body is a piece of JSON data that describes updates to a photo, such as updated favorite counts. Let's use the new async sequence API to consume the response of the endpoint and update the favorite counts as real-time events are parsed. We can kick off the live updates in the onAppearHandler function, which is an action called when the photo collection view appears. Within the function, I'm going to call the new URLSession.bytes API to fetch data from our new endpoint.\n\nNote that the bytes returned here have a type of URLSession.AsyncBytes. This gives us a way to incrementally consume response body. I also added error checking here to make sure that we did get a successful response from server.\n\nWe want to parse each line of the response as a piece of JSON data. To do that, we can use the lines method on AsyncBytes.\n\nThis enables us to consume the response line by line as data is received.\n\nWithin the loop, I can just parse the JSON data and update my UI by calling updateFavoriteCount. Note that the UI updates need to happen on the main actor, and that's why I'm using await syntax to call updateFavoriteCount, which is an async function. Great. Now these favorite counts are updated in real time. Back to you, Guoye.\n\nGuoye: Zhenchao just showed us how to use an AsyncSequence built-in transformation -- lines -- to parse response body line by line. AsyncSequence supports many convenience transformations, and you can also use AsyncSequence with other system framework APIs such as FileHandle. To learn more about AsyncSequence, I encourage you to watch the video \"Meet AsyncSequence\". URLSession is designed around a delegate model which provides callbacks for events such as authentication challenges, metrics, and more. The new async methods no longer expose the underlying task, so how do we handle authentication challenges specific to a task? Yes, all of those methods can take an additional argument -- a task-specific delegate -- allowing you to provide an object to handle delegate messages specific to this data upload, download, or bytes operation. We are also introducing the delegate property on NSURLSessionTask in Objective-C for you to take advantage of the same capability. The delegate is strongly held by a task until it completes or fails. It's worth noting that task-specific delegate is not supported by background URLSession. If a method is implemented on both session delegate and task delegate, the one on task delegate will be called. Now, Zhenchao will show us how to use a task-specific delegate to handle authentication challenges. Zhenchao: Thanks, Guoye! Our Dogs app has a simple data-fetching layer written with the new async APIs. For some of our data-fetching tasks, such as marking a photo as favorite or fetching all favorited photos, the user needs to be authenticated. Right now, when I tap to favorite a photo, I get an \"Unauthorized\" error. Let's go through how we can add user authentication by using a task-specific delegate. First, let's write a URLSessionTaskDelegate. Let's call it AuthenticationDelegate.  The AuthenticationDelegate conforms to the URLSessionTaskDelegate protocol, and it accepts an instance of signInController in its initializer. The signInController class we implemented already contains some nice helper functions that we can use to prompt the user for credentials. Next, let's implement the URLSession didReceive challenge delegate method.\n\nWithin the delegate method, we can choose to respond to HTTP basic authentication challenges by prompting the user for credentials. Of course, we should not forget about error handling. Now let's use this AuthenticationDelegate class as our task-specific delegate. To do that, I can just instantiate an instance of it and parse it as the delegate parameter to the URLSession.data method. Note that the delegate object is not an instance variable, and it's strongly held by the task until the task completes or fails. What's new here is that the delegate can be used to handle events that are specific to an instance of a URLSession task, which is handy when the logic inside your delegate methods only applies to certain URLSession tasks and not others. Great. Now when we tap to favorite the photo...\n\n...it pops up a login form.\n\nOnce we log in, the photo shows as favorited, and that it has been added to our favorited-photos collection. Back to you, Guoye. Guoye: Thank you, Zhenchao, for the demo. We can't wait for you to try out async/await with URLSession, and we encourage you to apply the same async concepts to improve your code, including changing functions, taking a completion handler to async functions, and changing repeated events handlers to AsyncSequences. To learn more about advancements in URLSession, we have a video about a cool new instrument inspecting your app's HTTP traffic and a video about HTTP/3 support in URLSession. Thank you and have a great WWDC! ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:52",
+      "title": "Fetch photo with async/await",
+      "language": "swift",
+      "code": "// Fetch photo with async/await\n\nfunc fetchPhoto(url: URL) async throws -> UIImage\n{\n    let (data, response) = try await URLSession.shared.data(from: url)\n\n    guard let httpResponse = response as? HTTPURLResponse,\n          httpResponse.statusCode == 200 else {\n        throw WoofError.invalidServerResponse\n    }\n\n    guard let image = UIImage(data: data) else {\n        throw WoofError.unsupportedImage\n    }\n\n    return image\n}"
+    },
+    {
+      "timestamp": "3:45",
+      "title": "URLSession.data",
+      "language": "swift",
+      "code": "let (data, response) = try await URLSession.shared.data(from: url)\nguard let httpResponse = response as? HTTPURLResponse,\n      httpResponse.statusCode == 200 /* OK */ else {\n    throw MyNetworkingError.invalidServerResponse\n}"
+    },
+    {
+      "timestamp": "4:03",
+      "title": "URLSession.upload",
+      "language": "swift",
+      "code": "var request = URLRequest(url: url)\nrequest.httpMethod = \"POST\"\n\nlet (data, response) = try await URLSession.shared.upload(for: request, fromFile: fileURL)\nguard let httpResponse = response as? HTTPURLResponse,\n      httpResponse.statusCode == 201 /* Created */ else {\n    throw MyNetworkingError.invalidServerResponse\n}"
+    },
+    {
+      "timestamp": "4:21",
+      "title": "URLSession.download",
+      "language": "swift",
+      "code": "let (location, response) = try await URLSession.shared.download(from: url)\nguard let httpResponse = response as? HTTPURLResponse,\n      httpResponse.statusCode == 200 /* OK */ else {\n    throw MyNetworkingError.invalidServerResponse\n}\n\ntry FileManager.default.moveItem(at: location, to: newLocation)"
+    },
+    {
+      "timestamp": "4:44",
+      "title": "Cancellation",
+      "language": "swift",
+      "code": "let task = Task {\n    let (data1, response1) = try await URLSession.shared.data(from: url1)\n\n    let (data2, response2) = try await URLSession.shared.data(from: url2)\n\n}\n\ntask.cancel()"
+    },
+    {
+      "timestamp": "7:53",
+      "title": "asyncSequence demo",
+      "language": "swift",
+      "code": "let (bytes, response) = try await URLSession.shared.bytes(from: Self.eventStreamURL)\nguard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {\n    throw WoofError.invalidServerResponse\n}\nfor try await line in bytes.lines {\n    let photoMetadata = try JSONDecoder().decode(PhotoMetadata.self, from: Data(line.utf8))\n    await updateFavoriteCount(with: photoMetadata)\n}"
+    },
+    {
+      "timestamp": "11:20",
+      "title": "task specific delegate demo",
+      "language": "swift",
+      "code": "class AuthenticationDelegate: NSObject, URLSessionTaskDelegate {\n    private let signInController: SignInController\n    \n    init(signInController: SignInController) {\n        self.signInController = signInController\n    }\n    \n    func urlSession(_ session: URLSession,\n                    task: URLSessionTask,\n                    didReceive challenge: URLAuthenticationChallenge) async\n    -> (URLSession.AuthChallengeDisposition, URLCredential?) {\n        if challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodHTTPBasic {\n            do {\n                let (username, password) = try await signInController.promptForCredential()\n                return (.useCredential,\n                        URLCredential(user: username, password: password, persistence: .forSession))\n            } catch {\n                return (.cancelAuthenticationChallenge, nil)\n            }\n        } else {\n            return (.performDefaultHandling, nil)\n        }\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "URLSession",
+        "url": "https://developer.apple.com/documentation/Foundation/URLSession"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10095/8/93EE04B2-8F10-42B5-B35F-D7D4A87C1DC2/downloads/wwdc2021-10095_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10095/8/93EE04B2-8F10-42B5-B35F-D7D4A87C1DC2/downloads/wwdc2021-10095_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "110351",
+      "year": "2022",
+      "title": "Eliminate data races using Swift Concurrency",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110351"
+    },
+    {
+      "id": "10094",
+      "year": "2021",
+      "title": "Accelerate networking with HTTP/3 and QUIC",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10094"
+    },
+    {
+      "id": "10212",
+      "year": "2021",
+      "title": "Analyze HTTP traffic in Instruments",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10212"
+    },
+    {
+      "id": "10132",
+      "year": "2021",
+      "title": "Meet async/await in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10132"
+    },
+    {
+      "id": "10058",
+      "year": "2021",
+      "title": "Meet AsyncSequence",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10058"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:48:49.722Z"
+}

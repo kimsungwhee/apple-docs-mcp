@@ -1,0 +1,128 @@
+{
+  "id": "403",
+  "year": "2025",
+  "url": "https://developer.apple.com/videos/play/wwdc2025/403/",
+  "title": "Learn about Apple Immersive Video technologies",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, I’m Blake, an engineer on the Apple Immersive Video team. In this video, I’m going to explain the new capabilities in macOS and visionOS 26 for creating Apple Immersive Video.\n\nFrom the explore video experiences for visionOS WWDC25, I will build on the foundations of the video profiles available in visionOS 26, and the high-level overview of Apple Immersive Video, so it's important to watch that one first.\n\nIn this video, I’m going to cover the capabilities of Apple Immersive Video and Spatial Audio technologies for you to be able to create truly immersive experiences. And I’ll start with Apple Immersive Video.\n\nApple Immersive Video is the highest quality immersive experience for video playback on Apple Vision Pro, with high-fidelity video and fully immersive audio to put you in the experience as if you were there.\n\nAnd because the content is so immersive, it requires specific cameras that are capable of capturing this high-fidelity video, such as the Blackmagic URSA Cine Immersive, designed from the ground up for Apple Immersive Video.\n\nApple immersive video cameras are uniquely calibrated from the factory to capture the exact curvature of each of the stereoscopic lenses.\n\nAnd this calibration information is included with every video file. The calibration is used in the video metadata to correctly project the video.\n\nThis table, from the “Explore Video Experiences for visionOS” WWDC25 contains the different formats that are supported in visionOS 26. And specifically for Apple Immersive Video, it uses a parametric projection type to support these camera calibrations.\n\nmacOS and visionOS 26 now feature the Immersive Media Support framework, allowing you to create custom workflows. It enables reading and writing the essential metadata for Apple Immersive Video, and provides capabilities for previewing content in editorial workflows. For creating tools to support video production pipelines, like non-linear editing software or video compression and encoding tools, I’ll go over how to read and write Apple Immersive Video, how to publish your content for everyone to watch, and how to preview your content during the production process. But first, I'll start with the metadata, which enables Apple Immersive Video experiences.\n\nApple Immersive Video can be produced using multiple cameras.\n\nAnd because each camera has a unique calibration, the combination of these cameras describes the venues captured. The VenueDescriptor type in the Immersive Media Support framework contains a combination of all of the cameras used in the venue. This VenueDescriptor information is stored as Apple Immersive Media Embedded or AIMEData, which I’ll cover in more detail later in this session.\n\nThe VenueDescriptor type holds the reference to the cameras and the camera view model, the ability to add and remove cameras, the reference to your AIMEData, and the ability to save it to a URL, which will be important later. Each camera used in your video is capable of including more information than just the camera calibration. The points of a mask, or edge-blend, uses alpha to mask out the edges of the content.\n\nAnd there are several more capabilities for camera calibrations, like setting the camera origin position information. Custom backdrop environments are able to be included with camera calibrations as well. For all of the capabilities of the VenueDescriptor and the ImmersiveCamera, check out the Immersive Media Support documentation.\n\nBecause the camera calibrations are specific to the video frames in your output video, dynamic metadata is present to define which calibration should be used for a given frame. There are additional timed dynamic metadata commands, represented as presentation commands in the Immersive Media Support framework, which are muxed into your output QuickTime file.\n\nEvery video frame can contain multiple presentation commands with it. And these commands go along with every frame from your video track.\n\nAnother PresentationCommand is a shot flop, used in editing for a variety of reasons, where the image and eyes are flopped over the y-axis.\n\nIt’s important to note that because the immersive camera uses stereoscopic lenses, it makes a shot flop a more challenging editorial process since the image and eyes are swapped. But using the PresentationCommand, this is all handled automatically by visionOS during playback.\n\nBeyond the camera calibration and shot flop commands, there are fades, which are dynamically rendered and not baked into the video frame. For more details on these commands, refer to the PresentationDescriptor and PresentationCommand types. Now, I’ll describe how to use Apple Immersive Video in your own apps. To segment content as HLS, edit Apple Immersive Video files, or create your own custom player, reading the metadata is important. And for a single, file-based, standalone Apple Immersive Video experience, typically used in production, There is now an Apple Immersive Video Universal file type.\n\nThe Apple Immersive Video Universal, or AIVU file, is a container of your output video with the PresentationDescriptor muxed into it and has the VenueDescriptor as metadata included within it as well.\n\nAIVU files are able to be played from the Files app through Quick Look on visionOS. And to play back Apple Immersive Video in your own app as a standalone file or HLS, check out “Support Immersive Video Playback in visionOS Apps” from WWDC25.\n\nIf you are building an app or service to stream Apple Immersive Video or to share your Apple Immersive Video content with others, AIVU files are the best way to easily ingest or share your content with all the necessary metadata.\n\nAlong with the new Immersive Media Support framework, there are also new APIs in AVFoundation to help with reading and writing Apple immersive video. To read the VenueDescriptor from an AIVU file, use the familiar AVFoundation APIs to load the asset’s metadata. There is a new quickTimeMetadataAIMEData identifier for filtering the specific metadata to load AIMEData as a VenueDescriptor. To read the PresentationDescriptor metadata, get the metadata group timed with each presentation timestamp for the video frames. Filter based on the quickTimeMetadataPresentationImmersiveMedia identifier, and decode the value into a presentation descriptor type.\n\nAnd for more information on how to get the timed metadata group, refer to the AVPlayerItemMetadataOutput API in AVFoundation.\n\nTo write Apple Immersive Video, whether for a production tool or as an output from a non-linear editing software, you are able to create your own AIVU files.\n\nWhen creating Apple Immersive Video, there are a few important things to know. For your video assets projection kind, you must use AppleImmersiveVideo. This projection kind is defined as the parametric kind specific for Apple Immersive Video, so it's known how to get the projection. You also need to write your VenueDescriptor and PresentationCommand values to your video assets metadata using AVAssetWriter. Use the venue descriptor to retrieve the AIMEData to be saved to an AVMetadataItem with the AIMEData identifier.\n\nFor your PresentationCommands, use the PresentationDescriptor reader to get the commands for a specific time. And use the presentation identifier I mentioned earlier, to create timed AVMetadataItems that align with the provided times and durations of your video frame buffers.\n\nOnce you’ve created your AIVU files, you will be able to verify them using the AIVUValidator’s validate function in the Immersive Media Support framework. This will throw an error for any issues  with validation or return true if it’s valid.\n\nFor details on how to use AVAssetWriter for writing AIVU files, refer to the Authoring Apple Immersive Video sample project.\n\nFor publishing Apple immersive content, use HLS segmentation to stream your video directly to your application.\n\nApple Vision Pro is capable of rendering MV-HEVC at a recommended resolution of 4320 by 4320 per eye, 90 frames per second, with a P3-D65-PQ color space, and Apple Spatial Audio, which I’ll talk about later in this video.\n\nThe recommended tiers for segmenting Apple Immersive Video are ranging from a minimum of 25 to 100 megabits per second for the average bandwidth and 50 to 150 megabits per second for peak. It’s important to consider the tradeoff between quality and size when building out your own tiers, while keeping the same resolution and frame rate. When building the HLS playlist, you will need to include your VenueDescriptor as AIMEData saved to a file alongside your HLS playlist for Apple Vision Pro to render your content correctly.\n\nTo create your AIME file, save your VenueDescriptor object using the save function and copy that AIME file into your HLS playlist. It’s important to retain the metadata track with your video segments when segmenting the QuickTime file to keep the PresentationDescriptor commands. In the HLS multivariant playlist, there are a few important tags to call out. Apple Immersive Video requires version 12 or higher, the venue description data ID pointing to your AIME file, a content type of fully immersive, and in addition to using APAC Audio, which I’ll talk about later in this video, the required video layout needs to be stereo video and use the Apple Immersive Video projection.\n\nOne other new important API in the Immersive Media Support framework is the ImmersiveMediaRemotePreviewSender and Receiver. It’s important to note that this method for previewing only supports a lower bitrate performance of Apple Immersive Video, and should be used in editorial workflows where quickly previewing is useful and full video files aren’t processed yet. One example of this would be viewing content on Apple Vision Pro while editing the video.\n\nThese APIs are designed to send Apple Immersive Video Frames from Mac to Apple Vision Pro. ImmersiveMediaRemotePreviewSender and Receiver, enables sending the Immersive Video Frames to one or multiple receivers. And using a custom compositor, it allows live previewing in your visionOS application. For more information, check out the Immersive Media Support documentation.\n\nSpatial Audio is as important as video when considering creating a compelling immersive experience. We have created a new format for Spatial Audio called Apple Spatial Audio Format, or ASAF. ASAF is used in production to create truly immersive audio experiences. The Apple Positional Audio Codec, or APAC, is used to encode this audio format for delivery purposes.\n\nASAF enables truly externalized audio experiences by ensuring acoustic cues are used to render the audio. It’s composed of new metadata coupled with linear PCM, and a powerful new spatial renderer that’s built into Apple platforms. It produces high resolution Spatial Audio through numerous point sources and high resolution sound scenes, or higher order ambisonics. The rendered audio is completely adaptive based on the object position and orientation, as well as listener position and orientation. None of it is baked in. And the sounds in ASAF come from all directions in any position, and at any distance. ASAF is carried inside of broadcast Wave files with linear PCM signals and metadata.\n\nYou typically use ASAF in production, and to stream ASAF audio, you will need to encode that audio as an mp4 APAC file.\n\nAPAC efficiently distributes ASAF, and APAC is required for any Apple immersive video experience. APAC playback is available on all Apple platforms except watchOS, and supports Channels, Objects, Higher Order Ambisonics, Dialogue, Binaural audio, interactive elements, as well as provisioning for extendable metadata. Because of the efficiency of this codec, it enables immersive spatial experiences at bitrates as low as 64 kilobits per second. To deliver spatial audio with HTTP Live Streaming, you need to include the media tag with the audio channel information, and specify APAC as an audio codec in the stream info tag.\n\nFor new capabilities in HLS, specifically for supporting APAC audio, refer to the What’s New in HLS article.\n\nASAF content can be created and encoded into APAC using Apple’s Pro Tools plugins, available on a per-user license, or Blackmagic Design’s DaVinci Resolve Studio Editor.\n\nIn this session, I’ve covered the foundations of the metadata which makes Apple Immersive Video what it is, how to read and write it enabled by the Immersive Media Support framework, and Spatial Audio.\n\nExpand your app to support truly immersive experiences by supporting Apple Immersive Video and Spatial Audio. For more information on other immersive video formats for visionOS, check out “Learn About the Apple Projected Media Profile.” To learn how to play Apple Immersive Video, Watch the “Support Immersive Video Playback in visionOS apps” from WWDC25.\n\nI really love watching Apple Immersive Video, so I’m very excited for you to create more experiences. Oh, and send me your Apple Immersive Video Universal files so I can watch them. Thanks.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "6:23",
+      "title": "Read VenueDescriptor from AIVU file",
+      "language": "swift",
+      "code": "func readAIMEData(from aivuFile: URL) async throws -> VenueDescriptor? {\n    let avAsset = AVURLAsset(url: aivuFile)\n    let metadata = try await avAsset.load(.metadata)\n    let aimeData = metadata.filter({ $0.identifier == .quickTimeMetadataAIMEData }).first\n    if let dataValue = try await aimeData.load(.value) as? NSData {\n        return try await VenueDescriptor(aimeData: dataValue as Data)\n    }\n    return nil\n}"
+    },
+    {
+      "timestamp": "6:50",
+      "title": "Read PresentationDescriptor from AIVU playback",
+      "language": "swift",
+      "code": "func presentation(timedMetadata: [AVTimedMetadataGroup]) async throws ->   \n[PresentationDescriptor] {\n    var presentations: [PresentationDescriptor] = [] \n    for group in timedMetadata {\n        for metadata in group.items {\n            if metadata.identifier == .quickTimeMetadataPresentationImmersiveMedia {\n                let data = try await metadata.load(.dataValue) {\n                    presentations.append(\n                        try JSONDecoder().decode(PresentationDescriptor.self, from: data)\n                    )\n                }\n            }\n        }\n    }\n    return presentations\n}"
+    },
+    {
+      "timestamp": "7:52",
+      "title": "Create AVMetadataItem from VenueDescriptor",
+      "language": "swift",
+      "code": "func getMetadataItem(from metadata: VenueDescriptor) async throws -> AVMetadataItem {\n    let aimeData = try await metadata.aimeData\n    let aimeMetadataItem = AVMutableMetadataItem()\n    aimeMetadataItem.identifier = .quickTimeMetadataAIMEData\n    aimeMetadataItem.dataType = String(kCMMetadataBaseDataType_RawData)\n    aimeMetadataItem.value = aimeData as NSData\n        \n    return aimeMetadataItem\n}"
+    },
+    {
+      "timestamp": "8:02",
+      "title": "Create timed AVMetadataItem from PresentationDescriptorReader",
+      "language": "swift",
+      "code": "func getMetadataItem(reader: PresentationDescriptorReader, \n                     time: CMTime, frameDuration: CMTime) -> AVMetadataItem? {\n    let commands = reader.outputPresentationCommands(for: time) ?? []\n    if commands.isEmpty { return nil }\n\n    let descriptor = PresentationDescriptor(commands: commands)\n    let encodedData = try JSONEncoder().encode(descriptor)\n    let presentationMetadata = AVMutableMetadataItem()\n    presentationMetadata.identifier = .quickTimeMetadataPresentationImmersiveMedia\n    presentationMetadata.dataType = String(kCMMetadataBaseDataType_RawData)\n    presentationMetadata.value = encodedData as NSData\n    presentationMetadata.time = time\n    presentationMetadata.duration = frameDuration\n    \n    return presentationMetadata\n}"
+    },
+    {
+      "timestamp": "8:20",
+      "title": "Validate AIVU file",
+      "language": "swift",
+      "code": "func validAIVU(file aivuFile: URL) async throws -> Bool { \n    return try await AIVUValidator.validate(url: aivuFile)\n}"
+    },
+    {
+      "timestamp": "9:31",
+      "title": "Save AIME file",
+      "language": "swift",
+      "code": "let aimeFile = FileManager.default.temporaryDirectory.appendingPathComponent(\"primary.aime\")\ntry? await venueDescriptor.save(to: aimeFile)"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Authoring Apple Immersive Video",
+        "url": "https://developer.apple.com/documentation/ImmersiveMediaSupport/authoring-apple-immersive-video"
+      },
+      {
+        "title": "AVFoundation",
+        "url": "https://developer.apple.com/documentation/AVFoundation"
+      },
+      {
+        "title": "AVPlayerItemMetadataOutput",
+        "url": "https://developer.apple.com/documentation/AVFoundation/AVPlayerItemMetadataOutput"
+      },
+      {
+        "title": "Core Media",
+        "url": "https://developer.apple.com/documentation/CoreMedia"
+      },
+      {
+        "title": "HTTP Live Streaming (HLS) authoring specification for Apple devices",
+        "url": "https://developer.apple.com/documentation/HTTP-Live-Streaming/hls-authoring-specification-for-apple-devices"
+      },
+      {
+        "title": "Immersive Media Support",
+        "url": "https://developer.apple.com/documentation/ImmersiveMediaSupport"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/403/4/ef519281-1213-4ddf-892a-ca33ae288ef1/downloads/wwdc2025-403_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/403/4/ef519281-1213-4ddf-892a-ca33ae288ef1/downloads/wwdc2025-403_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "304",
+      "year": "2025",
+      "title": "Explore video experiences for visionOS",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/304"
+    },
+    {
+      "id": "297",
+      "year": "2025",
+      "title": "Learn about the Apple Projected Media Profile",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/297"
+    },
+    {
+      "id": "296",
+      "year": "2025",
+      "title": "Support immersive video playback in visionOS apps",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/296"
+    },
+    {
+      "id": "237",
+      "year": "2025",
+      "title": "What’s new for the spatial web",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/237"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:21:48.298Z"
+}

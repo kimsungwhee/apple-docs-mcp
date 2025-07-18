@@ -1,0 +1,88 @@
+{
+  "id": "10007",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10007/",
+  "title": "Create seamless experiences with Virtualization",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "System Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Scott: Hi, I'm Scott Mionis from the Virtualization Team, and today we'll cover how features in macOS Sonoma enable you to create seamless experiences with Virtualization. Virtualization framework lets you configure, manage, and run virtual machines. In macOS Sonoma, virtual Macs and Linux virtual machines are more powerful than ever. They're easier to use, and with new configuration options, they are highly customizable. There are a bunch of features that make this possible. In this session, let's explore a few key items and how to leverage them in your applications. First, new workflows in virtual machines and improvements to the user experience. Next, new storage and keyboard configuration options. And last, how Rosetta 2 is making x86_64 applications run even faster in Linux virtual machines. Let's dive into some of the new ways to work with virtual machines. We will go over two powerful new features. First is the resizable display. A new display option for virtual machines that resizes at runtime to fill the window. And next, saving and restoring a virtual machine. A mechanism for serializing a running virtual machine to disk so it can be resumed later. Let's start with the resizable display. Screen size is a big part of working on a virtual Mac. With a resizable display, the virtual machine dynamically adjusts the screen resolution to fill the window, making the most efficient use of your space. Let's put this into code.\n\nTo use the resizable display in your own application, First, initialize a VZVirtualMachineView.\n\nTo make the display resizable, set the new \"automaticallyReconfiguresDisplay\" property to true. And that's it! Resizing the VZVirtualMachineView will now automatically tell the virtual machine to adjust its display size. And if you prefer to keep the display fixed, this property can remain its default value. Next, let's discuss saving, and restoring a virtual machine. Stopping a virtual machine means powering off the VM. Starting a virtual machine means doing a cold boot. But when working on a Mac, most applications save your progress as you work. The same should hold for virtual machines.\n\nLet's say I'm running a virtual machine, And I want to close it without losing my progress. I can save my virtual machine to a file and resume running it later. Or, let's say I want to back up my work. I can save my virtual machine at any point, making sure to clone external resources like disk and auxiliary storage. And if I want to jump back in time, I can rewind the virtual machine, right back to my previous state. So much is possible with this feature. So now let's put it into action. I'm running macOS Sonoma, and on my desktop is a virtual Mac, also running macOS Sonoma, in the Virtualization sample application. And I'm doing some research for my next exciting trip to the Apple Store. Of course, I have Maps open, and I'm browsing the Apple website for more information on AirPods. Now, I want to take a break without turning off the virtual machine. So I save my virtual machine as I quit the application.\n\nLater on, I relaunch the application, and my virtual machine resumes running right where I left off, with all my tabs open. Let's explore how to build this into your own application.\n\nBefore saving the virtual machine, pause the virtual machine. This puts the virtual machine into a stable state, with execution suspended. Then, invoke the new saveMachineState API, which writes a file to the URL you specify, containing all of the runtime state of the virtual machine. Everything you need to keep running it later. External resources, like disk images, should be copied separately. Now that we've saved the virtual machine, let's restore it.\n\nTo restore the state of the virtual machine, start by creating a new VZVirtualMachine from the same configuration.\n\nInstead of starting the virtual machine directly, which cold-boots the virtual machine, invoke the new restoreMachineState API, passing in the URL of the file that was saved earlier. And now, the virtual machine is in exactly the same state as before.\n\nYou can resume running it right where it left off. When restoring a virtual machine from a previous save, there are a few things to keep in mind. First, a save file contains a virtual machine's data. It needs to be protected. These files are hardware encrypted to provide the strongest possible guarantees. No other Mac or user account can read another's save file, or restore the virtual machine. Also, files saved today are versioned, so new capabilities can be added in the future. If the file format changes, and a save file cannot be restored, the framework will return specific error codes so your application can handle it. When this happens, discard the file, reboot the virtual machine, and you're back on track. Next, let's explore some of the new ways to build a virtual machine. First is Network block device. This allows a storage device to be attached to a virtual machine from over the network. Next is support for NVMe controller devices, an alternative to the virtio block device. And finally, the Mac keyboard, which makes working in a virtual Mac more intuitive by mapping Apple-specific keys, like the Globe key, directly through to the virtual machine. Let's start, with Network block device. In Virtualization framework, storage is typically served locally, reading and writing a disk image on the same Mac. But in macOS Sonoma, Virtualization framework can serve storage remotely from a server. The protocol that allows this is Network block device, or NBD. Let's dive into how it works. Virtualization framework implements the client side of the NBD protocol. When a virtual machine accesses the disk, the request is forwarded to an NBD Server that adheres to the same specification. After doing whatever I/O it needs, the NBD server responds with data. This is extremely flexible for two reasons. First, the storage can now reside anywhere; on the same Mac, or on a remote server over the network. And second, since the storage is managed by your own server, you can implement whatever custom I/O you need, whether that be custom image formats, or even physical drives. All of this completely transparently to the virtual machine. Let's look at how to set this up. In Virtualization framework API, there are two parts to initializing a storage device.\n\nFirst you choose a device type. This defines the interface that is presented to the virtual machine. And then you choose an attachment, This selects how the data is actually represented on your Mac. In virtual machines, you can mix and match. Virtualization framework supports virtual devices such as the virtio block device and the USB mass storage device. And with any of these devices, you can use attachments such as the disk image attachment, which reads and writes data on a disk image, or the new, Network Block Device attachment, which reads and writes data on an NBD server. Let's set up this NBD attachment in code. To use this in your application, first specify a URL that points to the NBD server. This is a special URL that identifies a specific disk on a specific server. Then initialize the new NBD storage attachment with this URL. Finally, initialize a storage device with this attachment. This example uses the virtio block device. For most use cases, this is likely to be the most performant option. Since storage is being served over the network, the connection can be lost at any time. You may want to take action when this happens, to pause the virtual machine, or re-establish the connection.\n\nIf this is the case, you can attach a custom delegate class, which will be notified when the state of the connection changes, so you can run whatever code you need. Adding to Virtualization framework's storage options is Non-Volatile Memory express, or NVMe. NVMe is a standardized technology enabled in many Linux kernels, and its applications are more specific, so let's start with why you might want to use it. For a vast majority of use-cases, the paravirtualized interface provided by virtio block storage is the easiest and fastest to use. This is certainly the case for virtual Macs. But some Linux virtual machines don't have virtio drivers. These may be kernels that are not built to run in virtual environments. What these kernels often do have are drivers for NVMe controller devices. In macOS Sonoma, NVMe controller devices are emulated by Virtualization framework, allowing more operating systems to be run in virtual machines. To configure NVMe, use the new device type when building your virtual machine. NVMe is for Linux virtual machines only, and, of course, also supports NBD. And now, with the Mac keyboard, Apple-specific keypresses are captured by a virtual Mac. Meaning you can use the Globe key for features like language switching, or even emoting in a virtual Mac. Now let's talk about Rosetta 2. Rosetta 2, in a Linux virtual machine, is the same technology used on macOS, And in macOS Sonoma, performance improvements mean Rosetta 2 runs even faster in a virtual Linux environment. Let's dive into how this is possible.\n\nRosetta 2 translates executable pages on-demand, which allows it to launch the executable much faster than if it had to wait to translate the entire x86_64 application. But this also means that while the application is running, Rosetta 2 must stop execution periodically to translate new regions of code. This overhead is likely to be the most noticeable when the application has just started running, as code needs to be translated for the very first time. But if I launched another application that linked against the same libraries or ran the same executables, Rosetta 2 has to do all that work over again, even though that code has already been translated. This problem can be solved with caching. Whenever a library or executable binary is translated, Rosetta 2 saves the result in a cache on disk and shares that with any other application that needs it, avoiding unnecessary retranslation overhead. In macOS Sonoma, Virtualization framework brings this optimization to Linux virtual machines with a new runtime daemon. There are two steps you will need to take, to set this up. First, there is a new API to configure the communication channel between the Rosetta 2 runtime and the new caching daemon. And then, you'll need to launch the daemon in the virtual machine. The Rosetta 2 runtime and the new daemon will now run alongside each other in the virtual machine. The two programs communicate with Virtualization framework to establish a connection. Dynamic linker requests, among others, will be forwarded to the daemon, which manages the cache, and the Rosetta 2 runtime will fetch pre-translated binaries directly from the daemon, eliminating the retranslation overhead. You'll see the biggest impact on exec-heavy tasks like compilation or package installation. Virtualization framework allows you to bring so many great options to your applications. Let's talk about ways to get started. Consider using the resizable display for both virtual Macs and Linux virtual machines. It significantly improves the user experience with a single line of code. The Mac keyboard is specifically designed to work seamlessly with the newest virtual Macs, Configuring virtual Macs with this device is an easy way to boost the user experience. A few of these features are building blocks that you can use to build powerful experiences. The ability to save a virtual machine is one example. Start investigating how rewinding or saving progress fits into your application. And the flexibility offered by NBD is incredible. NBD can unlock a lot of possibilities for applications needing custom IO. This is just the beginning of what virtual machines can do in macOS Sonoma. Thank you. The Virtualization team can't wait to see what you build. ♪ ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:58",
+      "title": "Set display as resizable",
+      "language": "swift",
+      "code": "// virtualMachine is a VZVirtualMachine.\nlet virtualMachineView = VZVirtualMachineView()\nvirtualMachineView.virtualMachine = virtualMachine\n\nvirtualMachineView.automaticallyReconfiguresDisplay = true"
+    },
+    {
+      "timestamp": "4:20",
+      "title": "Save a virtual machine",
+      "language": "swift",
+      "code": "// virtualMachine is a running VZVirtualMachine.\ntry await virtualMachine.pause()\n\nlet saveFileURL = URL(filePath: \"SaveFile.vzvmsave\", directoryHint: .notDirectory)\ntry await virtualMachine.saveMachineStateTo(url: saveFileURL)"
+    },
+    {
+      "timestamp": "4:58",
+      "title": "Restore a virtual machine",
+      "language": "swift",
+      "code": "let configuration = VZVirtualMachineConfiguration()\n// Customize configuration.\n\nlet virtualMachine = VZVirtualMachine(configuration: configuration)\n\nlet saveFileURL = URL(filePath: \"SaveFile.vzvmsave\", directoryHint: .notDirectory)\ntry await virtualMachine.restoreMachineStateFrom(url: saveFileURL)\n\ntry await virtualMachine.resume()"
+    },
+    {
+      "timestamp": "9:28",
+      "title": "Configure a Virtio block device with the NBD attachment",
+      "language": "swift",
+      "code": "let url = URL(string: \"nbd://localhost:10809/myDisk\")!\nlet attachment = try VZNetworkBlockDeviceStorageDeviceAttachment(url: url)\n\nlet blockDevice = VZVirtioBlockDeviceConfiguration(attachment: attachment)"
+    },
+    {
+      "timestamp": "10:02",
+      "title": "Respond to events with a delegate with the NBD attachment",
+      "language": "swift",
+      "code": "let url = URL(string: \"nbd://localhost:10809/myDisk\")!\nlet attachment = try VZNetworkBlockDeviceStorageDeviceAttachment(url: url)\n\n// NetworkBlockDeviceAttachmentDelegate implements the delegate protocol.\nlet delegate = NetworkBlockDeviceAttachmentDelegate()\nattachment.delegate = delegate\n\nlet blockDevice = VZVirtioBlockDeviceConfiguration(attachment: attachment)"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Running macOS in a virtual machine on Apple silicon",
+        "url": "https://developer.apple.com/documentation/Virtualization/running-macos-in-a-virtual-machine-on-apple-silicon"
+      },
+      {
+        "title": "Virtualization",
+        "url": "https://developer.apple.com/documentation/Virtualization"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10007/4/ADC7900A-352D-4B06-8285-22AFB8A66356/downloads/wwdc2023-10007_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10007/4/ADC7900A-352D-4B06-8285-22AFB8A66356/downloads/wwdc2023-10007_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10002",
+      "year": "2022",
+      "title": "Create macOS or Linux virtual machines",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10002"
+    }
+  ],
+  "extractedAt": "2025-07-18T11:01:21.098Z"
+}

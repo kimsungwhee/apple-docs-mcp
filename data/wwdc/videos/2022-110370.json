@@ -1,0 +1,182 @@
+{
+  "id": "110370",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/110370/",
+  "title": "Debug Swift debugging with LLDB",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Hello, everyone. My name is Adrian, and I'll be talking to you about how to set up your project for a great debugging experience with LLDB. LLDB is the underlying debugging technology that ships with Xcode. LLDB allows you to set breakpoints in your application, pause its execution, inspect the state of variables and objects, explore your code, and much more. LLDB can help you understand what your code is doing and it enables you to find the point where the behavior of your code diverges from your expectation. It's a powerful tool for understanding and exploring code. If you want to learn more about LLDB, please check out earlier videos, for example \"Discover breakpoint improvements\" from WWDC21. Today we are going to look at some advanced workflows that have unique implications on debugging Swift code. Maybe you are integrating a third-party framework into your app. Maybe your app and your team has grown to the point where most of your code is being built by a continuous integration system. Maybe you are using a custom build system to integrate with your company's infrastructure. Maybe you are building software for other software developers. Or you just want to learn more about LLDB. My goal is to provide a better understanding of how LLDB works, and what information it needs from the build system in order to function. I have a little project here that we are going to use as our running example. I'm a compiler engineer, and I like games, so in my spare time I write parsers for text adventures. This one I recently started in pure Swift. Let me show you what I've got so far. The game uses a text interface so I'm running it in Terminal. As in every good adventure, we'll start by checking our inventory.\n\nThis game takes place in a contemporary setting. I see that I have an iPhone. Next, let's have a look at our surroundings.\n\nHmm, this sensor looks intriguing. Maybe we can use the iPhone on the sensor? I dropped the iPhone? Uh, that's not what I wanted to show you. I think that my game has a bug. Good thing this is a debugger talk. Let's set a breakpoint in the parser and run our command again.\n\nWe should first verify that the command was read correctly. The \"words\" variable contains the tokenized command.\n\nAh, this did not go as expected. I don't know what's going on here. Yesterday I was using the debugger with no problems, and then last night I integrated this UI framework for styling text on the terminal. The developers of that framework have a continuous integration system that cranks out nightly builds of the framework, and I'm linking directly against the latest one. I wonder if this framework has something to do with my debugging troubles. Case in point, I already noticed that I can't step into the framework's source code, even though I explicitly downloaded the debug build. Look at that.\n\nI only see disassembly.\n\nLet's try to understand what happened there, and let's start by figuring out why I couldn't see any source code. What does LLDB need in order to show source code? When the compiler compiles a function, it generates machine code.\n\nAnd it leaves breadcrumbs for the debugger so an address in the executable can be mapped to a source file and line number and vice versa. These breadcrumbs are called debug info. On Apple platforms debug info is stored in object files. For archiving and distribution, debug info can be linked into .dSYM bundles. The debug info linker is called dsymutil. LLDB uses Spotlight to locate .dSYM bundles, so it's quite flexible in terms of where on disk they are. Now that we know how debug info works, let's get back to the example. First, let's verify that LLDB has actually found the dSYM for the framework. We can do this with the image list command. The UI framework is called \"TerminalInterface\".\n\nYes, LLDB did find the dSYM for the framework. That means it has access to the debug info. We can use \"image lookup\" to get more info about the current address.\n\nBy the way, if you want to learn more about the various options, LLDB has an excellent built-in help.\n\nAh, I think I see why there is no source code: This source path here points to where the sources were on the build server, not to where they are on my local machine. We can fix that. LLDB has a built-in source map that we can use to redirect these paths.\n\nWe could type in the command right now, but I'd rather make this change more permanent. In the Scheme editor, which you can bring up by going to Product, Scheme, Edit scheme, or by just option-clicking onto the play button, you can define a per-project LLDB init file. I already added one for this project.\n\nNow that we set up LLDB, let's run our project again.\n\nAnd we have source code.\n\nLLDB can remap source paths using \"settings set target.source-map\". You can put this command into your project's .lldbinit file to have this run automatically. Alternatively, each .dSYM bundle contains a XML .plist file where you can put a path prefix remapping dictionary. If you have a download script that fetches the latest builds from a server, you could modify that script to automatically inject the appropriate remapping dictionary into the downloaded .dSYM. You can learn more about this process on the LLDB website.\n\nSource paths are not language-specific at all, so this method works for Swift, C++, and Objective-C projects alike. To learn more about symbols on Apple platforms, check out \"Symbolication: Beyond the basics\" from WWDC21. When source code is compiled on a build server farm, the remote paths to source files could be different from machine to machine. To avoid having to define one remap prefix per machine, we can instruct the compiler to canonicalize source paths before putting them into the debug info. This is done using the -debug-prefix-map option. This way the machine-specific path prefix can be replaced by a unique, canonical placeholder name that can then be remapped to the local path in LLDB. Before we went on the source tangent, I was trying to print the object description of \"words\".\n\nThat did not work. In fact, even just evaluating the expression \"words\" did not work.\n\nAt least we can see the variables in the variables view.\n\nThe console equivalent of the Xcode variable view is the \"frame variable\" or \"v\" command.\n\nIf you want to learn more about the nuances between these commands, check out \"LLDB: Beyond 'po'\" from WWDC19. So what is po and why is it still not working? To understand what this means, we need to learn more about LLDB. As a reminder, LLDB is a debugger. But LLDB is not just a debugger. It is also a compiler! In addition to the functionality of a debugger, LLDB also includes a fully functioning copy of the Swift and Clang compilers. These compilers power LLDB's expression evaluator, which you may know through p and po command aliases. With the expression evaluator we can go beyond looking at variables, we can perform computation, call functions, and even change the state of the program. Check out \"Advanced Debugging with Xcode and LLDB\" from WWDC18 to get some ideas for what's possible with those commands. How does a debugger format a local variable? The debug info provided by the compiler tells the debugger where in memory a variable is stored. But with that information alone, LLDB would only be able to show us a random assortment of raw bytes. So how does LLDB turn that into nicely formatted output? The answer is types. Type information allows LLDB to understand the structure and memory layout of a source variable. With type information, LLDB knows what fields an aggregate type has and types allow LLDB to use the appropriate data formatters to pretty-print them. Now let's look at where type information comes from. On the debugger side, where the frame variable and v commands live, LLDB gets type information from Debug Info. And LLDB also gets types from Swift reflection metadata. On the compiler side, where the expression evaluator and po live, LLDB gets type information from Modules. This clean separation is new in Xcode 14 and explains why the variable view can be fully functional even if the expression evaluator isn't. Modules are how the compiler organizes type declarations. The Swift compiler knows many ways of importing modules, but before we dive into that, I want to show you a handy new feature.\n\nHow do we start diagnosing an issue that is happening on the compiler side? This year LLDB has added a new \"swift-healthcheck\" command. It's your first stop for figuring out if a module import failed. Let me show you how this works. By running swift-healthcheck after a problem occurred, we can get access to a log of the Swift expression evaluator configuration.\n\nAt the end of the log we see that LLDB had trouble importing the \"TerminalUI\" Swift module. Based on the name, I assume that this is an implementation detail of the TerminalInterface framework. This missing module is a problem because the type of self is generic over the UI implementation and without the module containing that type, the expression evaluator cannot realize the dynamic type of \"self\". I'm sending a message to the developers of the framework and ask them to investigate. In my experience, they have always been very responsive. Who knows, maybe we can even find a solution before the end of this video. In the meantime, let's take a look at how LLDB's compiler finds Swift modules.\n\nMy app has its own Swift module. It may import a system framework, such as Foundation. System frameworks are textual stable Swift interface files that live in the SDK. Any Swift module might import a Clang module, which is a fancy name for one or more header files that are grouped together with the help of a module map file. Clang modules can depend on other Clang modules.\n\nMy app might also import a Swift module that belongs to a locally built framework. It could also import textual Swift interface files that are not part of the SDK. If you want to learn how, check out \"Binary Frameworks in Swift\" from WWDC19. My app might also link against a static library that contains Swift code, and then that comes with a Swift module too. Hmm, we're not done, though. I should mention there are also bridging headers, which can also import Clang modules. Finally, as a special feature in LLDB only, some module contents can be reconstructed from debug info alone. That's a lot of sources! How does LLDB find them all? It's the build system's job to package up the modules so LLDB can find them. Modules from system frameworks stay in the SDK. LLDB will find a matching SDK to read them from as it's attaching to your program. When debugging straight from the object files, LLDB will find all non-SDK modules where they were at build time. Dsymutil can package a debug info archive called a .DSYM bundle for every dynamic library, framework or dylib, and executable.\n\nEach .dSYM bundle can contain binary Swift modules, which may contain bridging headers, textual Swift interface files, and most importantly, debug info. That covers everything. Everything? Everything except Swift modules that belong to static archives.\n\nIn order for a Swift module to be picked up by dsymutil, it needs to be registered with the linker. For dynamic libraries and executables, the build system will do this automatically for you. But static archives are not produced by the linker, they are just collections of object files, like a zip file. That means that the responsibility for registering any Swift modules with the linker falls onto every executable or dynamic library that links the static archive. In many cases, Xcode's build system will do this for you. But if you are maintaining your own custom build system, or if you have defined custom build rules, this is something to be aware of.\n\nWhen using the Apple linker, Swift modules need to be registered with the -add-ast-path option. Check your build log to verify that this is the case. You can also use dsymutil to dump the symbol table of your executable and grep for \"swiftmodule\" to verify that it worked.\n\nOn other platforms like Linux, the swift driver supports a -modulewrap action that converts binary Swift module files into objects that you can link into your binary together with the rest of the debug info. LLDB will find it there. The developers of the framework were incredibly responsive. As we suspected, it turns out that as a part of the framework's build system a static archive is used. And it was the Swift module that belongs to that static archive that was missing from the dSYM bundle. I have now installed a fixed version of the framework. It has registered the missing static module with the linker and so dsymutil was able to collect it.\n\nNow self can be resolved.\n\nAnd we can print the object description of \"words\".\n\nSince we're using the console anyway, I'm using the s alias to step into the parseFrom function.\n\nAnd now we can also easily find the bug, which is just a copy-and-paste error here.\n\nAnd with that, we not only solved the puzzle of the missing Swift module, but also the first puzzle of the game.\n\nBefore we wrap up, I have one more detail to watch out for. The Swift compiler will serialize Clang header search paths and other related options into the binary .swiftmodule files. This is great because it makes importing their Clang module dependencies just work during the build. But when building on a different machine, these local paths can be detrimental. So before shipping a binary .swiftmodule to another machine, consider building with the -no-serialize-debugging-options Compiler flag. In Xcode this is controlled via the SWIFT_SERIALIZE_DEBUGGING_OPTIONS setting.\n\nYou can reintroduce these search paths in LLDB with one of the following settings. Let's recap what we learned. If you want to ship code from one machine to another, you should ask yourself what level of debugging you expect to be doing. For example, if you ship a binary framework to another developer and you don't expect them to step into your code in the debugger, it's best to just ship the Swift module as a textual .swiftinterface file. But if you are setting up a build server or a continuous integration system, where developers are expected to debug the downloaded build artifacts, you will want to make sure to build a binary Swift module and consider turning off search path serialization. You can also canonicalize the source paths on the server in the debug info using the -debug-prefix-map option. That's all I have for you. Today we learned about LLDB's dual nature as a debugger and a compiler. The debugger needs debug info and reflection metadata to function and provides the Xcode variable view, and the v command. The compiler needs Modules and is sensitive to search paths. It's behind the expr, p, and po commands. A good way to get at the compiler diagnostics is the new swift-healthcheck command in LLDB. Thank you for watching!  ♪ ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "5:04",
+      "title": "Show info about all loaded dylibs",
+      "language": "swift",
+      "code": "image list"
+    },
+    {
+      "timestamp": "5:24",
+      "title": "Show debug info for a code address",
+      "language": "swift",
+      "code": "image lookup -va $pc"
+    },
+    {
+      "timestamp": "5:58",
+      "title": "Show help for target.source-map",
+      "language": "swift",
+      "code": "settings list target.source-map"
+    },
+    {
+      "timestamp": "6:37",
+      "title": "Remap source paths in LLDB",
+      "language": "swift",
+      "code": "settings set target.source-map /Volumes/BUILD_SERVER/projects /Users/demo/Desktop/Adventure/3rdparty"
+    },
+    {
+      "timestamp": "7:02",
+      "title": "Source path remapping",
+      "language": "swift",
+      "code": "settings set target.source-map prefix new"
+    },
+    {
+      "timestamp": "8:13",
+      "title": "Debug prefix map",
+      "language": "swift",
+      "code": "-debug-prefix-map $PWD=/BUILDROOT"
+    },
+    {
+      "timestamp": "8:32",
+      "title": "Print object description of \"words\"",
+      "language": "swift",
+      "code": "po words\nexpr -O -- words"
+    },
+    {
+      "timestamp": "8:40",
+      "title": "Evaluate the expression \"words\"",
+      "language": "swift",
+      "code": "p words\nexpr words"
+    },
+    {
+      "timestamp": "8:58",
+      "title": "Display the variable \"words\"",
+      "language": "swift",
+      "code": "v words\nframe variable words"
+    },
+    {
+      "timestamp": "10:10",
+      "title": "Raw memory of a Swift variable",
+      "language": "swift",
+      "code": "mem read UnsafePointer<Items>(self.inventory)"
+    },
+    {
+      "timestamp": "11:59",
+      "title": "See diagnostics from LLDB's embedded Swift compiler",
+      "language": "swift",
+      "code": "swift-healthcheck"
+    },
+    {
+      "timestamp": "",
+      "title": "15:47 - Register Swift modules  with the Linker",
+      "language": "swift",
+      "code": "ld … -add_ast_path /path/to/My.swiftmodule"
+    },
+    {
+      "timestamp": "16:05",
+      "title": "Verify Swift modules were registered in binary",
+      "language": "swift",
+      "code": "dsymutil -s MyApp | grep .swiftmodule"
+    },
+    {
+      "timestamp": "16:12",
+      "title": "Wrapping Swift modules in object files on Linux",
+      "language": "swift",
+      "code": "swiftc -modulewrap My.swiftmodule -o My.swiftmodule.o"
+    },
+    {
+      "timestamp": "17:08",
+      "title": "Step into function call",
+      "language": "swift",
+      "code": "s\nthread step-in"
+    },
+    {
+      "timestamp": "17:10",
+      "title": "Step over instruction",
+      "language": "swift",
+      "code": "n\nthread step-over"
+    },
+    {
+      "timestamp": "",
+      "title": "18:23 - Avoiding serialized search paths  in Swift modules (command line)",
+      "language": "swift",
+      "code": "-no-serialize-debugging-options"
+    },
+    {
+      "timestamp": "",
+      "title": "18:24 - Avoiding serialized search paths  in Swift modules (Xcode)",
+      "language": "swift",
+      "code": "SWIFT_SERIALIZE_DEBUGGING_OPTIONS=NO"
+    },
+    {
+      "timestamp": "18:32",
+      "title": "Reintroducing search paths in LLDB",
+      "language": "swift",
+      "code": "settings set target.swift-extra-clang-flags …\nsettings set target.swift-framework-search-paths …\nsettings set target.swift-module-search-paths …"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/110370/7/31CCC67C-D5AC-4493-AFB4-7B833E2B8162/downloads/wwdc2022-110370_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/110370/7/31CCC67C-D5AC-4493-AFB4-7B833E2B8162/downloads/wwdc2022-110370_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10209",
+      "year": "2021",
+      "title": "Discover breakpoint improvements",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10209"
+    },
+    {
+      "id": "10211",
+      "year": "2021",
+      "title": "Symbolication: Beyond the basics",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10211"
+    },
+    {
+      "id": "429",
+      "year": "2019",
+      "title": "LLDB: Beyond \"po\"",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/429"
+    },
+    {
+      "id": "412",
+      "year": "2018",
+      "title": "Advanced Debugging with Xcode and LLDB",
+      "url": "https://developer.apple.com/videos/play/wwdc2018/412"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:42:10.569Z"
+}

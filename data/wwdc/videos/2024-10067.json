@@ -1,0 +1,126 @@
+{
+  "id": "10067",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10067/",
+  "title": "Bring context to today’s weather",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Maps & Location"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello, my name is Sidy. I'm a software engineer on the Weather team. And today, I am here to share with you some exciting updates coming to WeatherKit this year.\n\nWeatherKit is powered by the Apple Weather Service. Its easy-to-use, privacy-first APIs enable you to provide accurate, hyperlocal weather data. And WeatherKit is not just at the core of our own Weather app. Its Swift and REST APIs are used by developers such as: Carrot Weather, (Not Boring) Weather, and DuckDuckGo, to deliver critical weather information to their users.\n\nThis year, we’re making WeatherKit better than ever, with some great enhancements! First, we’re enriching forecasts with details like precipitation amounts and cloud cover by altitude. Then, we’re introducing the ability to contextually highlight upcoming weather changes. And finally, we’re adding support for a binary format that expedites data transfer.\n\nToday, I’ll be walking through each of these, including how you can implement them in your app, starting with richer forecast details.\n\nWeatherKit is made up of several great APIs. There’s availability to tell you which datasets are available for a given location, attribution to give you the data sources to attribute to, and there’s activeAlert to give you details about ongoing severe weather. But the most important of them all is the weather API. It offers some of the most essential weather data like current conditions, minute by minute precipitation, 10 days worth of hourly and daily forecasts, and weather alerts.\n\nAnd this year, we are making it even better by adding more details to the current, hourly, and daily forecasts.\n\nThe current conditions provide details about the weather in the moment, like temperature, wind speed, or UV Index. And now, you can add even finer details like cloud cover by altitude. We are bringing these enhancements to the hourly forecast as well. You can now complement hourly cloud cover forecast with details like how it varies by altitude. Or, offer precipitation amounts by hour, just like the Apple Weather app.\n\nAnd the daily forecast query is getting the biggest enhancement of them all.\n\nYou can now easily add more granular daily forecasts to your apps, like high and low humidity, or, you can even split your forecast by day parts, separating day time weather from that of the night.\n\nNow, I will show you how you can access hourly precipitation data in your app with an example in Swift.\n\nFirst, I will quickly add an extension on CLLocation. This makes it easy to refer to New York as our reference location here and in all our upcoming Swift examples.\n\nFetching precipitation data is easy. First, I need to pass in the location for which I want get the data.\n\nThen, what granularity I want for my data. Here, I want hourly so I specify the .hourly query.\n\nFinally, I simply access the precipitationAmount property on the hourly forecast.\n\nAnd as with everything else on WeatherKit, these properties are available via the REST API. Let me show you how to implement the previous example, in REST.\n\nWeatherKit APIs are hosted at weatherkit.apple.com, so I pass that as the RESTful URL path. Next, I append parameters that represent the version of the API. This is version 2 as of this release. I provide the API, in this case, weather, following that, I add a parameter that represents the locale for which I want to fetch the data. Here I use en-US for American English, but I can pick from any locale supported by iOS.\n\nAnd If I pass an unsupported locale, then the response defaults to en-US. I also specify the location coordinates for which I need the data. Here, it’s New York City as in the Swift example. Finally, I specify the datasets to fetch. In this example, it is the hourly forecast. I also have the option of specifying the range of hours for which I need the forecast. In this example, and for the sake of simplicity, I restrict it to the current hour.\n\nBut I can also request up to 240 hours of forecast.\n\nNote that WeatherKit defaults to 24 hours, starting with the current hour, if no range is specified. Also note the use of the relative hourly query parameters, which allows the Apple Weather Service to compute the exact start and end time for the forecast based on the supplied timezone.\n\nAnd as a reminder, you need to produce an authentication bearer in order to access the Apple Weather Service. Now let’s take a look at the result.\n\nSo, I issued a GET on that URL and it returned an object hosted under the forecastHourly key.\n\nIt contains an array of hour forecasts, and each hour forecast has several properties, including one named precipitationAmount, just like the one in our Swift program.\n\nWhen checking the weather, we are actively looking for changing patterns because significant changes in weather can make or break plans.\n\nLearning about such changes ahead of time and in context is essential and as such, we are adding two brand new queries to the Weather API to do just that.\n\nSo now introducing: Changes and Historical Comparisons. Let’s start with changes. The changes query provides upcoming changes to temperature and precipitation including the time at which they will occur qualifying significant upcoming fluctuations, such as increases, or decreases.\n\nThe Weather app uses this query today to highlight upcoming temperature changes to its users.\n\nAnd now, you too can use the Changes query in your app. Let me show you how. Continuing with New York City as my location, I fetch the changes in weather by using the .changes query. This returns a list of changes, from which I filter out all except those changes occurring tomorrow. Note that I extended the Date struct to have isTomorrow as a property, so as to conveniently express my use case.\n\nFor this next step, I map the results to an array containing only low temperature changes.\n\nFinally, if there are any changes, and those changes contain a decrease in temperature, I display an appropriate message to the user.\n\nTo do this in REST, I simply specify the weatherChanges dataset. Note that this product always returns information, even if it’s to tell you that there are no upcoming significant changes in weather.\n\nLet’s take a look at an example output to crystalize our understanding. So I just issued a GET request for weather changes, and got some data back. The weather changes object is behind the weatherChanges key as you would expect.\n\nIt's a wrapper object for a list of changes tucked under the changes property Each change has a start date for the change in forecast and an end date.\n\nAnd finally, the type of change that is expected to occur. For this first change, it means that we expect an increase in the maximum temperature at the time frame specified.\n\nNote how the change in condition could also be a decrease, or, if no change is expected the field will be populated with the steady marker.\n\nChanges in weather are best understood in context. So, we’re also introducing Historical Comparisons.\n\nBased on data collected over the past 50+ years, Historical Comparisons lets you compare today’s weather to historical averages, with results ordered by significance of deviation from the mean.\n\nYou can see the historical comparisons query in use today in the Weather app, where we show the deviation of today’s high temperature from the historical average.\n\nThis query of the Weather API is convenient to use as well. To show you how, here is another fun code snippet. In Swift, just request weather data including the .historicalComparisons query.\n\nRemember that the list is ordered by significance of deviation from the mean.\n\nNow that we have our significant trend deviation identified, we can print it and tell the user.\n\nIf you are using the REST API, just include the historical comparisons dataset. Just like in Swift, you will get a list of comparisons ordered by significance of deviation from the average.\n\nLet’s take a look at the output of that request.\n\nThe resulting object is stored under the historicalComparisons key and it contains a list of comparisons.\n\nEach comparison has the condition for which the trend is computed.\n\nThe current value for the condition.\n\nThe baseline value, which should give you context as to which direction we have been trending.\n\nThe type of deviation is also listed. This corresponds to the amplitude of the deviation. In this case, the deviation is within the normal range. Other possible values for this field are: higher, much higher, lower, and much lower.\n\nThe baseline type represents which statistical method is used to establish a baseline. In this case, we use the mean, as opposed to something like the median value. This field value could change if we updated our statistical inference method.\n\nAnd finally, you get the date when we established a baseline for the computed averages for that condition.\n\nAs you see, Apple Weather has introduced several enhancements to the Weather API, that will allow you to get richer picture of the current forecast, empowering you in turn to provide various slices of the forecast to your users as you see fit in your app. At this time, I would like to talk about making sense of the rich weather data that you can get with WeatherKit, in the global historical context.\n\nUnderstanding the weather in the context of the climate has become essential to any great weather experience. Beyond increasing climate awareness, a general understanding of long-term weather patterns at a location can even help with planning events, or vacations far out into the future.\n\nTo make this easy, we're adding an all new Statistics API that is designed to get you broad and narrow historical statistics about weather.\n\nThe Statistics API has two new queries: Historical Averages and Daily Summaries. With Historical Averages, you can fetch long-term averages for temperature and precipitation based on data recorded since January 1, 1970.\n\nThese come in hourly, daily and monthly granularities. For instance, the Weather app leverages this API to show monthly precipitation averages, so that users can conveniently avoid the rainy season when planning their next great vacation. Now, I'm going to show you how you can fetch statistics data in your app as well.\n\nHere, I implemented a Swift example of fetching monthly statistics. Simply invoke the monthly statistics function on the WeatherService. Include your start and end month. As per the Gregorian calendar, 1 is January and 12 is December.\n\nAnd the type of query that you are interested in. Here, it’s precipitation.\n\nNow that I have the results, I group them in a dictionary keyed by the month.\n\nWhen using the REST API, I call the statistics, monthly API. Pass in precipitation as my dataset, then I specify my start and end months. This returns a list of month averages.\n\nLet’s take a look at the output next.\n\nSo we have our monthly weather statistics object, it contains the baseline start date for the computed averages. The list of monthly averages is hosted under the months property.\n\nSince we only fetched precipitation, that’s all we have. The precipitation object contains monthly averages data derived by the Apple Weather Service. Finally, the index of the concerned month is listed, 1 through 12.\n\nUsing the Statistics API, you can also get a summary of the weather for any day in the past back to August 1, 2021.\n\nThe summary includes the high and low temperatures as well as precipitation and snowfall amounts.\n\nThe Weather app uses this to show how precipitation has accumulated over the past thirty days, so as to better put today into context.\n\nLet’s take a look at how to fetch this data in Swift.\n\nHere, I want to fetch the past 30 days’ worth of weather summary data focusing on precipitation data, in Swift.\n\nI specify my date interval which started 30 days ago and ends now, note that thirtyDaysAgo is a custom extension that I defined on Date.\n\nI include precipitation as my query. And now that I have my data, I use it to inform the user. Note again that I only requested precipitation amounts in this example. If using the REST API, I call the summary daily path. Then, as in the Swift example, I filter for the precipitation data set. Finally, I specify the start and end date for the data that I wish to receive. The results are an array of daily summaries which normally contain temperature and precipitation data. Note only precipitation has nonzero values since that’s what we requested.\n\nAs you can see, the Apple Weather Service has been investing tremendous resources building these models that allow us to put today’s weather in the greater historical context.\n\nIn this release, we are making the data computed by these models available to you. And we're eager to have you incorporate this wealth of new data into your app.\n\nWith that said, fetching such large amounts of historical weather can be costly. So, we have also made it easy to receive weather data from our most data-intensive APIs. In this release, we are introducing support for FlatBuffers to make fetching weather data via WeatherKit faster than ever.\n\nFlatBuffers can yield up to 25% decrease in the payload size compared to an equivalent compressed JSON.\n\nIt can also yield up to a 90% decrease in parse time compared to JSON.\n\nIf you are using the Swift API, this optimization comes for free. While if you use the REST API, it is optional, and you can activate it by specifying an accept header.\n\nSo fear not, you can fetch more data than ever, while minimizing the size of the payload.\n\nAnd that was WeatherKit. Let’s do a quick recap of what we've seen in this session. In addition to all the great features already offered, we're adding finer details to the current, hourly, and daily forecasts, details like cloud cover by altitude, richer precipitation data, humidity, and visibility. Introducing changes and historical comparisons queries, an all-new Statistics API, and bringing support for FlatBuffers.\n\nWe're excited to see how you’ll innovate with these enhancements. If you have already used WeatherKit, think about enriching your forecasts with the additional data points provided by this release. Or, you can keep your users informed about significant weather changes.\n\nYou also have a wealth of historical data at your fingertips, which you can use to give your users a broader perspective on today’s weather. If you are using the REST API, please consider taking advantage of the new FlatBuffer response. If you have never used WeatherKit, please consider watching \"Meet WeatherKit\" from WWDC22, then give it a try today.\n\nThank you for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:40",
+      "title": "Fetch Precipitation Amount",
+      "language": "swift",
+      "code": "import CoreLocation\nimport Foundation\nimport WeatherKit\n\n\nextension CLLocation {\n    static var newYork: CLLocation {\n        CLLocation(latitude: 50.710, longitude: -74.006)\n    }\n}\n\nlet hourlyPrecipitation = try await WeatherService()\n    .weather(for: .newYork, including: .hourly)\n    .map(\\.precipitationAmount)"
+    },
+    {
+      "timestamp": "3:25",
+      "title": "Fetch Precipitation Amount (REST)",
+      "language": "swift",
+      "code": "https://weatherkit.apple.com/api/v2/weather/en-US/40.710/-74.006?dataSets=forecastHourly&relativeHourlyStart=0&relativeHourlyEnd=1&hourlyRelativeTo=now&timezone=America/New_York"
+    },
+    {
+      "timestamp": "6:05",
+      "title": "Weather Changes",
+      "language": "swift",
+      "code": "import CoreLocation\nimport Foundation\nimport WeatherKit\n\n\nextension Date {\n    var isTomorrow: Bool {\n        return Calendar.current.isDateInTomorrow(self)\n    }\n}\n\nlet changes = try await WeatherService()\n   .weather(for: .newYork, including: .changes)\n\nlet lowTemperatureChanges = changes?\n   .filter(\\.date.isTomorrow)\n   .map(\\.lowTemperature)\n\nif let lowTemperatureChanges, lowTemperatureChanges.contains(.decrease) {\n   // Lower temperatures expected tomorrow\n\n}"
+    },
+    {
+      "timestamp": "6:43",
+      "title": "Weather Changes (REST)",
+      "language": "swift",
+      "code": "https://weatherkit.apple.com/api/v2/weather/en-US/40.710/-74.006?dataSets=weatherChanges"
+    },
+    {
+      "timestamp": "8:17",
+      "title": "Historical Comparisons",
+      "language": "swift",
+      "code": "import CoreLocation\nimport Foundation\nimport WeatherKit\n\n\nlet mostSignificant = try await WeatherService()\n    .weather(for: .newYork, including: .historicalComparisons)?\n    .first\n\nswitch mostSignificant {\ncase .highTemperature(let trend), .lowTemperature(let trend):\n    // Display temperature trend\n    break\ncase .some, .none:\n    break\n}"
+    },
+    {
+      "timestamp": "8:36",
+      "title": "Historical Comparisons (REST)",
+      "language": "swift",
+      "code": "https://weatherkit.apple.com/api/v2/weather/en-US/40.710/-74.006?dataSets=historicalComparisons"
+    },
+    {
+      "timestamp": "11:11",
+      "title": "Monthly Statistics",
+      "language": "swift",
+      "code": "import CoreLocation\nimport Foundation\nimport WeatherKit\n\n\nlet averagePrecipitation = try await WeatherService()\n    .monthlyStatistics(\n        for: .newYork,\n        startMonth: 1,\n        endMonth: 12,\n        including: .precipitation\n    )\n\nlet averagePrecipitationAmountsPerMonth = Dictionary(\n    grouping: averagePrecipitation,\n    by: \\.month\n)"
+    },
+    {
+      "timestamp": "11:41",
+      "title": "Monthly Statistics (REST)",
+      "language": "swift",
+      "code": "https://weatherkit.apple.com/api/v2/statistics/monthly/40.710/-74.006?dataSets=precipitation&start=1&end=12"
+    },
+    {
+      "timestamp": "12:52",
+      "title": "Daily Summary",
+      "language": "swift",
+      "code": "import CoreLocation\nimport Foundation\nimport WeatherKit\n\n\nextension Date {\n    static var thirtyDaysAgo: Date {\n        return Calendar.current.date(byAdding: .day, value: -30, to: .now)!\n    }\n}\n\nlet pastThirtyDaysSummary = try await WeatherService()\n    .dailySummary(\n       for: .newYork,\n       forDaysIn: DateInterval(start: .thirtyDaysAgo, end: .now),\n       including: .precipitation\n    )\n    .first\n\nif let pastThirtyDaysSummary {\n    // We have a daily weather summary for each day in the past 30 days\n\n}"
+    },
+    {
+      "timestamp": "13:22",
+      "title": "Daily Summary (REST)",
+      "language": "swift",
+      "code": "https://weatherkit.apple.com/api/v2/summary/daily/40.710/-74.006?dataSets=precipitation&start=2024-05-12&end=2024-06-10"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Forum: Maps & Location",
+        "url": "https://developer.apple.com/forums/topics/maps-and-location?cid=vf-a-0010"
+      },
+      {
+        "title": "Request authentication for WeatherKit REST API",
+        "url": "https://developer.apple.com/documentation/WeatherKitRESTAPI/request-authentication-for-weatherkit-rest-api"
+      },
+      {
+        "title": "WeatherKit",
+        "url": "https://developer.apple.com/documentation/WeatherKit"
+      },
+      {
+        "title": "WeatherKit REST API",
+        "url": "https://developer.apple.com/documentation/WeatherKitRESTAPI"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10067/5/24B0D3B9-2CAA-4132-B63B-EEA93B0837EF/downloads/wwdc2024-10067_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10067/5/24B0D3B9-2CAA-4132-B63B-EEA93B0837EF/downloads/wwdc2024-10067_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10003",
+      "year": "2022",
+      "title": "Meet WeatherKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10003"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:38:29.176Z"
+}

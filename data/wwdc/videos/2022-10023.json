@@ -1,0 +1,100 @@
+{
+  "id": "10023",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10023/",
+  "title": "What's new in the Photos picker",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Essentials"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Mellow instrumental hip-hop music ♪ ♪ Hello! I'm Justin, and I'm an engineer on the Photos team. Today, I would like to talk about some of the improvements we have made to the system Photos picker. The system Photos picker is the best way for most apps to access photos and videos on iOS. The picker runs out of process, so your app doesn't need to request any library access to use it. It has an intuitive UI and an easy-to-use API. If you aren't familiar with the PHPicker API, you can watch our previous years' WWDC sessions where we talked about it in depth. In today's session, I'll start with an overview of the new features we added to the picker. Then, I will talk about additional platforms and frameworks the picker now supports. All right, let's dive in. The picker supports filtering between images, videos, and Live Photos since its introduction. However, we understand that some of your apps may have some other requirements. For example, a screenshot-stitching app wants to only show screenshots in the picker. Now it is possible with the new screenshots filter we added this year. In addition to screenshots, we added other asset types like screen recordings and slo-mo videos. There is also a way for you to create a new filter using PHAsset.PlaybackStyle. Other than Cinematic videos, depth effect photos, and bursts, all of the new filters are backported. If your app is targeting iOS 15, you can still use them as long as you are compiling with the iOS 16 SDK. For compound filters, in addition to the existing \"any,\" now you also use \"all\" and \"not.\" They are also backported to iOS 15. Let's look at some code examples. To show videos and Live Photos, you can combine them with \"any.\" Or you may only want to show screenshots. To show all images without screenshots, you can combine images and screenshots filters using \"all\" and \"not.\" And the last example, you can use .cinematicVideos filter if you are targeting iOS 16. Next, let's talk about improvements related to the half-height picker. In iOS 15, UIKit has a new UISheetPresentationController API which you can use to present the picker in half-height mode. It already works great in many cases. But some of you may want to implement a custom UI to adjust selected assets and have those changes be reflected back in picker. In iOS 16, you can deselect assets using their asset identifiers. As shown here, the second photo is no longer selected in the picker after deselectAssets is called. You can also call the moveAsset method to reorder assets. Now we are familiar with all of the new picker features, let's talk about platform support. Currently, the system Photos picker can only be used by iOS and iPadOS apps. This year, we are bringing the Photos picker to two additional platforms: macOS and watchOS. The iPadOS picker is also updated with a new design just for the iPad. Let's take a look at the new iPad UI first. The picker now shows a sidebar to take advantage of the larger iPad display. The sidebar allows faster navigation between different collections. But if there is not enough space, like in Split Screen mode, we will fall back to the existing compact picker UI. Next, macOS. The macOS picker also has a sidebar with Mac-style controls. And just like the iOS picker, it supports multiple selection, fluid zooming in the grid, and has a powerful search feature which allows you to search for things like people, places, and a lot more. The new picker UI is also available in NSOpenPanel. You can use it to select assets from the system photo library, and for the first time, including those assets stored in iCloud Photos. Your app will get the new UI for free without needing to do any adoption work. Drag and drop is supported in the NSOpenPanel picker. It's also supported in the standard picker on iOS, iPadOS, and macOS. If your app only needs to select a few images or videos, the NSOpenPanel API may be all you need. But keep in mind that selected files in the photo library may be deleted by the system at any time. You should copy them to a location managed by your app if you need to ensure their availability in the long term. For media-centric macOS apps, we encourage you to default to the new Photos picker for the best user experience. However, your app should still provide an alternative way to select assets from the file system using the NSOpenPanel API. Sometimes your customers may still want to select assets outside their photo libraries. Last but not least, let's talk about watchOS. For the first time, you can have access to images stored on the watch using a new API. The watchOS picker also runs out of process, like the iOS and the macOS picker, so you don't need to request any library access to use it. It has a UI similar to the iOS picker but optimized for the smaller screen. You can browse your photos in the grid or by collections. You can configure the picker to show the selection order, as well as specifying a selection limit. However, unlike iOS and macOS, only images will be displayed in the watchOS picker. If the device has more than 500 images, only the most recent 500 will be shown. You may be wondering, \"PHPickerViewController is UIKit based. How can I use it for my macOS or watchOS app?\" As you may have guessed, new picker APIs are now available in AppKit and SwiftUI. Let's take a look at the AppKit API first. Actually, it is very similar to the UIKit API. You have access to the same PHPickerConfiguration type and its properties. There is only a small difference: PHPickerViewController is a NSViewController subclass for AppKit apps. With the introduction of the AppKit-based PHPicker, it's time to move away from the legacy media library browser. PHPicker is a lot more powerful. It's also easier to maintain if you are working on both UIKit and AppKit apps at the same time. Finally, it's time to talk about the SwiftUI API.\n\nRemember the iOS picker you saw at the beginning of the session? It can be presented with only a few lines of SwiftUI code. More importantly, you have access to the SwiftUI PhotosPicker API on all picker-supported platforms: iOS, iPadOS, macOS, and watchOS. The picker will automatically choose the best layout depending on the platform, your app's configuration, and available screen space. You don't need to worry about what the picker UI should be, so you just can focus on making your app better.\n\nBefore we look at the new API in detail via a demo, we should talk about how to load selected photos and videos first. The selection you receive through the SwiftUI binding only contains placeholder objects. You still need to load actual asset data on demand. Keep in mind that some asset data won't be loaded immediately. The load operation could also fail if an error was encountered, for example, when the picker was trying to download data from iCloud Photos but the device was not connected to the internet. Some large files like videos may take a long time to download, so we recommend you to show a per-item inline loading UI instead of a blocking loading indicator. The PhotosPicker uses Transferable, which is a new SwiftUI protocol for transferring data between apps and extensions. You can load SwiftUI Image via Transferable directly, but for advanced use cases, you should define your own model objects conforming to the Transferable protocol to fully control the type of data you want to load. For more information about Transferable, you can check out the \"Meet Transferable\" session. If your app needs to deal with a lot of items at the same time, or large assets like videos, it may not be feasible to load everything in memory at the same time. To reduce memory usage, you can use FileTransferRepresentation to load selected assets as files. When loading assets as files, keep in mind that your app is responsible for managing their lifecycles. Files should always be copied to your app directory when received and deleted when they are no longer needed. OK, it's time for the demo! I have already set up this demo app showing an account profile page. Right now the profile image is just a placeholder icon. We want to add an edit button to change the profile image using the PhotosPicker API. The profile image view can already respond to the image state defined in our view model, so we just need to update the image state when a picker selection is received. First, let's go to our view model and add a new imageSelection property. It will be passed to the PhotosPicker API as the selection binding. Now we can go back to our profile image view, and add an overlay button that brings up the picker.\n\nOK, let's pause for a second and take a look at the code we just added. We added a PhotosPicker view, given it the selection binding we just defined, and configured it to only show images. The label of the PhotosPicker is just a pencil glyph with a circle background. We can build and run to see what we have so far. I can tap the edit button to bring up the picker. Tapping an image will automatically close the picker, but the profile image is not updated. Why? We still need to connect the image selection and the image state. So, let's do that. We can go back to the view model and respond to image selection did set. We set the image state to empty if the image selection is nil. Otherwise, we start loading the image. We are seeing a compiler error because we haven't implemented the loadTransferable method yet. Let's fix it.\n\nThe implementation is very simple. We just need to respond to the completion handler and update image state if the request is still the most recent one. Let's build and run to see it in action. I can tap the edit button and select an image. Great! It works as expected. Actually, the project is already set up to run on macOS as well. Will the code I just added automatically work on macOS? Let's build and run to find out. It compiles! I can open the picker, select an image, and it is reflected in the app. That's it for the demo. You just saw the demo on iOS and macOS, but the same code will work on watchOS as well. However, there are a few things to keep in mind.\n\nThe watchOS picker is designed for simple flows and short interactions. Images are scaled based on the device size. Usually, they are synced from the paired iPhone. However, Family Setup lets your family members who don't have their own iPhone enjoy the features and benefits of an Apple Watch. If a device is in the Family Setup mode, the most recent 1000 images in iCloud Photos can be selected using the picker. The picker may need to download some images from the internet. And if that's the case, a loading UI will be shown in the picker before closing.\n\nBefore you go, I just want to say that we are committed to making the system Photos picker the best way for most apps to access photos and videos. We really encourage you to switch to it if you are still using a custom picker. Thank you, and have a great WWDC! ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "0:01",
+      "title": "PHPicker Example (UIKit)",
+      "language": "swift",
+      "code": "var configuration = PHPickerConfiguration()\nconfiguration.filter = .images\nconfiguration.selection = .ordered\nconfiguration.selectionLimit = 10\n\nlet picker = PHPickerViewController(configuration: configuration)"
+    },
+    {
+      "timestamp": "0:02",
+      "title": "PHPickerFilter",
+      "language": "swift",
+      "code": "var configuration = PHPickerConfiguration()\n\n// iOS 15\n// Shows videos and Live Photos\nconfiguration.filter = .any(of: [.videos, .livePhotos])\n\n// New: iOS 15\n// Shows screenshots only\nconfiguration.filter = .screenshots\n\n// New: iOS 15\n// Shows images excluding screenshots\nconfiguration.filter = .all(of: [.images, .not(.screenshots)])\n\n// New: iOS 16\n// Shows cinematic videos\nconfiguration.filter = .cinematicVideos"
+    },
+    {
+      "timestamp": "0:03",
+      "title": "PHPicker Example (AppKit)",
+      "language": "swift",
+      "code": "var configuration = PHPickerConfiguration()\nconfiguration.filter = .images\nconfiguration.selectionLimit = 10\n\nlet picker = PHPickerViewController(configuration: configuration)"
+    },
+    {
+      "timestamp": "0:04",
+      "title": "PhotosPicker Example (SwiftUI)",
+      "language": "swift",
+      "code": "struct ContentView: View {\n    @Binding selection: [PhotosPickerItem]\n    \n    var body: some View {\n        PhotosPicker(\n            selection: $selection,\n            matching: .images\n        ) {\n            Text(\"Select Photos\")\n        }\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "PhotoKit",
+        "url": "https://developer.apple.com/documentation/photokit"
+      },
+      {
+        "title": "Selecting Photos and Videos in iOS",
+        "url": "https://developer.apple.com/documentation/PhotoKit/selecting-photos-and-videos-in-ios"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10023/3/7AAE9501-211F-4201-B017-2AAC7F0C2556/downloads/wwdc2022-10023_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10023/3/7AAE9501-211F-4201-B017-2AAC7F0C2556/downloads/wwdc2022-10023_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10107",
+      "year": "2023",
+      "title": "Embed the Photos Picker in your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10107"
+    },
+    {
+      "id": "10132",
+      "year": "2022",
+      "title": "Discover PhotoKit change history",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10132"
+    },
+    {
+      "id": "10046",
+      "year": "2021",
+      "title": "Improve access to Photos in your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10046"
+    },
+    {
+      "id": "10652",
+      "year": "2020",
+      "title": "Meet the new Photos picker",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10652"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:23:45.726Z"
+}

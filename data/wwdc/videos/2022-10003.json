@@ -1,0 +1,66 @@
+{
+  "id": "10003",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10003/",
+  "title": "Meet WeatherKit",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Mellow instrumental hip-hop music ♪ ♪ Welcome to \"Meet WeatherKit\" at WWDC22. My name is Novall, and I'm an engineer on the Weather team. We rely on weather data day in and day out, and where we get this information is important. From checking the weather on your Apple Watch so you know to bring an umbrella with you before you head out the door, to sustainable agriculture where predicting rain and frost can help farmers plan crop rotation, to staying safe and prepared for winter storm travel -- weather impacts everyone. Accurate weather data has become even more critical in today's world affected by our changing climate. And having access to accurate forecasts is important now more than ever, which is why we created WeatherKit. WeatherKit is powered by the all-new Apple Weather Service, a world-class global weather forecast. It uses high-resolution weather models and machine learning and prediction algorithms to give you hyperlocal weather forecasts around the globe. With Apple Weather Service, we have access to a lot of data, and all of this is available to you through WeatherKit. Accurate weather data requires location information. And keeping that data private is a shared responsibility. In keeping with our commitment to privacy, WeatherKit is designed to give hyperlocal forecasts without compromising user information. Location is used only to provide weather forecasts and is not associated with any personally identifying information and is never shared or sold. With WeatherKit, we've made it easy for you to protect user privacy. Today I will be diving into more detail about WeatherKit so you can get the most out of our new API. First, I'll cover the available data sets we offer through WeatherKit, backed by our own Apple Weather Service. Next, I'll show you how to request weather information using the WeatherKit framework and a REST API designed so you can get weather data on any platform. And finally, I'll cover some additional implementation requirements and best practices. Let me start with an overview of the available weather data sets. As I mentioned, you have access to a lot of data in WeatherKit. So let's talk about each data set. The current weather data set describes the \"now\" conditions at the requested location. It represents a single point in time and includes conditions like UV index, temperature, and wind. The minute forecast contains minute-by-minute precipitation conditions for the next hour, where available. This data set is useful for deciding whether or not to bring an umbrella with you as you walk out the door. The hourly forecast is a collection of forecasts starting on the current hour and provides data for up to 240 hours. Each hour in the hourly forecast includes conditions like humidity, visibility, pressure, and dew point. The daily forecast contains a forecast collection of 10 days. Each day in the daily forecast provides information about the entire day, like the high and low temperature, sunrise, and sunset. Weather alerts contains severe weather warnings issued for the requested location. This data set contains important information to keep your users safe, informed, and prepared. And finally, historical weather provides saved weather forecasts from the past, so you can see trends in weather data. You can access historical data by specifying a start and end date to the hourly and daily requests. This gives you access to a lot of data. We think there are a lot of important and impactful ways you can use historical weather. Now that you've seen all of the rich weather data available, I'll walk you through how to request this weather data with the WeatherKit APIs. Apple Weather data is available through both a native framework and a set of REST APIs. First, let me show you how easy it is to access weather data with our Swift framework. All it takes is a few lines of code. And with Swift Concurrency, requesting weather is simple. First, you'll import WeatherKit and CoreLocation. Then you'll create a weatherService object, as your entry point for the Weather Service. You'll create a CLLocation with coordinates for your location of interest. Here, I'm using my hometown of Syracuse, New York. Then you’ll call weather(for:) on the weatherService instance and pass in the location created above. When the call completes, you can access the relevant data you need for your app, like the current temperature and UV Index in this example. Now that I've shown you how easy it is to request weather data with Swift, let me take you through another example I'm using a travel app that I'm building in SwiftUI. You can grab the completed project from the link associated with this session. Since I'm really looking forward to traveling again, I've decided to create a flight planner app to plan my next trip. I've already created the logic for my flight itinerary, but when I tap on each of the flights in my trip, I want to show columns containing the condition, precipitation, wind, and temperature at each destination. First step is to enable WeatherKit. Register the App ID in the Developer Portal, then select the Capability and App Services t  abs to enable WeatherKit. Then in Xcode, add the WeatherKit capability to the project. With that prep out of the way, let me walk through how I'll get the weather data for each of these locations. Here I have an Airport struct already set up that contains the latitude and longitude of my destination airports. I'll get the hourly forecast by calling weather(for:) on our shared weather service and then pass in our airport location.\n\nBecause I just want a subset of data, I've also specified to include the hourly forecast in the request. Now, I'll build and run my app.\n\nNow I can see my custom view updated to display the conditions at each airport. The next thing I need to do while building this app is to display attribution for the data sources in my app.\n\nFirst, I'll get the attribution URL from the attribution.legalPageURL property. This is a link to the legal attribution page that contains copyright information about the weather data sources. I'll also need to get the URL for the combined Apple Weather mark.\n\nIt's available in both light and dark variants, so I'll check the colorScheme environment value to find out if the SwiftUI view is currently displaying in light or dark appearance. Finally, I'll build and run again.\n\nNote that the Apple Weather mark and attribution link opens in an SFSafariViewController. That's all it takes to get the weather for our flight planner app, and there are so many ways you can use the WeatherKit API to add weather data to your apps. But that was only the native framework. The REST API provides the same rich weather data as the Swift framework and can be used on any platform. In this example, I'm showing how you can request weather alerts from the weatherkit.apple.com endpoint. First, you request an auth token. I'll discuss that more in a bit. Then, to get the weather object, you first create a URL indicating the desired weather data set for a given location. Be sure to set the appropriate language for a localized response. Then, provide the latitude and longitude of the location of interest. Indicate the desired data set. You may notice this parameter is plural so you can request several at once by separating each with a comma. And finally, the country code for the requested location. But note, the country code is only required if you're requesting the weather alerts data set. Next, you'll fetch the weather data using the URL and your auth token from above, converting the results to JSON. With that, you can access the weather alerts and their details. So again, another example of how easy it is for you to access weather data, only this time through REST. To go into more depth about the setup you need, let's revisit auth. For the WeatherKit REST API, there are a few additional steps to handle authentication. In the Developer Portal, you'll enable access for WeatherKit requests by creating an authentication key enabled for WeatherKit and an associated services ID. The private key can be created in the Keys section of the Developer Portal. WeatherKit requires tokens to validate authorization on each request. So on your server, you'll deploy a token service for creating a signed JSON web token using your private key. For those familiar with JSON web token authentication, this is a fairly standard authorization flow, but let me share some details in case this is your first time working with it. To generate a signed token you'll create the header containing the fields and values described in the developer documentation. Then create the payload containing the information specific to the WeatherKit REST API and your application, including items such as the issuer, subject, and expiration time. And finally, you'll sign the token for use with a subsequent call to the WeatherKit REST API. Going back to my weather alerts example, here's where you'll request the token from your signing service, and add the token to the Authorization header of your HTTP request for weather data. So that's the WeatherKit REST API. One of two great ways for you to access weather data from the Apple Weather Service. Lastly, I'll cover a few additional requirements for publishing on the App Store or before you go live on any platform using the REST API. Each of these requirements apply regardless of whether you're using the native Swift or REST APIs. The first requirement is attribution. As you saw in my demo, you'll get a link from our Attribution API which you'll need to display in your native or web app. The second requirement is an attribution logo. The WeatherKit API makes this easy and convenient by providing the image assets you need to display in your app. And finally, if you'll be displaying weather alerts, you'll also need to link to an event page provided in the response. So that's how easy it is to prepare your app for publication on the App Store or the web. So that's WeatherKit -- hyperlocal forecasts powered the Apple Weather Service accessible through our Swift framework and our REST API. Both open up a world of possibilities for you to use weather data in your apps, on any platform or device. We hope you enjoyed this session. Besides checking out the links associated with this session, read the docs and download the project. And of course, we'd love your feedback. We can't wait to see all of the creative and impactful ways you use WeatherKit. Thank you and have a great WWDC! ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:28",
+      "title": "Request the weather in Swift",
+      "language": "swift",
+      "code": "// Request the weather\n\nimport WeatherKit\nimport CoreLocation\n\n\nlet weatherService = WeatherService()\n\nlet syracuse = CLLocation(latitude: 43, longitude: -76)\n\nlet weather = try! await weatherService.weather(for: syracuse)\n\nlet temperature = weather.currentWeather.temperature\n\nlet uvIndex = weather.currentWeather.uvIndex"
+    },
+    {
+      "timestamp": "7:56",
+      "title": "Request the weather via REST API",
+      "language": "swift",
+      "code": "/* Request a token */\nconst tokenResponse = await fetch('https://example.com/token');\nconst token = await tokenResponse.text();\n\n/* Get my weather object */\nconst url = \"https://weatherkit.apple.com/1/weather/en-US/41.029/-74.642?dataSets=weatherAlerts&country=US\"\n\nconst weatherResponse = await fetch(url, {\nheaders: {\n\"Authorization\": token\n}\n});\nconst weather = await weatherResponse.json();\n\n/* Check for active weather alerts */\nconst alerts = weather.weatherAlerts;\nconst detailsUrl = weather.weatherAlerts.detailsUrl;"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "WeatherKit",
+        "url": "https://developer.apple.com/documentation/WeatherKit"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10003/5/C8AAE478-A435-4DA4-8256-F32941E32204/downloads/wwdc2022-10003_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10003/5/C8AAE478-A435-4DA4-8256-F32941E32204/downloads/wwdc2022-10003_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "110929",
+      "year": "2022",
+      "title": "WWDC22 Day 1 recap",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110929"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:14:23.285Z"
+}

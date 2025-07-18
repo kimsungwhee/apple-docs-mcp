@@ -1,0 +1,232 @@
+{
+  "id": "10149",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10149/",
+  "title": "Enhance your app with Metal ray tracing",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Graphics & Games"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Bass music playing ♪  ♪ Juan Rodriguez Cuellar: Hello, welcome to WWDC.\n\nMy name is Juan Rodriguez Cuellar, and I'm a GPU compiler engineer at Apple.\n\nIn this session, we’re going to talk about the brand-new features we’ve added this year to enhance our Metal ray tracing API.\n\nBut first, let’s do a quick recap about ray tracing.\n\nRay-tracing applications are based on tracing the paths that rays take as they interact with a scene.\n\nRay tracing is applied in a lot of domains such as audio, physics simulation, and AI; but one of the main applications is photorealistic rendering.\n\nIn rendering applications, ray tracing is used to model individual rays of light, which allow us to simulate effects such as reflections, soft shadows, and indirect lighting.\n\nThat is just a general definition of ray tracing.\n\nLet’s talk about Metal’s approach to it.\n\nWe start with a compute kernel.\n\nIn our kernel, we generate rays, which are emitted into the scene.\n\nWe then test those rays for intersections against the geometry in the scene with an intersector and an acceleration structure.\n\nEach intersection point represents light bouncing off a surface; how much light bounces and in what direction determines what the object looks like.\n\nWe then compute a color for each intersection and update the image.\n\nThis process is called shading and it can also generate additional rays, and those rays are also tested for intersection.\n\nWe repeat the process as many times as we’d like to simulate light bouncing around the scene.\n\nThis year, we focused our new features around three major areas.\n\nFirst, I will talk about how we’ve added ray-tracing support to our render pipelines, which allows us to mix ray tracing with our rendering.\n\nThen I will introduce you to the new features that focus on the usability and portability.\n\nThese features will ease the use of Metal ray tracing API.\n\nFinally, I will cover the production rendering features we’ve added this year that will help you create more realistic content.\n\nLet's start with ray tracing from render pipelines.\n\nLet’s consider the basic case of a render that has a single render pass.\n\nWith our new support for ray tracing from render pipelines, this makes it super easy to add ray tracing into the render.\n\nHowever, without this support, to add ray tracing to this render with last year’s Metal ray tracing API, we need to add a compute pass.\n\nLet’s just start by adding it after rendering to augment the rendered image.\n\nAdding this extra compute pass means writing more output to memory for the compute pass to use for ray tracing.\n\nNow, what if we wanted to use ray tracing in the middle of our render pass to calculate a value such as shadowing per pixel? This means that we need to split our rendering and introduce a compute pass.\n\nThinking more about what this means, we need to write out pixel positions and normals to memory as inputs to the ray tracing, and then read the intersection results back -- possibly several times.\n\nBut with the new support for ray tracing from render stages, we never need to leave our render pass and we just write our outputs to memory.\n\nLet's see how we use our new API.\n\nPreparing our render pipeline for ray tracing is similar to a compute pipeline.\n\nYou start by building your acceleration structure and defining custom intersection functions.\n\nTo support custom intersection, we need an intersection function table and we need to fill it with intersection functions.\n\nThis part has some differences compared to last year’s API.\n\nLet’s walk through how we can do that.\n\nLet’s consider some simple intersection functions.\n\nI have some functions here that will allow us to analytically intersect objects such as a sphere, a cone, or torus.\n\nWhen we create our pipeline, we add these functions as linked functions that we may call.\n\nIn this case, we are adding them to the fragment stage of the pipeline.\n\nTo use the functions, we need to create an intersection function table from the pipeline state and stage.\n\nOnce we have the table, we can create function handles from the pipeline state and stage and populate the table.\n\nSpecifying the functions for the fragment stage reuses the linkedFunctions object that we introduced last year.\n\nEach stage has its own set of linkedFunctions on the render pipeline descriptor.\n\nCreating an intersection function table is much the same as when done for the compute pipeline.\n\nThe only change is the addition of the stage argument.\n\nTo populate the table, we create the function handle.\n\nAgain, the handle is specific to the stage, so we need to specify the stage when requesting the handle.\n\nOnce we have the function handle, we just insert it in the function table.\n\nAnd that’s all you need to do to prepare your function tables in render pipeline.\n\nNow we just have to use everything we have built so far to intersect.\n\nActual use is straightforward.\n\nThe accelerationStructure and the intersection function table are both bound to buffer indices on the render encoder.\n\nThe shaders can then use these resources to intersect rays with an intersector the same way you would in a compute kernel.\n\nMore details about how to prepare your pipeline for ray tracing can be found in last year’s presentation.\n\nIn that talk, you will learn about building acceleration structures, creating function tables, and using the intersector in the shading language.\n\nWith ray-tracing support from render pipelines, we are opening the door for even more opportunities like adding ray tracing within a single render pass, mixing ray tracing with rasterization in hybrid rendering, and taking advantage of optimizations such as tile functions on Apple Silicon.\n\nIn fact, we will be soon adding ray tracing to our sample app that we demoed during the \"Modern Rendering in Metal\" session at WWDC 2019.\n\nWith ray tracing from render pipelines, we can update the code to use tile functions to keep everything in tile memory.\n\nFor more details about this, see this year’s \"Explore hybrid rendering with Metal ray tracing\" presentation.\n\nNext up, I want to introduce the new features we've added this year to improve the usability and portability of Metal ray tracing API.\n\nThese features not only provide simpler use of Metal ray tracing, but they also provide portability from other ray tracing APIs.\n\nOne of these new features is intersection query.\n\nWith intersection query, we’re allowing you to have more control over the intersection process.\n\nIntersection query is aimed toward simple use cases where intersector can create overhead.\n\nIt is a new way of traversing the acceleration structure that gives you the option of performing in-line custom intersection testing.\n\nLet's take a look at how we currently handle custom intersection using last year’s intersector.\n\nGoing back to the alpha test example from last year’s ray tracing with Metal presentation, we demonstrated how alpha testing is used to add a lot of geometric detail to the scene, as you see here in the chains and leaves.\n\nWe also learned how easy it is to implement alpha testing by customizing an intersector using the triangle intersection function.\n\nThe logic inside this triangle intersection function is responsible for accepting or rejecting intersections as the ray traverses the acceleration structure.\n\nIn this case, test logic will reject the first intersection, but it will accept the second intersection since an opaque surface has been intersected.\n\nLet’s see how intersection functions are used.\n\nWhen using Intersector, when you call intersect(), we start traversing the acceleration structure to find an intersection and fill our intersection_result.\n\nWithin the intersector, intersection function gets called each time a potential intersection is found.\n\nAnd intersections are then accepted or rejected based on intersection function logic.\n\nThis is a great programming model using intersector since it is both performant and convenient, but it does require creating a new intersection function and linking it to the pipeline.\n\nThere might be cases where the logic inside the intersection function is only a few lines of code, as it is the case for alpha test logic.\n\nThis is the intersection function that contains the logic to do alpha testing.\n\nWith intersection query, we can place this logic in-line without the need of this intersection function.\n\nHere is how.\n\nWith intersection query, when you start the intersection process, your ray traverses the acceleration structure, and the query object contains the state of the traversal and the result.\n\nEach time the ray intersects a custom primitive or a nonopaque triangle, control is returned to the shader for you to evaluate the intersection candidates.\n\nIf the current candidate passes your custom intersection logic, you commit it to update the current committed intersection and then continue the intersection process.\n\nOn the other hand, if candidate fails custom intersection logic, you can just ignore it and continue.\n\nLet me show you the code to do alpha testing using intersection query.\n\nFirst, you start the traversal.\n\nNote that we loop on next to evaluate all candidate intersections.\n\nSecond, you evaluate each candidate starting by checking the candidate type.\n\nFor alpha test example, you're interested on intersections of triangle type.\n\nAfter checking the type, you'll want to query some intersection information about the candidate.\n\nWe perform three queries for information needed in the alpha test logic which is now in-lined.\n\nFinally, if the candidate intersection passes alpha test, you will commit it so that it becomes the current committed intersection.\n\nUp to now, you have traversed the whole acceleration structure evaluating candidate intersections and commit the intersections that passed the alpha test logic.\n\nNow, you need to query committed intersection information to do the shading.\n\nFirst, you will query the committed type.\n\nIf none of the candidate intersections met your conditions to become a committed intersection, committed type will be none, which means the current ray missed.\n\nOn the other hand, if there is a committed intersection, you would want to query information about the intersection applicable to the intersection type and then use it for shading.\n\nThat’s all the code you need to perform alpha testing using intersection query.\n\nWith the introduction of intersection query and the introduction of intersector to render pipeline, we are giving you more opportunities to start bringing Metal ray tracing to your apps.\n\nHere are some things to consider when choosing between intersector objects and intersection queries.\n\nStart by considering if you have existing code, such as using the intersector in compute and your plans for porting that code.\n\nIf you have existing query code from other APIs, intersection query can help to port that code.\n\nNext, you have the complexity of handling custom intersection.\n\nIntersector requires intersection functions and tables, and it might be easier to use intersection query to handle custom intersection yourself.\n\nThe last question is performance.\n\nIn simpler cases, intersection query can avoid overhead when building your pipeline for ray tracing, but custom intersection handling requires returning to your code during traversal, which could have a performance impact, depending on the use case.\n\nAlso, use of multiple query objects will require more memory.\n\nOn the other hand, intersector can support those more complex cases by encapsulating all of the intersection work.\n\nIf you have the opportunity, we would recommend comparing the performance of both solutions.\n\nThat’s all about intersection query.\n\nNow let’s move on to some other new features.\n\nThe next two features we’re going to talk about are user instance IDs and instance transforms.\n\nThese features will help you add more information to your acceleration structure and access more of the data that is already there.\n\nHere is why we think these are really useful features.\n\nIf we look back to the sample code from last year’s presentation, we have multiple instances of the kernel box.\n\nUnderneath this, we have an instance acceleration structure with a set of nodes that branch until you reach the instances.\n\nLooking at two of these instances, they are at the lowest level of the instance acceleration structure.\n\nCurrently, when you intersect one of these instances, you only get the system’s instance ID from the intersection results.\n\nWith this, you could maintain your own table of data, but there’s data that we can expose in the acceleration structure to help you.\n\nLet’s talk about user-defined instance IDs first.\n\nWith this feature, you can specify a custom 32-bit value for each instance and then you get this value as part of the intersection results.\n\nThis is really useful for you to index into your own data structures, but it can also be used to encode custom data.\n\nFor example, here we’re using the user ID to encode a custom color for each instance.\n\nYou could use this for a simpler reflection with no need to look up any additional material information.\n\nThis is just one example, but the opportunities are endless.\n\nI can see how you would want to encode things like per-instance material ID or per-instance flags.\n\nWe have created an extended version of instance descriptor type that is used to specify these IDs.\n\nMake sure you specify which type of descriptor you’re using on the instance acceleration structure descriptor.\n\nIn the shading language, the value of the current user instance ID is available as an input to intersection functions with the instancing tag.\n\nTo obtain the values after intersection, the user-defined instance ID is available from the intersection result when using an intersector object.\n\nAnd when using intersection query object, there is a corresponding query to access the user-defined instance ID for both candidate and committed intersections.\n\nJust like user instance ID, we have added support for accessing your instance transformation matrices.\n\nThis data is already specified in the instance descriptor, and it is stored in the acceleration structure.\n\nThis year, we’ve exposed these matrices from the shading language.\n\nYou can access the instance transforms in the intersection functions when you apply the instancing and world_space_data tags.\n\nSimilarly, the instance transforms are provided in the intersection results when using an intersector with instancing and world_space_data tags.\n\nWhen using intersection query with instancing tag, there are corresponding queries for accessing the instance transforms for both candidate and committed intersections.\n\nTo summarize, this year we are improving the usability and portability of Metal ray tracing API by introducing three new features.\n\nIntersection query comes as an alternative to intersector that provides more control over the intersection process.\n\nAnd with the introduction of user instance ID and instance transforms features, we are providing you the ability to access data from the acceleration structure instead of having to handle some external mapping in your code.\n\nIn addition, these three features offer portability from other ray tracing APIs, making cross-platform development easier.\n\nSo far in the session, we have talked about our new support for ray tracing in render pipeline and the different usability and portability features we have added this year.\n\nNow, let me show you what features we are introducing to enhance production rendering.\n\nSince Metal ray tracing API was introduced last year, people have been using it to render some amazing high-quality content.\n\nThis year, we’ve added two new features to make it possible to render even better content.\n\nLet's start with extended limits.\n\nSince we released the Metal ray tracing API, some users have started hitting the internal limits of our acceleration structures, especially in production-scale use cases.\n\nSo we are adding support for an extended-limits mode to support even larger scenes.\n\nLast year, we chose these limits to balance acceleration structure size in order to favor performance with typical scene sizes.\n\nThere is a potential performance trade-off to turning on this feature, so you’ll need to determine which mode is best for your application.\n\nExtended-limits mode increases the limit on the number of primitives, geometries, instances, as well as the size of the mask used for filtering out instances.\n\nTo turn it on, you first specify extended limits mode when building your acceleration structures.\n\nThen specify the extended_limits tag on the intersector object in the shading language.\n\nThat’s all you need to do to turn on extended limits! Next, let’s talk about motion.\n\nIn computer graphics, we often assume that the camera exposure is instantaneous.\n\nHowever, in real life, the camera exposure lasts for a nonzero period of time.\n\nIf an object moves relative to the camera during that time, it will appear blurred in the image.\n\nIn this extreme example, the person in the center has been standing still during the whole exposure while everyone else has been moving, causing them to be blurred.\n\nThis effect can go a long way towards making computer-generated images look more realistic.\n\nIn this example, the sphere is animated across several frames, but each frame is still an instantaneous exposure, resulting in a choppy animation.\n\nUsing the motion API, we can simulate camera exposure lasting for a nonzero amount of time.\n\nThis results in a smoother and more realistic-looking animation.\n\nIf we freeze the video, you can see that the boundaries of the sphere are blurred in the direction of motion just like a real camera.\n\nReal-time applications like games often approximate this effect in screen space.\n\nBut ray tracing allows us to simulate physically accurate motion blur, which even extends to indirect effects like shadows and reflections.\n\nLet’s take a look at how the motion-blurred version was rendered.\n\nMotion blur is a straightforward extension to ray tracing.\n\nMost ray-tracing applications already randomly sample the physical dimensions such as incoming light directions for indirect lighting.\n\nTo add motion blur, we can just choose a random time for each ray as well.\n\nMetal will intersect the scene to match the point in time associated with each ray.\n\nFor instance, this ray will see the scene like this.\n\nAnother ray will see the scene like this.\n\nAs we accumulate more and more samples, we’ll start to converge on a motion-blurred image.\n\nYou could actually already implement this today using custom intersection functions.\n\nYou could compute the bounding boxes of each primitive throughout the entire exposure and then use these bounding boxes to build an acceleration structure.\n\nHowever, this would be inefficient; the bounding boxes could be so large that some rays would need to check for intersection with primitives that they will never actually intersect.\n\nInstead, we can use Metal’s built-in support for motion blur which is designed to efficiently handle cases like this.\n\nThe first thing we need to do is associate a random time with each ray in our Metal shading language code.\n\nWe start by generating a random time within the exposure interval, then we just pass it to the intersector.\n\nThe next thing we need to do is to provide our animated geometry to Metal.\n\nWe do this using a common method of animation called keyframe animation.\n\nThe animation is created by modeling the ball at key points in time called keyframes.\n\nThese keyframes are uniformly distributed between the start and end of our animation.\n\nAs rays traverse the acceleration structure, they can fetch data from any keyframe based on their time value.\n\nFor instance Ray A would see the scene as it was modeled in Keyframe 11 because its time happens to match Keyframe 11.\n\nIn contrast, Ray B’s time is in between Keyframes 3 and 4.\n\nTherefore, the geometry of the two keyframes is interpolated for Ray B.\n\nMotion is supported at both the instance and primitive level.\n\nInstance animation can be used to rigidly transform entire objects.\n\nThis is cheaper than primitive animation but doesn’t allow objects to deform.\n\nOn the other hand, primitive animation is more expensive, but can be used for things like skinned-character animation.\n\nNote that both instance and primitive animation are based on keyframe animation.\n\nLet’s first talk about instance motion.\n\nIn an instance acceleration structure, each instance is associated with a transformation matrix.\n\nThis matrix describes where to place the geometry in the scene.\n\nIn this example, we have two primitive acceleration structures: one for the sphere and another for the static geometry.\n\nEach primitive acceleration structure has a single instance.\n\nTo animate the sphere, we will provide two transformation matrices, representing the start and end point of the animation.\n\nMetal will then interpolate these two matrices based on the time parameter for each ray.\n\nKeep in mind that this is a specific example using two keyframes, but Metal supports an arbitrary number of key frames.\n\nWe provide these matrices using acceleration structure descriptors.\n\nThe standard Metal instance descriptor only has room for a single transformation matrix.\n\nSo instead, we’ll use the new motion instance descriptor.\n\nWith this descriptor, the transformation matrices are stored in a separate buffer.\n\nThe instance descriptor then contains a start index and count representing a range of transformation matrices in the transform buffer.\n\nEach matrix represents a single keyframe.\n\nLet's see how to set up an instance descriptor with the new motion instance descriptor type.\n\nWe start by creating the usual instance acceleration structure descriptor.\n\nWe then specify we’re using the new motion instance descriptor type.\n\nThen, we specify the instanceDescriptorBuffer that contains the motion instance descriptors.\n\nFinally, we’ll need to bind the transformsBuffer containing the vertex buffer for each keyframe.\n\nThe remaining properties are the same as any other instance acceleration structure, and we can build it like any other acceleration structure as well.\n\nWe only need to make one change in the shading language, which is to specify the instance_motion tag.\n\nThis tells the intersector to expect an acceleration structure with instance motion.\n\nAnd that’s all we need to do to set up instance motion.\n\nNext, let’s talk about primitive motion.\n\nWith primitive motion, each primitive can move separately, meaning it can be used for things like skinned-character animation.\n\nRemember that we need to provide a separate 3D model for each keyframe, and Metal will then interpolate between them.\n\nWe’ll need to provide vertex data for each keyframe.\n\nLet’s see how to set this up.\n\nWe’ll start by collecting each keyframe’s vertex buffer into an array.\n\nThe MTLMotionKeyframeData object allows you to specify a buffer and offset.\n\nWe’ll use it to specify the vertex buffer for each keyframe.\n\nNext, we’ll create a motion triangle geometry descriptor.\n\nThis is just like creating any other geometry descriptor, except we use a slightly different type.\n\nAnd instead of providing a single vertex buffer, we’ll provide our array of vertexBuffers.\n\nFinally, we’ll create the usual primitive acceleration structure descriptor.\n\nNext, we provide our geometryDescriptor.\n\nThen we’ll specify the number of keyframes.\n\nSimilar to instance motion, we’ll need to make a small change in the shading language to specify the primitive_motion tag.\n\nAnd that’s all we need to do to set up primitive motion! Keep in mind that you can actually use both types of animation at the same time for even more dynamic scenes.\n\nNext, let’s take a look at this all in action! This is a path-traced rendering created by our Advanced Content team.\n\nThe video was rendered on a Mac Pro with an AMD Radeon Pro Vega II GPU.\n\nThe ninja character was animated using a skinned skeletal animation technique which allows each primitive to move separately.\n\nEach frame was rendered by combining 256 randomly timed samples taken using the primitive motion API.\n\nWe can slow it down to see the difference more clearly.\n\nThe version on the left doesn’t have motion blur, while the version on the right does.\n\nAnd we can increase the exposure time even further to simulate a long exposure.\n\nMotion blur can make a big difference in realism and it’s now easy to add with the new motion API.\n\nSo that’s it for motion.\n\nThanks for watching this talk.\n\nWe have been putting a lot of work into our Metal ray tracing API to provide the tools you need to enhance your app.\n\nWe can’t wait to see the amazing content that you will create with it.\n\nThank you, and have a great WWDC! ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:48",
+      "title": "Specify intersection functions on render pipeline state",
+      "language": "swift",
+      "code": "// Create and attach MTLLinkedFunctions object\nNSArray <id <MTLFunction>> *functions = @[ sphere, cone, torus ];\n\nMTLLinkedFunctions *linkedFunctions = [MTLLinkedFunctions linkedFunctions];\nlinkedFunctions.functions = functions;\n\npipelineDescriptor.fragmentLinkedFunctions = linkedFunctions;\n\n// Create pipeline\nid<MTLRenderPipelineState> rayPipeline;\nrayPipeline = [device newRenderPipelineStateWithDescriptor:pipelineDescriptor\n                                                     error:&error];"
+    },
+    {
+      "timestamp": "5:02",
+      "title": "Create intersection function table",
+      "language": "swift",
+      "code": "// Fill out intersection function table descriptor\nMTLIntersectionFunctionTableDescriptor *tableDescriptor =\n    [MTLIntersectionFunctionTableDescriptor intersectionFunctionTableDescriptor];\n\ntableDescriptor.functionCount = functions.count;\n\n// Create intersection function table\nid<MTLIntersectionFunctionTable> table;\ntable = [rayPipeline newIntersectionFunctionTableWithDescriptor:tableDescriptor\n                                                          stage:MTLRenderStageFragment];"
+    },
+    {
+      "timestamp": "5:14",
+      "title": "Populate intersection function table",
+      "language": "swift",
+      "code": "id<MTLFunctionHandle> handle;\n\nfor (NSUInteger i = 0 ; i < functions.count ; i++) {\n    // Get a handle to the linked intersection function in the pipeline state\n    handle = [rayPipeline functionHandleWithFunction:functions[i]\n                                               stage:MTLRenderStageFragment];\n\n    // Insert the function handle into the table\n    [table setFunction:handle atIndex:i];\n}"
+    },
+    {
+      "timestamp": "5:48",
+      "title": "Bind resources",
+      "language": "swift",
+      "code": "[renderEncoder setFragmentAccelerationStructure:accelerationStructure atBufferIndex:0];\n[renderEncoder setFragmentIntersectionFunctionTable:table atBufferIndex:1];"
+    },
+    {
+      "timestamp": "5:57",
+      "title": "Intersect from fragment shader",
+      "language": "swift",
+      "code": "[[fragment]]\nfloat4 rayFragmentShader(vertex_output vo [[stage_in]],\n                         primitive_acceleration_structure accelerationStructure,\n                         intersection_function_table<triangle_data> functionTable,\n                         /* ... */)\n{\n    // generate ray, create intersector...\n\n    intersection = intersector.intersect(ray, accelerationStructure, functionTable);\n\n    // shading...\n}"
+    },
+    {
+      "timestamp": "9:32",
+      "title": "Triangle intersection function",
+      "language": "swift",
+      "code": "[[intersection(triangle, triangle_data)]]\nbool alphaTestIntersectionFunction(uint primitiveIndex        [[primitive_id]],\n                                   uint geometryIndex         [[geometry_id]],\n                                   float2 barycentricCoords   [[barycentric_coord]],\n                                   device Material *materials [[buffer(0)]])\n\n{\n    texture2d<float> alphaTexture = materials[geometryIndex].alphaTexture;\n\n    float2 UV = interpolateUVs(materials[geometryIndex].UVs,\n        primitiveIndex, barycentricCoords);\n\n    float alpha = alphaTexture.sample(sampler, UV).x;\n\n    return alpha > 0.5f;\n}"
+    },
+    {
+      "timestamp": "10:36",
+      "title": "Custom intersection with intersection query",
+      "language": "swift",
+      "code": "intersection_query<instancing, triangle_data> iq(ray, as, params);\n\n// Step 1: start traversing acceleration structure\nwhile (iq.next())\n{\n    // Step 2: candidate was found. Check type and run custom intersection.\n    switch (iq.get_candidate_intersection_type())\n    {\n\t    case intersection_type::triangle:\n\t    { \n\t       bool alphaTestResult = alphaTest(iq.get_candidate_geometry_id(),\n\t                                iq.get_candidate_primitive_id(),\n\t                                iq.get_candidate_triangle_barycentric_coord());\n    \t   // Step 3: commit candidate or ignore\n           if (alphaTestResult) \n               iq.commit_triangle_intersection()\n  \t  }\n    }\n}"
+    },
+    {
+      "timestamp": "10:39",
+      "title": "Custom intersection with intersection query 2",
+      "language": "swift",
+      "code": "switch (iq.get_committed_intersection_type())\n{\n  // Miss case  \n  case intersection_type::none:\n  {\n      missShading();\n      break;\n  } \n  \n  // Triangle intersection was committed. Query some info and do shading.\n  case intersection_type::triangle:\n  {\n      shadeHitTriangle(iq.get_committed_instance_id(),\n                       iq.get_committed_distance(),\n                       iq.get_committed_triangle_barycentric_coord());\n      break;\n  }\n}"
+    },
+    {
+      "timestamp": "15:30",
+      "title": "Specifying user instance IDs",
+      "language": "swift",
+      "code": "// New instance descriptor type\n\ntypedef struct {\n    uint32_t userID;\n    // Members from MTLAccelerationStructureInstanceDescriptor...\n} MTLAccelerationStructureUserIDInstanceDescriptor;\n\n// Specify instance descriptor type through acceleration structure descriptor\n\naccelDesc.instanceDescriptorType = MTLAccelerationStructureInstanceDescriptorTypeUserID;"
+    },
+    {
+      "timestamp": "15:47",
+      "title": "Retrieving user instance IDs 1",
+      "language": "swift",
+      "code": "// Available in intersection functions\n\n[[intersection(bounding_box, instancing)]]\nIntersectionResult sphereInstanceIntersectionFunction(unsigned int userID[[user_instance_id]],\n                                                      /** other args **/)\n{\n    // ...\n}"
+    },
+    {
+      "timestamp": "15:58",
+      "title": "Retrieving user instance IDs 2",
+      "language": "swift",
+      "code": "// Available from intersection result\n\nintersection_result<instancing> intersection = instanceIntersector.intersect(/* args */);\n\nif (intersection.type != intersection_type::none)\n    instanceIndex = intersection.user_instance_id;\n\n// Available from intersection query\n\nintersection_query<instancing> iq(/* args */);\n\niq.next()\n\nif (iq.get_committed_intersection_type() != intersection_type::none)\n    instanceIndex = iq.get_committed_user_instance_id();"
+    },
+    {
+      "timestamp": "16:36",
+      "title": "Instance transforms",
+      "language": "swift",
+      "code": "// Available in intersection functions\n\n[[intersection(bounding_box, instancing, world_space_data)]]\nIntersectionResult intersectionFunction(float4x3 objToWorld [[object_to_world_transform]],\n                                        float4x3 worldToObj [[world_to_object_transform]],\n                                        /** other args **/)\n{\n    // ...\n}"
+    },
+    {
+      "timestamp": "16:51",
+      "title": "Instance transforms 2",
+      "language": "swift",
+      "code": "// Available from intersection result\n\nintersection_result<instancing, world_space_data> result = \n    intersector.intersect(/* args */);\n\nif (result.type != intersection_type::none) {\n    output.myObjectToWorldTransform = result.object_to_world_transform;\n    output.myWorldToObjectTransform = result.world_to_object_transform;\n}"
+    },
+    {
+      "timestamp": "17:03",
+      "title": "Instance transforms 3",
+      "language": "swift",
+      "code": "// Available from intersection query\n\nintersection_query<instancing> iq(/* args */);\n\niq.next()\n\nif(iq.get_committed_intersection_type() != intersection_type::none){\n    output.myObjectToWorldTransform = iq.get_committed_object_to_world_transform();\n    output.myWorldToObjectTransform = iq.get_committed_world_to_object_transform();\n}"
+    },
+    {
+      "timestamp": "19:17",
+      "title": "Extended limits",
+      "language": "swift",
+      "code": "// Specify through acceleration structure descriptor\n\naccelDesc.usage = MTLAccelerationStructureUsageExtendedLimits;\n\n// Specify intersector tag\n\nintersector<extended_limits> extendedIntersector;"
+    },
+    {
+      "timestamp": "22:30",
+      "title": "Sampling time",
+      "language": "swift",
+      "code": "// Randomly sample time\n\nfloat time = random(exposure_start, exposure_end);\n\nresult = intersector.intersect(ray, acceleration_structure, time);"
+    },
+    {
+      "timestamp": "25:54",
+      "title": "Motion instance descriptor",
+      "language": "swift",
+      "code": "descriptor = [MTLInstanceAccelerationStructureDescriptor new];\n\ndescriptor.instanceDescriptorType = MTLAccelerationStructureInstanceDescriptorTypeMotion;\n\n// Buffer containing motion instance descriptors\ndescriptor.instanceDescriptorBuffer = instanceBuffer;\ndescriptor.instanceCount = instanceCount;\n\n// Buffer containing MTLPackedFloat4x3 transformation matrices\ndescriptor.motionTransformBuffer = transformsBuffer;\ndescriptor.motionTransformCount = transformCount;\n\ndescriptor.instancedAccelerationStructures = primitiveAccelerationStructures;"
+    },
+    {
+      "timestamp": "26:33",
+      "title": "Instance motion",
+      "language": "swift",
+      "code": "// Specify intersector tag\n\nkernel void raytracingKernel(acceleration_structure<instancing, instance_motion> as,\n                             /* other args */)\n{\n    intersector<instancing, instance_motion> intersector;\n\n    // ...\n}"
+    },
+    {
+      "timestamp": "27:24",
+      "title": "Primitive motion 1",
+      "language": "swift",
+      "code": "// Collect keyframe vertex buffers\n\nNSMutableArray<MTLMotionKeyframeData*> *vertexBuffers = [NSMutableArray new];\n\nfor (NSUInteger i = 0 ; i < keyframeBuffers.count ; i++) {\n    MTLMotionKeyframeData *keyframeData = [MTLMotionKeyframeData data];\n\n    keyframeData.buffer = keyframeBuffers[i];\n\n    [vertexBuffers addObject:keyframeData];\n}"
+    },
+    {
+      "timestamp": "27:39",
+      "title": "Primitive motion 2",
+      "language": "swift",
+      "code": "// Create motion geometry descriptor\n\nMTLAccelerationStructureMotionTriangleGeometryDescriptor *geometryDescriptor =\n    [MTLAccelerationStructureMotionTriangleGeometryDescriptor descriptor];\n\ngeometryDescriptor.vertexBuffers = vertexBuffers;\ngeometryDescriptor.triangleCount = triangleCount;"
+    },
+    {
+      "timestamp": "27:57",
+      "title": "Primitive motion 3",
+      "language": "swift",
+      "code": "// Create acceleration structure descriptor\n\nMTLPrimitiveAccelerationStructureDescriptor *primitiveDescriptor =\n    [MTLPrimitiveAccelerationStructureDescriptor descriptor];\n\nprimitiveDescriptor.geometryDescriptors = @[ geometryDescriptor ];\n\nprimitiveDescriptor.motionKeyframeCount = keyframeCount;"
+    },
+    {
+      "timestamp": "28:10",
+      "title": "Primitive motion 4",
+      "language": "swift",
+      "code": "// Specify intersector tag\n\nkernel void raytracingKernel(acceleration_structure<primitive_motion> as,\n                             /* other args */)\n{\n    intersector<primitive_motion> intersector;\n\n    // ...\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Accelerating ray tracing using Metal",
+        "url": "https://developer.apple.com/documentation/metal/metal_sample_code_library/accelerating_ray_tracing_using_metal"
+      },
+      {
+        "title": "Applying realistic material and lighting effects to entities",
+        "url": "https://developer.apple.com/documentation/RealityKit/applying-realistic-material-and-lighting-effects-to-entities"
+      },
+      {
+        "title": "Managing groups of resources with argument buffers",
+        "url": "https://developer.apple.com/documentation/metal/buffers/managing_groups_of_resources_with_argument_buffers"
+      },
+      {
+        "title": "Metal",
+        "url": "https://developer.apple.com/documentation/Metal"
+      },
+      {
+        "title": "Rendering reflections in real time using ray tracing",
+        "url": "https://developer.apple.com/documentation/Metal/rendering-reflections-in-real-time-using-ray-tracing"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10149/7/C01A5359-2EAC-411E-99A5-8D7DA9C8220B/downloads/wwdc2021-10149_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10149/7/C01A5359-2EAC-411E-99A5-8D7DA9C8220B/downloads/wwdc2021-10149_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10128",
+      "year": "2023",
+      "title": "Your guide to Metal ray tracing",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10128"
+    },
+    {
+      "id": "10101",
+      "year": "2022",
+      "title": "Go bindless with Metal 3",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10101"
+    },
+    {
+      "id": "10157",
+      "year": "2021",
+      "title": "Discover Metal debugging, profiling, and asset creation tools",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10157"
+    },
+    {
+      "id": "10286",
+      "year": "2021",
+      "title": "Explore bindless rendering in Metal",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10286"
+    },
+    {
+      "id": "10150",
+      "year": "2021",
+      "title": "Explore hybrid rendering with Metal ray tracing",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10150"
+    },
+    {
+      "id": "10148",
+      "year": "2021",
+      "title": "Optimize high-end games for Apple GPUs",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10148"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:33:06.212Z"
+}

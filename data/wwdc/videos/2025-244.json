@@ -1,0 +1,242 @@
+{
+  "id": "244",
+  "year": "2025",
+  "url": "https://developer.apple.com/videos/play/wwdc2025/244/",
+  "title": "Get to know App Intents",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Machine Learning & AI"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, I’m James,and I’m an engineering manager on the Swift Intelligence Frameworks team.\n\nI’m excited to talk to you about App Intents, a framework that lets you extend your app's discoverability, visibility, and capabilities all across the system, and on all Apple platforms. I’ll start by talking about the increasingly important role App Intents plays within Apple’s developer ecosystem.\n\nNext, I’ll show you how to use the framework to make your app’s actions and entities available to people throughout the system.\n\nI’ll end by sharing some important details you should know when writing your App Intents.\n\nBefore we discuss how you can use App Intents, we should talk about the, \"Why.\" App Intents is more than the framework you bring INto your application to build features. It’s an ecosystem that enables your app’s functionality to expand OUT across the system.\n\nApp Intents lets you offer your users customized results in Spotlight, context-aware experiences for the Action Button, configurability and interactivity in Widgets, easy-to-access controls in Control Center, and even custom actions for Apple Pencil Pro.\n\nNew this year, Spotlight can now invoke your app’s actions from anywhere on the Mac.\n\nThe App Intents framework lets you provide these rich experiences to your customers, even when they’re not in your app. It all starts with the actions your app can perform, such as opening a note, starting a workout, or adding an item to a grocery list. These are the verbs of your app, and, as you may have guessed, you describe them by creating App Intents, or intents for short. When you create an intent, you provide the system with additional information to properly perform the action. Intents can take parameters and return values. These inputs and outputs can be native Swift types or types you define in your app. You can create two flavors of values with App Intents. Use an App Enum for your types with a constant set of values, and for dynamic types, use an App Entity. App Enums and App Entities are the nouns in your app.\n\nApp Shortcuts lets you elevate your key intents, making them more accessible and discoverable.\n\nApp Shortcuts are surfaced when searching in Spotlight, using Siri, configuring the Action Button, and more.\n\nYou can consider these as the sentences of your app, made from an intent and any parameters the intent needs to run.\n\nI’ve always found the best way to learn, is by doing. Let’s check out what it takes to create my first intent.\n\nI love to travel with my family, and I’ve been working on an app to check out famous landmarks throughout the world. My app has a few sections. I can scroll through a list of famous landmarks, check out them on a map, or view collections I’ve created.\n\nMany users enjoy scrolling the grid of landmarks. I’ll build an App Intent to make navigating directly to this part of the app more convenient.\n\nSo, how do I do that? I’ll start by defining a new struct that adopts the App Intents protocol.\n\nThe minimum requirements for an App Intent are a title and a perform method.\n\nThe title is a unique, localized string which will appear as the name of the intent. The perform method contains the intent’s logic. I’ll use a shared navigator to open the Landmarks view. Navigation must be done on the main thread, so I’ll mark perform with @MainActor.\n\nThe perform method returns an Intent Result.\n\nIntent Results can contain a number of things, including dialog that Siri can speak and a view snippet to show. By default, performing an intent will not foreground your app, so providing dialog and a snippet are a great way to show the result of your action.\n\nSince this intent is designed to navigate screens in the app, I’ll configure the intent to open when it’s run.\n\nI’ll set the new supportedModes property to foreground to open my app before the intent is performed, and that’s all it takes to build my first intent. After installing my app, intents can be found in Shortcuts. I can build a new Shortcut and add my navigation intent. Running it will foreground my app and bring me directly to the Landmarks view. My app also has sections for viewing collections and displaying landmarks on a map. It would be great if the intent could also navigate to those parts of the app. My app uses a simple Swift enum to model sections. To make the type compatible with the framework, I’ll adopt the App Enum protocol. App Enums only have a few requirements. They must be instantiable from a string, so I’ll add a String raw value. A Type Display Representation describes the type as a whole, and a caseDisplayRepresentation describes each case of the enum.\n\nThese representations must be constant values, since this information is used at compile time.\n\nIn my intent, I’ll add a new variable to hold the Navigation Option.\n\nI’ll add the @Parameter attribute to make this into an intent parameter. Intent parameters act as inputs to intents.\n\nThey can be required or optional. I’ve made this required, so the runtime will ensure it has a value before perform is called.\n\nI’ll update the perform method to use the resolved Navigation Option and change the title to reflect the new action.\n\nGoing back into my Shortcut, I’ll now see Navigation Option as an editable parameter. When I run the intent, Shortcuts will prompt for the section.\n\nI’ll choose Map, and be opened directly to that view. Types from the App Intents framework are designed to be highly customizable. This lets you quickly get the building blocks in place and then refine the experience. I’ll add some additional information to the intent, making it even better to use.\n\nBy default, Shortcuts will show each parameter as a row. Tapping the row will bring up a list of values for that type. This works, but there are a few things I can do to refine the experience.\n\nAn App Enum only requires a title for each enum case but can be configured with additional information, such as an icon.\n\nTo add an icon, I’ll need to use the Display Representation initializer.\n\nI can then add a symbol for each case.\n\nOnce I do that, Shortcuts will display the image in the picker. Intents can be configured with a fluent, sentence-like representation, called a Parameter Summary.\n\nA Parameter Summary describes the action and its parameters in a human-readable way.\n\nI’ll provide the summary with my parameter interpolated into the string. Shortcuts will display the summary with the selectable parameter inline, providing a more useful description of the action.\n\nActually, this doesn’t quite read like a sentence yet.\n\nI can fix that by adding a custom title to my parameter.\n\nWhile I’m here, I’ll also add a custom dialog to show when requesting a value.\n\nNew this year, when you implement a Parameter Summary for your intent that includes all required parameters, people will be able to run your action from Spotlight on the Mac. To learn more about new additions to Spotlight, I encourage you to watch this session.\n\nModeling your app’s actions as intents lets your customers build powerful shortcuts and automations. However, some intents are so central to your app that they should be available the moment your app is installed. You can provide these by adopting App Shortcuts.\n\nAn App Shortcut is a type that automatically exposes an App Intent across the system. App Shortcuts are featured prominently when searching in Spotlight. People can use Siri to run an App Shortcut by speaking one of their trigger phrases.\n\nThey can be configured to run from the Action Button or Apple Pencil squeeze.\n\nApp Shortcuts will show in the Shortcuts app without any user setup and the best part - they only take a couple lines of code to build. Let’s check out how.\n\nApps provide App Shortcuts through an App Shortcuts Provider. Your app should define a single provider, containing all your App Shortcuts.\n\nAn App Shortcut takes an instance of an intent as well as a list of phrases, a title, and an image.\n\nAn App Shortcut’s phrases can be uttered or typed to Siri, to run the App Shortcut.\n\nEach phrase must include the applicationName placeholder. Phrases can include up to one intent parameter. If provided, an App Shortcut for each value of that type will be created.\n\nThis simple structure's all that’s required to create an App Shortcut. Shortcuts will show your app’s App Shortcuts in a new section. The phrases influence the App Shortcuts that are created. Supplying a phrase without a parameter will create an App Shortcut using the title and image name.\n\nSince I’ve supplied a phrase with an App Enum, an App Shortcut for each case will be created.\n\nI can now run my intent with Siri or Spotlight. App Shortcuts are a great way to make your intents discoverable.\n\nTo learn more about building App Shortcuts, see this session from WWDC23.\n\nLandmarks are a core concept in my app. It would be great to take action on them from my intents. Unlike the constant list of navigation options, landmarks are dynamic, so I can’t use an App Enum. I’ll instead make an App Entity to model my landmarks.\n\nMy app already has a Landmark type. While I could conform that type to App Entity, in this case, I’m going to create a new LandmarkEntity struct. This type will act as a bridge between App Intents and my underlying data model.\n\nApp Entities must be identifiable, so I’ll add an ID. It’s important that this identifier is persistent and that you are able to lookup instances of your entity by this ID. We’ll come back to this. Similar to an intent having parameters, entities can have properties denoted with the @Property attribute. These will be exposed to your customers in Shortcuts and can be used in Find and Filter actions.\n\nI could set these values from my data model, but new this year, I can add Getters to my entity properties, using the new @ComputedProperty attribute. Instead of copying values between these types, I can defer to my data model.\n\nSimilar to App Enums, App Entities require a representation for the type and instances of the type.\n\nApp Entities require one additional piece of information, known as a query.\n\nUnlike an App Enum that has a known set of values, App Entities are dynamic. My app can have any number of landmarks.\n\nQueries are the way the system can reason about my entities. It does this by answering a number of different questions. The first type of question is, “What entities are there?\" The query is responsible for answering that question and returning a collection of matching entities.\n\nQueries support many types of this question. For example, an Entity String Query asks the question, “Do you have any entities matching this string?” An Entity Property Query might ask, “What are all the landmarks from this state?” All queries must answer one very specific question, “What is the entity for this ID?” This allows the system to uniquely reference an entity and only resolve it when it’s needed.\n\nI can provide the query by creating a type that conforms to the Entity Query protocol.\n\nThe entities(for:) method is how queries answer the, “What entity has this ID?\" question. It takes an array of identifiers and returns an array of entity instances. We’ll come back to the, “What entities are there?\" question later. Queries often need access to a local database or other dependency to fetch instances.\n\nI can use the @Dependency attribute to inject dependencies into my query. I’ll need to register my dependency using the shared App Dependency Manager. You should register dependencies as early as possible in your app’s lifecycle. Now that I’ve created a Landmark App Entity, I can use it from my intents. When traveling, it would be great to know what my closest landmark is. I’ll make an App Intent to show me. I’ll start with a basic Closest Landmark intent.\n\nI’ll need to fetch my closest landmark from my data model. Dependencies are also supported in intents, so I can add my dependency.\n\nFor my perform method, I’ll add a ReturnsValue of Landmark Entity.\n\nTypes used as intent parameters can also be returned from an intent. A returned value can be used as an input to another intent, such as in a multi-step Shortcut. I’ll also return a dialog and a view snippet. This lets my intent show or speak the result of my intent.\n\nLastly, I can implement my perform method.\n\nAfter finding the closest landmark, I’ll return a result containing the entity, dialog, and view. By providing both a dialog and view, I’ll ensure my customers can always find their closest landmark no matter how the intent was invoked. Speaking of, making an App Shortcut for this intent will make running this intent even easier.\n\nMy customers can now use Siri or Spotlight to have convenient access to this intent even if their phone is in their pocket. Intents, entities, and queries are the building blocks of App Intents. Each protocol has sub-protocols and configurations that you can use to provide additional functionality. Let’s check out how I can refine my App Entity, to provide additional experiences.\n\nI’d like to easily be able to see a photo of my nearest landmark. I can use the Shortcuts app to help me. I’ll start by creating a Shortcut and adding the Find Closest Landmark intent. To checkout the results, I’ll add a Show Content action. This will take the result of my intent and render it. By default, this action will show the display representation of the Landmark entity, but I can choose any entity property to render.\n\nLandmark entity doesn’t hold an image directly, but it does have a path to the image. I can use the Transferable protocol to declare an image representation for the entity. Transferable is a declarative way to describe different data representations for a type. These representations can be used to share data between apps. I’ll provide the image data as part of the type’s Transfer Representation. Back in Shortcuts, I can now choose to show the image representation of the entity.\n\nRunning my shortcut will show the landmark’s image. Declaring an image representation has additional benefits. I can use this image value as an input to any action that takes a photo, even those from other apps.\n\nTo learn more about Transferable, check out these sessions.\n\nI’d like to make one more change to my entity to make it easier to find in the system. Spotlight provides powerful semantic search across applications. Donating entities to Spotlight extends the system’s understanding of your content. To have Spotlight index my entity, I can adopt the Indexed Entity protocol.\n\nAn Indexed Entity is an App Entity that includes a Core Spotlight attribute set.\n\nNew this year, you can now add Spotlight indexing keys directly on properties. Annotating properties allows Spotlight to show more relevant information to customers. When donating indexed entities, the framework will handle creating the searchable item and attribute set for you. After donating entities, they can be found in Spotlight.\n\nBy default, tapping an entity will foreground the app. I can make this experience even better and open directly to the landmark detail view.\n\nI’ll start by creating an intent conforming to the Open Intent protocol.\n\nIntents adopting this protocol will automatically open the app before they’re performed, so I can skip adding a supported mode. Open Intents must have a target parameter. When tapping an entity in Spotlight, it will run a matching Open Intent, if one exists.\n\nInstead of calling out to my navigator, I can now adopt the new Target Content Providing Intent protocol, designed specifically for navigation. These intents do not require a perform method.\n\nInstead, I can attach an onAppIntentExecution modifier to my view. In the closure, I can use the intent’s parameter to perform a SwiftUI navigation.\n\nNow, when tapping a landmark from Spotlight, I’ll navigate directly to the landmark detail view.\n\nI’d like to wrap up this section by talking a bit more about queries and how they provide entities. To check out this in action, I’ll create a new App Shortcut for opening a landmark. I’ve added a new App Shortcut to my provider along with two phrases. One with a landmark parameter and one without.\n\nHowever, running my App Shortcut doesn’t give me any landmarks to choose. As you might have guessed, I can use the query to provide some landmarks. I’ll implement the optional suggestedEntities method on Entity Query, returning my customer’s favorite landmarks. Now, when running the intent again, I’m presented with the list of suggested entities. Suggested entities have another use as well.\n\nRemember when I added a parameterized phrase for this intent. I can generate an App Shortcut for each suggested entity by calling the updateAppShortcutParameters method on my provider.\n\nI can now use Siri and Shortcuts to easily navigate directly to my favorite landmarks. Queries can answer a number of other questions about your entities.\n\nIf your entities can all fit in memory, you can use an Enumerable Entity Query to return them all. App Intents can derive the more complicated queries from this one. An Entity Property Query adds the ability to return a sorted list of entities, given a set of predicates. In my case, I’ll implement an Entity String Query to support finding entities from a string.\n\nI’ll return a list of landmarks where the string matches their name or description. Customers will now be able to search all landmarks when configuring an intent that needs a landmark. We only scratched the surface of the App Intents framework and its many capabilities. Check out the App Intents documentation to see all the ways you can use the framework to delight your users.\n\nI’d like to end by providing insight into the architecture powering App Intents.\n\nWhen building your app with App Intents, your code is the source of truth.\n\nApp Intents doesn’t require any setup or configuration files. Your Swift source code will be read at build time to generate its App Intents representation. This representation is stored inside your app or framework. After your app is installed, the system will use this data to understand your app’s capabilities without needing to run your app. Let’s take a look at an intent to see how this works. The name of the intent becomes the unique identifier of the action. An intent’s title helps users differentiate between intents, and the perform method’s return signature describes how to render the result of the intent.\n\nSince this process happens at build time, rather than at run time, certain values must be provided with constant values. For example, an intent’s title must be constant. Calling out to a function or computed property will result in an error. This processing happens individually for each target in your app. In order to properly share your App Intent types between targets, there are a few additional things to be aware of. Last year, we introduced the ability for your app and App Intents extensions to reference App Intent types defined in a framework. This year, we’re excited to announce that you can now add App Intents to your Swift packages and static libraries. When using App Intent types across targets, you must provide the runtime with additional information about each target. This ensures that your types are properly indexed and validated. Let’s dive in to check out how that’s done. My app only has a single target containing all my App Intents code. I want to introduce a new App Intents extension to host some of my intents. Both targets will need access to Landmarks. So, I’ll create a Swift package and move my Landmark entity to it.\n\nTo share types between targets, I’ll need to register each target as an App Intents Package. First, I’ll create an App Intents Package in the same target as the entity.\n\nI’ll add another App Intents Package to my app target. I can supply a list of included packages, so I’ll include the one I just created. Finally, I’ll do the same from my extension. This will ensure the App Intents runtime has proper access to all types defined in the package. You should use App Intents Package when referencing code not compiled into a static library.\n\nTime to wrap this talk up. If this was your first look at App Intents, start small by adding the first App Shortcut to your app. From there, explore the framework to checkout which of its capabilities can bring the most value to your customers. For more about App Intents, we have some other great sessions this year. Thanks for watching!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:23",
+      "title": "Navigate Intent",
+      "language": "swift",
+      "code": "struct NavigateIntent: AppIntent {\n    static let title: LocalizedStringResource = \"Navigate to Landmarks\"\n\n    static let supportedModes: IntentModes = .foreground\n\n    @MainActor\n    func perform() async throws -> some IntentResult {\n        Navigator.shared.navigate(to: .landmarks)\n        return .result()\n    }\n}"
+    },
+    {
+      "timestamp": "5:02",
+      "title": "Navigation Option App Enum",
+      "language": "swift",
+      "code": "enum NavigationOption: String, AppEnum {\n    case landmarks\n    case map\n    case collections\n\n    static let typeDisplayRepresentation: TypeDisplayRepresentation = \"Navigation Option\"\n\n    static let caseDisplayRepresentations: [NavigationOption: DisplayRepresentation] = [\n        .landmarks: \"Landmarks\",\n        .map: \"Map\",\n        .collections: \"Collections\"\n    ]\n}"
+    },
+    {
+      "timestamp": "5:38",
+      "title": "Navigate Intent with Parameter",
+      "language": "swift",
+      "code": "struct NavigateIntent: AppIntent {\n    static let title: LocalizedStringResource = \"Navigate to Section\"\n\n    static let supportedModes: IntentModes = .foreground\n  \n    @Parameter var navigationOption: NavigationOption\n\n    @MainActor\n    func perform() async throws -> some IntentResult {\n        Navigator.shared.navigate(to: navigationOption)\n        return .result()\n    }\n}"
+    },
+    {
+      "timestamp": "6:57",
+      "title": "Case Display Representations with Images",
+      "language": "swift",
+      "code": "static let caseDisplayRepresentations = [\n    NavigationOption.landmarks: DisplayRepresentation(\n        title: \"Landmarks\",\n        image: .init(systemName: \"building.columns\")\n    ),\n    NavigationOption.map: DisplayRepresentation(\n        title: \"Map\",\n        image: .init(systemName: \"map\")\n    ),\n    NavigationOption.collections: DisplayRepresentation(\n        title: \"Collections\",\n        image: .init(systemName: \"book.closed\")\n    )\n]"
+    },
+    {
+      "timestamp": "7:28",
+      "title": "Navigation Option With Parameter Summary",
+      "language": "swift",
+      "code": "struct NavigateIntent: AppIntent {\n    static let title: LocalizedStringResource = \"Navigate to Section\"\n\n    static let supportedModes: IntentModes = .foreground\n  \n    static var parameterSummary: some ParameterSummary {\n        Summary(\"Navigate to \\(\\.$navigationOption)\")\n    }\n  \n    @Parameter(\n        title: \"Section\",\n        requestValueDialog: \"Which section?\"\n    )\n    var navigationOption: NavigationOption\n\n    @MainActor\n    func perform() async throws -> some IntentResult {\n        Navigator.shared.navigate(to: navigationOption)\n        return .result()\n    }\n}"
+    },
+    {
+      "timestamp": "9:22",
+      "title": "App Shortcuts Provider and Navigation Intent App Shortcut",
+      "language": "swift",
+      "code": "struct TravelTrackingAppShortcuts: AppShortcutsProvider {\n    static var appShortcuts: [AppShortcut] {\n        AppShortcut(\n            intent: NavigateIntent(),\n            phrases: [\n                \"Navigate in \\(.applicationName)\",\n                \"Navigate to \\(\\.$navigationOption) in \\(.applicationName)\"a\n            ],                \n            shortTitle: \"Navigate\",\n            systemImageName: \"arrowshape.forward\"\n        )\n    }\n}"
+    },
+    {
+      "timestamp": "11:02",
+      "title": "Landmark Entity",
+      "language": "swift",
+      "code": "struct LandmarkEntity: AppEntity {\n    var id: Int { landmark.id }\n\n    @ComputedProperty\n    var name: String { landmark.name }\n\n    @ComputedProperty\n    var description: String { landmark.description }\n  \n    let landmark: Landmark\n  \n    static let typeDisplayRepresentation = TypeDisplayRepresentation(name: \"Landmark\")\n\n    var displayRepresentation: DisplayRepresentation {\n        DisplayRepresentation(title: \"\\(name)\")\n    }\n  \n    static let defaultQuery = LandmarkEntityQuery()\n}"
+    },
+    {
+      "timestamp": "13:19",
+      "title": "Landmark Entity Query",
+      "language": "swift",
+      "code": "struct LandmarkEntityQuery: EntityQuery {\n    @Dependency var modelData: ModelData\n  \n    func entities(for identifiers: [LandmarkEntity.ID]) async throws -> [LandmarkEntity] {\n        modelData\n            .landmarks(for: identifiers)\n            .map(LandmarkEntity.init)\n    }\n}"
+    },
+    {
+      "timestamp": "13:50",
+      "title": "App Dependency Manager",
+      "language": "swift",
+      "code": "@main\nstruct LandmarksApp: App {    \n    init() {\n        AppDependencyManager.shared.add { ModelData() }\n    }\n}"
+    },
+    {
+      "timestamp": "14:18",
+      "title": "Closest Landmark Intent",
+      "language": "swift",
+      "code": "struct ClosestLandmarkIntent: AppIntent {\n    static let title: LocalizedStringResource = \"Find Closest Landmark\"\n\n    @Dependency var modelData: ModelData\n\n    @MainActor\n    func perform() async throws \n        -> some ReturnsValue<LandmarkEntity> & ProvidesDialog & ShowsSnippetView {\n        \n        let landmark = try await modelData.findClosestLandmark()\n\n        return .result(\n            value: landmark,\n            dialog: \"The closest landmark to you is \\(landmark.name)\",\n            view: ClosestLandmarkView(landmark: landmark)\n        )\n    }\n}"
+    },
+    {
+      "timestamp": "15:18",
+      "title": "Closest Landmark App Shortcut",
+      "language": "swift",
+      "code": "AppShortcut(\n    intent: ClosestLandmarkIntent(),\n    phrases: [\n        \"Find closest landmark in \\(.applicationName)\"\n    ],\n    shortTitle: \"Closest landmark\",\n    systemImageName: \"location\"\n)"
+    },
+    {
+      "timestamp": "16:33",
+      "title": "Transferable",
+      "language": "swift",
+      "code": "extension LandmarkEntity: Transferable {\n    static var transferRepresentation: some TransferRepresentation {\n        DataRepresentation(exportedContentType: .image) {\n            return try $0.imageRepresentationData\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "17:31",
+      "title": "Indexed Entity",
+      "language": "swift",
+      "code": "struct LandmarkEntity: IndexedEntity {\n    // ...\n    \n    @Property(\n        indexingKey: \\.displayName\n    )\n    var name: String\n\n    @Property(\n        indexingKey: \\.contentDescription\n    )\n    var description: String\n}"
+    },
+    {
+      "timestamp": "18:17",
+      "title": "Open Landmark Intent",
+      "language": "swift",
+      "code": "struct OpenLandmarkIntent: OpenIntent, TargetContentProvidingIntent {\n    static let title: LocalizedStringResource = \"Open Landmark\"\n\n    @Parameter(title: \"Landmark\", requestValueDialog: \"Which landmark?\")\n    var target: LandmarkEntity\n}\n\nstruct LandmarksNavigationStack: View {\n    @State var path: [Landmark] = []\n\n    var body: some View {\n        NavigationStack(path: $path) {}\n        .onAppIntentExecution(OpenLandmarkIntent.self) { intent in\n            path.append(intent.target.landmark)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "19:24",
+      "title": "Open Landmark App Shortcut",
+      "language": "swift",
+      "code": "AppShortcut(\n    intent: OpenLandmarkIntent(),\n    phrases: [\n        \"Open \\(\\.$target) in \\(.applicationName)\",\n        \"Open landmark in \\(.applicationName)\"\n    ],\n    shortTitle: \"Open\",\n    systemImageName: \"building.columns\"\n)"
+    },
+    {
+      "timestamp": "19:39",
+      "title": "Suggested Entities",
+      "language": "swift",
+      "code": "struct LandmarkEntityQuery: EntityQuery {\n    // ...\n\n    func suggestedEntities() async throws -> [LandmarkEntity] {\n        modelData\n            .favoriteLandmarks()\n            .map(LandmarkEntity.init)\n    }\n}"
+    },
+    {
+      "timestamp": "20:06",
+      "title": "Update App Shortcut Parameters",
+      "language": "swift",
+      "code": "TravelTrackingAppShortcuts.updateAppShortcutParameters()"
+    },
+    {
+      "timestamp": "20:25",
+      "title": "EnumerableEntityQuery",
+      "language": "swift",
+      "code": "extension LandmarkEntityQuery: EnumerableEntityQuery {\n    func allEntities() async throws -> [LandmarkEntity] { \n        // ...\n    }\n}"
+    },
+    {
+      "timestamp": "20:36",
+      "title": "EntityPropertyQuery",
+      "language": "swift",
+      "code": "extension LandmarkEntityQuery: EntityPropertyQuery {\n    static var properties = QueryProperties {\n        // ...\n    }\n\n    static var sortingOptions = SortingOptions {\n        // ...\n    }\n\n    func entities(\n        matching comparators: [Predicate<LandmarkEntity>],\n        mode: ComparatorMode,\n        sortedBy: [Sort<LandmarkEntity>],\n        limit: Int?\n    ) async throws -> [LandmarkEntity] {\n        // ...\n    }\n}"
+    },
+    {
+      "timestamp": "20:44",
+      "title": "EntityStringQuery",
+      "language": "swift",
+      "code": "extension LandmarkEntityQuery: EntityStringQuery {\n    func entities(matching: String) async throws -> [LandmarkEntity] {\n        modelData\n            .landmarks\n            .filter { $0.name.contains(matching) || $0.description.contains(matching) }\n            .map(LandmarkEntity.init)\n    }\n}"
+    },
+    {
+      "timestamp": "23:10",
+      "title": "App Intents Package",
+      "language": "swift",
+      "code": "// TravelTrackingKit\npublic struct TravelTrackingKitPackage: AppIntentsPackage {}\npublic structaLandmarkEntity: AppEntity {}\n\n// TravelTracking\nstruct TravelTrackingPackage: AppIntentsPackage {\n    static var includedPackages: [any AppIntentsPackage.Type] {\n        [TravelTrackingKitPackage.self]\n    }\n}\nstruct OpenLandmarkIntent: OpenIntent {}\n\n// TravelTrackingAppIntentsExtension\nstruct TravelTrackingExtensionPackage: AppIntentsPackage {\n    static var includedPackages: [any AppIntentsPackage.Type] {\n        [TravelTrackingKitPackage.self]\n    }\n}\nstruct FavoriteLandmarkIntent: AppIntent {}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Accelerating app interactions with App Intents",
+        "url": "https://developer.apple.com/documentation/AppIntents/AcceleratingAppInteractionsWithAppIntents"
+      },
+      {
+        "title": "Adopting App Intents to support system experiences",
+        "url": "https://developer.apple.com/documentation/AppIntents/adopting-app-intents-to-support-system-experiences"
+      },
+      {
+        "title": "App intent domains",
+        "url": "https://developer.apple.com/documentation/AppIntents/app-intent-domains"
+      },
+      {
+        "title": "App Intents",
+        "url": "https://developer.apple.com/documentation/AppIntents"
+      },
+      {
+        "title": "App Shortcuts",
+        "url": "https://developer.apple.com/documentation/AppIntents/app-shortcuts"
+      },
+      {
+        "title": "Building a workout app for iPhone and iPad",
+        "url": "https://developer.apple.com/documentation/HealthKit/building-a-workout-app-for-iphone-and-ipad"
+      },
+      {
+        "title": "Creating your first app intent",
+        "url": "https://developer.apple.com/documentation/AppIntents/Creating-your-first-app-intent"
+      },
+      {
+        "title": "Integrating actions with Siri and Apple Intelligence",
+        "url": "https://developer.apple.com/documentation/AppIntents/Integrating-actions-with-siri-and-apple-intelligence"
+      },
+      {
+        "title": "Making actions and content discoverable and widely available",
+        "url": "https://developer.apple.com/documentation/AppIntents/Making-actions-and-content-discoverable-and-widely-available"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/244/5/54cb9dae-53ff-4b7a-9091-2e1d6b3d779e/downloads/wwdc2025-244_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/244/5/54cb9dae-53ff-4b7a-9091-2e1d6b3d779e/downloads/wwdc2025-244_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "281",
+      "year": "2025",
+      "title": "Design interactive snippets",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/281"
+    },
+    {
+      "id": "260",
+      "year": "2025",
+      "title": "Develop for Shortcuts and Spotlight with App Intents",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/260"
+    },
+    {
+      "id": "10133",
+      "year": "2024",
+      "title": "Bring your app to Siri",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10133"
+    },
+    {
+      "id": "10210",
+      "year": "2024",
+      "title": "Bring your app’s core features to users with App Intents",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10210"
+    },
+    {
+      "id": "10176",
+      "year": "2024",
+      "title": "Design App Intents for system experiences",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10176"
+    },
+    {
+      "id": "10134",
+      "year": "2024",
+      "title": "What’s new in App Intents",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10134"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:38:57.040Z"
+}

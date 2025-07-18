@@ -1,0 +1,150 @@
+{
+  "id": "10117",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/10117/",
+  "title": "Enhance voice communication with Push to Talk",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "System Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Mellow instrumental hip-hop music ♪ ♪ Kevin Ferrell: Hi, my name is Kevin, and I'm an engineer working on the new PushToTalk framework, which enables a walkie-talkie system experience for apps on iOS. Later I'll be joined by my colleague Trevor to talk about how you can enhance voice communication in your apps with this new framework. First, I'll introduce the PushToTalk framework and explain how it fits into your app. Next, we'll go over how to configure your app for PushToTalk. After that, Trevor will walk through how to transmit and receive audio using the framework. Finally, Trevor will wrap up with best practices for enhancing the Push To Talk user experience while preserving battery life for your users. I'll get started by introducing key features of the new PushToTalk framework. The PushToTalk framework enables you to build a new class of audio communication app on iOS that provides a walkie-talkie style experience for your users. Push To Talk apps have many uses in fields where rapid communication is essential such as health care and emergency services. To provide a great Push To Talk experience, users need a way to quickly access audio transmission features while also being able to see who is responding to them. At the same time, a Push To Talk app must be power efficient to ensure that users can maintain all-day battery life while using the app. The PushToTalk framework provides you with APIs to utilize a system UI that users can access anywhere on the system without having to directly launch your app. The system UI allows a user to quickly activate an audio transmission, which will launch your app in the background to record and stream audio to your server. The system provides transparency to users by showing who's speaking when your app plays audio from your server. The PushToTalk framework accomplishes this by introducing a new push notification type that notifies your app when new audio is available for playback. When your app receives this notification, it is launched in the background so that it can stream and play audio. The PushToTalk framework is designed to be compatible with existing end-to-end communication solutions and backend infrastructure. If you've already implemented a Push To Talk workflow in your app, it should be easy for you to integrate the PushToTalk framework into your existing code. The framework allows your app to implement its own audio encoding and streaming process to transmit audio between users. This provides flexibility in how audio transmission is handled by your app and enables compatibility with other platforms. Finally, many Push To Talk apps rely on wireless Bluetooth accessories to trigger audio recording and transmission. Your apps can continue to integrate with these accessories using the CoreBluetooth framework and can trigger audio recording in PushToTalk. If you are building your first Push To Talk app, keep these integration considerations in mind as you begin architecting your code. Before we begin walking through the code for the new PushToTalk framework, we want to demonstrate how the Push To Talk experience can work in your app. Trevor and I have built a demo app to show how PushToTalk works. To start, I'll tap the join button to connect to a Push To Talk session, which we call a channel. Once I'm joined to the channel, I can transmit and receive audio to other members of the channel. Trevor and a few of our colleagues have joined the same channel so that we can communicate throughout the day. I can transmit audio directly from the app using the microphone button, but the PushToTalk framework allows me to access the transmit feature from anywhere in the system. When there is an active Push To Talk channel, a blue pill will appear in the status bar. Tapping that pill shows the system UI. The system UI displays the name of the Push To Talk channel that I've joined and an image provided by the app to help users quickly identify the channel. I can transmit audio to the channel by pressing and holding the Talk button and then waiting for the system chime to indicate that I can begin speaking.\n\nHey, Trevor. Are you ready to cover your WWDC slides? Over. Trevor Sheridan: When my device received Kevin's message, it displayed a notice that contained his name and image, providing transparency into who I'm receiving messages from. Once I launch the system UI, I can quickly respond to Kevin's message or leave the channel without having to stop what I'm doing. I don't want to leave Kevin waiting, so I'll reply now. Hey, Kevin. I'll be ready in a few minutes. Over. Kevin: The PushToTalk system UI can also be accessed from the Lock Screen so a user can receive and respond to messages without having to unlock their device.\n\nOK, see you soon! Over. Now that we've discussed how PushToTalk works, we'll review how to integrate the framework in your own app. There are a few modifications that you need to make to your Xcode project to support the PushToTalk framework. First, you need to add the new Push To Talk background mode. This enables your app to run in the background when responding to Push To Talk events. Next, you must also add the Push To Talk capability to your app to enable the framework features. The push notification capability is required to allow APNS to wake your app in the background to play received audio. Finally, your app must request recording permission from the user and include a microphone purpose string in its Info.plist file. Now we're ready to begin integrating the code. The first step in the Push To Talk workflow is to join a channel. The channel represents and describes the Push To Talk session to the system. Your app interacts with channels through a channel manager. The channel manager is the primary interface for your app to join channels and perform actions like transmitting and receiving audio. When you join a channel, the Push To Talk system UI becomes available and your app receives an APNS device token that can be used throughout the life of the channel. You must join a channel before you can begin transmitting and receiving audio. The first step is to create a channel manager using the class initializer. This initializer requires that you provide a channel manager delegate and a channel restoration delegate. Multiple calls to the initializer result in the same shared instance being returned, but we recommend that you store the channel manager in an instance variable. It is important to initialize your channel manager as soon as possible during app start up in your ApplicationDelegate's didFinishLaunchingWithOptions method. This ensures that the channel manager is initialized quickly so that existing channels can be restored and push notifications will be delivered to your app when it launches in the background. Now we're ready to join a channel. When someone joins a channel from your app, you must provide a UUID to identify the channel and a descriptor that describes the channel to the system. The same UUID will be used when interacting with the manager throughout the life of this channel. The descriptor includes a name and an image. Providing a unique image to represent the channel makes it easier for your users to identify the channel when interacting with the system. Your app joins a channel by calling the requestJoin method on the channel manager. Note that it is only possible to join a channel when your app is running in the foreground. When your app joins a channel, the channel manager delegate's didJoinChannel method will be called. This delegate method is your indication that your app has joined the channel. In addition, the delegate's receivedEphemeralPushToken method will be called with the APNS push token that can be used to send Push To Talk notifications to this device. This token will only be active for the life of the Push To Talk channel. Keep in mind that APNS push tokens are variable length and that you should not hardcode their length into your app. It is possible for the channel join request to fail, such as when attempting to join a channel when another channel is already active. If this occurs, the error handler will be called and the error will indicate the reason for the failure. When the user leaves a channel, the delegate's didLeaveChannel method will be called. Your user may leave the channel as a result of either your app requesting to leave programmatically or the user can tap the Leave Channel button in the system UI. The channel manager delegate has an associated LeaveChannel error-handling method that will be called if the request to leave the channel fails. PushToTalk supports restoring previous channels whenever your app is relaunched after being terminated or after a device reboot. In order for the system to accomplish this, you must provide a channel descriptor to update the system. Here we have a helper method that will fetch our cached channel descriptor in our restoration delegate. In order to keep the system responsive, you should return from this method as quickly as possible and should not perform any long-running or blocking tasks such as a network request to retrieve your channel descriptor. Throughout the lifecycle of your Push To Talk session, you should provide updates to the descriptor whenever information about the channel changes. You should also inform the system about changes to your network connection or server availability using the service status object. Here we're updating the descriptor for the channel. You can call this method whenever you need to update the channel name or image. In this example, we are providing an update to the system to indicate that the app's connection to its sever is in a reconnecting state. This updates the system UI accordingly and prevents the user from transmitting audio if the service status is connecting or disconnected. Once a connection is reestablished, you should update the service status to \"ready.\" Now let's review how to send and receive audio using PushToTalk. Trevor, are you ready to walk through the rest of the API? Over. Trevor: Yep. Send them over. Over.  Now that we've seen how to configure the PushToTalk framework, let's explore how to transmit and receive audio. A core capability of the PushToTalk framework is to allow your users to quickly transmit audio. Users can begin audio transmission from within your app, or from the system Push To Talk UI. If your app supports Bluetooth accessories through CoreBluetooth, you can also begin transmission in the background in response to a peripheral's characteristic change. When transmitting, the PushToTalk framework unlocks the device's microphone and activates your app's audio session to enable audio recording in the background. Let's review this process in detail. To begin transmission from within your app, you can call the requestBeginTransmitting function. This can be called whenever your app is running in the foreground or when reacting to a change of a Bluetooth peripheral's characteristic. If the system is not able to begin transmitting, the delegate's failedToBeginTransmitting InChannel method will be called with the reason for the failure. For example, if the user has an ongoing cellular call active, they will not be able to begin a Push To Talk transmission. To stop transmitting, call the channel manager's stopTransmitting method. To handle failures when attempting to stop transmitting, such as when the user was not in a transmitting state, the channel manager delegate has an associated failedToStopTransmitting InChannel method. Whether you begin transmission from within your app or if the user starts from the system UI, your channel manager delegate will receive a \"Did begin transmitting\" callback. The transmission source will be passed to the method and indicate whether the transmission was started from the system UI, the programmatic API, or a hardware button event. Once transmission begins, the system will activate the audio session for your app. This is your signal that you can now begin recording. You should not start or stop your own audio session. When transmission ends, your channel manager delegate will receive the end transmission and audio session deactivation events. Keep in mind that while your transmission is active, your audio session may be interrupted by other sources, such as phone and FaceTime calls for which you need to handle within your app. The PushToTalk framework also allows your app to receive and play audio from other users while in the background. This process relies on a new Apple Push Notification type that is specific to Push To Talk apps. When your Push To Talk server has new audio for a user to receive, it should send the user a Push To Talk notification using the device push token you received when joining the channel. When the push notification is received by your app, it must report an active speaker to the framework, which will cause the system to activate your app's audio session and allow it to begin playback. The new Push To Talk notification is similar to other notification types on iOS and there are specific attributes that you must set to enable delivery to your Push To Talk app. First, the APNS push type must be set to \"pushtotalk\" in the request header. Next, the APNS topic header must be set to your app's bundle identifier with a \".voip-ptt\" suffix appended to the end. The push payload can contain custom keys that are relevant to your app, such the name of an active speaker or an indication that the session has ended and the app should leave the Push To Talk channel. The body of the \"aps\" property can be left blank. Additionally, like other communication-related push types, Push To Talk payloads should have an APNS priority of 10 to request immediate delivery and an APNS expiration of zero to prevent older pushes that are no longer relevant from being delivered later. When your server sends a Push To Talk notification, your app will be started in the background and the incoming push delegate method will be called. When you receive a push payload, you will need to construct a push result type to indicate what action should be performed as a result of the push notification. To indicate that a remote user is speaking, return a push result that includes the active participant's information, including their name and an optional image. This will cause the system to set the active participant on the channel and indicate that the channel is in receive mode. The system will then activate your audio session, and call the didActivateaudioSession delegate method. You should wait for this method to be called before beginning playback. If your server decides that a user should no longer be joined to a channel, it may indicate this in the push payload, for which you can return a leaveChannel push result. It's important to note that you should return a PTPushResult from this method as quickly as possible and not block the thread. If you are attempting to set the active remote participant and do not have their image stored locally, you can return an activeRemoteParticipant with only the speaker's name. Then download their image on a separate thread, and once the image is retrieved, update the activeRemoteParticipant by calling setActiveRemoteParticipant on the channel manager. When the remote participant has finished speaking, you should set the activeRemoteParticipant to nil. This indicates to the system that you are no longer receiving audio on the channel and that the system should deactivate your audio session. This will also update the system Push To Talk UI and allow the user to transmit again. Now that we've covered the basics of how to integrate PushToTalk into your app, let's review some best practices for optimizing the user experience and preserving battery life.\n\nThe PushToTalk framework provides a system UI for users to begin a transmission and leave a channel from anywhere within the system. Additionally, it is flexible and allows you to implement your own custom Push To Talk UI when your app is in the foreground. The PushToTalk framework utilizes shared system resources. Only one Push To Talk app can be active on the system at a time, and Push To Talk communication will be superseded by cellular, FaceTime, and VoIP calls. Your app should handle PushToTalk failures gracefully and respond accordingly. As mentioned earlier, the PushToTalk framework handles activating and deactivating your audio session for you. However, you should still configure your audio session's category to play and record when your app launches. The system provides built-in sound effects to alert the user that the microphone is activated and deactivated when transmitting. You should not provide your own sound effects for these events. It is also important for your app to monitor and respond to AVAudioSession notifications, such as session interruptions, route changes, and failures. Your Push To Talk app can be affected by these audio session events just like any other audio app on the system. It's important to optimize your app to preserve battery life. The PushToTalk framework provides your app with background runtime when needed, such as when transmitting and receiving audio. When your app is not being used by the user, it will be suspended by the system to preserve battery life. You should not activate or deactivate your own audio sessions. The system will handle audio session activation for you at the appropriate times. This ensures that your audio session has the proper priority within the system and can be suspended when it is not being used. Your Push To Talk server should use the new push notification type to alert your app that there is new audio to be played, or that the Push To Talk session has ended. For more information about improving the battery life in your app, refer to the \"Power down: Improve battery consumption\" session. When your Push To Talk app is in the background and the app is not transmitting or receiving audio, it will be suspended by the system. When your app is suspended, any network connections will be disconnected. You should consider adopting Network.framework and QUIC to reduce the steps needed to establish a secure TLS connection and improve initial connection speed. Network.framework has built-in support for QUIC. Check out the \"Reduce networking delays for a more responsive app\" session for more information about how to use QUIC. The PushToTalk framework enables you to build robust and power-efficient walkie-talkie style communication experiences within your apps. If you already have an app that implements a walk-talkie style experience on iOS, you should begin updating your existing app to use the new API. If you're implementing a new walkie-talkie app, you should use the PushToTalk framework now. Finally, please submit feedback as you begin testing the new framework and integrating it with your app. Thank you and have a great WWDC! Over and out! ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "6:52",
+      "title": "Creating a Channel Manager",
+      "language": "swift",
+      "code": "func setupChannelManager() async throws {\n    channelManager = try await PTChannelManager.channelManager(delegate: self,\n                                                               restorationDelegate: self)\n}"
+    },
+    {
+      "timestamp": "7:33",
+      "title": "Joining a Channel",
+      "language": "swift",
+      "code": "func joinChannel(channelUUID: UUID) {\n    let channelImage = UIImage(named: \"ChannelIcon\")\n    channelDescriptor = PTChannelDescriptor(name: \"Awesome Crew\", image: channelImage)\n  \n    // Ensure that your channel descriptor and UUID are persisted to disk for later use.\n    channelManager.requestJoinChannel(channelUUID: channelUUID, \n                                      descriptor: channelDescriptor)\n}"
+    },
+    {
+      "timestamp": "8:11",
+      "title": "PTChannelManagerDelegate didJoinChannel",
+      "language": "swift",
+      "code": "func channelManager(_ channelManager: PTChannelManager, \n                    didJoinChannel channelUUID: UUID,\n                    reason: PTChannelJoinReason) {\n    // Process joining the channel\n    print(\"Joined channel with UUID: \\(channelUUID)\")\n}\n\nfunc channelManager(_ channelManager: PTChannelManager,\n                    receivedEphemeralPushToken pushToken: Data) {\n    // Send the variable length push token to the server\n    print(\"Received push token\")\n}"
+    },
+    {
+      "timestamp": "8:45",
+      "title": "PTChannelManagerDelegate failedToJoinChannel",
+      "language": "swift",
+      "code": "func channelManager(_ channelManager: PTChannelManager, \n                    failedToJoinChannel channelUUID: UUID, \n                    error: Error) {\n    let error = error as NSError\n\n    switch error.code {\n    case PTChannelError.channelLimitReached.rawValue:\n        print(\"The user has already joined a channel\")\n    default:\n        break\n    }\n}"
+    },
+    {
+      "timestamp": "9:00",
+      "title": "PTChannelManagerDelegate didLeaveChannel",
+      "language": "swift",
+      "code": "func channelManager(_ channelManager: PTChannelManager,\n                    didLeaveChannel channelUUID: UUID,\n                    reason: PTChannelLeaveReason) {\n    // Process leaving the channel\n    print(\"Left channel with UUID: \\(channelUUID)\")\n}"
+    },
+    {
+      "timestamp": "9:22",
+      "title": "PTChannelRestorationDelegate",
+      "language": "swift",
+      "code": "func channelDescriptor(restoredChannelUUID channelUUID: UUID) -> PTChannelDescriptor {\n    return getCachedChannelDescriptor(channelUUID)\n}"
+    },
+    {
+      "timestamp": "10:12",
+      "title": "Provide channel descriptor updates",
+      "language": "swift",
+      "code": "func updateChannel(_ channelDescriptor: PTChannelDescriptor) async throws {\n    try await channelManager.setChannelDescriptor(channelDescriptor, \n                                                  channelUUID: channelUUID)\n}"
+    },
+    {
+      "timestamp": "10:20",
+      "title": "Provide service status updates",
+      "language": "swift",
+      "code": "func reportServiceIsReconnecting() async throws {\n    try await channelManager.setServiceStatus(.connecting, channelUUID: channelUUID)\n}\n\nfunc reportServiceIsConnected() async throws {\n    try await channelManager.setServiceStatus(.ready, channelUUID: channelUUID)\n}"
+    },
+    {
+      "timestamp": "11:48",
+      "title": "Start transmission from within your app",
+      "language": "swift",
+      "code": "func startTransmitting() {\n    channelManager.requestBeginTransmitting(channelUUID: channelUUID)\n}\n\n// PTChannelManagerDelegate\n\nfunc channelManager(_ channelManager: PTChannelManager, \n                    failedToBeginTransmittingInChannel channelUUID: UUID,\n                    error: Error) {\n    let error = error as NSError\n\n    switch error.code {\n    case PTChannelError.callIsActive.rawValue:\n        print(\"The system has another ongoing call that is preventing transmission.\")\n    default:\n        break\n    }\n}"
+    },
+    {
+      "timestamp": "12:22",
+      "title": "Stop transmission from within your app",
+      "language": "swift",
+      "code": "func stopTransmitting() {\n    channelManager.stopTransmitting(channelUUID: channelUUID)\n}\n\nfunc channelManager(_ channelManager: PTChannelManager, \n                    failedToStopTransmittingInChannel channelUUID: UUID, \n                    error: Error) {\n    let error = error as NSError\n\n    switch error.code {\n    case PTChannelError.transmissionNotFound.rawValue:\n        print(\"The user was not in a transmitting state\")\n    default:\n        break\n    }\n}"
+    },
+    {
+      "timestamp": "12:41",
+      "title": "Responding to begin transmission delegate events",
+      "language": "swift",
+      "code": "func channelManager(_ channelManager: PTChannelManager,\n                    channelUUID: UUID, \n                    didBeginTransmittingFrom source: PTChannelTransmitRequestSource) {\n    print(\"Did begin transmission from: \\(source)\")\n}\n\nfunc channelManager(_ channelManager: PTChannelManager,\n                    didActivate audioSession: AVAudioSession) {\n    print(\"Did activate audio session\")\n    // Configure your audio session and begin recording\n}"
+    },
+    {
+      "timestamp": "13:19",
+      "title": "Responding to end transmission delegate events",
+      "language": "swift",
+      "code": "func channelManager(_ channelManager: PTChannelManager,\n                    channelUUID: UUID, \n                    didEndTransmittingFrom source: PTChannelTransmitRequestSource) {\n    print(\"Did end transmission from: \\(source)\")\n}\n\nfunc channelManager(_ channelManager: PTChannelManager,\n                    didDeactivate audioSession: AVAudioSession) {\n    print(\"Did deactivate audio session\")\n    // Stop recording and clean up resources\n}"
+    },
+    {
+      "timestamp": "15:29",
+      "title": "Receiving Push to Talk Pushes",
+      "language": "swift",
+      "code": "func incomingPushResult(channelManager: PTChannelManager, \n                        channelUUID: UUID, \n                        pushPayload: [String : Any]) -> PTPushResult {\n\n    guard let activeSpeaker = pushPayload[\"activeSpeaker\"] as? String else {\n        // If no active speaker is set, the only other valid operation \n        // is to leave the channel\n        return .leaveChannel\n    }\n\n    let activeSpeakerImage = getActiveSpeakerImage(activeSpeaker)    \n    let participant = PTParticipant(name: activeSpeaker, image: activeSpeakerImage)\n    return .activeRemoteParticipant(participant)\n}"
+    },
+    {
+      "timestamp": "17:03",
+      "title": "Stop receiving audio",
+      "language": "swift",
+      "code": "func stopReceivingAudio() {\n    channelManager.setActiveRemoteParticipant(nil, channelUUID: channelUUID)\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Push to Talk",
+        "url": "https://developer.apple.com/documentation/PushToTalk"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10117/3/BC2A00F7-7836-4346-B4DD-143192926205/downloads/wwdc2022-10117_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/10117/3/BC2A00F7-7836-4346-B4DD-143192926205/downloads/wwdc2022-10117_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10083",
+      "year": "2022",
+      "title": "Power down: Improve battery consumption",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10083"
+    },
+    {
+      "id": "10078",
+      "year": "2022",
+      "title": "Reduce networking delays for a more responsive app",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10078"
+    },
+    {
+      "id": "110930",
+      "year": "2022",
+      "title": "WWDC22 Day 2 recap",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110930"
+    }
+  ],
+  "extractedAt": "2025-07-18T11:02:37.737Z"
+}

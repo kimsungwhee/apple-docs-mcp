@@ -1,0 +1,184 @@
+{
+  "id": "204",
+  "year": "2025",
+  "url": "https://developer.apple.com/videos/play/wwdc2025/204/",
+  "title": "Go further with MapKit",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Maps & Location"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, I’m Alex. I’m an engineer on the MapKit team.\n\nApple Maps enables you to navigate and explore places around the world right from your device. There’s so much to discover from historical landmarks to cozy cafes, local shops, and great hiking routes. Today, I’ll walk through the updates to MapKit and MapKit JS that let you bring the world of maps into your apps and websites. I'll start with PlaceDescriptor, a new way to find and reference places. Then, I’ll cover geocoding and how you can use it to display information about a place. And finally, I’ll help you get people where they’re going with our directions and Look Around APIs. I’ll start with finding and referencing places.\n\nLast year, we introduced an identifier, which can be used to reference the places represented by map items in the MapKit framework, and by Place in MapKit JS. The references are unique and they remain valid over time. Anytime the Maps team updates the data for a place, like the website URL, an app using Place ID can display that fresh information.\n\nBecause these identifiers are unique, the app can use them as keys in its own data structures.\n\nIdentifiers can be persisted and shared.\n\nApple keeps track of the data and you can reference it at any time. Place identifiers are still the best choice when you want to persist a reference to a specific place you found with MapKit. But there are some cases where it might not be the best fit. Sometimes you still want to be able to find MapKit’s rich data for a specific place, even when you don’t have an identifier. For example, if you have a web API or CRM that provides you with the name and address of all of your places of business. Or perhaps you have the name and coordinate for a specific place. In these cases, you know you want to find an exact and single place. So APIs like a local search that return multiple results aren't the best match.\n\nOther times, I want to pass place references to or from code I don't own. Perhaps I want to vend places from a framework. Or when I'm using App Intents, I might want to take a place as an intent parameter, return a place as an intent result, or include a place as a property on my app entities. In these cases, you might be interacting with other apps that don't use MapKit at all.\n\nI can pass a purely geographic representation like CLLocation, but there’s no good way to use that to find a rich place of interest, like I can with a MapKit identifier. To account for these cases, we’re introducing a new type: PlaceDescriptor.\n\nIt’s in a new framework: GeoToolbox. PlaceDescriptor allows you to supply information that describes a place in a structured way.\n\nA PlaceDescriptor can then be used  by MapKit or by other Mapping Service Providers to attempt to find rich data about that place.\n\nA PlaceDescriptor has three top level pieces of information: a string called commonName. When making your PlaceDescriptor, you should provide well known names like Guggenheim Museum or Sydney Opera House. This field is not intended for private data like Mom’s House, and including it doesn’t help MapKit find your place.\n\nPlaceDescriptor also has an array of representations. These representations are common formats that any app or framework dealing with geographic information should be able to understand.\n\nThere are three types of PlaceRepresentations to choose from.\n\nThe first is an address string, like you would write on an envelope. Providing the most complete version of the address possible allows for the highest chance MapKit can find your place. The next is a coordinate, for things at a fixed definite point, like a known landmark or place of business.\n\nAnd finally, a deviceLocation, which uses CLLocation.\n\nThis is appropriate for use with received GPS data and might have additional values like accuracy, timestamp, heading, or speed.\n\nThe representations array must contain at least one representation and is ordered in decreasing precedence. For example, if a PlaceDescriptor is coming from a contacts application, a coordinate may have been derived from the address of that place. In that case, the address would come first because it’s the original source of information and the coordinate would come second. Lastly, PlaceDescriptor has an array of supporting representations. These representations are ones that may not be usable by all applications and aren't required. The supportingRepresentations array can be empty. We’ll talk more about what can be in supportingRepresentations later. To demonstrate PlaceDescriptor and all the other new APIs that are coming up, I’m going to walk you through an example app. It’s for fountain aficionados to find fountains in far-flung locations all around the world.\n\nI’d like to start by collecting fountains in Dublin that would be cool to visit and put them on a map.\n\nSince the introduction of MapKit for SwiftUI, I've been able to make a simple marker on the map with a coordinate, but I’d like to leverage rich Apple Maps data about my fountains in conjunction with all the other MapKit APIs in my app, even though I don’t have a Place ID. A great opportunity to use PlaceDescriptor.\n\nLet’s make a PlaceDescriptor to reference this fountain.\n\nFirst, I’ll import GeoToolbox. I know there’s a fountain at these coordinates. So when I make my PlaceDescriptor, I’ll provide a coordinate representation with them. Finally, I know it’s called the Anna Livia Fountain, so I supply that as well. That’s all I need to do to make a valid PlaceDescriptor. Then I can import MapKit and create a map item request with my PlaceDescriptor.\n\nOnce I have my request, I can execute it to get an MKMapItem for that place. MapItem is the core type for places in MapKit, and I can use it with all kinds of APIs.\n\nFor example, I can then use the MapItem on a map. You’ll notice the marker displays the name, colors, and iconography Apple Maps has for this place.\n\nLet's add a second place to the map, this time using an address to create my descriptor instead.\n\nI just need to provide the most complete version of the address I have for this fountain. Then I can make a PlaceDescriptor with that, and the name of the fountain. I use MKMapItemRequest just like before and add it to the map with my other fountain. It's that easy.\n\nI’ve shown you the power of using PlaceDescriptor to find a place with a name, as well as coordinate and address PlaceRepresentations.\n\nBut there is one more top-level property of PlaceDescriptor you can use. There’s a single type of supporting representation, service identifiers.\n\nA service identifier representation is a dictionary where the key is the bundle identifier for a given mapping service, and the value is the identifier representing your place for that mapping service.\n\nFor example, if I know the MapKit Place Identifier for a place, I can make a dictionary where the key is com.apple.mapKit, and the value is the identifier.\n\nThen i create a serviceIdentifiers representation and pass it to the supportingRepresentations parameter of the PlaceDescriptor initializer.\n\nIf I know the identifier for a place from a different mapping service provider, I can supply it here.\n\nMapKit doesn’t use other identifiers, but supplying them can be useful in scenarios like App Intents, where you can supply a PlaceDescriptor to another app that may not use MapKit.\n\nYou can provide as many identifiers as you like.\n\nIf you’re using MapKit API, we always do the right thing with service identifiers.\n\nIf present, MKMapItemRequest will use MapKit identifiers from your PlaceDescriptor to fetch the place.\n\nIf there's no MapKit identifier, or if using the supplied identifier fails for any reason, the other representations on PlaceDescriptor will be used to find your place instead.\n\nLikewise, if you make a PlaceDescriptor with a MapItem you got some other way, we’ll make sure the PlaceDescriptor is populated with all the representations you need, including identifier.\n\nI’ll use PlaceDescriptor and MKMapItemRequest to add the rest of the Dublin fountains I know about to my app.\n\nMapItems requested with a PlaceDescriptor can be used with all our MapKit APIs to show rich maps data just like those fetched by identifier, or with MKLocalSearch.\n\nFor example, Place Cards. When you present a place card for a place requested by PlaceDescriptor, we’re able to show up-to-date rich data like operating hours, as well as a link to Apple Maps.\n\nI can show a place card when someone selects a fountain in my app with just one line of code.\n\nPlace cards are an easy way to show tons of great info about a place in your app. Check out “Unlock the power of places with MapKit” from WWDC2024 to learn more.\n\nSpeaking of place cards, this year, place cards in MapKit JS  also provide a universal link to Apple Maps. On devices with the Maps app installed, links will open there.\n\nAnd for devices that don’t have a Maps app, the place card links to maps.apple.com, which we launched last summer in public beta.\n\nNow, when your apps and websites linked to Apple Maps, even those on non Apple platforms can use Maps on the web to explore further.\n\nWith the rollout of iOS 18.4, we updated how Maps handles URLs, so you can make similar universal links with confidence. For example, this URL to perform a search.\n\nWe've made parameters more consistent, simpler, and easier to read.\n\nWe’ve also added many additional parameters to link to even more features in Maps. Make sure to check out “Adopting unified Maps URLs” linked in the materials for this video, so you can adopt universal Maps links in your app.\n\nAll right, I've found my places. Next, I'll show you how to use geocoding and address representations to display more information about places in your app.\n\nIf you’re not familiar, forward geocoding refers to the process of taking an address and finding the coordinate it refers to. An example of this is tapping on an address in the Contacts app, which takes you to a map.\n\nReverse geocoding is the opposite. You provide a coordinate and we give you an address. An example of this is when you drop a pin in the Maps app, and we show you the address information for that location.\n\nIn iOS 18 and before, you would use CoreLocation to perform your geocoding tasks.\n\nThis year, we’re deprecating CLGeocoder, soft-deprecating CLPlacemark, and bringing Geocoding to MapKit.\n\nIn my app, I also want to keep track of the fountains I found and taken fabulously framed photos for.\n\nThese photos include a geotag, which has the coordinates where they were taken, but I don’t have any supporting information like a name. That means I can't use PlaceDescriptor to find the rich place. All I have is coordinates. So I'll use reverse geocoding in MapKit to find more context to display next to my photos.\n\nLet’s reverse geocode my first fountain photo.\n\nI’ll start with the coordinates where the photo was taken. Then I’ll make an MKReverseGeocodingRequest with that location. Unlike the MKMapItemRequest with PlaceDescriptor, which I showed you earlier, MKReverseGeocodingRequests’s initializer returns an optional. If you provide a CLLocation with invalid coordinates, MapKit won’t be able to perform a request for you.\n\nWhen the request returns, I get an array of map items. For most geocoding requests, this array should contain only one entry. So I'll pick the first one. Note that because this map item came from a geocoding API, it will not contain rich information for a place of interest. This mapItem only contains information about the address point.\n\nNow that I have my map item, I can display the address.\n\nI’ll use MKReverseGeocoding request to get an address for the rest of my photos and show them in a list.\n\nMy app is starting to come together, but I think the full address might be too much detail for this screen. So I’ll take a look at the other options I have. MKMapItem offers two optional properties for accessing address information.\n\nFirst, MKAddress. You can instantiate your own MKAddress when you make your own MKMapItem.\n\nAnd MapKit also provides an MKAddress when returning MapItems from APIs like geocoding, local search, and PlaceDescriptor resolution.\n\nSecond, MKAddressRepresentations, which does not have an initializer.\n\nAddress representations are only available on map items returned from MapKit APIs.\n\nLet me cover MKAddress first. It has two string properties, fullAddress and shortAddress.\n\nFullAddress is the most complete version of a postal or administrative address that we have, while the shortAddress only provides the most crucial parts.\n\nIn some cases, the address we provide might be very brief.\n\nFor example, a reverse geocode for coordinates in the middle of the ocean may be just one line.\n\nWhen you instantiate a MapItem of your own, the address property is used in MapKit place cards, allowing you to show your own address information.\n\nWhile MKAddress provides simple versions of an address, MKAddressRepresentations provides many powerful ways to show address information in your app. For example, if you want to show a list of full addresses, but you know they’re all in the same country, you may want to omit the region in your app UI.\n\nFor that, you can use full address, including region, false.\n\nOr perhaps you want to list the city and some additional context about where the city is.\n\nSometimes you want to provide a state or province like Los Angeles, California. Other times you’ll want to include the country like Paris, France.\n\nMapKit makes this easy by choosing the right thing for your address, as well as locale and region info of the device requesting the map item. Now that I know more about the different address representations available for my app, I’ll choose cityWithContext to make the address info I’m showing with my photos more concise. Now I’m showing the right level of detail for my app, and it looks great.\n\nThe API for forward geocoding is very similar to reverse geocoding. With MKGeocodingRequest, I can get back a MapItem, this time for my address. That makes it super easy to access coordinates or add it to a map. It also includes all the options we just discussed for address information, so I can get the various display representations for my address that I didn’t have before I made the geocoding request.\n\nNow that I’ve found my places and displayed some information about them, I’ll show you MapKit APIs to help you navigate to them.\n\nMapKit has a directions API that can find routes for traveling between a source and destination via multiple modes of transport, like walking and driving.\n\nDirections provides time and distance estimates, as well as detailed information about all the steps you need to take along the way.\n\nBack in my map view of Dublin, I’d like to plan directions to the fountains I’ve curated. I’ll enable selection on my map by providing a map item binding in my maps initializer. I can then compute my route when the selected item changes.\n\nFor more information on how to handle map selection, check out “Meet MapKit for SwiftUI” from WWDC 2023.\n\nTo get my route, first I create a directions request.\n\nThen I set the device’s current location as the source and the selected map item as the destination.\n\nNext, I create a directions object.\n\nAnd finally, I calculate my route. I’ll make sure to handle any errors, and then I’ll process the response. But what’s in the response from a directions request? We’ll return you the source and destination we matched for your route. These may be slightly different than what you provided in your request.\n\nFor example, driving directions may take into account parking, and walking directions may take you directly to the door for a building.\n\nWe also include an array that has one or more routes that satisfy your request.\n\nRoutes have lots of powerful information, including a localized name you can use as a title for a route, an array of notices that are relevant to your route, like road closures, the distance required to travel on that route in meters, the amount of time it would take to travel on that route, and the geometry of the route, suitable for drawing on a map.\n\nI’m excited to share that this year we’ve added support for cycling directions to MapKit. For my app, cycling is the perfect way to see the fountains of Dublin. It’s as simple as modifying one property on my directions request.\n\nI want to display a potential cycling route for my directions, so I’ll take the first route from the response. And I’ll add it to my map with MapPolyline. It’s that easy to show directions.\n\nCycling routes with MapKit are powerful. They take advantage of paths and trails unavailable when driving and omit certain roads not suitable for bikes.\n\nYou can also get cycling directions and estimated arrival times with MapKit JS.\n\nJust like with Swift, all I need to do is add a single line of configuration to my existing directions request to specify cycling as a transport type.\n\nI’m also excited to share that for the first time, you can now get directions with MapKit on watchOS! In fact, over 20 MapKit APIs have come to Apple Watch with the latest watchOS SDK.\n\nNow that I have a good cycling route for my Fountain Tour, I would feel even more comfortable riding if I could scope out the route before I go.\n\nBy enabling the Maps Look Around feature, I can get 360 degree interactive street level imagery of the city and easily preview roads, bike lanes, parking, and landmarks.\n\nWe brought Look Around to MapKit apps in iOS 16, including APIs to check if imagery is at a given location, preview look around imagery, and present it full screen. To learn more, check out the “What’s new in MapKit session” from WWDC 2022.\n\nThis year, we’re bringing Look Around to MapKit JS, so you can enable it in your website or web application. There are two types of Look Around Views you can add.\n\nThe first is interactive look around, which allows you to embed a user navigable look around view inside your own UI. Second is the look around preview. This gives a static snapshot of imagery at your desired location.\n\nClicking on the preview launches a full screen interactive experience.\n\nTo add an interactive look around view to my website, first I need a place object. I can use any MapKit JS API that returns a place like place lookup, search, or geocoding.\n\nIn this case, I have an identifier, so I’ll use placeLookup.\n\nThen I create a look around object passing in the containing DOM element, as well as my place object, and finally an options dictionary.\n\nThere are three options supported by LookAroundView. The first is openDialog. When this option is true, the LookAroundView will cover the whole browser window.\n\nSecond is showsDialogControl. When this is true, a button will appear in the LookAroundView that allows you to enter and exit the full window experience. And finally, showsCloseControl. When true, a button is included that closes the look around view.\n\nMapKit JS will emit various events related to the LookAroundView. You can add event listeners to respond to or override default behaviors. For example, when the user taps on the close button, a close event will be sent.\n\nYou can use this callback to perform animations or state changes that make sense in your app.\n\nIf you don’t cancel the default action to this event, the lookAround view will be removed from the DOM.\n\nOther events you may want to handle include: The Load event, which is dispatched when the view is fully loaded.\n\nThe Error event, which is dispatched when there is a problem. For example, when the imagery is not available or when the browser isn’t capable of showing the view. MapKit JS provides an error UI, but you may want to have your own error or fallback experience. And finally, lookAround dispatches readystatechange events, which you can use to monitor the lifecycle of the view. The ready state changes when the view is loading, finishes loading, has an error, or is removed from the DOM.\n\nIn addition to the LookAroundView, you can use the Look Around Preview API to achieve a simpler experience.\n\nLook Around Previews aren’t interactive. The user can’t pan the view. Clicking on the Look Around Preview launches a full window look around experience.\n\nI think LookAround with MapKit JS will bring your websites to the next level. And that wraps up our session. It was a fountain of knowledge. I showed you ways to find places, display place information, and navigate to places all over the world with MapKit and MapKit JS.\n\nBefore we go, let me give you some homework.\n\nUse PlaceDescriptor to find places with or without an identifier and to send place references to other apps.\n\nUpdate any links to Apple Maps to use our new unified URL format.\n\nMove your apps from CoreLocation to MapKit APIs for geocoding and leverage our excellent address representations.\n\nAnd finally, add cycling directions and look around to your app to help people get where they're going.\n\nThanks for stopping by and learning about MapKit with me today!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:49",
+      "title": "Putting Marker on the Map with a coordinate",
+      "language": "swift",
+      "code": "// Putting Marker on the Map with a coordinate\n\nlet annaLiviaCoordinates = CLLocationCoordinate2D(\n    latitude: 53.347673,\n    longitude: -6.290198\n)\nvar body: some View {\n    Map {\n       Marker(\n            \"Anna Livia Fountain\",\n            coordinate: annaLiviaCoordinates\n        )\n    }\n}"
+    },
+    {
+      "timestamp": "5:07",
+      "title": "Creating and resolving a PlaceDescriptor with coordinate PlaceRepresentation",
+      "language": "swift",
+      "code": "// Creating and resolving a PlaceDescriptor with coordinate PlaceRepresentation\n\nimport GeoToolbox\nimport MapKit\n\nlet annaLiviaCoordinates = CLLocationCoordinate2D(\n    latitude: 53.347673,\n    longitude: -6.290198\n)\nlet annaLiviaDescriptor =  PlaceDescriptor(\n    representations: [.coordinate(annaLiviaCoordinates)],\n    commonName: \"Anna Livia Fountain\"\n)\n\nlet request = MKMapItemRequest(placeDescriptor: annaLiviaDescriptor)\ndo {\n    annaLiviaMapItem = try await request.mapItem\n} catch {\n    print(\"Error resolving placeDescriptor: \\(error)\")\n}"
+    },
+    {
+      "timestamp": "5:56",
+      "title": "Creating and resolving a PlaceDescriptor with address PlaceRepresentation",
+      "language": "swift",
+      "code": "// Creating and resolving a PlaceDescriptor with address PlaceRepresentation\n\nimport GeoToolbox\nimport MapKit\n\nlet address = \"121-122 James's St, Dublin 8\"\nlet descriptor =  PlaceDescriptor(\n    representations: [.address(address)],\n    commonName: \"Obelisk Fountain\"\n)\n\nlet request = MKMapItemRequest(placeDescriptor: descriptor)\ndo {\n    obeliskFountain = try await request.mapItem\n} catch {\n    print(\"Error resolving placeDescriptor: \\(error)\")\n}"
+    },
+    {
+      "timestamp": "6:45",
+      "title": "Creating a PlaceDescriptor with identifiers",
+      "language": "swift",
+      "code": "// Creating a PlaceDescriptor with identifiers\n\nimport GeoToolbox\n\nlet annaLiviaCoordinates = CLLocationCoordinate2D(\n    latitude: 53.347673,\n    longitude: -6.290198\n)\nlet identifiers = [\"com.apple.MapKit\" : \"ICBB5FD7684CE949\"]\nlet annaLiviaDescriptor =  PlaceDescriptor(\n    representations: [.coordinate(annaLiviaCoordinates)],\n    commonName: \"Anna Livia Fountain\",\n    supportingRepresentations: [.serviceIdentifiers(identifiers)]\n)"
+    },
+    {
+      "timestamp": "7:28",
+      "title": "Fetching a MapItem from a PlaceDescriptor",
+      "language": "swift",
+      "code": "// Fetching a MapItem from a PlaceDescriptor\n\nlet request = MKMapItemRequest(placeDescriptor: descriptor)\nlet mapitem = try await request.mapItem"
+    },
+    {
+      "timestamp": "7:43",
+      "title": "Getting a PlaceDescriptor from a MapItem",
+      "language": "swift",
+      "code": "// Getting a PlaceDescriptor from a MapItem\n\nlet descriptor = PlaceDescriptor(mapItem: mapitem)"
+    },
+    {
+      "timestamp": "8:10",
+      "title": "Place Card",
+      "language": "swift",
+      "code": "// Place Card\n\nvar body: some View {\n    Map {\n        ForEach(fountains, id:\\.name) { fountain in\n            Marker(item: fountain)\n                .mapItemDetailSelectionAccessory(.callout)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "10:45",
+      "title": "Reverse geocode with MapKit",
+      "language": "swift",
+      "code": "// Reverse geocode with MapKit\n\nimport MapKit\n\nlet millCreekCoordinates = CLLocation(latitude: 39.042617, longitude: -94.587526)\nif let request = MKReverseGeocodingRequest(location: millCreekCoordinates) {\n    do {\n        let mapItems = try await request.mapItems\n        millCreekMapItem = mapItems.first\n    } catch {\n        print(\"Error reverse geocoding location: \\(error)\")\n    }\n}"
+    },
+    {
+      "timestamp": "13:50",
+      "title": "Forward geocoding with MapKit",
+      "language": "swift",
+      "code": "// Forward geocoding with MapKit\n\nvar body: some View {\n    Map {\n        if let mapItem {\n            Marker(item: mapItem)\n        }\n    }\n    .task {\n        let request = MKGeocodingRequest(\n            addressString: \"1 Ferry Building, San Francisco\"\n        )\n        do {\n            mapItem = try await request?.mapItems.first\n        } catch {\n            print(\"Error geocoding location: \\(error)\")\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "14:38",
+      "title": "Allowing Map Selection",
+      "language": "swift",
+      "code": "// Allowing Map Selection\n\n@State var selectedItem: MKMapItem?\n\nvar body: some View {\n    Map(selection: $selectedItem) {\n       UserAnnotation()\n       ForEach(fountains, id: \\.self) { item in\n          Marker(item: item)\n       }\n    }\n    .onChange(of: selectedItem) {\n       // Compute Route\n    }\n}"
+    },
+    {
+      "timestamp": "15:00",
+      "title": "Fetch a route",
+      "language": "swift",
+      "code": "// Fetch a route\n\nlet request = MKDirections.Request()\nrequest.source = MKMapItem.forCurrentLocation()\nrequest.destination = selectedItem\nlet directions = MKDirections(request: request)\ndo {\n    let response = try await directions.calculate()\n    returnedRoutes = response.routes\n} catch {\n    print(\"Error calculating directions: \\(error)\")\n}"
+    },
+    {
+      "timestamp": "16:06",
+      "title": "Fetch a cycling route",
+      "language": "swift",
+      "code": "// Fetch a cycling route\n\nlet request = MKDirections.Request()\nrequest.source = MKMapItem.forCurrentLocation()\nrequest.destination = selectedItem\nrequest.transportType = .cycling\nlet directions = MKDirections(request: request)\ndo {\n    let response = try await directions.calculate()\n    returnedRoutes = response.routes\n} catch {\n    print(\"Error calculating directions: \\(error)\")\n}"
+    },
+    {
+      "timestamp": "16:25",
+      "title": "Display a route on the Map",
+      "language": "swift",
+      "code": "// Display a route on the Map\n\nMap {\n    if let mapRoute {\n        UserAnnotation()\n        MapPolyline(mapRoute)\n            .stroke(Color.blue, lineWidth: 5)\n    }\n}"
+    },
+    {
+      "timestamp": "16:40",
+      "title": "Cycling directions in MapKit JS",
+      "language": "swift",
+      "code": "// Cycling directions in MapKit JS\n\nlet directions = new mapkit.Directions();\ndirections.route ({\n    origin: safariPlayground,\n    destination: cherryHillFountain,\n    transportType: mapkit.Directions.Transport.Cycling\n}, (error, { routes: [{ polyline }] }) => {\n    polyline.style.lineWidth = 5;\n    map.showItems([\n        new mapkit.PlaceAnnotation(place),\n        new mapkit.PlaceAnnotation(\n          place2,\n          { selected: true }\n        ),\n        polyline\n    ]);\n});"
+    },
+    {
+      "timestamp": "17:26",
+      "title": "Look Around",
+      "language": "swift",
+      "code": "// Look Around\n\nvar body: some View {\n    Map {\n        ForEach(fountains, id:\\.name) { fountain in\n            Marker(item: fountain)\n       }\n    }\n    .overlay(alignment: .bottomLeading) {\n        if (lookAroundScene != nil) {\n            LookAroundPreview(scene: $lookAroundScene)\n                .frame(width: 230, height: 140)\n                .cornerRadius(10)\n                .padding(8)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "18:10",
+      "title": "Look Around View in MapKit JS",
+      "language": "swift",
+      "code": "// Look Around View in MapKit JS\n\nconst placeLookup = new mapkit.PlaceLookup();\nconst place = await new Promise(\n    resolve => placeLookup.getPlace(\n        \"IBE1F65094A7A13B1\",\n        (error, result) => resolve(result)\n    )\n);\n\n// Create an interactive look around view.\nconst lookAround = new mapkit.LookAround(\n    document.getElementById(\"container\"),\n    place,\n    options\n);"
+    },
+    {
+      "timestamp": "18:35",
+      "title": "Look Around Options",
+      "language": "swift",
+      "code": "// Look Around Options for MapKit JS\n\nconst options = {\n    // Enters a full window experience\n    // immediately on load\n    openDialog: true,\n    \n    // Provides a button to enter and\n    // exit full window.\n    showsDialogControl: true,\n    \n    // Provides a button to destroy\n    // the look around view.\n    showsCloseControl: true,\n};"
+    },
+    {
+      "timestamp": "19:10",
+      "title": "Handle MapKit JS Look Around events",
+      "language": "swift",
+      "code": "// Handle MapKit JS Look Around events\n\nlookAround.addEventListener(\n    \"close\",\n    event => {\n        app.closeView();\n        event.preventDefault();\n    }\n);\n\nlookAround.addEventListener(\n    \"load\",\n    event => app.fadeInView()\n);\n\nlookAround.addEventListener(\n    \"error\",\n    event => app.fadeOutView()\n);\n\nlookAround.addEventListener(\n    \"readystatechange\",\n    event => console.log(lookAround.readyState)\n);"
+    },
+    {
+      "timestamp": "20:01",
+      "title": "MapKit JS Look Around Preview",
+      "language": "swift",
+      "code": "// MapKit JS Look Around Preview\n\nconst lookAround = new mapkit.LookAroundPreview(\n    document.getElementById(\"container\"),\n    place\n);"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Adopting unified Maps URLs",
+        "url": "https://developer.apple.com/documentation/MapKit/Unified-Map-URLs"
+      },
+      {
+        "title": "Searching, displaying, and navigating to places",
+        "url": "https://developer.apple.com/documentation/MapKit/searching-displaying-and-navigating-to-places"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/204/5/38ed2a79-6f38-4c36-8d25-933f80d3b8ce/downloads/wwdc2025-204_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/204/5/38ed2a79-6f38-4c36-8d25-933f80d3b8ce/downloads/wwdc2025-204_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10097",
+      "year": "2024",
+      "title": "Unlock the power of places with MapKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10097"
+    },
+    {
+      "id": "10043",
+      "year": "2023",
+      "title": "Meet MapKit for SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10043"
+    },
+    {
+      "id": "10035",
+      "year": "2022",
+      "title": "What's new in MapKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10035"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:38:26.456Z"
+}

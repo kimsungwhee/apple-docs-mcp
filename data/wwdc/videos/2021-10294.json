@@ -1,0 +1,112 @@
+{
+  "id": "10294",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10294/",
+  "title": "Meet MusicKit for Swift",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello, and welcome to WWDC. My name is Joel, and I would like to tell you about how you can add music to your apps with MusicKit. MusicKit is a new framework for Apple platforms which offers expressive APIs for your apps to access music items in Swift. It leverages the new Swift concurrency syntax and is designed from the ground up to be used in conjunction with SwiftUI. MusicKit accelerates the way your apps integrate with Apple Music API, which are our set of server-side APIs for accessing the wide array of catalog content from Apple Music, thus making it much easier for you to build compelling apps that tie into Apple Music. First, we'll talk about how to request music content with MusicKit. Next, we'll talk about other topics that are important for the way your apps integrate with Apple Music, such as requesting consent from the user for your app to access Apple Music-related data, managing tokens required for accessing Apple Music API, accessing subscription information and related capabilities, playing music from the Apple Music catalog, and finally, how to show subscription offers for Apple Music, in case your user isn't already a subscriber. MusicKit offers a new model layer for accessing music items, with structured requests that allow you to fetch content from Apple Music API. You can either search for content in the Apple Music catalog, or fetch resources based on a specific filter. These requests produce responses with items grouped in collections, which have built-in support for pagination, allowing you to get the next batch of items from an initial response. So, what do these music items look like? Let's take a look at a specific example with an album. \"Album\" is a value type with properties grouped in three different categories. The first category contains simple attributes, such as a string property like \"title,\" a boolean property like \"isCompilation,\" or more structured properties like \"artwork,\" which gives you access to URLs for the artwork alongside relevant sizing information and related colors. Album also offers several relationships, such as related artists or genres, or the list of tracks in a given album. For example, the result of the \"tracks\" relationship is a collection of values of type \"Track,\" which is another type of music item. Finally, in addition to these strong model-level relationships, \"Album\" offers several weaker associations of related content. Associations are very similar to relationships, but they are typically more ephemeral, or more editorially driven. For example, the \"appearsOn\" association on an album returns a collection of playlists, but, unlike collections for relationships, this one also has a title. Loading and accessing relationships with MusicKit is very simple. Given an album, you can easily fetch another representation of this same album that includes relationships like \"artists\" and \"tracks,\" as well as associations like \"related albums,\" in a single operation. The \"with\" method needs to be called with the special Swift keyword \"await,\" which indicates that this will perform an asynchronous operation behind the scenes. This will indeed fetch a more complete representation of this album from Apple Music API over the network. You can then get the list of tracks from this detailed album, and iterate over those tracks as you would with a regular array. And here's the console output for this code. Accessing associations such as \"related albums\" works the same way, with the only difference being that they typically also include a title, accessible directly on the collection. You can then iterate over the collection in that same manner to print a few of those related albums. And here's the console output for this code. Now, let's take a look at a demo of requesting music content with MusicKit. I've been working on an app which allows me to find and enjoy albums from Apple Music. I can search for albums using this search field, which is already connected some code to load matching search results using the music catalog search request. This app also keeps track of the list of albums I recently viewed. We can find more information about this album titled \"Catch A Vibe - EP\" by selecting it, and you may have noticed the list of tracks for this album being animated in after this detail view appeared. This is done by loading the \"tracks\" relationship of this album as we just saw, and updating the state variable for our SwiftUI view, which is then used to populate this list. We can begin playing music from this album with the play button underneath the artwork, or by selecting a specific track. This will simply use the playback API in MusicKit to set the queue with this list of tracks, and call the play method on the player. Let's try it out! So, if I select the track titled \"Catch a Vibe\" by Karun & MONBRU...  This song begins playing. ♪ Ooh, oh, no ♪ Our app even works automatically in media controls in the Lock screen, which allows me to scrub to a halfway point in this song.  But I was hoping to use this app to help me rediscover old music from my CD library, like this album from Phoenix. So, I'd like to add a feature that would allow me to point the camera of my iPhone to the barcode of an old CD and have this app surface this same album in digital format. I've already added some experimental code for this feature. When I enable it, I can see a barcode button at the bottom, which brings up a camera view. If I point it to the barcode of this CD, it automatically recognizes the barcode value and displays it. All I'm missing is some code that uses MusicKit to find the corresponding album. Let's go ahead and add that to our app. So let me make an albumsRequest using the MusicCatalogResourceRequest. I am looking specifically for albums.\n\nAnd here, we want to make sure we find albums where the UPC property, which stands for Universal Product Code, that's the technical term for bar code, is equalTo: detectedBarcode.\n\nI can perform this request asynchronously.\n\nalbumsRequest.response.\n\nAnd then from the response, I can look for the first album in the results.\n\nThen I can then pass this first album to the handleDetectedAlbum helper method down below.\n\nhandleDetectedAlbum (firstAlbum).\n\nThis method dismisses the barcode scanning view, and then pushes the album detail view for the detected album.\n\nAnd it's decorated here with MainActor to make sure it will be executed on the main thread. So when we call it, we need to make sure that we add the await keyword.\n\nSo let's build and run our app again and try it out.\n\nTap the barcode button. Take my album.\n\nIt worked! Now, it's going to be much easier to enjoy my old music in digital format on Apple Music. MusicKit also offers a general purpose data request, which is different from structured requests in that it allows you to load content from an arbitrary Apple Music API endpoint using its URL.\n\nWhat you'll get back from this request is the raw data for the JSON response from Apple Music API. You need to decode this raw data with JSONDecoder, but doing that doesn't have to be hard because you can leverage existing music item types, since they conform to the Codable protocol. Let's take a look at an example. If you wanted to load the list of top level genres from Apple Music, you could do it by loading content from this specific URL, and here's the corresponding JSON response. If you take a closer look at this result, you can see in the middle what looks like a genre resource. So, how would you represent this in Swift? Sure enough, MusicKit has a Genre type. Zooming back, how would you represent the entire response in Swift? You can create a struct, with a data member, which is a simple array of genres. Then, make sure to mark this struct as Decodable. And this doesn't even require writing any additional decoding logic, because \"Genre\" itself also conforms to Decodable. So, to load this data in your app, you would put this struct at the top of your file, then you would construct the URL using the specific country code for your user. Create a music data request using this URL, and get the response from that, following the same pattern we've already seen. Once you have that response, you can decode its data using JSONDecoder, by passing in the type MyGenresResponse to the decode method. And that's it! You can now access individual genres in your strongly-typed genres response. And, as you can see, you get the same kind of music item you can otherwise fetch from other requests in MusicKit. So, that's how you would load content from any arbitrary URL for Apple Music API. And now that we know how to load music content, let's discuss some important preliminary steps for integrating your apps with Apple Music, starting with privacy. We want users to remain in control over which apps have access to their data. So, before you can request any data from Apple Music API, which can include the user's listening history or their music library, you need to get the user's informed consent for your app to access Apple Music. Asking for this user content needs to be done on a per-device and per-app basis. And here's what the user consent dialog looks like in the context of an app named Zova, which is a great fitness app that allows you to work out with their playlists on Apple Music or your own playlist. When you go to start a workout for the first time, Zova asks for permission to access Apple Music. This dialog needs to convey to the user why your app needs access to Apple Music. To that end, your app's usage description for Apple Music, which you need to define in your Info.plist, is included as the subtitle of this dialog. Here's an example of how you might request user consent for MusicKit. Say you have a feature in your app that requires MusicKit, and that you're gating access to this feature using the isAuthorizedForMusicKit state variable. At the appropriate point in your app, before you try to use MusicKit, you can request authorization to access Apple Music with this asynchronous request method. This will only prompt the user if your app hasn't been authorized yet. The request method returns a status value, and you can set your isAuthorizedForMusicKit variable to \"true\" if that status is equal to \"authorized.\" Now, let's talk briefly about tokens required for loading data from Apple Music API. Apple Music API requires a developer token, which essentially authenticates your app with the API. Previously, to get this developer token, you would have had to create a MusicKit private key in the developer portal, put it on a server under your control, to ensure the key is kept private, and have your app request a new developer token from your server. But now, with MusicKit for Swift, you no longer need to worry about any of this, as the developer token is automatically generated for your app. You just need to opt in to this new automatic behavior by enrolling in the developer portal. Specifically, in the page where you register your App ID, select the App Services tab at the bottom, and enable the MusicKit checkbox. And you're done! Additionally, Apple Music API requires a user token for any personalized endpoint. And just like the developer token, new this year, the user token is automatically generated on your behalf. One more thing you may need to use MusicKit in your app is a way to figure out if your user has an active Apple Music subscription. Subscription information in MusicKit is exposed as three distinct capabilities, which tell you if the user can play content from the Apple Music catalog, if they have iCloud Music Library enabled, or if they can become subscribers, in case they don't already have an active subscription.\n\nMake sure to check the relevant capability for the specific Apple Music-related functionality in your app. For example, if you have a play button hooked up to play some music, you may want to keep it disabled if your user cannot play catalog content from Apple Music. You can define a state variable in your view to keep track of the music subscription. Then, you can apply the disabled modifier to your button to make sure it stays disabled if the music subscription property \"canPlayCatalogContent\" is set to \"false.\" And finally, inside of an asynchronous block passed to the new task modifier, you can use the new subscription updates stream to be notified of changes in the music subscription. Now, let's talk about playback with MusicKit. MusicKit offers two distinct players, which we call SystemMusicPlayer and ApplicationMusicPlayer. Let's get into the differences between those players, starting with an example. Whereas a social media app may want to use the SystemMusicPlayer to change what's playing out of the system music app, a fitness app might prefer to use the ApplicationMusicPlayer to keep their playback state completely independent from the system music app. Both of these players automatically report the now playing information and handle remote commands. This is what gave us deep integration with system media controls in the lock screen, earlier in our demo. However, the now-playing app is reported differently. If you use the SystemMusicPlayer, the Music app will be reported as the now-playing app, whereas if you use the ApplicationMusicPlayer, your app will be the one reported as the now-playing app. Ownership of the playback queue is also different. With SystemMusicPlayer, your app is merely remote-controlling the system Music app, whereas with ApplicationMusicPlayer, your app owns a completely separate playback queue. Both of these players allow you to set the queue with one or more items, add an item to play next, or to play later. But only the ApplicationMusicPlayer gives you additional control over the playback queue, allowing you to insert items in the middle, or removing items that had been added previously. Finally, if your user isn't already an Apple Music subscriber, you may want to allow them to start a free trial for Apple Music from within your app, so they'll be able to enjoy all the functionality you've worked on to improve the user experience of your app with music. The subscription offer can be configured by tailoring the main message shown to the user to better correspond to the functionality in your app, like “play music”.\n\nIt can also be contextual, highlighting a specific song, album, or a playlist.\n\nAnd by using the subscription offer sheet in your app, you can get rewarded for bringing in new Apple Music subscribers, through our affiliate program, which we call the Apple Services Performance Partners Program. To show a contextual music subscription offer in your app, you'll need to keep track of the music subscription as we saw earlier. You'll also need another state variable to keep track of whether the offer is being shown. Pass in the ID of, say, an album, as the itemID property of your subscription offer options. Keep the offer button disabled whenever “canBecomeSubscriber” is set to \"false\" on the music subscription. Then, use the musicSubscriptionOffer modifier with a binding to the isShowingOffer property, and also including your options. Finally, set the isShowingOffer variable to \"true.\" Let's go back to our app and see what the contextual offer for Apple Music looks like. In our earlier demo, we were already signed in with an active Apple Music subscription. So, to simulate the scenario where it might be appropriate to show a subscription offer for Apple Music, you can just go Settings, and sign out of your account.\n\nThen, if I go back to my app, you can see that the play button was disabled and moved to the left to make room for another button that invites the user to join Apple Music. If I tap this button, a subscription offer is presented, highlighting the specific album we were just looking at in our app. And that's how you can allow users to start a free trial for Apple Music from within your app. In conclusion, there are many types of apps that can be enhanced by adding a little bit of music as part of their experience. For example, you can make your games a lot more immersive by playing background music that matches the mood of your game. Or you can play upbeat music to keep your users motivated in a fitness app. And in a social media app, you can keep your users even more engaged with content that highlights music.\n\nTo go even further, make sure to check out some related sessions, so you can learn about harnessing the power of Shazam signatures with ShazamKit, and dive deeper into concurrency with SwiftUI. Thanks for watching, and enjoy WWDC 2021! [percussive music]",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:56",
+      "title": "Loading and accessing relationships",
+      "language": "swift",
+      "code": "// Loading and accessing relationships\n\nlet detailedAlbum = try await album.with([.artists, .tracks, .relatedAlbums])\nprint(\"\\(detailedAlbum)\")\n\nif let tracks = detailedAlbum.tracks {\n    print(\"  Tracks:\")\n    tracks.prefix(2).forEach { track in\n        print(\"    \\(track)\")\n    }\n}"
+    },
+    {
+      "timestamp": "3:31",
+      "title": "Loading and accessing associations",
+      "language": "swift",
+      "code": "// Loading and accessing associations\n\nlet detailedAlbum = try await album.with([.artists, .tracks, .relatedAlbums])\nprint(\"\\(detailedAlbum)\")\n\nif let relatedAlbums = detailedAlbum.relatedAlbums {\n    print(\"  \\(relatedAlbums.title ?? \"\"):\")\n    relatedAlbums.prefix(2).forEach { relatedAlbum in\n        print(\"    \\(relatedAlbum)\")\n    }\n}"
+    },
+    {
+      "timestamp": "9:02",
+      "title": "Loading top level genres",
+      "language": "swift",
+      "code": "// Loading top level genres\n\nstruct MyGenresResponse: Decodable {\n    let data: [Genre]\n}\n\nlet countryCode = try await MusicDataRequest.currentCountryCode\nlet url = URL(string: \"https://api.music.apple.com/v1/catalog/\\(countryCode)/genres\")!\n\nlet dataRequest = MusicDataRequest(urlRequest: URLRequest(url: url))\nlet dataResponse = try await dataRequest.response()\n\nlet decoder = JSONDecoder()\nlet genresResponse = try decoder.decode(MyGenresResponse.self, from: dataResponse.data)\nprint(\"\\(genresResponse.data[9])\")"
+    },
+    {
+      "timestamp": "10:49",
+      "title": "Requesting user consent for MusicKit",
+      "language": "swift",
+      "code": "// Requesting user consent for MusicKit\n\n@State var isAuthorizedForMusicKit = false\n\nfunc requestMusicAuthorization() {\n    detach {\n        let authorizationStatus = await MusicAuthorization.request()\n        if authorizationStatus == .authorized {\n            isAuthorizedForMusicKit = true\n        } else {\n            // User denied permission.\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "12:54",
+      "title": "Using music subscription to drive state of a play button",
+      "language": "swift",
+      "code": "// Using music subscription to drive state of a play button\n\n@State var musicSubscription: MusicSubscription?\n\nvar body: some View {\n    Button(action: handlePlayButtonSelected) {\n        Image(systemName: \"play.fill\")\n    }\n    .disabled(!(musicSubscription?.canPlayCatalogContent ?? false))\n    .task {\n        for await subscription in MusicSubscription.subscriptionUpdates {\n            musicSubscription = subscription\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "15:34",
+      "title": "Showing contextual music subscription offer",
+      "language": "swift",
+      "code": "// Showing contextual music subscription offer\n\n@State var musicSubscription: MusicSubscription?\n@State var isShowingOffer = false\n\nvar offerOptions: MusicSubscriptionOffer.Options {\n    var offerOptions = MusicSubscriptionOffer.Options()\n    offerOptions.itemID = album.id\n    return offerOptions\n}\n\nvar body: some View {\n    Button(\"Show Subscription Offers\", action: showSubscriptionOffer)\n        .disabled(!(musicSubscription?.canBecomeSubscriber ?? false))\n        .musicSubscriptionOffer(isPresented: $isShowingOffer, options: offerOptions)\n}\n\nfunc showSubscriptionOffer() {\n    isShowingOffer = true\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "MusicKit",
+        "url": "https://developer.apple.com/documentation/musickit"
+      },
+      {
+        "title": "Using MusicKit to Integrate with Apple Music",
+        "url": "https://developer.apple.com/documentation/musickit/using_musickit_to_integrate_with_apple_music"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10294/5/DFB67B36-DCDE-49D9-8ED1-AC2A8B566F64/downloads/wwdc2021-10294_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10294/5/DFB67B36-DCDE-49D9-8ED1-AC2A8B566F64/downloads/wwdc2021-10294_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "110347",
+      "year": "2022",
+      "title": "Explore more content with MusicKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110347"
+    },
+    {
+      "id": "10019",
+      "year": "2021",
+      "title": "Discover concurrency in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10019"
+    },
+    {
+      "id": "10044",
+      "year": "2021",
+      "title": "Explore ShazamKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10044"
+    },
+    {
+      "id": "10291",
+      "year": "2021",
+      "title": "Explore the catalog with the Apple Music API",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10291"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:23:37.199Z"
+}

@@ -1,0 +1,215 @@
+{
+  "id": "243",
+  "year": "2025",
+  "url": "https://developer.apple.com/videos/play/wwdc2025/243/",
+  "title": "What’s new in UIKit",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Privacy & Security",
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Greetings, and welcome to “What’s new in UIKit”. I’m Dima, an engineering manager on the UIKit team. From iOS and iPadOS to tvOS, visionOS and Mac Catalyst, UIKit continues to be the foundation of your apps now with even more enhancements.\n\nI’ll start off by giving you an overview of UIKit’s support for the new design system. Then, I’ll cover improvements for your app’s content to adapt smoothly across various devices and screen shapes. Following that, I’ll introduce new UIKit APIs for the menu bar, the familiar macOS element that’s come to iPadOS! I’ll dive into the core architectural advancements in UIKit, revisiting key fundamentals along the way. Finally, I’ll wrap up with the broader general framework enhancements we’ve made.\n\nThe new design system introduces a vibrant look for system materials and controls.\n\nAt its heart is the new material: Liquid Glass. It’s translucent, dynamic and alive with effects like specular highlights and refraction. From bars and search fields to alerts, popovers and split views, UIKit standard components have been refreshed with the new material.\n\nNavigation transitions are now fluid and interruptible, giving your app a more responsive feel.\n\nUsers can start interacting with content without waiting for the animation to finish.\n\nAnd, to elevate your own UI to the new design, we introduced new tools like the background extension view, which allows your content to surface under the sidebar’s large glass platter, preserving visual continuity.\n\nThere is also a glass material for your own custom components and the new scroll edge effect for your content to gracefully fade as it scrolls under the glass platters, enhancing legibility of bar buttons and other controls.\n\nFor a comprehensive hands-on guide to updating the look of your UIKit apps, watch the video “Build a UIKit app with the new design”. And to dive into the new design itself, checkout “Get to know the new design system”.\n\nNext, an overview of improvements for your apps content to adapt smoothly across various devices and screen shapes.\n\nIn iOS 26, UISplitViewController gains first class support for inspectors. An inspector provides additional details of the selected content. For example, Preview uses an inspector to display metadata alongside the photo in the secondary column.\n\nYou can now also resize columns by dragging the split view controller’s separators. When using the pointer, its shape will adapt to indicate the directions in which a column can be resized. For more information on the improvements to container view controllers, as well as a refresher on general layout concepts such as layout margins and safe areas, check out the video “Make your UIKit app more flexible”. Next on the menu: iOS 26 brings the menu bar from macOS to iPad.\n\nNow a swipe from the top reveals your app’s full menu even without a hardware keyboard! It’s a great way to provide quick access to the functionality in your app.\n\nThe menu bar supports all menu features—images, submenus, inline sections, checkmarks, and more.\n\nIt should show all commands from your app, even those without keyboard shortcuts. And it keeps unavailable commands visible, but disabled, so users can still discover everything your app is capable of.\n\nApps still use UIMenuBuilder to customize their main menus, and in iOS 26, UIKit is introducing several new APIs to build even better menu bars. I’ll start with the main menu system configuration.\n\nThis API allows apps to customize which system commands are initially provided in the main menu. When you use the configuration API, your app is opted into additional pre-made, localized menu elements, like the new command to toggle inspectors. And it lets you declare upfront which items to include or omit. You can also deeply configure and style individual groups of elements; for instance, optimizing the Find commands for the needs of your app. Finally, supply a UIMenuBuilder block ahead of time to add custom items, letting both your app and its share extensions use the same code to define supported keyboard shortcuts.\n\nThis is an example of using a main menu system configuration. First, I create a configuration object. Then, I specify which commands my app wants in the main menu by default. For example, I’ll declare support for the system printing commands.\n\nI’ll opt out of certain default commands, such as the new command to toggle the inspector panel. The configuration allows me to specify common styles for the default commands, like converting the system Find commands into a single Search item. This is great for photo or music apps, where the focus is on searching content rather than searching text.\n\nFinally, I can set the configuration on the main menu system to have it build with the initial set of preferred elements. I can also optionally provide a build handler, which will be called instead of buildMenuWithBuilder. The handler provides access to a UIMenuBuilder, which has been upgraded in iOS 26 with more powerful convenience methods, faster performance, and improved diagnostics.\n\nNote that setting a configuration will trigger a rebuild of the menu bar.\n\nIdeally, your app should set the configuration only once and as early as possible, such as in application didFinishLaunchingWithOptions. iOS and macOS 26 introduce additional standard actions and menus in the menu bar. Perform close is mapped to Cmd-W, and closes your window scene by default, but you can also have it close other things in your app, like tabs in a web browser. The menu command “New from clipboard” allows creation of documents from the contents of the pasteboard, without triggering a paste alert. The newItem menu introduced in iOS 26 is a great place to put it. The standard actions for text alignment, sidebar toggling, and inspector toggling are also now exposed for your apps to customize. By default, keyboard shortcuts repeat when the keys are held down but you can customize that behavior by setting the repeatBehavior property on UIKeyCommand.\n\nThis property can also be set per-responder using validateCommand. This is especially important for destructive actions like hitting a delete key to delete an email so you don’t accidentally trigger them repeatedly. In some cases, parts of the menu bar need to display dynamic content based on the focused item or a window scene.\n\nFor example, browsing apps like Safari may show history for the current browsing profile in the History menu.\n\nTo support this, use the new focus-based deferred menu element, which populates its elements from the responder chain. When constructing your main menu, create a UIDeferredMenuElement using focus, and give it an identifier to differentiate it.\n\nThen, insert it into the main menu.\n\nWhen the deferred element needs to be fulfilled, UIKit walks the responder chain until it finds a responder that can contribute items. In this example, the browser view controller overrides providerForDeferredMenuElement to supply history items for the current profile.\n\nIt checks the identifier of the deferred element for the browserHistory element and returns a Provider to load history menu items. Focus-based deferred elements are a great way to keep the menu bar up to date with keyless commands, without needing to perform costly rebuilds on the main menu system. Beyond your app’s custom items, the system supplies several menu entries automatically. Your app gets a keyboard shortcut to open its settings in the Settings app, and for document-based apps, the Open Recent menu will be populated with recent documents.\n\nThe system also supplements the Window menu with tiling commands, including a list of all open scenes for your app. Populate the title of each scene to help users differentiate them.\n\nFinally, a few things to keep in mind as you build out your menu bar. For UIKit apps, menu bars defined in storyboards are no longer supported. Apps will not launch with menus in storyboards, so implementing them programmatically is required.\n\nYou should also ensure that your app’s functionality remains accessible without the menu bar, since the menu bar will not always be present.\n\nTo learn more about how to build a great menu bar for your app, watch “Elevate the design of your iPad app”. And for an overview of the UIKit main menu, check out “Take your iPad apps to the next level”. We are continuing to evolve UIKit with new features for modern patterns, best practices and deeper SwiftUI interoperability. iOS 26 is no exception, and I have exciting new architectural improvements to share with you. The first major enhancement is built-in support for Swift Observable objects in UIKit.\n\nUIKit now integrates Swift Observation at its core: in update methods like layoutSubviews, it automatically tracks any Observable you reference, wires up dependencies, and invalidates the right views —no manual setNeedsLayout required.\n\nYou can back-deploy this on iOS 18 by adding the UIObservationTrackingEnabled key to your Info.plist. On iOS 26, it’s enabled by default. I’ll go over a couple of examples of automatic observation tracking in action.\n\nHere, I have a message list view controller containing a UILabel that indicates unread messages.\n\nIt’s backed by an Observable model object with two properties, a boolean that controls whether the status is shown, and the status string.\n\nIn viewWillLayoutSubviews, I use the observable model to update the label's alpha to show or hide it, and set its text. On first layout, UIKit populates the label, and—thanks to automatic observation tracking— records dependencies on showStatus and statusText. Any change to those properties invalidates the view and reruns viewWillLayoutSubviews, keeping the label in sync without extra code. Here is another example of using Observable objects with UIKit, which highlights the benefits of automatic observation tracking when configuring cells in a UICollectionView.\n\nI back each list cell with an observable ListItemModel containing an icon, title and subtitle.\n\nInside of the cell provider callback, I dequeue a cell, grab its model and assign a configurationUpdateHandler.\n\nBecause this handler supports observation tracking, UIKit automatically establishes dependencies on any Observable objects I use inside it.\n\nIn the handler I populate and apply a list content configuration using the observable list item model. That’s it! Now any change to the model’s properties while the cell is visible causes UIKit to rerun the handler and update the cell for me. With the addition of automatic trait and observation tracking, UIKit now includes a general-purpose update method to support those features.\n\nWe introduce a new method updateProperties to both UIView and UIViewController.\n\nIt runs just before layoutSubviews, but is independent, letting you invalidate properties without forcing the layout, and vice versa, so you avoid extra passes and gain finer-grained updates.\n\nupdateProperties complements, not replaces, layoutSubviews. Use it to populate content, apply styling or configure behaviors.\n\nIt automatically tracks any Observable you read and you can manually trigger it by calling setNeedsUpdateProperties. I’ll go over a concrete example of using this new method.\n\nHere, I have an Observable BadgeModel object that stores the count displayed in a badge view. The view controller for the bar-button item is backed by a BadgeModel.\n\nWithin updateProperties I use the new badging API on the bar button item and pull the count straight from the model. Now, whenever the Observable model object changes, it results in updateProperties running and updating the badge.\n\nBy using updateProperties to configure the view instead of layoutSubviews, I avoid re-running the code on unrelated events, like resizing, cutting unnecessary work and improving performance.\n\nTo better understand how updateProperties fits in with other update methods, I’ll go over how UIKit’s update pass works.\n\nHere is an illustration of how UIKit updates views before displaying them on screen.\n\nThe layout pass comes first. UIKit traverses the view hierarchy top down, updates each view’s traits, then calls layoutSubviews. If that pass causes other views to require layout, the layout pass repeats until everything is laid out.\n\nOnce the layout settles, UIKit performs the display pass, calling draw method on each view and repeating until all views no longer need display.\n\nOnce both passes finish, the next frame can be rendered and displayed on the screen.\n\nAnd here is how the new updateProperties callback fits in. During the top-down layout pass, UIKit runs updateProperties right after updating traits and just before layoutSubviews. You can think of layoutSubviews as being split into two stages: property updates first, then the usual layout logic. Because the trait collection is updated before updateProperties runs, you can safely read it there. And since it always precedes layoutSubviews, you can invalidate layout inside it and the layout pass will run immediately afterward.\n\nTo complement the new observation tracking feature and new updateProperties method, we’ve made an improvement to how animations work in UIKit.\n\nBefore starting, I’ll go over how a manual update works in iOS 18 and earlier. In a UIView animation closure, first, the new values are set on Observable objects, then layoutIfNeeded is called on views that depend on those objects. Both steps are necessary, because the first step causes an invalidation, and the second step performs the update and creates animations. Manually maintaining property and view dependencies is prone to error, and can result in either too many or too few updates or animations.\n\niOS 26 has a new animation option for UIViews called flushUpdates. When enabled, UIKit applies pending updates just before the animation begins, and again when it ends, so you no longer need to call layoutIfNeeded. For flushUpdates to work, only make invalidating state changes inside the animation closure. I'll go through an example of how to use flushUpdates. First, pass flushUpdates as an option to UIView animate, then make changes to the Observable object inside the closure. Any views using that Observable object in an update method will automatically perform the necessary update. flushUpdates isn’t limited to animations driven by Observable.\n\nHere's an example of using it to animate auto layout constraint changes automatically.\n\nIn the flushUpdates closure, I set a new constant to one of the existing constraints, and also activate and deactivate other constraints. Dependent views animate to their new positions and sizes automatically.\n\nNow I’ll cover how we made using SwiftUI and UIKit in the same app more seamless.\n\nSwiftUI scenes are now supported in UIKit applications using a new delegate protocol. This supports incremental adoption of SwiftUI, and also allows UIKit apps to leverage immersive spaces and volumes on visionOS.\n\nImagine a meditation app that presents a zen garden scene: in a standard 2D window on iPhone and iPad, and as an immersive space on visionOS.\n\nI present that immersive space by implementing the new UIHostingSceneDelegate protocol with a root SwiftUI scene.\n\nUsing a hosting scene delegate is just like any other scene delegate. Simply set the delegate class type on the UISceneConfiguration when a new scene is connecting.\n\nYou can programmatically request a particular SwiftUI scene from the hosting delegate by passing its identifier.\n\nIn this example I request the immersive zen garden space.\n\nLastly, I’ll guide you through some general enhancements in UIKit, starting with improvements to HDR rendering.\n\nWith iOS 26 HDR isn’t just for images anymore—colors get the same treatment, so you can accentuate your user interface or enable new experiences.\n\nUIColor now lets you specify a base SDR color plus an exposure value, automatically adjusting its brightness to the display’s capabilities. Here, I create a red HDR color with its exposure set to two and a half times the SDR’s peak white.\n\nNow you can also enable HDR color selection in UIColorPickerViewController and UIColorWell. To do that, set a maximum exposure to a value guided by your app's rendering capabilities. Here I set the maximum linear exposure of the color picker to be twice the SDR’s peak white.\n\nIn iOS 18, UIImageView intelligently falls back HDR to SDR, ensuring that key content in the UI stands out.\n\nIn iOS 26 this behavior is expanded to video, and your own custom content can participate as well.\n\nUse the new UITraitHDRHeadroomUsage trait to monitor when your HDR content should fall back to SDR. To learn more about HDR, check out the videos “Use HDR for dynamic image experiences in your app” and “Support HDR images in your app”.\n\nBuilding on NSNotification.Name API, UIKit in iOS 26 now represents each notification as a dedicated NotificationCenter.Message type.\n\nThis gives you a strongly typed value for registering observers and for retrieving event details.\n\nHere is an example of adjusting the layout when the keyboard appears: I register for the keyboardWillShow notification type, then, in the handler, I pull the animation duration and the keyboard frame straight from the message. Finally, I animate my constraints using those values—no need for userInfo lookups or manual casting! With each release, the continuous evolution of UIKit brings you modern, robust APIs for today’s best practices. And as you adopt those, we are deprecating the legacy methods.\n\nUIScene adoption makes your apps portable and highly flexible so we’re deprecating many UIApplication focused APIs.\n\nLegacy UIApplicationDelegate callbacks and UIApplicationLaunchOptionKeys no longer apply, and only the init windowScene initializer for UIWindow remains. Every other initializer is deprecated.\n\nIn the release following iOS 26, any UIKit app built with the latest SDK will be required to use the UIScene life cycle, otherwise it will not launch.\n\nAdopt the UIScene life cycle everywhere, not just in multi-window apps! For details on how to do that, read the tech note: “Migrating to the UIKit scene-based life cycle”. For more information on how to maximize the flexibility of your app, including new APIs that will help you migrate away from UIRequiresFullScreen, check out the video “Make your UIKit app more flexible”.\n\nApps dealing with a variety of document types frequently need to launch external viewers.\n\nIn iOS 26 the existing openURL method now accepts file URLs so you can now hand-off documents that are not natively supported by your app. If a default app exists for that file type, the system launches it and passes along your URL. If not, openURL returns false, giving you an option to handle the fallback yourself, for example, by using a quick look preview controller.\n\nSF Symbols got improved in iOS 26. SF Symbols 7 adds the ability to draw symbols, starting with two new effects.\n\nDraw Off, like the Disappear effect, uses the draw animation to hide a symbol. Draw On, like Appear, shows a hidden symbol by drawing it.\n\nSymbols can now support variable draw, a new mode for variable value. This draws arbitrary values along a path, such as for this progress indicator. You can also use it with the Automatic symbol content transition to animate across variable values.\n\nMagic Replace transitions can also perform special draw animations between certain symbols. For example, this transition between the circle symbol and the filled checkmark symbol now fills the circle and draws the checkmark. The new draw animations are incredibly useful for buttons, so UIKit has new API to easily adopt symbol content transitions in UIButton.\n\nUse the new symbolContentTransition property on UIButton.Configuration to specify a symbol content transition, such as replace. When the button’s symbol changes, say when its selection state toggles, UIKit performs the transition. SF Symbols 7 introduces other capabilities, too, like the new color rendering mode option. Apps can specify Gradient to color their symbols using automatically-generated gradients rather than flat colors.\n\nTo learn how to fully customize drawing and gradients, watch “What’s new in SF Symbols 7”.\n\nAnd for a refresher on how to use symbol effects for animation, check out “Animate symbols in your app”.\n\nWhat’s next? Compile your app using the iOS 26 SDK. Review how your app responds to the new design and refine your UIs and styling to match the new aesthetics.\n\nUse standard containers like UISplitViewController and UITabBarController to get support for flexible layouts. Implement your app’s menus with the new menu APIs. And adopt updateProperties method and observation tracking to streamline your code and improve performance.\n\nThank you! I’m excited to see how you use these improvements to make your apps even more powerful and delightful to use!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:56",
+      "title": "Main menu system configuration",
+      "language": "swift",
+      "code": "// Main menu system configuration\n\nvar config = UIMainMenuSystem.Configuration()\n\n// Declare support for default commands, like printing\nconfig.printingPreference = .included\n\n// Opt out of default commands, like inspector\nconfig.inspectorPreference = .removed\n\n// Configure the Find commands to be a single \"Search\" element\nconfig.findingConfiguration.style = .search"
+    },
+    {
+      "timestamp": "5:39",
+      "title": "Main menu system build configuration",
+      "language": "swift",
+      "code": "// Main menu system configuration\n\n// Have the main menu system build using this configuration, and make custom additions.\n// Call this early, e.g. in application(_:didFinishLaunchingWithOptions:), and call it once\nUIMainMenuSystem.shared.setBuildConfiguration(config) { builder in\n    builder.insertElements([...], afterCommand: #selector(copy(_:)))\n\n    let deleteKeyCommand = UIKeyCommand(...)\n    builder.replace(command: #selector(delete(_:)), withElements: [deleteKeyCommand])\n}"
+    },
+    {
+      "timestamp": "7:01",
+      "title": "Keyboard shortcut repeatability",
+      "language": "swift",
+      "code": "// Keyboard shortcut repeatability\n\nlet keyCommand = UIKeyCommand(...)\nkeyCommand.repeatBehavior = .nonRepeatable"
+    },
+    {
+      "timestamp": "7:43",
+      "title": "Focus-based deferred menu elements (App Delegate)",
+      "language": "swift",
+      "code": "// Focus-based deferred menu elements\n\nextension UIDeferredMenuElement.Identifier {\n    static let browserHistory: Self = .init(rawValue: \"com.example.deferred-element.history\")\n}\n\n// Create a focus-based deferred element that will display browser history\nlet historyDeferredElement = UIDeferredMenuElement.usingFocus(\n    identifier: .browserHistory,\n    shouldCacheItems: false\n)\n\n// Insert it into the app’s custom History menu when building the main menu\nbuilder.insertElements([historyDeferredElement], atEndOfMenu: .history)"
+    },
+    {
+      "timestamp": "8:06",
+      "title": "Focus-based deferred menu elements (View Controller)",
+      "language": "swift",
+      "code": "// Focus-based deferred menu elements\n\nclass BrowserViewController: UIViewController {\n\n    // ...\n  \n    override func provider(\n        for deferredElement: UIDeferredMenuElement\n    ) -> UIDeferredMenuElement.Provider? {\n        if deferredElement.identifier == .browserHistory {\n            return UIDeferredMenuElement.Provider { completion in\n                let browserHistoryMenuElements = profile.browserHistoryElements()\n                completion(browserHistoryMenuElements)\n            }\n        }\n        return nil\n    }\n}"
+    },
+    {
+      "timestamp": "10:54",
+      "title": "Using an Observable object and automatic observation tracking",
+      "language": "swift",
+      "code": "// Using an Observable object and automatic observation tracking\n\n@Observable class UnreadMessagesModel {\n    var showStatus: Bool\n    var statusText: String\n}\n\nclass MessageListViewController: UIViewController {\n    var unreadMessagesModel: UnreadMessagesModel\n\n    var statusLabel: UILabel\n    \n    override func viewWillLayoutSubviews() {\n        super.viewWillLayoutSubviews()\n\n        statusLabel.alpha = unreadMessagesModel.showStatus ? 1.0 : 0.0\n        statusLabel.text = unreadMessagesModel.statusText\n    }\n}"
+    },
+    {
+      "timestamp": "11:48",
+      "title": "Configuring a UICollectionView cell with automatic observation tracking",
+      "language": "swift",
+      "code": "// Configuring a UICollectionView cell with automatic observation tracking\n\n@Observable class ListItemModel {\n    var icon: UIImage\n    var title: String\n    var subtitle: String\n}\n\nfunc collectionView(\n    _ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath\n) -> UICollectionViewCell {\n    let cell = collectionView.dequeueReusableCell(withReuseIdentifier: \"Cell\", for: indexPath)\n    let listItemModel = listItemModel(for: indexPath)\n    cell.configurationUpdateHandler = { cell, state in\n        var content = UIListContentConfiguration.subtitleCell()\n        content.image = listItemModel.icon\n        content.text = listItemModel.title\n        content.secondaryText = listItemModel.subtitle\n        cell.contentConfiguration = content\n    }\n    return cell\n}"
+    },
+    {
+      "timestamp": "13:27",
+      "title": "Using automatic observation tracking and updateProperties()",
+      "language": "swift",
+      "code": "// Using automatic observation tracking and updateProperties()\n\n@Observable class BadgeModel {\n   var badgeCount: Int?\n}\n\nclass MyViewController: UIViewController {\n   var model: BadgeModel\n   let folderButton: UIBarButtonItem\n\n    override func updateProperties() {\n        super.updateProperties()\n\n        if let badgeCount = model.badgeCount {\n            folderButton.badge = .count(badgeCount)\n        } else {\n            folderButton.badge = nil\n        }\n   }\n}"
+    },
+    {
+      "timestamp": "16:57",
+      "title": "Using the flushUpdates animation option to automatically animate updates",
+      "language": "swift",
+      "code": "// Using the flushUpdates animation option to automatically animate updates\n\n// Automatically animate changes with Observable objects\nUIView.animate(options: .flushUpdates) {\n    model.badgeColor = .red\n}"
+    },
+    {
+      "timestamp": "17:23",
+      "title": "Automatically animate changes to Auto Layout constraints with flushUpdates",
+      "language": "swift",
+      "code": "// Automatically animate changes to Auto Layout constraints\nUIView.animate(options: .flushUpdates) {\n    // Change the constant of a NSLayoutConstraint\n    topSpacingConstraint.constant = 20\n    \n    // Change which constraints are active\n    leadingEdgeConstraint.isActive = false\n    trailingEdgeConstraint.isActive = true\n}"
+    },
+    {
+      "timestamp": "18:07",
+      "title": "Setting up a UIHostingSceneDelegate",
+      "language": "swift",
+      "code": "// Setting up a UIHostingSceneDelegate\n\nimport UIKit\nimport SwiftUI\n\nclass ZenGardenSceneDelegate: UIResponder, UIHostingSceneDelegate {\n    static var rootScene: some Scene {\n        WindowGroup(id: \"zengarden\") {\n            ZenGardenView()\n        }\n\n        #if os(visionOS)\n        ImmersiveSpace(id: \"zengardenspace\") {\n            ZenGardenSpace()\n        }\n        .immersionStyle(selection: .constant(.full),\n                        in: .mixed, .progressive, .full)\n        #endif \n    }\n}"
+    },
+    {
+      "timestamp": "18:28",
+      "title": "Using a UIHostingSceneDelegate",
+      "language": "swift",
+      "code": "// Using a UIHostingSceneDelegate \n\nfunc application(_ application: UIApplication,\n    configurationForConnecting connectingSceneSession: UISceneSession,\n    options: UIScene.ConnectionOptions) -> UISceneConfiguration {\n\n    let configuration = UISceneConfiguration(name: \"Zen Garden Scene\",\n                                             sessionRole: connectingSceneSession.role)\n\n    configuration.delegateClass = ZenGardenSceneDelegate.self\n    return configuration\n}"
+    },
+    {
+      "timestamp": "18:41",
+      "title": "Requesting a scene",
+      "language": "swift",
+      "code": "// Requesting a scene\n\nfunc openZenGardenSpace() {\n    let request = UISceneSessionActivationRequest(\n        hostingDelegateClass: ZenGardenSceneDelegate.self,\n        id: “zengardenspace\")!\n  \n    UIApplication.shared.activateSceneSession(for: request)\n}"
+    },
+    {
+      "timestamp": "19:18",
+      "title": "HDR color support",
+      "language": "swift",
+      "code": "// Create an HDR red relative to a 2.5x peak white\nlet hdrRed = UIColor(red: 1.0, green: 0.0, blue: 0.0, alpha: 1.0, linearExposure: 2.5)"
+    },
+    {
+      "timestamp": "19:50",
+      "title": "HDR color picking",
+      "language": "swift",
+      "code": "// Support picking HDR colors relative to a \n// maximum peak white of 2x\ncolorPickerController.maximumLinearExposure = 2.0"
+    },
+    {
+      "timestamp": "20:06",
+      "title": "Mixing SDR and HDR content",
+      "language": "swift",
+      "code": "// Mixing SDR and HDR content\n\nregisterForTraitChanges([UITraitHDRHeadroomUsageLimit.self]) { traitEnvironment, previousTraitCollection in\n    let currentHeadroomLimit = traitEnvironment.traitCollection.hdrHeadroomUsageLimit\n    // Update HDR usage based on currentHeadroomLimit’s value\n}"
+    },
+    {
+      "timestamp": "20:54",
+      "title": "Adopting Swift notifications",
+      "language": "swift",
+      "code": "// Adopting Swift notifications\n\noverride func viewDidLoad() {\n    super.viewDidLoad()\n\n    let keyboardObserver = NotificationCenter.default.addObserver(\n        of: UIScreen.self\n        for: .keyboardWillShow\n    ) { message in\n        UIView.animate(\n            withDuration: message.animationDuration, delay: 0, options: .flushUpdates\n        ) {\n            // Use message.endFrame to animate the layout of views with the keyboard\n            let keyboardOverlap = view.bounds.maxY - message.endFrame.minY\n            bottomConstraint.constant = keyboardOverlap\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "24:26",
+      "title": "Using a symbol content transition to automatically animate symbol updates",
+      "language": "swift",
+      "code": "// Using a symbol content transition to automatically animate symbol updates\n\nvar configuration = UIButton.Configuration.plain()\nconfiguration.symbolContentTransition = UISymbolContentTransition(.replace)"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Human Interface Guidelines",
+        "url": "https://developer.apple.com/design/human-interface-guidelines"
+      },
+      {
+        "title": "UIKit updates",
+        "url": "https://developer.apple.com/documentation/Updates/UIKit"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/243/4/9d493d7f-4ae0-47d2-9b97-c3ad66cdf3c4/downloads/wwdc2025-243_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/243/4/9d493d7f-4ae0-47d2-9b97-c3ad66cdf3c4/downloads/wwdc2025-243_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "284",
+      "year": "2025",
+      "title": "Build a UIKit app with the new design",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/284"
+    },
+    {
+      "id": "208",
+      "year": "2025",
+      "title": "Elevate the design of your iPad app",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/208"
+    },
+    {
+      "id": "356",
+      "year": "2025",
+      "title": "Get to know the new design system",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/356"
+    },
+    {
+      "id": "282",
+      "year": "2025",
+      "title": "Make your UIKit app more flexible",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/282"
+    },
+    {
+      "id": "337",
+      "year": "2025",
+      "title": "What’s new in SF Symbols 7",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/337"
+    },
+    {
+      "id": "10177",
+      "year": "2024",
+      "title": "Use HDR for dynamic image experiences in your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10177"
+    },
+    {
+      "id": "10258",
+      "year": "2023",
+      "title": "Animate symbols in your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10258"
+    },
+    {
+      "id": "10181",
+      "year": "2023",
+      "title": "Support HDR images in your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10181"
+    },
+    {
+      "id": "10057",
+      "year": "2021",
+      "title": "Take your iPad apps to the next level",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10057"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:42:17.347Z"
+}

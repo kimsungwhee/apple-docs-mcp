@@ -1,0 +1,66 @@
+{
+  "id": "10209",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10209/",
+  "title": "What's new in Core NFC",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nHi, my name is Lawrence and I work on NFC software here at Apple.\n\nToday we will go over the changes in our existing APIs. These changes follow some of the new published Swift guidelines.\n\nWe have also expanded our APIs for the ISO15693 tag used in NFCTagReaderSession. First, let's start with an overview of Core NFC. You may recall our creative salmon from our last year WWDC presentation.\n\nBy the way, his name is Kevin.\n\nToday I have brought Kevin with me and here is the coupon tag.\n\nCore NFC allows your app to read this NFC tag using an iPhone.\n\nNFC is also used in other places, such as on parking meters, scooter rental, electric car charging station, ordering menu in restaurant, et cetera. Core NFC allows an app to read an NFC tag in a session lasting up to 60 seconds. This has been supported on iPhones since the iPhone 7. Beginning on the iPhone XS, tags can also be read in the background while the screen is on, if the NFC forum NDEF message contains a universal link. Once the user has tapped on the notification banner shown on screen that NDEF message will be sent to your application as an NSUserActivity via UIApplicationDelegate restorationHandler. Texts may contain a NFC forum NDEF message or other proprietary data set.\n\nCore NFC supports NDEF reading and writing as well as other native tag protocols.\n\nThe easiest path for tag access is to use the NFCNDEFReaderSession.\n\nCore NFC supports NDEF reading and writing as well as other native tag protocols.\n\nThe easiest path for tag access is to use the NFCNDEFReaderSession. But Core NFC also supports raw tag communication via ISO7816, FeliCa, MIFARE and ISO15693. Next, let's talk about some changes to the Swift syntax to make it easier to understand your Core NFC code.\n\nCore NFC now adopts the use of the Result enum in our tag APIs, specifically how parameters are returned in our completion handler. Let's look at the ISO7816-tag-send-command as an example. Before iOS 14, the method signature accepts a closure with four arguments as the completion handler. Your application will need to check the optional error object to determine if an error occurs. If the operation succeeds, you may then parse the rest of arguments to collect the results. The new signature in iOS 14 returns a Result enum of either a NFCISO7816-Response-APDU object on success, which is the result of reading the tag, or an error object on a failure. The Result enum can be easily handled using a switch statement as shown.\n\nNow let me show you how it looks in Xcode.\n\nI've opened the NFCFishTag sample project from WWDC 2019. Here, in CouponViewController, the write function is shown in its existing form. Let's replace the send-MIFARE-command using its new Result signature.\n\nHere, in the new code, the data object is handled in this section of a switch statement. An error is handled over here.\n\nWe have also made a few changes to the existing enum values to improve readability. For example, the ResolveFlag enum has been changed to refer specifically to ISO15693. Some other new enums have been added as well. Please refer to the documentation for more details. Now we will talk about new capabilities we've added to the NFC-ISO15693 tag protocol. We have added the enhancement defined by the ISO15693 specification third edition 2019. These functions are useful for tags with larger memory sizes and security operations. We have also included a new generic send command if you would like to send arbitrary data packets for your application. Here is a complete list of the enhancement function signatures under the NFC-ISO15693Tag protocol.\n\nWe now support the following operations: fast reading multiple blocks, extended write multiple blocks, authenticate, key update, challenge, read buffer, extended get multiple blocks security status, extended fast read multiple blocks and send request.\n\nThat's what new in Core NFC this year. We look forward to seeing\nwhat you can make with it.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:24",
+      "title": "sendCommand",
+      "language": "swift",
+      "code": "detectedTag.sendCommand(apdu: apdu) { (result: Result<NFCISO7816ResponseAPDU, Error>) in\n   switch result {\n   case .success(let responseAPDU):\n      /// Handle NFCISO7816ResponseAPDU object.\n   case .failure(let error):\n      /// Handle Error object.\n   }\n}"
+    },
+    {
+      "timestamp": "4:06",
+      "title": "sendMiFareCommand",
+      "language": "swift",
+      "code": "// You need to zero-pad the data to fill the block size\nif blockData.count < blockSize {\n  blockData += Data(count: blockSize - blockData.count)\n}\n\nlet writeCommand = Data([writeBlockCommand, offset]) + blockData\ntag.sendMiFareCommand(commandPacket: writeCommand) { (response: Result<Data, Error>) in\n  switch (response) {\n  case .success(let responseData):\n    if responseData[0] != successCode {\n      self.readerSession?.invalidate(errorMessage: \"Write tag error. Please try again.\")\n      return\n    }\n    \n    let newSize = data.count - blockSize\n    if newSize > 0 {\n      self.write(data.suffix(newSize), to: tag, offset: (offset + 1))\n    } else {\n      self.readerSession?.invalidate()\n    }\n  case .failure(let error):\n    let message = \"Write tag error: \\(error.localizedDescription). Please try again.\"\n    self.readerSession?.invalidate(errorMessage: message)\n  }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Creating NFC Tags from Your iPhone",
+        "url": "https://developer.apple.com/documentation/CoreNFC/creating-nfc-tags-from-your-iphone"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10209/4/A0EF8CFC-5168-44DA-9F88-3ECE05F82ACE/wwdc2020_10209_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10209/4/A0EF8CFC-5168-44DA-9F88-3ECE05F82ACE/wwdc2020_10209_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "715",
+      "year": "2019",
+      "title": "Core NFC Enhancements",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/715"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:55:35.076Z"
+}

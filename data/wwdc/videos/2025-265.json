@@ -1,0 +1,106 @@
+{
+  "id": "265",
+  "year": "2025",
+  "url": "https://developer.apple.com/videos/play/wwdc2025/265/",
+  "title": "Dive deeper into Writing Tools",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi and welcome to “Dive deeper into Writing Tools.” I’m Dongyuan. I work on text input and internationalization. Last year, we introduced Writing Tools and showed how to integrate it in your app. Today, we’ll explore some more advanced topics. I’ll show you what’s new in Writing Tools, ways to customize the Writing Tools experience in native text views, how to have Writing Tools work seamlessly with rich text, and finally, how to integrate a full Writing Tools experience if your app has a custom text engine. Let’s get started! With Writing Tools, people can refine their words by rewriting, proofreading, and summarizing text right inside their text views. This year, we’ve added many new features to Writing Tools. With ChatGPT integration, you can also generate content for anything you want to write about, or create images with a simple prompt.\n\nWriting Tools are now available on visionOS. They work nearly everywhere, including Mail, Notes, and in apps that you create.\n\nNew in iOS, iPadOS, and macOS 26, after describing changes to rewrite text, you can enter a follow-up request.\n\nFor example, you can ask to make the text warmer, more conversational, or more encouraging.\n\nIn addition, Writing Tools are available as Shortcuts so you can take your workflows to the next level with Apple Intelligence. Tools like proofread, rewrite, and summarize can now be used in an automated fashion.\n\nWe’ve also added a variety of APIs to help your app support Writing Tools. You can now get the stock toolbar button and standard menu items, ask Writing Tools to return presentation intents for rich text, or integrate the powerful Writing Tools coordinator into your custom text engine. We’ll dive deeper into the new result options and the coordinator API later.\n\nNext up, let’s talk about how to customize Writing Tools in native text views provided by the system.\n\nLast year’s Writing Tools video covers the basics. For native text views, you can get Writing Tools support for free. You can take advantage of lifecycle methods to react to Writing Tools operations like pausing syncing, customize your text view to use limited or full Writing Tools behavior, you can specify ranges you don’t want Writing Tools to rewrite, or use result options to manage support for rich text, lists, or tables. Keep in mind that in last year’s session, result options were named “Allowed Input Options.” They have been renamed to “Writing Tools Result Options” for clarity.\n\nAlthough Writing Tools is available when you select text, if your app is text-heavy, consider adding a toolbar button, like we did for Notes and Mail.\n\nTo do that, use UIBarButtonItem in UIKit, or NSToolbarItem in AppKit.\n\nIn the context menu, Writing Tools items are inserted automatically. If you have a custom menu implementation, or if you want to move the Writing Tools items around, you can set automaticallyInsertsWritingToolsItems to false, and use the writingToolsItems API to get the standard items. This year we updated Proofread, Rewrite, and Summary options in the menu. Using the API ensures that you get all updates for free.\n\nNow, let’s talk about formatting.\n\nApps have many kinds of text views. Some text views don’t support rich text, like the search field in Finder. Some text views support Rich Text, like TextEdit.\n\nSome text views support semantic styles, like Notes. Here you can specify paragraphs with different semantic styles, such as heading, subheading, or block quote. For example, in Notes the result from Writing Tools can utilize native Notes headings, tables, and lists. To tell Writing Tools what kind of text your text view supports, use Writing Tools result options. For plain text views, use the plainText result option. Writing Tools will still use NSAttributedString to communicate with your text view, but you can safely ignore all the attributes inside. For rich text views, like the one in TextEdit, use the richText result option, with or without the list and table options, depending on if your text view supports lists and tables. Writing Tools may add display attributes like bold or italic to the attributed string.\n\nApps that have specialized understanding of semantic formats like Notes can use the richText option with the new presentationIntent option. Writing Tools will use NSAttributedString with presentation intents to communicate with your text view.\n\nYou may wonder what's the difference between display attributes and presentation intents.\n\nIn the TextEdit example, Writing Tools produce rich text by using display attributes like bold or italic, and sends the attributed string to the text view. These attributes only carry stylistic information like concrete font sizes, but not semantic style information. In contrast, Notes tries to fully utilize native semantic styles like headers. Although Writing Tools generated the same text underneath, we instead add presentation intents to the attributed string. Notes can then convert presentation intents to its internal semantic styles. From this example, you can see that the headers part is just a header intent without concrete font attributes.\n\nNote that even if .presentationIntent is specified in the result options, Writing Tools may still add display attributes to the attributed string, because some styles can’t be represented by presentation intents. In this example, Writing Tools use both an emphasized presentation intent, and a strikethrough display attribute to represent the text “crucial and deleted” in the screenshot.\n\nTo summarize, in presentation intent mode we’ll provide styles in the presentation intent form whenever possible. This includes elements like lists, tables, and code blocks.\n\nDisplay attributes may still be used for attributes like underlines, subscript, and superscript. And lastly, presentation intents don’t have a default style. Your app is responsible for converting presentation intents into display attributes, or its own internal styles.\n\nTo have Writing Tools understand the semantics of your text better, once you’ve adopted the presentation intent option, you can override the requestContexts method for your text view, and supply a context with presentation intents whenever possible.\n\nFinally, even if you have a completely custom text engine, we’ve got you covered! You can get the basic Writing Tools experience for free, as long as your text engine has adopted common text editing protocols. On iOS that’s UITextInteraction, or UITextSelectionDisplayInteraction with UIEditMenuInteraction. On macOS, your view needs to adopt NSServicesMenuRequestor this gives your text view Writing Tools, as well as support for features in the Services menu. For details on basic adoption, check out the WWDC24 session.\n\nIf you want to go one step further, you can implement the full Writing Tools experience. This gives Writing Tools the ability to rewrite text in place, provide animation, and show proofreading changes right in line. This year we’ve added Writing Tools coordinator APIs for custom text engines.\n\nThe Writing Tools coordinator manages interactions between your view and Writing Tools.\n\nYou attach a coordinator to your view, and create a delegate to implement the WritingToolsCoordinatorDelegate methods. The delegate prepares the context for Writing Tools to work on, incorporates changes, provides preview objects to use during animations, provides coordinates for Writing Tools to draw proofreading marks, and responds to state changes. To bring it all to life, let me walk you through a quick demo.\n\nHere I have a custom text engine built using TextKit 2. As you can see, we’ve already implemented common text editing protocols like NSTextInputClient and NSServicesMenuRequestor.\n\nIf I build and run the app, I get the basic Writing Tools support for free. All the results will be shown in a panel. I can do a Rewrite, for example.\n\nAnd Replace, or Copy the result.\n\nNow let’s implement full Writing Tools support.\n\nIn the DocumentView, I’m going add some instance properties that are needed during a Writing Tools session, initialize an NSWritingToolsCoordinator object, set the delegate to self, and assign it to an NSView. I also need to call this `configureWritingTools` in `init`.\n\nOf course, it complains that DocumentView does not conform to `NSWritingToolsCoordinator.Delegate`.\n\nLet’s drag in a file that implements all the delegate methods, in a DocumentView extension. You can see that it prepares the context, does text replacement and selection, returns bounding boxes for proofreading, generates previews for animations, etc.\n\nLet’s build and run the app.\n\nIf I rewrite the text, you can see the animation, and the text change happens directly in the text view.\n\nAnd if I proofread, you can see the underlines added by Writing Tools.\n\nI can also click on the individual suggestions to show what’s changed.\n\nNow let’s talk about each of those steps in more detail.\n\nThe first thing to do is to create a coordinator, and attach it to a view. Writing Tools coordinator is a UIInteraction in UIKit, and you attach it to your UIView just like other UIInteractions. In AppKit, it’s an instance property on NSView. Once you have a coordinator, you can set your preferred Writing Tools behavior and result options.\n\nNow, let’s get to the delegate methods. First and foremost, Writing Tools need a context for the current text. A context consists of a piece of text as an NSAttributedString, and a selection range. At minimum, you should include the current text selection in the attributed string. Optionally, you can also include the paragraph before and after the selection— this gives Writing Tools a better understanding of the context around the text. Set the range to what’s currently selected, based on context.attributedString. If nothing is selected, return the whole document as the context and set the range to the cursor location. This gives Writing Tools an opportunity to work on the whole document, when people haven’t specifically selected anything. This is how you provide context. Here I’m showing AppKit, but unless I specifically point it out, you can assume that UIWritingToolsCoordinator and NSWritingToolsCoordinator behave the same way. The delegate methods are async, because large text views may take time to process the underlying text storage. In the body of the function, prepare the text and range depending on the “scope” parameter. Most of the time, you only need to return one context. For sophisticated text views in which text in multiple text storages can be selected at the same time, the coordinator also supports multiple contexts.\n\nAfter evaluating your view’s text, Writing Tools delivers suggested changes to your delegate object. In this replace text delegate method, incorporate the change into your view’s text storage. Writing Tools call this method for each distinct change, and may call the method multiple times with different range values for the same context object. Once finished processing, Writing Tools may ask the delegate to update the selected text range.\n\nTo animate the text while Writing Tools are processing, the coordinator asks for preview images for certain ranges of text.\n\nText view should return previews by rendering the text on a clear background. During animations, Writing Tools apply the visual effects to the provided preview images instead of to the text itself. On macOS, this is done via two delegate methods. The first delegate method takes an array. You should return at least one preview for the whole range. Optionally, return one preview per line for smoother animation.\n\nOn iOS, UIKit uses UITargetedPreview instead of NSTextPreview, and only one delegate method is used.\n\nBefore and after the actual animation, Writing Tools calls the prepareFor and finish methods. To prepare for the text animation, hide the specific range of text from the text view. Once animation finishes, show the specific range of text again.\n\nFor proofreading, Writing Tools shows an underline for text ranges that were changed. Writing Tools also responds to click events in ranges of text to show the inline proofreading popup.\n\nTo show proofreading marks, the coordinator asks the delegate to return the underline bezier paths for individual ranges. Writing Tools also need the bounding bezier path to respond to click or tap events.\n\nLastly, you can implement the optional writingToolsCoordinator:willChangeToState:completion: method to respond to state changes. You may want to perform undo coalescing, stop syncing, or prevent editing, depending on your text view implementation. Conversely, you should inform the coordinator about external changes via the updateRange:withText to make sure Writing Tools operations are in sync with the latest text. Use updateForReflowedText to notify Writing Tools about layout changes in your view. When you call this method, Writing Tools requests new previews, proofreading marks, and other layout-dependent information.\n\nWe’ve seen how to integrate the full Writing Tools experience with your powerful custom text engine. We’ve also released the project I showed earlier as sample code. Check out the sample code and the complete documentation about Writing Tools coordinator to learn more.\n\nThat wraps up the session. What’s next? Try out the new Writing Tools features. Like follow-up adjustments after you describe your changes. Or Writing Tools in Vision Pro, and the Shortcuts app.\n\nAdd a toolbar button, if your app is text-heavy.\n\nPlay with the formatting options to allow Writing Tools to read and write semantic styles like headings, subheadings, and code blocks.\n\nIf you already have a powerful text engine, empower it further with the full Writing Tools experience.\n\nAlso check out Get started with Writing Tools from last year, and the Writing Tools sample code linked below if you want to see how Writing Tools coordinator works in action. Thanks for watching!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "11:46",
+      "title": "Attach a coordinator to the view (UIKit)",
+      "language": "swift",
+      "code": "// Attach a coordinator to the view\n// UIKit\n\nfunc configureWritingTools() {\n    guard UIWritingToolsCoordinator.isWritingToolsAvailable else { return }\n\n    let coordinator = UIWritingToolsCoordinator(delegate: self)\n    addInteraction(coordinator)\n}"
+    },
+    {
+      "timestamp": "12:02",
+      "title": "Attach a coordinator to the view (AppKit)",
+      "language": "swift",
+      "code": "// Attach a coordinator to the view\n// AppKit\n\nfunc configureWritingTools() {\n    guard NSWritingToolsCoordinator.isWritingToolsAvailable else { return }\n       \n    let coordinator = NSWritingToolsCoordinator(delegate: self)\n\n    coordinator.preferredBehavior = .complete\n    coordinator.preferredResultOptions = [.richText, .list]\n    writingToolsCoordinator = coordinator\n}"
+    },
+    {
+      "timestamp": "13:06",
+      "title": "Prepare the context",
+      "language": "swift",
+      "code": "// Prepare the context\n\nfunc writingToolsCoordinator(_ writingToolsCoordinator: NSWritingToolsCoordinator,\n        requestsContextsFor scope: NSWritingToolsCoordinator.ContextScope,\n        completion: @escaping ([NSWritingToolsCoordinator.Context]) -> Void) {\n\n    var contexts = [NSWritingToolsCoordinator.Context]()\n                \n    switch scope {\n    case .userSelection:\n        let context = getContextObjectForSelection()\n        contexts.append(context)\n        break\n        // other cases…\n    }\n        \n    // Save references to the contexts for later delegate calls.\n    storeContexts(contexts)\n    completion(contexts)\n}"
+    },
+    {
+      "timestamp": "13:48",
+      "title": "Respond to text changes from Writing Tools and update selected range",
+      "language": "swift",
+      "code": "// Respond to text changes from Writing Tools\n\nfunc writingToolsCoordinator(_ writingToolsCoordinator: NSWritingToolsCoordinator,\n        replace range: NSRange,\n        in context: NSWritingToolsCoordinator.Context,\n        proposedText replacementText: NSAttributedString,\n        reason: NSWritingToolsCoordinator.TextReplacementReason,\n        animationParameters: NSWritingToolsCoordinator.AnimationParameters?,\n        completion: @escaping (NSAttributedString?) -> Void) {\n}\n\n// Update selected range\n\nfunc writingToolsCoordinator(_ writingToolsCoordinator: NSWritingToolsCoordinator,\n        select ranges: [NSValue],\n        in context: NSWritingToolsCoordinator.Context,\n        completion: @escaping () -> Void) {\n}"
+    },
+    {
+      "timestamp": "14:41",
+      "title": "Generate preview for animation (AppKit)",
+      "language": "swift",
+      "code": "// Generate preview for animation (macOS)\n\nfunc writingToolsCoordinator(_ writingToolsCoordinator: NSWritingToolsCoordinator,\n        requestsPreviewFor textAnimation: NSWritingToolsCoordinator.TextAnimation,\n        of range: NSRange,\n        in context: NSWritingToolsCoordinator.Context,\n        completion: @escaping ([NSTextPreview]?) -> Void) {\n}\n    \nfunc writingToolsCoordinator(_ writingToolsCoordinator: NSWritingToolsCoordinator,\n        requestsPreviewFor rect: NSRect,\n        in context: NSWritingToolsCoordinator.Context,\n        completion: @escaping (NSTextPreview?) -> Void) {\n}"
+    },
+    {
+      "timestamp": "14:58",
+      "title": "Generate preview for animation (UIKit)",
+      "language": "swift",
+      "code": "// Generate preview for animation (iOS)\n\nfunc writingToolsCoordinator(_ writingToolsCoordinator: UIWritingToolsCoordinator,\n        requestsPreviewFor textAnimation: UIWritingToolsCoordinator.TextAnimation,\n        of range: NSRange,\n        in context: UIWritingToolsCoordinator.Context,\n        completion: @escaping (UITargetedPreview?) -> Void) {\n}"
+    },
+    {
+      "timestamp": "15:08",
+      "title": "Delegate callbacks before and after animation",
+      "language": "swift",
+      "code": "// Generate preview for animation\n\nfunc writingToolsCoordinator(\n    _ writingToolsCoordinator: NSWritingToolsCoordinator,\n    prepareFor textAnimation: NSWritingToolsCoordinator.TextAnimation,\n    for range: NSRange,\n    in context: NSWritingToolsCoordinator.Context,\n    completion: @escaping () -> Void) {\n\n    // Hide the specific range of text from the text view\n}\n\nfunc writingToolsCoordinator(\n    _ writingToolsCoordinator: NSWritingToolsCoordinator,\n    finish textAnimation: NSWritingToolsCoordinator.TextAnimation,\n    for range: NSRange,\n    in context: NSWritingToolsCoordinator.Context,\n    completion: @escaping () -> Void) {\n\n    // Show the specific range of text again\n}"
+    },
+    {
+      "timestamp": "15:39",
+      "title": "Delegate callbacks to show proofreading marks",
+      "language": "swift",
+      "code": "// Create proofreading marks\n\nfunc writingToolsCoordinator(_ writingToolsCoordinator: NSWritingToolsCoordinator,\n        requestsUnderlinePathsFor range: NSRange,\n        in context: NSWritingToolsCoordinator.Context,\n        completion: @escaping ([NSBezierPath]) -> Void) {\n}\n\nfunc writingToolsCoordinator(_ writingToolsCoordinator: NSWritingToolsCoordinator,\n        requestsBoundingBezierPathsFor range: NSRange,\n        in context: NSWritingToolsCoordinator.Context,\n        completion: @escaping ([NSBezierPath]) -> Void) {\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Enhancing your custom text engine with Writing Tools",
+        "url": "https://developer.apple.com/documentation/AppKit/enhancing-your-custom-text-engine-with-writing-tools"
+      },
+      {
+        "title": "Writing Tools",
+        "url": "https://developer.apple.com/documentation/UIKit/writing-tools"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/265/4/65bf71d2-6fef-47fe-8239-405d7ad9db8d/downloads/wwdc2025-265_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/265/4/65bf71d2-6fef-47fe-8239-405d7ad9db8d/downloads/wwdc2025-265_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10168",
+      "year": "2024",
+      "title": "Get started with Writing Tools",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10168"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:10:40.085Z"
+}

@@ -1,0 +1,194 @@
+{
+  "id": "294",
+  "year": "2025",
+  "url": "https://developer.apple.com/videos/play/wwdc2025/294/",
+  "title": "What’s new in Metal rendering for immersive apps",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Graphics & Games"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello, I'm Ricardo, a Software Engineer at Apple. Today, I'm going to show you new capabilities that you can adopt when using Metal to render immersive content on Apple Vision Pro. Last year, we showed how to take advantage of Metal, Compositor Services, and ARKit, to create Immersive experiences by directly rendering your content on visionOS.\n\nYou can either implement a fully immersive experience, like in Demeo by Resolution Games; or you can adopt the mixed immersion style, to show your content along with the real world.\n\nAnd now, because of valuable feedback from developers like you, Metal rendering on visionOS supports exciting new features.\n\nYou'll be able to add even richer details and interactive effects to your apps and games. I'll explain all about the new Compositor Services capabilities in this video.\n\nTo get the most out of it, you should be familiar with the Compositor Services framework, and with Metal rendering techniques. If you haven’t used these technologies before, you can learn about them in these previous videos.\n\nTo adopt the new features, first you'll need to make some changes to your existing render loop. I'll explain how to adopt new APIs that make the pipeline more flexible. Once you've done that, you'll be able to add hover effects to highlight the interactive elements of your app. You'll also be able to dynamically adjust the resolution of your rendered content. There's a new progressive immersion style that lets people adjust their immersion level with the Digital Crown. And you can use your Mac to render immersive content directly to Vision Pro! It all begins with the new render loop APIs. Let's dive in.\n\nA Metal immersive app starts in SwiftUI, where you create an immersive space that holds a compositor layer.\n\nThe layer provides a layer renderer object for use in your render loop.\n\nYou query frames from the layer renderer. From each frame, you get drawables, which contain textures you use to render your content. If you've already created a Metal immersive app, you are querying a single drawable for each rendered frame. This year, Compositor Services has a new query drawables function that returns an array of drawables. Based on system context, this array will contain one or two drawables.\n\nMost of the time, you'll get a single drawable. However, whenever you're recording a high-quality video with Reality Composer Pro, a frame will return two drawables. You can identify the drawables with the new target property. The one for your Vision Pro display has the .builtIn value, and the one for your recording has the .capture value. To learn how to capture high-quality videos, take a look at the Developer Documentation.\n\nThis render frame function may be familiar to you. After querying the next frame and updating the scene state, I call the query drawable function. Then, I wait for the optimal input time. And I render the scene to the drawable.\n\nNow, instead I replace query drawable with query drawables. I make sure the array isn't empty, and I render my scene to all the drawables.\n\nXcode includes a handy template that shows how to create a Metal immersive app. It's a great starting point. To check it out, start a new Xcode project for a visionOS app, and choose Metal 4 on the Immersive Space Renderer pop-up menu.\n\nNote that Metal 3 is still fully supported this year, and you can use it on the Xcode template by selecting the \"Metal\" option.\n\nYou can learn more about how to adopt the latest version of Metal in \"Discover Metal 4\".\n\nOnce you've adopted the new query drawables function, you'll be able to use all the new features this year. Like adding hover effects on the interactive objects of your scene.\n\nWith them, the person using your app can see which objects are interactive, and can anticipate the targets of their actions. The system will dynamically highlight the object the viewer is looking at. For example, a puzzle game can emphasize the pieces that can be selected by the player.\n\nImagine an app that is rendering a scene with several 3D objects, but only some of them can be interacted with. I want to make sure the hover effects only apply to the interactive objects in my scene. When an object is not interactive, it's not tracked and it doesn't have a hover effect. So I render it normally.\n\nOn the other hand, if an object is interactive, I add a new tracking area to the drawable.\n\nNote that I need to assign a unique object identifier to each tracking area that I register.\n\nThen, I check if the object should have a hover effect. If it shouldn't, I draw it with the tracking area render value. This is useful for detecting pinches on my objects. But, if the object has a hover effect, I configure it on the tracking area before rendering.\n\nIn code, I need to configure my layer renderer to use hover effects. I set the tracking areas texture to use an 8-bit pixel format. It supports up to 255 concurrent interactive objects. I make sure my layer capabilities support the format, and I set it in the configuration.\n\nIn the tracking area registration code, I check if the object is interactive, and if it is, I register a new tracking area in the drawable with my object identifier. Be sure to keep track of unique identifiers for the lifecycle of your objects. Then, I check if the object has a hover effect, and if so, I add it with the .automatic attribute. This means the system will automatically add a hover effect when the viewer looks at the object. Finally, I render it.\n\nWith Compositor Services, the drawable provides several textures your app can use to render content.\n\nYou may be familiar with the color texture, which is what the viewer of your app sees. There's also the depth texture, where darker colors indicate objects that are further from the viewer. The system uses this texture to make your displayed content more accurate as the viewer moves around the scene.\n\nThis year, there's also a tracking areas texture, which defines the different interactive regions in your scene. A drawable provides you the color and depth textures. Now, you can also query the new tracking areas texture.\n\nIn it, you draw distinct areas corresponding to your interactive objects. With hover effects, when somebody looks at an interactive object in your scene, the system uses the tracking areas texture to find the corresponding region, and applies a hover effect on the matching part of your color texture.\n\nHere again is the object render function with my configured tracking area. To render to the tracking areas texture I need a system computed render value. I declare a local variable to store it, and I get it from my corresponding tracking area. If my object is not interactive, I can use the default nil render value.\n\nFinally, I pass it to my draw function, where I'll send it to my fragment shader.\n\nLet's have a look at the shader code.\n\nThe fragment shader output has a tracking area render value, mapped to the color attachment at index 1. I have set my tracking areas texture there. I have bound the render value to my uniforms struct, and I return it in the shader output, along with the color value. Now, my app has interactive hover effects.\n\nThere's one more thing to keep in mind if you use multisample antialiasing, or MSAA.\n\nThis technique works by rendering an intermediate higher resolution texture, and then averaging the color values over a sampling window. This is usually done using the multisample resolve option on your target texture store action. You cannot resolve the tracking areas texture in the same way you resolve a color pixel. Doing so, would average your render values, resulting in an invalid scalar that doesn't correspond to any tracking area. If you use multisample resolve for your color, you have to implement a custom tile resolver for the tracking areas texture. You can do this by using the don't care store option with a custom tile render pipeline. A good strategy is choosing the render value that appears most frequently in the sampling window on the MSAA source texture.\n\nFor an in-depth review of hover effects, including how to use them with MSAA, you can read \"Rendering hover effects in Metal immersive apps\" in the Developer Documentation.\n\nTracking areas also allow your app to handle object interactions in an easier way than before. Spatial events now include a nullable tracking area identifier. I use this identifier to see if it matches any of my scene objects. If I find a target object, I can perform an action on it.\n\nI have improved the interactivity of my app with hover effects. The person using my app can clearly see which objects are actionable, and which one will be activated when they pinch. And this makes handling input events easier then ever! Now, you can also draw your content at even higher fidelity than before. By using dynamic render quality, you can adjust the resolution of your content based on the complexity of your scenes.\n\nFirst, I'll recap how foveated rendering works. In a standard non-foveated texture, the pixels are evenly distributed through the surface. With foveated rendering, the system helps you draw to a texture where the center has a higher pixel density. This way, your app uses its computing and power resources to make the content look better wherever the viewer is most likely to be looking. This year, you can take advantage of dynamic quality for foveated rendering. You can now control the quality of the frames rendered by your app.\n\nFirst, you need to specify a maximum render quality suitable for your app. This sets the upper limit for your app's rendering session. Then, you can adjust the runtime quality within your chosen range based on the type of content you're displaying.\n\nAs you boost the render quality, the high relevance area in your texture expands, leading to a larger overall texture size. Just a heads up, increasing the quality also means your app will use more memory and power.\n\nIf you're rendering text or user interface elements, you will benefit from setting a higher render quality. But if you're showing a complex 3D scene, you may be limited by computing resources. To make sure your app runs smoothly, you need to find a balance between high-quality visuals and the amount of power your app uses.\n\nYou can use Instruments to analyze your app's realtime performance, and you can use the Metal debugger to deep dive and optimize your Metal code and shaders.\n\nRemember, it's important to profile your app with your most complex scenes to make sure it has enough time to render its frames at a steady pace.\n\nCheck out the Developer Documentation to learn more about optimizing your Metal rendering apps.\n\nIn this code example, I have profiled my app, and have determined that I want to render my app's menu with a .8 quality. This way, the text will look crisper. I want to render the world with a .6 quality because it's a complex scene. I also added a computed property with the maximum render quality that I'm going to use.\n\nAnd here's my layer configuration. Dynamic render quality can only be used with foveation, so I check if it's enabled. Then, I set my maximum render quality to the value from my computed property. Remember to set it at the minimum value that makes sense for your content. If you don't, your app will use more memory than it needs to.\n\nWhen I load a new scene, I call my adjust render quality function. Adjusting the render quality is only possible if foveation is enabled. I switch over my scene type, and I adjust the render quality accordingly.\n\nTransitioning between quality values takes a bit of time, rather than being instant. The system makes the transition smooth.\n\nWith dynamic render quality, your highly detailed scenes will really shine. The higher resolution of your rendered scenes can really help with the clarity of your finer details. But remember, you may need to lower the quality during very complex scenes. You can now adjust your app's render quality for your content! New this year, your Metal app can be rendered inside a progressive immersive portal.\n\nWith the progressive immersion style, people using your app can control the immersion level by rotating the Digital Crown. This mode anchors them to the real environment, and can help them feel more at ease when they're viewing complex scenes with movement.\n\nWhen you're viewing a Metal app in the progressive immersion mode, the system only renders the content that's inside the current immersion level.\n\nHere's an example scene from a game being rendered at full immersion. And here's the same scene rendered at partial immersion, after the viewer has adjusted the Digital Crown.\n\nCompare the two scenes and notice how you can save computing power by not rendering the highlighted area outside the portal. That part is not visible, so it's not necessary to render it.\n\nNew APIs allow you to use a system-computed portal stencil to mask your content. This white oval shows the corresponding portal stencil.\n\nThe stencil buffer works as a mask to your rendered scene. With it, you'll only render the contents inside the portal. You can see that the scene you're rendering doesn't have a smooth edge yet.\n\nThe fading is applied by the system as the last step on your command buffer, resulting in the scene that the viewer sees.\n\nIn order to use the stencil to avoid rendering unnecessary content, first you configure your compositor layer. Make sure your desired stencil format is supported by the layer capabilities, and set it on your configuration. To apply the portal stencil mask, you need to add a render context to the drawable with your command buffer. Drawing your mask on the stencil will prevent any invisible pixels from being rendered. You also have to end the encoding through your render context, instead of directly ending your command encoder. This way, the portal effect is efficiently applied over your content.\n\nIn my app, I create an Immersive Space in SwiftUI, and I add the progressive immersion style as a new option to my list. The person using my app can switch between the progressive and the full styles. I configure the layer next. First, be aware that the progressive immersion style only works with the layered layout. I specify my desired stencil format to 8-bits per pixel. I check that the capabilities support this format, and I set it on my configuration.\n\nI also set the sample count to 1, since I'm not using MSAA. If you use that technique, set it to the MSAA sampling count.\n\nIn my renderer, I add a render context to the drawable. I pass the same command buffer I will use for my render commands. Then, I draw my portal mask on the stencil attachment. I selected a stencil value that I don't use in any other stencil operations. I set the stencil reference value on the render encoder. This way, my renderer won't draw the area outside the current immersion level. After rendering the scene, note how I end the encoding on my drawable render context.\n\nTo see a working example of a renderer using the progressive immersion style, choose the progressive option in the visionOS Metal app template. That will get you started building a portal-style Metal app.\n\nFinally, let's explore macOS spatial rendering.\n\nUntil now, I've been talking about building native immersive experiences on Vision Pro.\n\nThis year, you can use the power of your Mac to render and stream immersive content directly to Vision Pro. This can be used to add immersive experiences to existing Mac apps.\n\nFor example, a 3D modeling app can directly preview your scenes on Vision Pro. Or you can build an immersive macOS app from scratch. This way you can make complex immersive experiences with high compute needs, without being constrained by the power usage of Vision Pro.\n\nStarting a remote immersive session from a Mac app is really easy. When you open an Immersive Space in macOS, you'll be prompted to accept the connection on Vision Pro.\n\nDo that, and you'll start seeing your Mac-rendered immersive content.\n\nA typical Mac app is built with SwiftUI or AppKit. You use either of these frameworks to create and display Windows. The system renders your window content with Core Animation. You can adopt a variety of macOS frameworks to implement your app's functionality. And the system displays your content on your Mac display. To build a Mac-supported immersive experience, you'll use the same familiar frameworks that allow you to create immersive visionOS apps. First, you use SwiftUI with the new Remote Immersive Space scene type. You then adopt the Compositor Services framework. You use ARKit and Metal to place and render your content. And the system directly displays your immersive scene on Vision Pro.\n\nThe macOS Remote Immersive Space hosts the Compositor Layer and ARKit Session, like a native visionOS app does. They seamlessly connect to your Vision Pro display and sensors. In order to connect your ARKit Session to visionOS, there's a new Remote Device Identifier SwiftUI environment object that you pass to the session initializer.\n\nThis is how a Mac immersive app is structured.\n\nI define a new remote immersive space, which contains my compositor content. I'll show how it uses the compositor layer in a bit. On Mac, only the progressive and full immersion styles are supported. In the interface of my Mac app, I use the new supports remote scenes environment variable to check if my Mac has this capability. I can customize my UI to show a message if remote scenes are not supported. If they are supported, and I have not opened the immersive space yet, I can launch it.\n\nThe last part of my app is my compositor content. It has my compositor layer and my ARKit session. I create and use a compositor layer the same way I did on visionOS. I access the new remote device identifier SwiftUI environment object, and pass it to the ARKit session initializer. This will connect my Mac's ARKit session to Vision Pro. Last, I start my render loop like I would on a typical Metal immersive app.\n\nARKit and the world tracking provider are now available on macOS.\n\nThis allows you to query the Vision Pro location in space. Just as you would in a native immersive app, you will use the device pose to update your scene and drawables before rendering.\n\nA macOS spatial app supports any input device connected to your Mac. You can use keyboard and mouse controls. Or you can connect a gamepad, and handle its input using the Game Controller framework.\n\nAdditionally, you can use pinch events on the interactive elements of your immersive scene by using the 'onSpatialEvent' modifier on your Layer Renderer.\n\nNew this year, you can also create SwiftUI scenes from an existing AppKit or UIKit app. This is a great way of adding new immersive experiences to existing Mac apps. You can learn more about how to do this in \"What's new in SwiftUI\".\n\nIt's common for rendering engines to be implemented in C or C++. All the APIs I have explained have native equivalents in C. The C types for the Compositor Services framework start with the 'cp' prefix. They use similar patterns and conventions as familiar C libraries such as Core Foundation. For ARKit, the cDevice property gives you a C-compatible remote device identifier. You can pass it into your C framework, and initialize your ARKit Session with the create with device function.\n\nNow you have all the pieces to use your Mac to power immersive content on Vision Pro.\n\nI'm excited to see how you use these new capabilities to augment your immersive apps. They allow for better interactivity, higher fidelity, and the new progressive immersion style. And I can't wait to see what you do with the new macOS spatial capabilities.\n\nTo learn more about how to take your immersive apps to the next level, check \"Set the scene with SwiftUI in visionOS\". And for an overview of other platform improvements, see \"What's new in visionOS\".\n\nThank you for watching!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "0:01",
+      "title": "Scene render loop",
+      "language": "swift",
+      "code": "// Scene render loop\n\nextension Renderer {\n    func renderFrame(with scene: MyScene) {\n        guard let frame = layerRenderer.queryNextFrame() else { return }\n\n        frame.startUpdate()\n        scene.performFrameIndependentUpdates()\n        frame.endUpdate()\n\n        let drawables = frame.queryDrawables()\n        guard !drawables.isEmpty else { return }\n\n        guard let timing = frame.predictTiming() else { return }\n        LayerRenderer.Clock().wait(until: timing.optimalInputTime)\n        frame.startSubmission()\n        scene.render(to: drawable)\n        frame.endSubmission()\n    }\n}"
+    },
+    {
+      "timestamp": "5:54",
+      "title": "Layer configuration",
+      "language": "swift",
+      "code": "// Layer configuration\n\nstruct MyConfiguration: CompositorLayerConfiguration {\n    func makeConfiguration(capabilities: LayerRenderer.Capabilities,\n                           configuration: inout LayerRenderer.Configuration) {\n        // Configure other aspects of LayerRenderer\n\n        let trackingAreasFormat: MTLPixelFormat = .r8Uint\n        if capabilities.supportedTrackingAreasFormats.contains(trackingAreasFormat) {\n            configuration.trackingAreasFormat = trackingAreasFormat\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "7:54",
+      "title": "Object render function",
+      "language": "swift",
+      "code": "// Object render function\n\nextension MyObject {\n    func render(drawable: Drawable, renderEncoder: MTLRenderCommandEncoder) {\n        var renderValue: LayerRenderer.Drawable.TrackingArea.RenderValue? = nil\n        if self.isInteractive {\n            let trackingArea = drawable.addTrackingArea(identifier: self.identifier)\n            if self.usesHoverEffect {\n                trackingArea.addHoverEffect(.automatic)\n            }\n            renderValue = trackingArea.renderValue\n        }\n\t\tself.draw(with: commandEncoder, trackingAreaRenderValue: renderValue)\n    }\n}"
+    },
+    {
+      "timestamp": "8:26",
+      "title": "Metal fragment shader",
+      "language": "swift",
+      "code": "// Metal fragment shader\n\nstruct FragmentOut\n{\n    float4 color [[color(0)]];\n    uint16_t trackingAreaRenderValue [[color(1)]];\n};\n\nfragment FragmentOut fragmentShader( /* ... */ )\n{\n    // ...\n\n    return FragmentOut {\n        float4(outColor, 1.0),\n        uniforms.trackingAreaRenderValue\n    };\n}"
+    },
+    {
+      "timestamp": "10:09",
+      "title": "Event processing",
+      "language": "swift",
+      "code": "// Event processing\n\nextension Renderer {\n    func processEvent(_ event: SpatialEventCollection.Event) {\n       let object = scene.objects.first {\n           $0.identifier == event.trackingAreaIdentifier\n       }\n       if let object {\n           object.performAction()\n       }\n   }\n}"
+    },
+    {
+      "timestamp": "13:08",
+      "title": "Quality constants",
+      "language": "swift",
+      "code": "// Quality constants\n\nextension MyScene {\n    struct Constants {\n        static let menuRenderQuality: LayerRenderer.RenderQuality = .init(0.8)\n        static let worldRenderQuality: LayerRenderer.RenderQuality = .init(0.6)\n        static var maxRenderQuality: LayerRenderer.RenderQuality { menuRenderQuality }\n    }\n}"
+    },
+    {
+      "timestamp": "13:32",
+      "title": "Layer configuration",
+      "language": "swift",
+      "code": "// Layer configuration\n\nstruct MyConfiguration: CompositorLayerConfiguration {\n    func makeConfiguration(capabilities: LayerRenderer.Capabilities,\n                           configuration: inout LayerRenderer.Configuration) {\n       // Configure other aspects of LayerRenderer\n\n       if configuration.isFoveationEnabled {\n           configuration.maxRenderQuality = MyScene.Constants.maxRenderQuality\n       }\n}"
+    },
+    {
+      "timestamp": "13:57",
+      "title": "Set runtime render quality",
+      "language": "swift",
+      "code": "// Set runtime render quality\n\nextension MyScene {\n    var renderQuality: LayerRenderer.RenderQuality {\n        switch type {\n        case .world: Constants.worldRenderQuality\n        case .menu: Constants.menuRenderQuality\n        }\n    }\n}\n\nextension Renderer {\n    func adjustRenderQuality(for scene: MyScene) {\n        guard layerRenderer.configuration.isFoveationEnabled else {\n            return;\n        }\n        layerRenderer.renderQuality = scene.renderQuality\n    }\n}"
+    },
+    {
+      "timestamp": "16:58",
+      "title": "SwiftUI immersion style",
+      "language": "swift",
+      "code": "// SwiftUI immersion style\n\n@main\nstruct MyApp: App {\n    @State var immersionStyle: ImmersionStyle\n\n    var body: some Scene {\n        ImmersiveSpace(id: \"MyImmersiveSpace\") {\n            CompositorLayer(configuration: MyConfiguration()) { @MainActor layerRenderer in\n                Renderer.startRenderLoop(layerRenderer)\n            }\n        }\n        .immersionStyle(selection: $immersionStyle, in: .progressive, .full)\n    }\n}"
+    },
+    {
+      "timestamp": "17:12",
+      "title": "Layer configuration",
+      "language": "swift",
+      "code": "// Layer configuration\n\nstruct MyConfiguration: CompositorLayerConfiguration {\n    func makeConfiguration(capabilities: LayerRenderer.Capabilities,\n                           configuration: inout LayerRenderer.Configuration) {\n        // Configure other aspects of LayerRenderer\n        \n        if configuration.layout == .layered {\n            let stencilFormat: MTLPixelFormat = .stencil8 \n            if capabilities.drawableRenderContextSupportedStencilFormats.contains(\n                stencilFormat\n            ) {\n                configuration.drawableRenderContextStencilFormat = stencilFormat \n            }\n            configuration.drawableRenderContextRasterSampleCount = 1\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "17:40",
+      "title": "Render loop",
+      "language": "swift",
+      "code": "// Render loop\n\nstruct Renderer {\n    let portalStencilValue: UInt8 = 200 // Value not used in other stencil operations\n\n    func renderFrame(with scene: MyScene,\n                     drawable: LayerRenderer.Drawable,\n                     commandBuffer: MTLCommandBuffer) {\n        let drawableRenderContext = drawable.addRenderContext(commandBuffer: commandBuffer)\n        let renderEncoder = configureRenderPass(commandBuffer: commandBuffer)\n        drawableRenderContext.drawMaskOnStencilAttachment(commandEncoder: renderEncoder,\n                                                          value: portalStencilValue)\n        renderEncoder.setStencilReferenceValue(UInt32(portalStencilValue))\n        \n        scene.render(to: drawable, renderEncoder: renderEncoder)\n\n        drawableRenderContext.endEncoding(commandEncoder: commandEncoder)\n        drawable.encodePresent(commandBuffer: commandBuffer)\n    }\n}"
+    },
+    {
+      "timestamp": "20:55",
+      "title": "App structure",
+      "language": "swift",
+      "code": "// App structure\n\n@main\nstruct MyImmersiveMacApp: App {\n    @State var immersionStyle: ImmersionStyle = .full\n\n    var body: some Scene {\n        WindowGroup {\n            MyAppContent()\n        }\n\n        RemoteImmersiveSpace(id: \"MyRemoteImmersiveSpace\") {\n            MyCompositorContent()\n        }\n        .immersionStyle(selection: $immersionStyle, in: .full, .progressive)\n   }\n}"
+    },
+    {
+      "timestamp": "21:14",
+      "title": "App UI",
+      "language": "swift",
+      "code": "// App UI\n\nstruct MyAppContent: View {\n    @Environment(\\.supportsRemoteScenes) private var supportsRemoteScenes\n    @Environment(\\.openImmersiveSpace) private var openImmersiveSpace\n    @State private var spaceState: OpenImmersiveSpaceAction.Result?\n\n    var body: some View {\n        if !supportsRemoteScenes {\n            Text(\"Remote SwiftUI scenes are not supported on this Mac.\")\n        } else if spaceState != nil {\n            MySpaceStateView($spaceState)\n        } else {\n            Button(\"Open remote immersive space\") {\n                Task {\n                    spaceState = await openImmersiveSpace(id: \"MyRemoteImmersiveSpace\")\n                }\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "21:35",
+      "title": "Compositor content and ARKit session",
+      "language": "swift",
+      "code": "// Compositor content and ARKit session\n\nstruct MyCompositorContent: CompositorContent {\n    @Environment(\\.remoteDeviceIdentifier) private var remoteDeviceIdentifier\n\n    var body: some CompositorContent {\n        CompositorLayer(configuration: MyConfiguration()) { @MainActor layerRenderer in\n            guard let remoteDeviceIdentifier else { return }\n            let arSession = ARKitSession(device: remoteDeviceIdentifier)\n            Renderer.startRenderLoop(layerRenderer, arSession)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "23:17",
+      "title": "C interoperability",
+      "language": "swift",
+      "code": "// Swift\nlet remoteDevice: ar_device_t = remoteDeviceIdentifier.cDevice Renderer.start_rendering(layerRenderer, remoteDevice)\n\n// C\nvoid start_rendering(cp_layer_renderer_t layer_renderer, ar_device_t remoteDevice) {     ar_session_t session = ar_session_create_with_device(remoteDevice);     // ... }"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Analyzing the performance of your Metal app",
+        "url": "https://developer.apple.com/documentation/Xcode/Analyzing-the-performance-of-your-Metal-app"
+      },
+      {
+        "title": "Optimizing GPU performance",
+        "url": "https://developer.apple.com/documentation/Xcode/Optimizing-GPU-performance"
+      },
+      {
+        "title": "Rendering hover effects in Metal immersive apps",
+        "url": "https://developer.apple.com/documentation/CompositorServices/rendering_hover_effects_in_metal_immersive_apps"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/294/4/e0a53a43-a861-4846-9d3a-45232b5e959a/downloads/wwdc2025-294_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/294/4/e0a53a43-a861-4846-9d3a-45232b5e959a/downloads/wwdc2025-294_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "205",
+      "year": "2025",
+      "title": "Discover Metal 4",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/205"
+    },
+    {
+      "id": "254",
+      "year": "2025",
+      "title": "Explore Metal 4 games",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/254"
+    },
+    {
+      "id": "289",
+      "year": "2025",
+      "title": "Explore spatial accessory input on visionOS",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/289"
+    },
+    {
+      "id": "211",
+      "year": "2025",
+      "title": "Go further with Metal 4 games",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/211"
+    },
+    {
+      "id": "256",
+      "year": "2025",
+      "title": "What’s new in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/256"
+    },
+    {
+      "id": "317",
+      "year": "2025",
+      "title": "What’s new in visionOS 26",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/317"
+    },
+    {
+      "id": "10092",
+      "year": "2024",
+      "title": "Render Metal with passthrough in visionOS",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10092"
+    },
+    {
+      "id": "10089",
+      "year": "2023",
+      "title": "Discover Metal for immersive apps",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10089"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:28:26.817Z"
+}

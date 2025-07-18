@@ -1,0 +1,77 @@
+{
+  "id": "10107",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10107/",
+  "title": "Discover area mode for Object Capture",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools",
+    "Graphics & Games"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hey I’m Zach from the Object Capture Team. In this session we’re introducing many updates to increase the flexibility and quality of 3D reconstruction.\n\nPreviously, we introduced Object Capture on iOS, a guided capture UI that can reconstruct 3D models entirely on device.\n\nObject Capture works best on moveable objects in controlled indoor environments where you have space to walk all the way around and capture every angle. For example we captured this vase by flipping it on its side to scan the bottom and it came out great. You can create beautiful, complete objects with Object Capture. However, some objects can’t be easily captured with the bounding box flow.\n\nSo we’re introducing Area mode.\n\nNow you can easily capture uneven terrain outdoors, objects that you can’t walk all the way around, or 2.5d surfaces. Models created with area mode are ideal for use in 3D environments or artistic projects on Apple Vision Pro. Let’s take a look at it in action.\n\nIt’s amazing to be able to capture the rich textures and 3D forms from nature while out on an adventure. First, open the sample app and select area mode. Aim at your subject and tap start capture. You’ll feel a haptic tap, hear a tone, and see a pulse in the capture preview as images are taken. Make sure to stay aware of your surroundings and move slowly so that captured images overlap with one another.\n\nThe reticle acts as a brush and you can move it across surfaces to paint in all the details. It will disappear if you’re aiming at something too close or too far away. For best results, try to capture parallel to each surface of your subject.\n\nWhen you’re done, you can check where you’ve captured images with the new camera pose visualization to ensure you have all the data you need while you’re on location. Finally, choose process to create a 3D model right on iPhone.\n\nThis looks really good already, but I’ll show you how to get even better quality later.\n\nYou can download the source code to this app and try it yourself, or use it as a starting point for your own applications. Area mode unlocks new creative possibilities, and makes it so anyone can create beautiful 3D scenes.\n\nNow that we have seen a demo of area mode for Object Capture in our sample app, let’s move on to all the new exciting features this year. I’ll start with an explanation of how to integrate area mode for Object Capture. Then, I’ll introduce our macOS sample app to get even better quality reconstructions. Finally, I’ll walk through our new Data Loading API that enables more flexibility to suit your use case. Let’s start with the new iOS API.\n\nFirst we will review some considerations for getting the best results from Object Capture. When capturing an area, aim for diffuse lighting with no harsh shadows, so if you’re outdoors cloudy days or fully shaded areas are best. Move around slowly in regular paths so that clear images can be taken with enough overlapping features. And try capturing in multiple rows from different heights so that every angle of your subject can be seen. Areas larger than 6 feet may have reduced mesh and texture quality unless processed at a higher detail level on Mac.\n\nObject Capture is available on iPad Pro 2021, iPhone 12 Pro, and the later models. Now let’s look at how to get area mode in your app.\n\nLast year, you needed to call start, then startDetecting to begin detecting an object and setting the bounding box. After the box was set you would then call startCapturing to start the capture process. For area mode, there is no new call or configuration to set. It’s actually even easier. Simply skip the call to startDetecting and proceed directly to startCapturing. This will start the area mode experience with the new UI, as seen here.\n\nSince there’s no bounding box detection step in area mode, we recommend turning off the object reticle frame to make the transition seamless. This also helps you know up front which mode you will be entering. Let’s see how to do that.\n\nI simply add the new hideObjectReticle modifier to our ObjectCaptureView to indicate that the start button will enter area mode.\n\nNow the UI is properly indicating that it’s in area mode and we get a seamless transition.\n\nAnd that’s it! Now let’s take a look at what’s new for Object Capture on Mac. Processing on Mac lets you get the most out of your captures with more options and higher quality. Our new sample app makes it easy to get started. It has a simple UI that guides you through creating various 3D model types. Let’s start by selecting a folder of images that I captured earlier. I'll also give it a name, and choose where to save the final model.\n\nBelow, I can set my model to be a triangular mesh, or, new this year, A Quad mesh. This new output type means your Object Capture models are ready for further cleanup, optimization, or animation in your tool of choice.\n\nHere’s a comparison of our triangular meshing vs quad meshing. This makes editing UVs and animating 3D objects easier and our algorithm is able to create proper edge loops that are artist-friendly. Aside from quad mesh, we’ve also added the ability to set a custom detail level with up to 16k textures.\n\nIt makes a huge difference in larger scenes, and is great for offline render use cases like VFX.\n\nAlong with 16k textures, support for more images means you can process larger areas at higher quality. On Mac models with lots of unified memory you can process up to 2000 images.\n\nI’ll set this to include the environment, and choose full quality.\n\nNow I can start processing.\n\nWith that done, I’ll repeat those steps with another capture I did on the trail. These are the finished models after I cropped and edited them a bit to get them ready for Apple Vision Pro. For details, check out Scott’s talk on how to \"Optimize your 3D assets for spatial computing.\" I made some more edits and combined the assets in Reality Composer Pro and I think it looks awesome in Quicklook on Apple Vision Pro. It’s a nice memento to remind me to get back out onto one of my favorite trails.\n\nNow let’s move on to the new data loading features we’ve added this year.\n\nIn cases where you either can’t control the background for your capture or it is dynamically changing, it can be helpful to provide a mask for each image showing which pixels are foreground and should be reconstructed, and which are background and should not. In this example, the hand is moving and covering parts of the dragonfruit which may cause artifacts in the automatic segmentation. I can fix this by adding masks to help the reconstruction for this case.\n\nLet’s say I have created bitmap masks for each of the sample images to mask out the hands. How do I include these in the reconstruction? A photogrammetry session is used to reconstruct your model from images. There are two input sources to create a session. A folder of images, or a sequence of photogrammetry samples.\n\nFor our custom bitmaps, I can create my own sequence where I add a mask to the sample to be used in reconstruction. A sample has several properties that can be provided. The most important is the RGB image data, but there can also be a depth map for recovering metric scale, a gravity vector for uprighting, a metadata dictionary of extra information, and of course an optional object mask, which is what I want to provide.\n\nI still want to retain all the other data in my sample, however. Previously, you’d have to load all these by hand, which is quite complicated. This year, we make it simple by introducing a new loading API for Photogrammetry samples, that takes the image file to load and fills in all the data properties that are available in the image. For a JPEG from a DSLR this might only load the image, but for images from the Object Capture UI, this will also load depth data and gravity.\n\nNote that we provide both synchronous and asynchronous versions. We provide an async version for use cases that require it, such as an inspector in SwiftUI. The photogrammetry session requires the synchronous version, however, as you will see.\n\nHere I’ve created a simple function that takes the image URL and returns a photogrammetry sample containing the data in that image, as well as the object mask which I have loaded and attached to the sample. Here you see the new API being called. I simply try to load the image file using the new synchronous initializer. If it succeeds, I will have a photogrammetry sample populated with all the data found in the image.\n\nNext let’s assume that I have a helper function that will load the saved object mask I created ahead of time for each image file. I load the mask and assign it to the objectMask property.\n\nOnce done, I return the sample.\n\nFinally, I note that if anything goes wrong with loading and an error is thrown, I simply return nil. I’ll show how to handle that later.\n\nNow that I can load the sample and add my custom mask to it, I need to put these samples into a sequence to create our custom photogrammetry session.\n\nLet’s say I’m provided with an array of URLs for all the images to use in the reconstruction. All I need to do is map my new loadSampleAndMask function over this array to create a lazy sequence I can use as the input to a session. There are few things to point out here. First, it is important that I make the array lazy so that I don’t load all the images into memory at once. This means the session will load them one at a time as it iterates the sequence.\n\nSecond, I use compactMap here instead of map. A compactMap will simply ignore any elements that are nil, which would be the case if I couldn’t load the file. Now I just return a session that uses my sequence as input and process a reconstruction request as normal. That’s it! The final reconstruction looks great, and I’ve successfully avoided any artifacts from the hands occluding the object. Previously, you would have needed hundreds of lines of complicated code to load the depth maps and other data, but with the new initializers for photogrammetry sample, you can now do this in only a couple lines of code.\n\nIn addition to loading the existing data properties, we provide several new read-only properties that let you load data saved by our ObjectCaptureSession capture UI. These might be useful in an inspector UI or for your own custom reconstruction pipelines. You can refer to the documentation for more details on each, but I will focus on just one important addition. The camera data for the shot.\n\nIf you’re interested in using this data to create your own back-end reconstruction pipelines, or for providing more advanced visualization of data captures, images captured with Object Capture session will have the camera transform for the shot available for each sample.\n\nIf available, we also provide the intrinsics matrix and any available calibration data which custom pipelines might require. I think the data loading API will open many possibilities for new visualizations and custom pipelines, in addition to adding more flexibility in creating a photogrammetry session.\n\nAnd that’s it for Object Capture. We explored capturing areas on iOS, processing with all the options available on Mac, and viewing on Apple Vision Pro. Check out these sessions for more information on Object Capture and optimizing your 3D models. I can’t wait to see what you create.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "8:19",
+      "title": "Data Loading API - load Sample and Mask",
+      "language": "swift",
+      "code": "func loadSampleAndMask(file: URL) -> PhotogrammetrySample? {\n    do {\n        var sample = try PhotogrammetrySample(contentsOf: file)\n        sample.objectMask = try loadObjectMask(for: file)\n        return sample\n    } catch {\n        return nil\n    }\n}"
+    },
+    {
+      "timestamp": "9:15",
+      "title": "Data Loading API - create custom photogrammetry Session",
+      "language": "swift",
+      "code": "func createCustomPhotogrammetrySession(for images: [URL]) -> PhotogrammetrySession {\n    let inputSequence = images.lazy.compactMap { file in\n        return loadSampleAndMask(file: file)\n    }\n    return PhotogrammetrySession(input: inputSequence)\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Building an object reconstruction app",
+        "url": "https://developer.apple.com/documentation/RealityKit/building-an-object-reconstruction-app"
+      },
+      {
+        "title": "Forum: Spatial Computing",
+        "url": "https://developer.apple.com/forums/topics/spatial-computing?cid=vf-a-0010"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10107/4/94F3C53B-10C1-4E39-8B9F-33A5BA561420/downloads/wwdc2024-10107_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10107/4/94F3C53B-10C1-4E39-8B9F-33A5BA561420/downloads/wwdc2024-10107_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10186",
+      "year": "2024",
+      "title": "Optimize your 3D assets for spatial computing",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10186"
+    },
+    {
+      "id": "10191",
+      "year": "2023",
+      "title": "Meet Object Capture for iOS",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10191"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:40:17.056Z"
+}

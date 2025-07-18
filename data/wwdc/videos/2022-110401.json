@@ -1,0 +1,164 @@
+{
+  "id": "110401",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/110401/",
+  "title": "Create Swift Package plugins",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ instrumental hip hop music ♪ Hi, my name is Boris, and welcome to the session \"Create Swift package plugins.\" We introduced support for Swift packages in Xcode 11 to offer a straightforward approach to distributing libraries as source code. In Xcode 14, we want to bring that same great way to structure and share components to development workflows, such as generating source code or automating release tasks, with Swift package plugins. First, a quick overview of the talk. After learning the basics of plugins, we'll build our first custom command plugin in a demo. Next, we'll look at more details about creating plugins, followed by building both an in-build and a pre-build command plugin in further demos. A package plugin is Swift code that uses the PackagePlugin API, similar to a package manifest. Plugins can extend the functionality of Xcode or the Swift Package Manager through well-defined extension points. How do package plugins work? Xcode will compile and run your plugin, which can use information about available executables and input files to construct commands which it communicates back to Xcode in order to execute them as needed. Package plugins can contribute custom build tasks that run before or during the build, for example, to generate source code or resource files. They can also add custom commands to SwiftPM's command line interface or menu items to Xcode. For more information on the basics of plugins, I would recommend watching \"Meet swift package plugins\" first, and in case you are new to packages entirely, you can watch the WWDC19 session Creating Swift Packages. Let's look at building our first custom command plugin. I'm working on the tools-support-core package from Swift open source, and I'd like to add a text file that lists all the contributors to the project. I also want to regenerate it as needed from the Git history of the package. Previously, I might have written a shell script or a makefile to do this, but I'd like to create a custom command plugin so that I can re-generate the file without having to leave Xcode. First, we have to create the directory structure for our plugin. We open the context menu on the package and select New Folder to create a top-level folder called Plugins similar to the existing Sources and Tests. Next, we will create another nested folder for the plugin target, called \"GenerateContributors.\" And inside there, we create a new file and call it \"plugin.swift.\" Next, we need to make some changes to the package manifest to declare our new target there. But first, we need to bump the tools version for our package to 5.6 since plugins are only available since that version.\n\nNext, we can insert our plugin target.\n\nLet's take a look at the new manifest API here. We are creating a plugin target which corresponds to a folder inside the Plugins folder, similar to source module targets. It gets a name that is both relevant for naming the folder as well as a menu item in Xcode. We specify the capability, so what type of extension point we want to use. In this case, we are making a custom command. The intent can define a verb for the SwiftPM command line as well as a description of what the plugin does, and finally, we can declare permissions that the plugin requires. In this case, we want to write a new file to the root of the package, so we need permissions to write to that directory. The reason string will be shown to the user of the plugin so that they know whether or not to grant the permission, similar to how permissions work in the OS itself. Now that we have declared the plugin, let's go back to actually implement it. The plugin will shell out to Git to get the commit history. It will read the history from standardout of the external Git command and parse the results and finally write them out to a text file. We'll open our plugin source file we created earlier and import PackagePlugin.\n\nThis is a built-in module, much like PackageDescription, that gives us access to the APIs we can use to implement plugins. We define a struct GenerateContributors and conform it to CommandPlugin.\n\nWe'll accept the fix-it here, to get the missing stubs for implementing the protocol. We also need to mark our struct as @main since it will be the main function of the plugin executable. performCommand is the entry point for our command, and we receive two arguments: context, which gives us access to the resolved package graph and other information about the context we are being executed in, as well as arguments. Since custom commands are invoked by the user, they can provide input in the form of arguments. We are creating a simple command, so we won't actually provide any options to the user at this time.\n\nSince we want to shell out to Git in order to get information about the commit history, we are importing Foundation because we want to use the Process API to do so.\n\nNext, we'll define a process instance and set it to execute Git log with some formatting arguments.\n\nWe need to create a pipe to capture the process output. Then we can run it and wait until it exits.\n\nAfter the process has finished, we read all the data from the pipe and convert it to a string which will have all the git log output.\n\nWe do some string manipulation to trim the output down to a list without duplicates, and finally, we can write it to a file called \"CONTRIBUTORS.txt,\" and since the custom command is executed in the package's root directory, we'll store the file there. Now, if we save and then right-click on the package in the project navigator, there is a new entry for our command in the context menu. Let's execute it! In the following dialog, we can select the packages or targets that should be the input for our plugin as well as any arguments, but since our plugin doesn't react to these options, we can click Run.\n\nNext we'll be asked for permissions, as we defined in the manifest earlier. Since we just wrote the plugin ourselves, we can go ahead and run it, but you should make sure that you only give extra permissions to plugins you trust.\n\nAfter running, the CONTRIBUTORS.txt file shows up in the project navigator. So now after we extended Xcode with our first plugin, let's go a bit deeper into how plugins work and what to look out for when creating one.\n\nPackage plugins run in a sandbox, similar to the evaluation of the package manifest itself. Network access and writing to non-temporary locations other than the plugin's own work directory is prohibited. Custom commands can optionally declare that they'd like to write to the package's root directory, as shown earlier. If you are wrapping an existing third-party tool, you may have to look into how to confine it to the sandbox model, for example, by configuring where generated files get written to. I talked about the different types of plugins in the introduction, and it should be clear whether a problem is better solved by a custom command or a build tool, but let's take a look at the structure of build tool plugins. These plugins allow you to extend the build system by providing a description on which executables to run during a build and specifying their inputs and outputs which helps with scheduling your work at the appropriate time during a build. You might be familiar with the basics here if you have been creating run script phases in Xcode projects. There are also two different types of build tool plugins. The distinguishing factor here is whether your tool has a defined set of outputs. If it does, you should create an in-build command which will automatically be re-run by the build system if your outputs are out-of-date compared to your inputs. If you don't have a clear set of outputs, you can create a pre-build command which runs at the start of every build. Because of this, you should be careful about doing expensive work in pre-build commands or come up with a custom strategy for caching results that's appropriate to your use case.\n\nFor our second demo, I want to create a new library that encapsulates icons I'd like to share between different tools I am working on. Let's get started and create a new package from template and call it \"IconLibrary.\" And I'm going to drag in some icon assets I already have into my library's target. Let's also add a basic SwiftUI view and a preview to my library. First, we need to add the required minimum deployment targets to the manifest.\n\nNext, let's actually add that basic view and preview. Here we can use our assets we dragged in before.\n\nI think it would be nice if, instead of having to deal with strings here, we would have a type-safe way to reference these images. This seems like a great use case for an in-build command plugin which looks at asset catalogs and generates some Swift code based on them. Let's take a look at an asset catalog in Finder to find out how we can extract the information we need for the plugin. Each image gets its own imageset directory with the name of the asset...\n\nAnd there's a JSON file which describes the basic contents. In-build commands work a little different from custom commands in that they're providing a description of executables to run as well as their inputs and outputs. The executables can be provided by the system, third party packages, or you can create one tailor-made for your plugin. We want to take the third approach here. Plugins get run at the start of the build process in order to participate in computing the build graph. Based on that, executables get scheduled as part of build execution. Now back to the executable we're building. We'd like to have a compile-time constant for each image in an asset catalog so that, instead of needing to remember the correct strings for each image, we'll get them autocompleted as Swift symbols. We want to loop over the directory contents of the asset catalog to find all the image sets. For each image set, we parse its metadata to determine if it actually contains any images and should therefore get code generated for it. Then we can generate the code and write to a file. Since we declared those files as outputs of our plugin, they will automatically be incorporated into the build of the target the plugin is being applied to. We'll need a way to deal with arguments since that is how we communicate between the plugin and the executable. The first argument will be the path to the asset catalog we are processing, and the second one will be a path provided by the plugin for our generated code. Next we need some model objects for decoding the contents.json files. We use Decodable to take advantage of Swift's built-in JSON decoding. The only information we are interested in are the list of images and their filenames, which are optional because there might not be an image for each pixel density. We'll generate code in a simplistic manner here by just building up a string. We start it with imports of the frameworks we need, Foundation and SwiftUI. We want to loop over the directory contents of the asset catalog to find all the image sets We need to parse the JSON next. The filename uses the input parameter. And we decode using Foundation's 'JSONDecoder' API. The main piece of information we're interested in is whether there is a defined image for a given image set, which we determine by checking whether there's at least one image with a non-empty filename. If the given image set has an image, we'd like to generate a SwiftUI image which loads that image from the package's bundle. We do that by building a string with the base name of each image that loads the given image from the module bundle, which is the resource bundle that the build system creates for each package with resources. We can wrap up the work of the executable by writing the generated code to a file, as given to us by arguments. Let's go back to Xcode and create the executable.\n\nWe call it \"AssetConstantsExec\"...\n\nAnd add a main file.\n\nNow we have to declare it in the package manifest.\n\nAnd we can add the code we just discussed in its main file.\n\nNow that we have an executable that can generate code, we can bring it into the build system using a plugin.\n\nLet's add the required target and also add a usage of the plugin from our library target.\n\nAs before, we're importing the PackagePlugin library and create a struct, this time conforming it to the BuildTool plugin protocol.\n\nThe entry point looks similar, but instead of user arguments, we are giving a target here. This is the target that the plugin is being applied to, and the entry point will be called once per target that uses the given plugin.\n\nThis plugin will care particularly about source module targets, which are any targets which actually carry source files, in contrast to, for example, a binary target. To build up the array of build commands, we loop over all xcasset bundles in the target. We'll extract a string for the display name that will show up in the build log, as well as construct suitable input and output paths. We can also look up our executable here using the plugin API and then put our build command together. With this, we're ready to build the project again. We can take a look at the build log for the new build steps that are happening.\n\nThe plugin is being compiled and run at the start of the build, from where it adds any generated commands to the build graph.\n\nLooking at the target, our new build command ran.\n\nAnd finally, the generated source file shows up as part of compiling Swift files. Let's go back to our preview, where we can replace the stringly typed image construction with our new constants.\n\nWe also get autocompletion for the other image names.\n\nThis is nice. With relatively little code, we have been able to improve our workflow, all using familiar Swift APIs and without having to leave Xcode. So far, we have looked into making plugins for our own use, as part of libraries we were already working on, but another powerful attribute of plugins is that we can share them in a straightforward way, similar to libraries. For the next demo, I'd like to automate some pre-build processing using the genstrings tool that ships with Xcode. The tool extracts localized strings from your code into a localization directory for further use. Since that seems generally useful, I'd like to make the plugin a separate package so that it can be shared independently. If you'd like to learn more about resources and localization in packages, I would recommend the WWDC20 session on that topic. For more information about localization in general, check out Localize your SwiftUI app from WWDC21. For this plugin, we'll start by computing the output directory for localizations. We'll compute the input files, which are all the Swift or Objective-C source files in a given target, and then construct the pre-build command for executing the genstrings tool provided by Xcode. Note that the biggest difference between pre- and in-build commands is that we don't declare a well-defined set of outputs, which means these commands run on every build. The tool will extract all the localized strings from the user's source code and then write all those strings into a localization directory, which can be used as the basis for the actual localization work for the user's project. To start, I have created the scaffolding here already. Now in the package manifest, let’s add a target as before, but we will also add a plugin product.\n\nSimilar to library products, this is the way to make a plugin available to clients of a package instead of just privately.\n\nWe can write the code That we discussed earlier...\n\nNow that we have built our plugin, we'd like to test it out in a separate example package.\n\nFor that, let's create a new package from template. We'll add an API that provides a localized string to the package...\n\nAnd add a use of that in the generated test.\n\nAs expected, the test works, as our API returns the string \"World.\" Let's add a path-based dependency on the plugin package...\n\nand a use of the plugin to the library target.\n\nWe can now run again...\n\nand if we look at the build log, our plugin gets executed at the start of the build and the generated files get added to our target, so we're getting a resource bundle built and a resource accessor being generated, just as if the resource was part of our target from the beginning. Now let's change our code to actually use the resource bundle.\n\nFinally, if we change the code...\n\nand take a peek at the generated bundle...\n\nwe can see the changes reflected here. Now that we have a test bed for the plugin, we could flesh out the test suite and eventually share the plugin package with others. To recap, plugins can be used to automate and share developer tooling, custom commands provide a way to automate common tasks, and build tools can be used to generate files during the build process. Thanks for listening! ♪ instrumental hip hop music ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:40",
+      "title": "GenerateContributors plugin target",
+      "language": "swift",
+      "code": "// MARK: Plugins\n\n        .plugin(\n            name: \"GenerateContributors\",\n            capability: .command(\n                intent: .custom(verb: \"regenerate-contributors-list\",\n                                description: \"Generates the CONTRIBUTORS.txt file based on Git logs\"),\n                permissions: [\n                    .writeToPackageDirectory(reason: \"This command write the new CONTRIBUTORS.txt to the source root.\")\n                ]\n            )),"
+    },
+    {
+      "timestamp": "5:06",
+      "title": "GenerateContributors plugin implementation",
+      "language": "swift",
+      "code": "import PackagePlugin\nimport Foundation\n\n@main\nstruct GenerateContributors: CommandPlugin {\n\n    func performCommand(\n        context: PluginContext,\n        arguments: [String]\n    ) async throws {\n        let process = Process()\n        process.executableURL = URL(fileURLWithPath: \"/usr/bin/git\")\n        process.arguments = [\"log\", \"--pretty=format:- %an <%ae>%n\"]\n\n        let outputPipe = Pipe()\n        process.standardOutput = outputPipe\n        try process.run()\n        process.waitUntilExit()\n\n        let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()\n        let output = String(decoding: outputData, as: UTF8.self)\n\n        let contributors = Set(output.components(separatedBy: CharacterSet.newlines)).sorted().filter { !$0.isEmpty }\n        try contributors.joined(separator: \"\\n\").write(toFile: \"CONTRIBUTORS.txt\", atomically: true, encoding: .utf8)\n    }\n}"
+    },
+    {
+      "timestamp": "10:28",
+      "title": "Minimum Deployment Target",
+      "language": "swift",
+      "code": "platforms: [\n            .macOS(\"10.15\"),\n            .iOS(\"12.0\"),\n            .tvOS(\"12.0\"),\n            .watchOS(\"6.0\"),\n        ],"
+    },
+    {
+      "timestamp": "10:35",
+      "title": "Basic SwiftUI view and preview",
+      "language": "swift",
+      "code": "import SwiftUI\n\nstruct ContentView: View {\n    var body: some View {\n        Image(\"Xcode\", bundle: .module)\n            .resizable()\n            .frame(width: 200.0, height: 200.0)\n    }\n}\n\nstruct ContentView_Previews: PreviewProvider {\n    static var previews: some View {\n        ContentView()\n    }\n}"
+    },
+    {
+      "timestamp": "14:56",
+      "title": "AssetConstantsExec executable target",
+      "language": "swift",
+      "code": ".executableTarget(name: \"AssetConstantsExec\"),"
+    },
+    {
+      "timestamp": "15:03",
+      "title": "AssetConstantsExec implementation",
+      "language": "swift",
+      "code": "import Foundation\n\nlet arguments = ProcessInfo().arguments\nif arguments.count &lt; 3 {\n    print(\"missing arguments\")\n}\nlet (input, output) = (arguments[1], arguments[2])\n\nstruct Contents: Decodable {\n    let images: [Image]\n}\n\nstruct Image: Decodable {\n    let filename: String?\n}\n\nvar generatedCode = \"\"\"\n    import Foundation\n    import SwiftUI\n    \n    \"\"\"\n\ntry FileManager.default.contentsOfDirectory(atPath: input).forEach { dirent in\n    guard dirent.hasSuffix(\"imageset\") else {\n        return\n    }\n\n    let contentsJsonURL = URL(fileURLWithPath: \"\\(input)/\\(dirent)/Contents.json\")\n    let jsonData = try Data(contentsOf: contentsJsonURL)\n    let asset🐱alogContents = try JSONDecoder().decode(Contents.self, from: jsonData)\n    let hasImage = asset🐱alogContents.images.filter { $0.filename != nil }.isEmpty == false\n\n    if hasImage {\n        let basename = contentsJsonURL.deletingLastPathComponent().deletingPathExtension().lastPathComponent\n        generatedCode.append(\"public let \\(basename) = Image(\\\"\\(basename)\\\", bundle: .module)\\n\")\n    }\n}\n\ntry generatedCode.write(to: URL(fileURLWithPath: output), atomically: true, encoding: .utf8)"
+    },
+    {
+      "timestamp": "15:48",
+      "title": "AssetConstantsExec plugin target",
+      "language": "swift",
+      "code": ".plugin(name: \"AssetConstants\", capability: .buildTool(), dependencies: [\"AssetConstantsExec\"]),"
+    },
+    {
+      "timestamp": "16:12",
+      "title": "AssetConstantsExec plugin implementation",
+      "language": "swift",
+      "code": "guard let target = target as? SourceModuleTarget else {\n                    return []\n                }\n\n        return try target.sourceFiles(withSuffix: \"xcassets\").map { asset🐱alog in\n                    let base = asset🐱alog.path.stem\n                    let input = asset🐱alog.path\n                    let output = context.pluginWorkDirectory.appending([\"\\(base).swift\"])\n\n                    return .buildCommand(displayName: \"Generating constants for \\(base)\",\n                                         executable: try context.tool(named: \"AssetConstantsExec\").path,\n                                         arguments: [input.string, output.string],\n                                         inputFiles: [input],\n                                         outputFiles: [output])\n                }"
+    },
+    {
+      "timestamp": "20:19",
+      "title": "GenstringsPlugin target",
+      "language": "swift",
+      "code": ".plugin(name: \"GenstringsPlugin\", capability: .buildTool()),"
+    },
+    {
+      "timestamp": "20:26",
+      "title": "GenstringsPlugin product",
+      "language": "swift",
+      "code": ".plugin(name: \"GenstringsPlugin\", targets: [\"GenstringsPlugin\"]),"
+    },
+    {
+      "timestamp": "20:44",
+      "title": "GenstringsPlugin implementation",
+      "language": "swift",
+      "code": "guard let target = target as? SourceModuleTarget else {\n                    return []\n                }\n\n        let resourcesDirectoryPath = context.pluginWorkDirectory\n                    .appending(subpath: target.name)\n                    .appending(subpath: \"Resources\")\n                let localizationDirectoryPath = resourcesDirectoryPath\n                    .appending(subpath: \"Base.lproj\")\n\n                try FileManager.default.createDirectory(atPath: localizationDirectoryPath.string, withIntermediateDirectories: true)\n\n        let swiftSourceFiles = target.sourceFiles(withSuffix: \".swift\")\n                let inputFiles = swiftSourceFiles.map(\\.path)\n\n        return [\n                    .prebuildCommand(\n                        displayName: \"Generating localized strings from source files\",\n                        executable: .init(\"/usr/bin/xcrun\"),\n                        arguments: [\n                            \"genstrings\",\n                            \"-SwiftUI\",\n                            \"-o\", localizationDirectoryPath\n                        ] + inputFiles,\n                        outputFilesDirectory: localizationDirectoryPath\n                    )\n                ]"
+    },
+    {
+      "timestamp": "21:10",
+      "title": "Localized string API",
+      "language": "swift",
+      "code": "import Foundation\n\npublic func GetLocalizedString() -&gt; String {\n    return NSLocalizedString(\"World\", comment: \"A comment about the localizable string\")\n}"
+    },
+    {
+      "timestamp": "21:44",
+      "title": "Path-based dependency on GenstringsPlugin",
+      "language": "swift",
+      "code": ".package(path: \"../GenstringsPlugin\"),"
+    },
+    {
+      "timestamp": "21:52",
+      "title": "Use of GenstringsPlugin in library target",
+      "language": "swift",
+      "code": "plugins: [ .plugin(name: \"GenstringsPlugin\", package: \"GenstringsPlugin\"), ]"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/110401/6/E6B6BDA3-C922-4FC4-AF6B-EB6C290568A7/downloads/wwdc2022-110401_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/110401/6/E6B6BDA3-C922-4FC4-AF6B-EB6C290568A7/downloads/wwdc2022-110401_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "110359",
+      "year": "2022",
+      "title": "Meet Swift Package plugins",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110359"
+    },
+    {
+      "id": "110354",
+      "year": "2022",
+      "title": "What's new in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110354"
+    },
+    {
+      "id": "110427",
+      "year": "2022",
+      "title": "What's new in Xcode",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110427"
+    },
+    {
+      "id": "10220",
+      "year": "2021",
+      "title": "Localize your SwiftUI app",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10220"
+    },
+    {
+      "id": "10169",
+      "year": "2020",
+      "title": "Swift packages: Resources and localization",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10169"
+    },
+    {
+      "id": "410",
+      "year": "2019",
+      "title": "Creating Swift Packages",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/410"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:42:23.071Z"
+}

@@ -1,0 +1,112 @@
+{
+  "id": "110379",
+  "year": "2022",
+  "url": "https://developer.apple.com/videos/play/wwdc2022/110379/",
+  "title": "Create a more responsive media app",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Jeremy: Hi. I'm Jeremy, and I'm here to show you how to create a more responsive media app using AVFoundation. When using media assets in your app, you might like to do more than just play them. You might like to show thumbnails, combine media into new compositions, or get information about your assets. These tasks require loading data, and with big files like video, that might take some time to complete. Unfortunately, it can be easy to introduce latency issues in your app if this work is done synchronously on the main thread. A great way to keep your app responsive is to load data asynchronously, and update your UI when it's finished. AVFoundation has tools to make this easy. So here's what we'll talk about today. First, I'll introduce you to some new async APIs in AVFoundation. Then, I'll give you an update on asset inspection using the async load(_:) method we introduced last year. And I'll show you how to optimize custom data loading for local and cached media using AVAssetResourceLoader. But first, let's jump into the new async API. Grabbing still images from a video with AVAssetImageGenerator is a great way to create thumbnails. But image generation isn't instantaneous.\n\nTo generate an image, image generator needs to load frame data from your video file. And for media stored on a remote server, or on the internet, that loading will be much slower. That's why it's important how you generate your images. Using a method that loads data synchronously, like copyCGImage, on the main thread can cause your UI to freeze as it waits for video to be loaded. This year, we've added the image(at: time) async method which uses async/await to free up the calling thread while image generator loads data. Image generator returns a tuple with the image and its actual time in the asset. There are a few reasons the actual time may vary from the time you requested, but if you only want the image, you can directly access it with the .image property. Some frames in compressed video are easier to load than others. iFrames can be decoded independently, while other frames rely on nearby frames to be decoded. For your requested time, image generator by default will use the nearest iFrame to generate your image. It might be tempting to set the tolerances to zero to get the exact frame for your requested time. But keep in mind that that frame will likely be dependent on other nearby frames that image generator will also need to load. Instead, consider setting wide tolerances that will still give you the result you're looking for. Wide tolerances help image generator to minimize data loading by giving it more frames to pick from. The fewer frames it needs to load, the faster it can return an image.\n\nTo get a series of images at several times in an asset, image generator has had generateCGImagesAsynchronously(forTimes:). However in Swift, there is some nuance to watch out for to use it. New this year we've added the images(for: times) method. It now takes an array of CMTimes, so you don't need to map them to NSValues first. It also provides its results using an Async Sequence. In Swift, sequences let you iterate over their items using a for in loop. For a sequence of items that aren't ready all at once, an async sequence lets you await the next element after each iteration. For each successfully generated image, the result includes the originally requested time and the actual time alongside the image. If it fails, the result has an error to explain why.\n\nAnd if you are only interested in the image, the result has properties to directly access its values, which can also throw errors if generation fails. To learn more about async sequences, I recommend checking out the \"meet async sequence\" session. For a task like image generation, it's a little easier to see how it involves loading data. But there are some other synchronous areas of AVFoundation that are harder to pick out as problem spots.\n\nAVMutableComposition is one of these areas. Insert time range for asset needs information about the asset's tracks to add references to them in the composition. It synchronously inspects the tracks, so if the tracks aren't already loaded, they'll be synchronously loaded to create the new composition tracks.\n\nPreviously, the solution would've been to await loading the asset's tracks before inserting them into the composition. However, this year, we're introducing an async version of insertTimeRange, which will async load the tracks for you, as needed.\n\nVideo composition and mutable video composition have additional methods that require loading the asset's properties too. New this year, the \"propertiesOf asset\" constructor, and isValid(for:timeRange:) method now also have async counterparts. These new methods will asynchronously load the tracks and duration of the asset, so there's no need for you to pre-load them either. These new async methods make it easier to interact with assets by loading the properties they need asynchronously. But for when you need to load the properties of an asset yourself, let's get a refresher of async asset inspection. You may have noticed there are two ways to inspect an asset's properties. When AVFoundation was introduced, the best way to inspect properties was with async key value loading. Last year, we introduced async load(_:). It uses type safe keys to identify the properties to load, where the old async key value loading technique used hard coded strings as keys. Typos in these string keys are difficult to catch. Misspelling a key prevents it from being loaded asynchronously, and when the property is later used, it'll block while it loads.\n\nIt's also very easy to forget to add new properties to the keys to load or to forget async loading them entirely. For these reasons, this year, we're deprecating async key value loading and the synchronous properties in Swift, in favor for async load. Async load uses type safe identifiers to prevent typos. It directly returns property values as requested to avoid accessing unloaded properties. And since all of this is checked at compile time, you'll prevent introducing any new IO bound performance issues. Async load is now the only recommended way to asynchronously inspect properties on AVAsset, AVAssetTrack, AVMetadataItem, and their sub classes. However, a handful of these classes will still offer synchronous property inspection. That's because the data for their properties is already available in memory. Let's take another look at mutable composition to see why.\n\nWe'll use a mutable composition to splice together segments of two existing video tracks. We'll start by creating an empty composition and adding an empty video track. Then, we can synchronously insert part of the first video track into the composition track. Behind the scenes, this step isn't loading any data. Instead, it adds a new track segment that points to the desired track.\n\nThen we can append part of the second track in the same way.\n\nSince the composition itself is backed by an in memory structure and not a file, we can safely inspect its properties synchronously without needing to load them first. Again, for this reason, synchronous property inspection will remain available on these classes and all classes will use async load for asynchronous inspection.\n\nAll of these new async methods in AVFoundation will make it easier to prevent blocking while loading media data. But, introducing concurrency into your app for the first time can be tricky. Check out these sessions from WWDC 21 for help getting started with Swift concurrency and for migrating to AVFoundation's async load in your app. For our last topic, let's talk about optimizing custom data loading for your assets. To start, lets take a look at how AVAsset loads data by default. When you create an AVAsset with a URL, the media can either be on the network, or stored locally on device. If it's on the network, AVAsset will dynamically cache a certain amount of data to ensure smooth playback. If the media is local, AVAsset can bypass the cache and load data as needed to play. In some cases, you might not be able to give AVAsset a direct pointer to your media. Maybe you store the raw bytes of an mp4 inside of a custom project file. For situations like this, AVAsset can use an AVAssetResourceLoader. Resource loader provides the asset with a way to request arbitrary bytes from your media that you have a special way to load. But since the asset is no longer handling reading in data, it can't predict how long it'll take each chunk to load. So it assumes that accessing the media involves network communication, and waits until it caches data before it becomes ready to play. This year, if your media is locally available, you can enable entireLengthAvailableOnDemand for your resource loader. Setting this flag tells the asset that it can expect to receive data as it's requested, so it can skip caching.\n\nFor local media, entireLengthAvailableOnDemand can help reduce your app's memory usage during playback, since it won't need to cache extra data. It can also decrease the time it takes to start playback, since the asset won't have to wait for the cache to fill up first. Use caution when enabling this flag, though. If loading requires any network operations, including network file storage, it's likely playback will be unreliable.\n\nThat's the new enhancement for resource loader. Now lets wrap things up with some next steps for your app.\n\nWhen working with media, use async/await to keep your app responsive while it loads in the background. Consider increasing tolerances when using image generator for faster results. And if you are using resource loader for locally available media, enable entire length available on demand to help increase performance.\n\nThat's everything I have for today. Thanks for watching, and enjoy WWDC 22.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:41",
+      "title": "Generate a thumbnail",
+      "language": "swift",
+      "code": "func thumbnail() async throws -> UIImage {\n    let generator = AVAssetImageGenerator(asset: asset)\n    generator.requestedTimeToleranceBefore = .zero\n    generator.requestedTimeToleranceAfter = CMTime(seconds: 3, preferredTimescale: 600)\n    let thumbnail = try await generator.image(at: time).image\n    return UIImage(cgImage: thumbnail)\n}"
+    },
+    {
+      "timestamp": "2:56",
+      "title": "Generate a series of thumbnails",
+      "language": "swift",
+      "code": "func timelineThumbnails(for times: [CMTime]) async {\n    for await result in generator.images(for: times) {\n        switch result {\n        case .success(requestedTime: let requestedTime, image: let image, actualTime: _):\n            updateThumbnail(for: requestedTime, with: image)\n        case .failed(requestedTime: let requestedTime, error: _):\n            updateThumbnail(for: requestedTime, with: placeholder)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "3:49",
+      "title": "Generate a series of thumbnails",
+      "language": "swift",
+      "code": "func timelineThumbnails(for times: [CMTime]) async {\n    for await result in generator.images(for: times) {\n        updateThumbnail(for: result.requestedTime, with: (try? result.image) ?? placeholder)\n    }\n}"
+    },
+    {
+      "timestamp": "4:40",
+      "title": "AVMutableComposition",
+      "language": "swift",
+      "code": "let composition = AVMutableComposition()\ntry await composition.insertTimeRange(timeRange, of: asset, at: startTime)"
+    },
+    {
+      "timestamp": "4:57",
+      "title": "AVVideoComposition",
+      "language": "swift",
+      "code": "let videoComposition = try await AVVideoComposition .videoComposition(withPropertiesOf: asset)\n\ntry await videoComposition.isValid(for: asset, timeRange: range, validationDelegate: delegate)"
+    },
+    {
+      "timestamp": "5:33",
+      "title": "Asset inspection",
+      "language": "swift",
+      "code": "asset.loadValuesAsynchronously(forKeys: [\"duration\", \"tracks\"]) {\n    guard asset.statusOfValue(forKey: \"duration\", error: &error) == .loaded else { ... }\n    guard asset.statusOfValue(forKey: \"tracks\", error: &error) == .loaded else { ... }\n    myFunction(thatUses: asset.duration, and: asset.tracks)\n}\n\nlet (duration, tracks) = try await asset.load(.duration, .tracks)\nmyFunction(thatUses: duration, and: tracks)"
+    },
+    {
+      "timestamp": "7:06",
+      "title": "Synchronously insert track segments into a composition",
+      "language": "swift",
+      "code": "// videoTrack1: AVAssetTrack, videoTrack2: AVAssetTrack\n\n// Create a composition and add an empty track\nlet composition = AVMutableComposition()\nguard let compositionTrack = composition\n    .addMutableTrack(withMediaType: .video,\n                     preferredTrackID: 1) else { return }\n\n// Append the first 5 seconds of track 1\ntry compositionTrack\n    .insertTimeRange(firstFiveSeconds,\n                     of: videoTrack1, at: .zero)\n\n// Append the first 5 seconds of track 2\ntry compositionTrack\n    .insertTimeRange(firstFiveSeconds,\n                     of: videoTrack2, at: fiveSeconds)\nmyFunction(thatUses: composition.duration,\n           and: composition.tracks)"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Creating images from a video asset",
+        "url": "https://developer.apple.com/documentation/AVFoundation/creating-images-from-a-video-asset"
+      },
+      {
+        "title": "Loading media data asynchronously",
+        "url": "https://developer.apple.com/documentation/AVFoundation/loading-media-data-asynchronously"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/110379/3/072CE81E-54AA-400F-82CC-3667BB3549E1/downloads/wwdc2022-110379_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2022/110379/3/072CE81E-54AA-400F-82CC-3667BB3549E1/downloads/wwdc2022-110379_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10058",
+      "year": "2021",
+      "title": "Meet AsyncSequence",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10058"
+    },
+    {
+      "id": "10194",
+      "year": "2021",
+      "title": "Swift concurrency: Update a sample app",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10194"
+    },
+    {
+      "id": "10146",
+      "year": "2021",
+      "title": "What’s new in AVFoundation",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10146"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:23:21.963Z"
+}

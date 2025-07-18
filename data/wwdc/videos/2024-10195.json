@@ -1,0 +1,316 @@
+{
+  "id": "10195",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10195/",
+  "title": "Go further with Swift Testing",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi I’m Jonathan and I’m part of the Swift Testing team.\n\nMy colleague Dorothy and I, are here to walk you through some of the powerful features in Swift Testing that will elevate your test development to the next level. Swift Testing is a modern, open-source testing library for Swift powerful and expressive capabilities. It's included with Xcode 16. If you haven’t already, watch “Meet Swift Testing” to learn about the building blocks of Swift Testing.\n\nTesting is a crucial step in the development process. It helps surface issues before your code reaches your users and gives you confidence that you’re shipping a quality product. However, you may run into challenges as you maintain your project's ever-growing collection of tests.\n\nTests document and enforce the behavior of your code. The more complex your code gets, the more critical it is that your tests are easy to read and understand. It takes a lot of thought and effort to cover all possible edge cases in your code.\n\nOrganizing and relating a large collection of tests can be a complex task, and hidden dependencies between your tests may make them fragile and prone to unexpected failures. To get us started, here’s Dorothy. The readability of your tests is important. Readable tests are easier to work with, and make test failures more understandable especially as your code gets more and more complex. Swift Testing includes several features that can help you write clear, expressive tests.\n\nExpectations are how you validate that your code is behaving as expected in Swift Testing. They leverage Swift language features and syntax to provide a highly expressive and concise interface.\n\nHere are some examples of expectations with simple expressions that evaluate to true or false. However, the expect macro is much more powerful and can handle even more complicated validations.\n\nError handling is often less tested but is an important part of the user’s experience. You want to make sure your code fails gracefully in the face of invalid input and unexpected conditions. The expect throws macro make this workflow much easier by building on expectations.\n\nWhen you’re testing your code's happy path and are expecting a throwing function to return successfully, just call it inside your test.\n\nIf the function does end up throwing an error, the test will fail.\n\nIf the function runs successfully and returns a value, you can use an expectation to verify that it’s what you're expecting it to be.\n\nOn the other hand, to verify failure cases behave as intended, you need to catch, and examine the error, thrown by the function.\n\nYou could add your own do catch statement around the code and examine the error, but it's pretty wordy, and if an error is not thrown, this code won't let you know that things went terribly right.\n\nSwift Testing is here to help with the expect throws macro. Instead of manually writing your own do catch statement, the expect throws macro does the hard work for you. If the brew function throws an error, then this test passes. If no error was thrown, the test fails.\n\nIf you want to check that a particular type of error is thrown, you can pass that type instead of any Error. Now this test will fail if no error is thrown, or, if any error is thrown that isn't an instance of BrewingError.\n\nTo take it one step further, you can be even more thorough and validate that a specific error is thrown. For the most complex cases, you can also customize the validation performed by the expect throws macro.\n\nYou can customize your error validation to check for specific types or cases of errors, whether associated values or properties are correct, or whatever else you need to do to ensure the error your code threw was the right one for the job.\n\nIn the “Meet Swift Testing” session, Stuart introduced the concept of required expectations. As a quick reminder, any regular expectation, including throwing ones, can be made into a required expectation.\n\nIn cases where you’re validating an optional value, you can use a required expectation to document the control flow.\n\nIt doesn’t make sense to examine a value that ended up being nil, so adding a required expectation lets you end your test early if there's nothing left to do.\n\nNext, let’s go over how to document known errors in your test using the withKnownIssue function.\n\nTriaging test failures is a time-consuming process. When you cannot immediately fix a failing test, or if it’s failing due to factors outside of your control, the failure can add noise to your test results that obscures real customer-facing problems.\n\nThis test is checking that a soft serve ice cream machine can make an ice cream cone, but it looks like the machine is out of service right now and the test is failing as a result.\n\nIt may be a while before the mechanic can fix the machine.\n\nWhile you're waiting for them to arrive, your first intuition may be to use the disabled trait on this test.\n\nHowever, withKnownIssue is a better option in this case. The test will continue to run and you will be notified of compilation errors.\n\nIf the function returns an error, the test’s results will not count towards a test failure, as this failure is expected. Instead, the test will be surfaced as an expected failure in the results. When the issue is fixed and an error is no longer thrown, you'll be notified, and you can go ahead and remove the withKnownIssue call and run the test normally again.\n\nYour test may also perform multiple checks.\n\nIn this case, you can just wrap the failing function in withKnownIssue and allow the rest of your validations to run.\n\nThe last topic in this section I want to cover is custom test descriptions. In a perfect world, all of your tests pass all of the time and the ice cream machine is always working, of course. In the real world, tests do fail. Custom test descriptions can help you see at a glance what's going on inside a test and can help guide you to a solution when something is wrong. When working with simple enumerations, the default description is usually succinct and straightforward.\n\nHowever, more complex types like structures and classes can produce a lot more noise because their descriptions, by default, include a lot of extra data that may not be useful during testing.\n\nThese values show up in Xcode with a lot of information. The information is accurate, but it can be hard to find the important bits that distinguish one value from another. In this case, you may want to give each one a concise test description without affecting production code.\n\nYou can make your type conform to the CustomTestStringConvertible protocol which lets you provide a tailored, test-specific description.\n\nNow you'll get a much more readable and descriptive value in both the test navigator and the test report! We covered handling thrown errors, ending a test early with required expectations, handling known issues, and making test output more readable. Your tests are now ready to handle anything you throw at them! Now back to Jonathan.\n\nAs we mentioned earlier, one of the challenges in preserving your code’s quality is covering all its edge cases: those bits of complex functionality that rarely happen in your day to day testing.\n\nIt’s good practice to run your tests under various conditions to ensure you catch edge cases, but this previously took lots of time and writing a separate test for every possible variation is a maintenance nightmare. With Swift Testing, you can easily run a single test function with many different arguments.\n\nLet me show you what I mean: this enumeration lists various ice cream flavors and you can check if a particular flavor contains nuts. The containsNuts property needs test coverage for every case in the enumeration.\n\nSwift Testing’s parameterized testing makes adding that test coverage a piece of cake.\n\nThis test function checks whether or not one of the cases in the enumeration vanilla, in this case contains nuts.\n\nYou could write a separate test function for each case in the enumeration, but that's a lot of code. It would be easy to accidentally check for the wrong value after copying and pasting the same function so many times.\n\nInstead, you really only need one or two test functions here. After all, the logic of the tests is the same except for a single input value.\n\nAnd that's what a parameterized test is: A test that takes one or more parameters. When the test function runs, Swift Testing automatically splits it up into separate test cases: one per argument.\n\nThese test cases are entirely independent of each other and are able to run in parallel. This means less time is needed to test them all all than would be needed with a for loop or separate test functions. Xcode supports re-running individual test cases of a test function, when the type of input conforms to Codable. This allows you to retry individual failing test cases without needing to re-run other test cases that have run successfully. Let's walk through how to parameterize our test function in more detail.\n\nYou might start by writing a test function that loops over all the cases in the enumeration and tests each one. This function works, but we can improve it.\n\nOne problem jumps out: If this test function fails for one of the values in the array, it will stop execution and won't test subsequent arguments. It may be unclear which value failed, and you won't get the coverage you want.\n\nYou can move the inputs up and pass them to the test attribute instead of iterating over them inside the test function. When a collection is passed to the Test attribute for parameterization the testing library will pass each element in the collection, one, at at time, to the test function as its first and only argument. Then, if the test fails for one of these arguments, the corresponding diagnostics will clearly indicate which inputs need your attention.\n\nYou're almost done! If you add a second function that tests those flavors that do contain nuts, you'll have 100% code coverage for this enumeration. And it's easy to add new test cases if you expand the enumeration in the future.\n\nThat example looked at the cases of an enumeration, but parameterized test functions can also accept many other kinds of input.\n\nAny sendable collection, including arrays, dictionaries, ranges, and more can be passed to the test attribute.\n\nTest Cases along with their arguments are displayed in both the test navigator where each argument will get its own run button, and a test report, where you’ll get a rich information view for failed parameterized tests. So far, you've learned how to write parameterized tests with 1 input, but what if you need to pass more? Test functions in Swift Testing can accept multiple inputs, and you can add another argument to this test by simply appending it after the first argument.\n\nEvery element from the first collection is passed as the first argument to the test function, and every element from the second collection is passed as the second argument. All combinations of elements from these two collections are automatically tested.\n\nBeing able to test every combination in a single test function is a powerful way to improve your test coverage! To help visualize just how powerful, let’s consider two arrays of arguments, raw ingredients and the foods you can make with them.\n\nA test function with two arguments will test every possible combination, sixteen in total. You might find yourself taste testing some strange pairings. I like egg salad and omurice as much as the next engineer, but help me out here what are lettuce fries? And that was just four values in each array. As you add more inputs to the two sets, the number of test cases will grow and grow and grow, exponentially! To help control this exponential growth, test functions accept a maximum of two collections. You can also use the Swift standard library's zip function to match up pairs of inputs that should go together.\n\nInstead of testing every combination of raw ingredient and final dish. Call zip and they'll be paired up.\n\nZip will produce a sequence of tuples, where each element from your first collection is paired with its corresponding element in your second collection, and nothing else. Now you've got the tools you need to expand your test coverage with parameterized testing! Back to Dorothy to talk about organizing test. With all these new features to help you write more tests, you need strategies to manage them. Let’s go over the tools Swift Testing provides to organize your tests.\n\nTo recap, suites are types containing test functions.\n\nTheir functionality can be documented with traits, such as, a display name. New in Swift Testing, suites can now contain other suites to give you more flexibility in organizing tests. This is a pretty, sweet set of tests but it’s not organized very clearly. The test suite includes tests for warm desserts, and tests for cold desserts.\n\nBy adding sub suites, you can reflect this organization in the tests themselves, and make relationships between these groups of tests, more obvious.\n\nTags are another trait that help you organize your tests. A complex package or project may contain hundreds or thousands of tests and suites.\n\nYou probably have multiple test suites covering different parts of your code. Although they're not directly connected, some subset of your tests may share common characteristics.\n\nIn this example, some tests involve foods that are caffeinated, and some involve foods that are chocolatey. In this case, tags can help you associate these tests across the two suites.\n\nKeep in mind: Tags are not a replacement for test suites. Suites impose structure on test functions at the source level, while tags help you associate tests from different files, suites and targets that share something in common.\n\nThat's tags in a nutshell but how do you declare a tag and add it to a test? All of these drinks contain caffeine, as does any espresso brownie worth eating. You can create a caffeinated tag to relate these tests even though they exist in separate suites.\n\nFirst, extend the Tag type, and declare a static variable with the name caffeinated. The variable needs to be an instance of Tag. And the secret ingredient: Add the tag attribute to the variable to make it usable as a tag in your tests.\n\nNow that you've created the tag, you can add it to these tests. You can add it at the suite level for DrinkTests because all the drinks used in those tests are caffeinated, and tests inherit tags from their suites.\n\nThen, you can add it to espressoBrownieTexture. It's the only caffeinated food in DessertTests, so you wouldn't want to add it to the entire DessertTests suite.\n\nSuites and tests can also have multiple tags. For example, while mocha and espresso brownies are both caffeinated, they're also both made with chocolate! You can create a chocolatey tag and add it to those two tests.\n\nTests are grouped together by tags in the test navigator and allow you to run tests that have specific tags. Let's take a tour and see how you can use your tags in Xcode 16. The test navigator has several new features to help you work with tagged tests. By default, the navigator shows tests organized by their location in your source code. I've been busy perfecting my top-secret hot sauce recipe, and I want to improve my test coverage for code that uses it. These are the tests I've already written.\n\nI'm going to use the filter field at the bottom of the test navigator to find tests related to my hot sauce. As I start typing, Xcode will suggest tags based on the ones available in my project.\n\nXcode is now surfacing a few tag suggestions, like seasonal, spicy, and street food. I’ll continue typing to narrow down my results.\n\nBy default, the filter field matches the tests’ display and function names. That’s why tests like Spice blend in gingerbread cookies and Spinach and artichoke dip ratio are showing up.\n\nXcode is also suggesting tests that do not have any words highlighted in their names. That's because they have tags that match what I've typed.\n\nWhen I click spicy in the suggestions popover, The Test Navigator will convert what I typed into a tag filter which will remove all tests that don’t have that tag. Now the test navigator is showing me only tests with the spicy tag.\n\nThe test navigator can also group tests by their tags. I can switch to this view by clicking on the tag icon at the top of the test navigator. I'll remove the tag filter so all the tags in my project will show up in the results. This view gives me a convenient way to run my tests. Like the hierarchy view, I can click the play button beside any tag to run all tests with this tag.\n\nAs I’m developing, I can run my hot sauce-related tests and get quick feedback on my changes. In addition to running these tests manually you can save these tag preferences to your test plan using the redesigned test plan editor! I've created a new test plan that includes a core set of reliable tests so I can quickly catch any bugs I might introduce as I make changes. This test plan includes all of my test targets. I can switch to the new test plan by selecting its name, Core Food, from the list of test plans in the test navigator. Then, I'll open the test plan editor by clicking its name directly in the test navigator.\n\nI’ll expand my unit test target to view all my tests.\n\nI'll also hide the navigator to give myself a bit more room to look around.\n\nAs a reminder: a test plan can reference one or more test targets, and the test plan editor lets you organize tests across all of those targets.\n\nThe tags for each suite and tests are displayed in the right-hand column.\n\nI can choose which tests to include or exclude by specifying tags in these fields at the top of the test plan editor. Suppose I want to update this test plan to run all my core tests except for those with the seasonal tag. Those tests cover code that is only expected to work at certain times of the year, so I don't want them to always run.\n\nI can exclude tests with the seasonal tag by adding that tag in the exclude field.\n\nThe test plan preview automatically updates to match my changes. Tags that are currently active in the include and exclude fields will be highlighted in purple. Tags that are excluded from the test plan will be crossed out.\n\nI'll add another tag to the exclude field, and that will give me some additional filtering options. When my test plan is filtered by more than one tag, Xcode gives me the option to match either all tags or any tags. All tags is the default.\n\nIn this case, I'll use any tags because I want to exclude all tests tests that have the seasonal or the unreleased tag. Now both tags are highlighted in purple, and both are crossed out because they’re being actively excluded from my test plan.\n\nTags are also a useful tool that helps you analyze your results across entire test targets. This is the test report that was generated after running the test plan we just created. There are quite a few failures, so let’s investigate how the test report can help us fix failures faster with tags.\n\nLet’s explore the tests outline screen.\n\nTags now appear in the outline, next to their corresponding suites and tests.\n\nWe can narrow down the results by using the tags filter. But because I have so many failures, it will be tedious to look through each one.\n\nNavigating to the all insights screen, there’s a new section for distribution insights, which surfaces patterns in test failures that have common run destinations, tags, or bugs. This insight is interesting. All of the tests with the spicy tag failed.\n\nWe can navigate to the details screen by double clicking on the insight row.\n\nAll the associated failing tests with their failure messages appear in this screen.\n\nI recently modified the chili pepper that we use in our secret hot sauce, so that could be the reason all the spicy tests are failing. I’ll review my changes and fix my tests.\n\nXcode Cloud has also been updated to support Swift Testing.\n\nJust like in Xcode, you can view the results of your test suites in the Xcode Cloud tab of App Store Connect. This includes details about the traits that have been defined in your tests. When you organize and relate your tests, Xcode can help you gain insight into problems affecting them. Suites and tags make large collections of tests more efficient to navigate and easier to manage. Back to Jonathan to talk about running test in parallel.\n\nNow that you have a sizable and manageable test suite, it's time to consider how testing in parallel can keep your tests passing quickly and how to ensure they run reliably in a concurrent environment. Parallel testing is enabled by default in Swift Testing, so you can start taking advantage of these features with no extra code.\n\nFor the first time, you can run parallel tests on all physical devices, bringing all these great advantages to even more tests! Let’s begin by going over the basics of parallel testing. Tests run one after another in serial testing. If you've used XCTest before, this is how it runs tests by default.\n\nThis is in contrast to parallel testing, where tests execute concurrently. You gain several advantages when your tests run in parallel.\n\nFirst, execution time will be reduced, which is crucial in CI where every minute counts. This also means a faster turnaround to get your results. Swift Testing runs test functions in parallel by default, regardless of whether they are synchronous or asynchronous. This is a notable difference from XCTest, which only supports parallelization using multiple processes, each running one test at a time.\n\nTest functions can be isolated to a global actor like MainActor when needed. Next, the order in which your tests run is randomized. This helps surface hidden dependencies between tests and exposes areas where you may need to make adjustments.\n\nLet's look at an example. I have two tests: in the first one, I bake a cupcake, and in the second one I eat it.\n\nIf these tests always run in order and run one after the other, then I'll always have a cupcake ready for the second test because it was baked in the first test. That wasn't intentional! If the tests run in parallel, then the second test's dependency on the first will be exposed at runtime and I'll be able to fix it. If you’re converting older test code, some of those dependencies may already be baked in.\n\nSwift 6 will be able to help you find some of the problems with your existing code as you rewrite it, but others will be harder to find. As your first step, you may just want to convert your code to Swift Testing and come back to address those problems later.\n\nYou may not be able to fix them all just yet, which is where the .serialized trait can help.\n\nThe .serialized trait can be added to a test suite to indicate that its tests need to be run serially.\n\nThese tests will lose the advantages we just discussed, so you should first consider refactoring your test code, whenever possible, to run in parallel.\n\n.serialized can also be applied to a parameterized test function to ensure its test cases run one at a time.\n\nIf applied to a suite that contains another suite, it’s automatically inherited and you don’t need to add it twice.\n\nTests in a suite with the .serialized trait will run one after another. However, Swift is still free to run other unrelated tests in parallel with these serialized tests, so you can still get parallel performance. If necessary, you can run tests serially but we recommend refactoring your tests so they can run in parallel.\n\nParallel testing is on by default when you use Swift Testing and will let your tests run as fast as possible. And Swift 6 can help you find issues with your tests that prevent them from running in parallel.\n\nNext, we’ll show you techniques for waiting on asynchronous conditions with Swift Testing.\n\nWhen writing concurrent test code, you can use the same concurrency features in Swift as you would in your production code.\n\nawait works exactly the same way and will suspend a test allowing other test code to keep the CPU busy while work is pending.\n\nSome code, especially older code written in C or Objective-C, uses completion handlers to signal the end of an asynchronous operation.\n\nThis code will run after the test function returns, and you won't be able to verify the function succeeded.\n\nFor most completion handlers, Swift provides an async overload automatically that you can use instead.\n\nIf the code you're testing uses a completion handler and an async overload is NOT available, you can instead use withCheckedContinuation or withCheckedThrowingContinuation to convert it to an expression that can be awaited.\n\nFor more information about continuations in Swift, watch \"Meet async/await in Swift\".\n\nAnother kind of callback is an event handler that may fire more than once. This version of the eat function calls its callback once for each cookie instead of at the end of the whole meal.\n\nHowever, trying to count the number of cookies eaten with a variable will result in a concurrency error in Swift 6 because it's unsafe to set a variable this way.\n\nIf the code you’re testing may invoke a callback more than once and you need to test how many times it is called, you can use a confirmation instead.\n\nBy default, a confirmation is expected to occur exactly once but you can specify a different expected count. I'm baking and eating 10 delicious cookies, so I expect this event will occur 10 times. You can also specify 0 if the confirmation should never occur during testing.\n\nSwift concurrency is a powerful tool in your production code and in your tests. Get faster results by running your tests in parallel, and use async/await, continuations, and confirmations to ensure your test code runs correctly in a concurrent environment. In this session, you learned how Swift Testing can improve your testing workflow. We’ve covered a large range of topics, so let’s do a quick recap! To start, we looked at how Swift Testing’s APIs help you write expressive tests. With parameterization, you can exercise many different cases with a single test.\n\nTools such as suites and tags help you organize and document your test code.\n\nAnd finally, testing in parallel can reduce the time it takes to run your tests and may help identify dependencies between them. Thanks for tuning in Happy testing!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "0:01",
+      "title": "Successful throwing function",
+      "language": "swift",
+      "code": "// Expecting errors\n\nimport Testing\n\n@Test func brewTeaSuccessfully() throws {\n    let teaLeaves = TeaLeaves(name: \"EarlGrey\", optimalBrewTime: 4)\n    let cupOfTea = try teaLeaves.brew(forMinutes: 3)\n}"
+    },
+    {
+      "timestamp": "0:02",
+      "title": "Validating a successful throwing function",
+      "language": "swift",
+      "code": "import Testing\n\n@Test func brewTeaSuccessfully() throws {\n    let teaLeaves = TeaLeaves(name: \"EarlGrey\", optimalBrewTime: 4)\n    let cupOfTea = try teaLeaves.brew(forMinutes: 3)\n    #expect(cupOfTea.quality == .perfect)\n}"
+    },
+    {
+      "timestamp": "0:03",
+      "title": "Validating an error is thrown with do-catch (not recommended)",
+      "language": "swift",
+      "code": "import Testing\n\n@Test func brewTeaError() throws {\n    let teaLeaves = TeaLeaves(name: \"EarlGrey\", optimalBrewTime: 3)\n\n    do {\n        try teaLeaves.brew(forMinutes: 100)\n    } catch is BrewingError {\n        // This is the code path we are expecting\n    } catch {\n        Issue.record(\"Unexpected Error\")\n    }\n}"
+    },
+    {
+      "timestamp": "0:04",
+      "title": "Validating a general error is thrown",
+      "language": "swift",
+      "code": "import Testing\n\n@Test func brewTeaError() throws {\n    let teaLeaves = TeaLeaves(name: \"EarlGrey\", optimalBrewTime: 4)\n    #expect(throws: (any Error).self) {\n        try teaLeaves.brew(forMinutes: 200) // We don't want this to fail the test!\n    }\n}"
+    },
+    {
+      "timestamp": "0:05",
+      "title": "Validating a type of error",
+      "language": "swift",
+      "code": "import Testing\n\n@Test func brewTeaError() throws {\n    let teaLeaves = TeaLeaves(name: \"EarlGrey\", optimalBrewTime: 4)\n    #expect(throws: BrewingError.self) {\n        try teaLeaves.brew(forMinutes: 200) // We don't want this to fail the test!\n    }\n}"
+    },
+    {
+      "timestamp": "0:06",
+      "title": "Validating a specific error",
+      "language": "swift",
+      "code": "import Testing\n\n@Test func brewTeaError() throws {\n    let teaLeaves = TeaLeaves(name: \"EarlGrey\", optimalBrewTime: 4)\n    #expect(throws: BrewingError.oversteeped) {\n        try teaLeaves.brew(forMinutes: 200) // We don't want this to fail the test!\n    }\n}"
+    },
+    {
+      "timestamp": "0:07",
+      "title": "Complicated validations",
+      "language": "swift",
+      "code": "import Testing\n\n@Test func brewTea() {\n    let teaLeaves = TeaLeaves(name: \"EarlGrey\", optimalBrewTime: 4)\n    #expect {\n        try teaLeaves.brew(forMinutes: 3)\n    } throws: { error in\n        guard let error = error as? BrewingError,\n              case let .needsMoreTime(optimalBrewTime) = error else {\n            return false\n        }\n        return optimalBrewTime == 4\n    }\n}"
+    },
+    {
+      "timestamp": "0:08",
+      "title": "Throwing expectation",
+      "language": "swift",
+      "code": "import Testing\n\n@Test func brewAllGreenTeas() {\n  #expect(throws: BrewingError.self) {\n    brewMultipleTeas(teaLeaves: [\"Sencha\", \"EarlGrey\", \"Jasmine\"], time: 2)\n  }\n}"
+    },
+    {
+      "timestamp": "0:09",
+      "title": "Required expectations",
+      "language": "swift",
+      "code": "import Testing\n\n@Test func brewAllGreenTeas() throws {\n  try #require(throws: BrewingError.self) {\n    brewMultipleTeas(teaLeaves: [\"Sencha\", \"EarlGrey\", \"Jasmine\"], time: 2)\n  }\n}"
+    },
+    {
+      "timestamp": "0:10",
+      "title": "Control flow of validating an optional value (not recommended)",
+      "language": "swift",
+      "code": "import Testing\n\nstruct TeaLeaves {symbols\n    let name: String\n    let optimalBrewTime: Int\n\n    func brew(forMinutes minutes: Int) throws -> Tea { ... }\n}\n\n@Test func brewTea() throws {\n    let teaLeaves = TeaLeaves(name: \"Sencha\", optimalBrewTime: 2)\n    let brewedTea = try teaLeaves.brew(forMinutes: 100)\n    guard let color = brewedTea.color else {\n        Issue.record(\"Tea color was not available!\")\n    }\n    #expect(color == .green)\n}"
+    },
+    {
+      "timestamp": "0:11",
+      "title": "Failing test with a throwing function",
+      "language": "swift",
+      "code": "import Testing\n\n@Test func softServeIceCreamInCone() throws {\n    try softServeMachine.makeSoftServe(in: .cone)\n}"
+    },
+    {
+      "timestamp": "0:12",
+      "title": "Disabling a test with a throwing function (not recommended)",
+      "language": "swift",
+      "code": "import Testing\n\n@Test(.disabled) func softServeIceCreamInCone() throws {\n    try softServeMachine.makeSoftServe(in: .cone)\n}"
+    },
+    {
+      "timestamp": "0:13",
+      "title": "Wrapping a failing test in withKnownIssue",
+      "language": "swift",
+      "code": "import Testing\n\n@Test func softServeIceCreamInCone() throws {\n    withKnownIssue {\n        try softServeMachine.makeSoftServe(in: .cone)\n    }\n}"
+    },
+    {
+      "timestamp": "0:14",
+      "title": "Wrap just the failing section in withKnownIssue",
+      "language": "swift",
+      "code": "import Testing\n\n@Test func softServeIceCreamInCone() throws {\n    let iceCreamBatter = IceCreamBatter(flavor: .chocolate)\n    try #require(iceCreamBatter != nil)\n    #expect(iceCreamBatter.flavor == .chocolate)\n\n    withKnownIssue {\n        try softServeMachine.makeSoftServe(in: .cone)\n    }\n}"
+    },
+    {
+      "timestamp": "0:15",
+      "title": "Simple enumerations",
+      "language": "swift",
+      "code": "import Testing\n\nenum SoftServe {\n    case vanilla, chocolate, pineapple\n}"
+    },
+    {
+      "timestamp": "0:16",
+      "title": "Complex types",
+      "language": "swift",
+      "code": "import Testing\n\nstruct SoftServe {\n    let flavor: Flavor\n    let container: Container\n    let toppings: [Topping]\n}\n\n@Test(arguments: [\n    SoftServe(flavor: .vanilla, container: .cone, toppings: [.sprinkles]),\n    SoftServe(flavor: .chocolate, container: .cone, toppings: [.sprinkles]),\n    SoftServe(flavor: .pineapple, container: .cup, toppings: [.whippedCream])\n])\nfunc softServeFlavors(_ softServe: SoftServe) { /*...*/ }"
+    },
+    {
+      "timestamp": "0:17",
+      "title": "Conforming to CustomTestStringConvertible",
+      "language": "swift",
+      "code": "import Testing\n\nstruct SoftServe: CustomTestStringConvertible {\n    let flavor: Flavor\n    let container: Container\n    let toppings: [Topping]\n\n    var testDescription: String {\n        \"\\(flavor) in a \\(container)\"\n    }\n}\n\n@Test(arguments: [\n    SoftServe(flavor: .vanilla, container: .cone, toppings: [.sprinkles]),\n    SoftServe(flavor: .chocolate, container: .cone, toppings: [.sprinkles]),\n    SoftServe(flavor: .pineapple, container: .cup, toppings: [.whippedCream])\n])\nfunc softServeFlavors(_ softServe: SoftServe) { /*...*/ }"
+    },
+    {
+      "timestamp": "0:18",
+      "title": "An enumeration with a computed property",
+      "language": "swift",
+      "code": "extension IceCream {\n    enum Flavor {\n        case vanilla, chocolate, strawberry, mintChip, rockyRoad, pistachio\n\n        var containsNuts: Bool {\n            switch self {\n            case .rockyRoad, .pistachio:\n                return true\n            default:\n                return false\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "0:19",
+      "title": "A test function for a specific case of an enumeration",
+      "language": "swift",
+      "code": "import Testing\n\n@Test func doesVanillaContainNuts() throws {\n    try #require(!IceCream.Flavor.vanilla.containsNuts)\n}"
+    },
+    {
+      "timestamp": "0:20",
+      "title": "Separate test functions for all cases of an enumeration",
+      "language": "swift",
+      "code": "import Testing\n\n@Test func doesVanillaContainNuts() throws {\n    try #require(!IceCream.Flavor.vanilla.containsNuts)\n}\n\n@Test func doesChocolateContainNuts() throws {\n    try #require(!IceCream.Flavor.chocolate.containsNuts)\n}\n\n@Test func doesStrawberryContainNuts() throws {\n    try #require(!IceCream.Flavor.strawberry.containsNuts)\n}\n\n@Test func doesMintChipContainNuts() throws {\n    try #require(!IceCream.Flavor.mintChip.containsNuts)\n}\n\n@Test func doesRockyRoadContainNuts() throws {\n    try #require(!IceCream.Flavor.rockyRoad.containsNuts)\n}"
+    },
+    {
+      "timestamp": "0:21",
+      "title": "Parameterizing a test with a for loop (not recommended)",
+      "language": "swift",
+      "code": "import Testing\n\nextension IceCream {\n    enum Flavor {\n        case vanilla, chocolate, strawberry, mintChip, rockyRoad, pistachio\n    }\n}\n\n@Test\nfunc doesNotContainNuts() throws {\n    for flavor in [IceCream.Flavor.vanilla, .chocolate, .strawberry, .mintChip] {\n        try #require(!flavor.containsNuts)\n    }\n}"
+    },
+    {
+      "timestamp": "0:22",
+      "title": "Swift testing parameterized tests",
+      "language": "swift",
+      "code": "import Testing\n\nextension IceCream {\n    enum Flavor {\n        case vanilla, chocolate, strawberry, mintChip, rockyRoad, pistachio\n    }\n}\n\n@Test(arguments: [IceCream.Flavor.vanilla, .chocolate, .strawberry, .mintChip])\nfunc doesNotContainNuts(flavor: IceCream.Flavor) throws {\n    try #require(!flavor.containsNuts)\n}"
+    },
+    {
+      "timestamp": "0:23",
+      "title": "100% test coverage",
+      "language": "swift",
+      "code": "import Testing\n\nextension IceCream {\n    enum Flavor {\n        case vanilla, chocolate, strawberry, mintChip, rockyRoad, pistachio\n    }\n}\n\n@Test(arguments: [IceCream.Flavor.vanilla, .chocolate, .strawberry, .mintChip])\nfunc doesNotContainNuts(flavor: IceCream.Flavor) throws {\n    try #require(!flavor.containsNuts)\n}\n\n@Test(arguments: [IceCream.Flavor.rockyRoad, .pistachio])\nfunc containNuts(flavor: IceCream.Flavor) {\n   #expect(flavor.containsNuts)\n}"
+    },
+    {
+      "timestamp": "0:24",
+      "title": "A parameterized test with one argument",
+      "language": "swift",
+      "code": "import Testing\n\nenum Ingredient: CaseIterable {\n    case rice, potato, lettuce, egg\n}\n\n@Test(arguments: Ingredient.allCases)\nfunc cook(_ ingredient: Ingredient) async throws {\n    #expect(ingredient.isFresh)\n    let result = try cook(ingredient)\n    try #require(result.isDelicious)\n}"
+    },
+    {
+      "timestamp": "0:26",
+      "title": "Adding a second argument to a parameterized test",
+      "language": "swift",
+      "code": "import Testing\n\nenum Ingredient: CaseIterable {\n    case rice, potato, lettuce, egg\n}\n\nenum Dish: CaseIterable {\n    case onigiri, fries, salad, omelette\n}\n\n@Test(arguments: Ingredient.allCases, Dish.allCases)\nfunc cook(_ ingredient: Ingredient, into dish: Dish) async throws {\n    #expect(ingredient.isFresh)\n    let result = try cook(ingredient)\n    try #require(result.isDelicious)\n    try #require(result == dish)\n}"
+    },
+    {
+      "timestamp": "0:28",
+      "title": "Using zip() on arguments",
+      "language": "swift",
+      "code": "import Testing\n\nenum Ingredient: CaseIterable {\n    case rice, potato, lettuce, egg\n}\n\nenum Dish: CaseIterable {\n    case onigiri, fries, salad, omelette\n}\n\n@Test(arguments: zip(Ingredient.allCases, Dish.allCases))\nfunc cook(_ ingredient: Ingredient, into dish: Dish) async throws {\n    #expect(ingredient.isFresh)\n    let result = try cook(ingredient)\n    try #require(result.isDelicious)\n    try #require(result == dish)\n}"
+    },
+    {
+      "timestamp": "0:29",
+      "title": "Suites",
+      "language": "swift",
+      "code": "@Suite(\"Various desserts\") \nstruct DessertTests {\n    @Test func applePieCrustLayers() { /* ... */ }\n    @Test func lavaCakeBakingTime() { /* ... */ }\n    @Test func eggWaffleFlavors() { /* ... */ }\n    @Test func cheesecakeBakingStrategy() { /* ... */ }\n    @Test func mangoSagoToppings() { /* ... */ }\n    @Test func bananaSplitMinimumScoop() { /* ... */ }\n}"
+    },
+    {
+      "timestamp": "0:30",
+      "title": "Nested suites",
+      "language": "swift",
+      "code": "import Testing\n\n@Suite(\"Various desserts\")\nstruct DessertTests {\n    @Suite struct WarmDesserts {\n        @Test func applePieCrustLayers() { /* ... */ }\n        @Test func lavaCakeBakingTime() { /* ... */ }\n        @Test func eggWaffleFlavors() { /* ... */ }\n    }\n\n    @Suite struct ColdDesserts {\n        @Test func cheesecakeBakingStrategy() { /* ... */ }\n        @Test func mangoSagoToppings() { /* ... */ }\n        @Test func bananaSplitMinimumScoop() { /* ... */ }\n    }\n}"
+    },
+    {
+      "timestamp": "0:31",
+      "title": "Separate suites",
+      "language": "swift",
+      "code": "@Suite struct DrinkTests {\n    @Test func espressoExtractionTime() { /* ... */ }\n    @Test func greenTeaBrewTime() { /* ... */ }\n    @Test func mochaIngredientProportion() { /* ... */ }\n}\n\n@Suite struct DessertTests {\n    @Test func espressoBrownieTexture() { /* ... */ }\n    @Test func bungeoppangFilling() { /* ... */ }\n    @Test func fruitMochiFlavors() { /* ... */ }\n}"
+    },
+    {
+      "timestamp": "0:35",
+      "title": "Using a tag",
+      "language": "swift",
+      "code": "import Testing \n\nextension Tag {\n    @Tag static var caffeinated: Self\n}\n\n@Suite(.tags(.caffeinated)) struct DrinkTests {\n    @Test func espressoExtractionTime() { /* ... */ }\n    @Test func greenTeaBrewTime() { /* ... */ }\n    @Test func mochaIngredientProportion() { /* ... */ }\n}\n\n@Suite struct DessertTests {\n    @Test(.tags(.caffeinated)) func espressoBrownieTexture() { /* ... */ }\n    @Test func bungeoppangFilling() { /* ... */ }\n    @Test func fruitMochiFlavors() { /* ... */ }\n}"
+    },
+    {
+      "timestamp": "0:36",
+      "title": "Declare and use a second tag",
+      "language": "swift",
+      "code": "import Testing \n\nextension Tag {\n    @Tag static var caffeinated: Self\n    @Tag static var chocolatey: Self\n}\n\n@Suite(.tags(.caffeinated)) struct DrinkTests {\n    @Test func espressoExtractionTime() { /* ... */ }\n    @Test func greenTeaBrewTime() { /* ... */ }\n    @Test(.tags(.chocolatey)) func mochaIngredientProportion() { /* ... */ }\n}\n\n@Suite struct DessertTests {\n    @Test(.tags(.caffeinated, .chocolatey)) func espressoBrownieTexture() { /* ... */ }\n    @Test func bungeoppangFilling() { /* ... */ }\n    @Test func fruitMochiFlavors() { /* ... */ }\n}"
+    },
+    {
+      "timestamp": "0:37",
+      "title": "Two tests with an unintended data dependency (not recommended)",
+      "language": "swift",
+      "code": "import Testing\n\n// ❌ This code is not concurrency-safe.\n\nvar cupcake: Cupcake? = nil\n\n@Test func bakeCupcake() async {\n    cupcake = await Cupcake.bake(toppedWith: .frosting)\n    // ...\n}\n\n@Test func eatCupcake() async {\n    await eat(cupcake!)\n    // ...\n}"
+    },
+    {
+      "timestamp": "0:38",
+      "title": "Serialized trait",
+      "language": "swift",
+      "code": "import Testing\n\n@Suite(\"Cupcake tests\", .serialized)\nstruct CupcakeTests {\n    var cupcake: Cupcake?\n\n    @Test func mixingIngredients() { /* ... */ }\n    @Test func baking() { /* ... */ }\n    @Test func decorating() { /* ... */ }\n    @Test func eating() { /* ... */ }\n}"
+    },
+    {
+      "timestamp": "0:39",
+      "title": "Serialized trait with nested suites",
+      "language": "swift",
+      "code": "import Testing\n\n@Suite(\"Cupcake tests\", .serialized)\nstruct CupcakeTests {\n    var cupcake: Cupcake?\n\n    @Suite(\"Mini birthday cupcake tests\")\n    struct MiniBirthdayCupcakeTests {\n        // ...\n    }\n\n    @Test(arguments: [...]) func mixing(ingredient: Food) { /* ... */ }\n    @Test func baking() { /* ... */ }\n    @Test func decorating() { /* ... */ }\n    @Test func eating() { /* ... */ }\n}"
+    },
+    {
+      "timestamp": "0:40",
+      "title": "Using async/await in a test",
+      "language": "swift",
+      "code": "import Testing\n\n@Test func bakeCookies() async throws {\n    let cookies = await Cookie.bake(count: 10)\n    try await eat(cookies, with: .milk)\n}"
+    },
+    {
+      "timestamp": "0:41",
+      "title": "Using a function with a completion handler in a test (not recommended)",
+      "language": "swift",
+      "code": "import Testing\n\n@Test func bakeCookies() async throws {\n    let cookies = await Cookie.bake(count: 10)\n    // ❌ This code will run after the test function returns.\n    eat(cookies, with: .milk) { result, error in\n        #expect(result != nil)\n    }\n}"
+    },
+    {
+      "timestamp": "0:43",
+      "title": "Using withCheckedThrowingContinuation",
+      "language": "swift",
+      "code": "import Testing\n\n@Test func bakeCookies() async throws {\n    let cookies = await Cookie.bake(count: 10)\n    try await withCheckedThrowingContinuation { continuation in\n        eat(cookies, with: .milk) { result, error in\n            if let result {\n                continuation.resume(returning: result)\n            } else {\n                continuation.resume(throwing: error)\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "0:44",
+      "title": "Callback that invokes more than once (not recommended)",
+      "language": "swift",
+      "code": "import Testing\n\n@Test func bakeCookies() async throws {\n    let cookies = await Cookie.bake(count: 10)\n    // ❌ This code is not concurrency-safe.\n    var cookiesEaten = 0\n    try await eat(cookies, with: .milk) { cookie, crumbs in\n        #expect(!crumbs.in(.milk))\n        cookiesEaten += 1\n    }\n    #expect(cookiesEaten == 10)\n}"
+    },
+    {
+      "timestamp": "0:45",
+      "title": "Confirmations on callbacks that invoke more than once",
+      "language": "swift",
+      "code": "import Testing\n\n@Test func bakeCookies() async throws {\n    let cookies = await Cookie.bake(count: 10)\n    try await confirmation(\"Ate cookies\", expectedCount: 10) { ateCookie in\n        try await eat(cookies, with: .milk) { cookie, crumbs in\n            #expect(!crumbs.in(.milk))\n            ateCookie()\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "0:46",
+      "title": "Confirmation that occurs 0 times",
+      "language": "swift",
+      "code": "import Testing\n\n@Test func bakeCookies() async throws {\n    let cookies = await Cookie.bake(count: 10)\n    try await confirmation(\"Ate cookies\", expectedCount: 0) { ateCookie in\n        try await eat(cookies, with: .milk) { cookie, crumbs in\n            #expect(!crumbs.in(.milk))\n            ateCookie()\n        }\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Adding tests to your Xcode project",
+        "url": "https://developer.apple.com/documentation/Xcode/adding-tests-to-your-xcode-project"
+      },
+      {
+        "title": "Forum: Developer Tools & Services",
+        "url": "https://developer.apple.com/forums/topics/developer-tools-and-services?cid=vf-a-0010"
+      },
+      {
+        "title": "Improving code assessment by organizing tests into test plans",
+        "url": "https://developer.apple.com/documentation/Xcode/organizing-tests-to-improve-feedback"
+      },
+      {
+        "title": "Running tests and interpreting results",
+        "url": "https://developer.apple.com/documentation/Xcode/running-tests-and-interpreting-results"
+      },
+      {
+        "title": "Swift Testing",
+        "url": "https://developer.apple.com/documentation/Testing"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10195/4/7FBA1EC9-FB05-46DA-852F-C090FB5A53E6/downloads/wwdc2024-10195_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10195/4/7FBA1EC9-FB05-46DA-852F-C090FB5A53E6/downloads/wwdc2024-10195_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10179",
+      "year": "2024",
+      "title": "Meet Swift Testing",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10179"
+    },
+    {
+      "id": "10132",
+      "year": "2021",
+      "title": "Meet async/await in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10132"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:40:27.561Z"
+}

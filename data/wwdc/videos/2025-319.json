@@ -1,0 +1,252 @@
+{
+  "id": "319",
+  "year": "2025",
+  "url": "https://developer.apple.com/videos/play/wwdc2025/319/",
+  "title": "Capture cinematic video in your app",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, I'm Roy. I’m an engineer on the Camera Software team. Today, I’m excited to talk about how your apps can easily capture pro-level cinema-style videos with a Cinematic Video API.\n\nWith iPhone 13 and 13 Pro, we introduced Cinematic mode. With its intuitive user interface and powerful algorithms, It transformed iPhone into a cinematography powerhouse. In this talk, we will have a look at what makes Cinematic video magical and walk through some code together to see how to build a great Cinematic capture experience.\n\nSo, what is Cinematic video? At its heart are classic storytelling tools like rect focus and tracking focus. With a shallow depth of field, the director guides viewers attention to the key subjects in the scene, enhancing narrative impacts. When subjects move, as they often do in films, tracking focus keeps them sharply in view.\n\nThough powerful, in the real world, these focus techniques require a great deal of expertise, which is why on a movie set, there are focus pollers whose main responsibility is to carry out these powerful but challenging shots. Cinematic video drastically simplifies this by intelligently driving focus decisions. For example, when a subject enters the frame, the algorithm automatically racks the focus to them and starts tracking. When a subject looks away, the focus automatically transitions to another point, returning to the subject when appropriate. This year, we're making these amazing capabilities available as the Cinematic Video API, so your apps can easily capture these amazing cinema-style videos. Let’s explore how we can build a great capture experience for Cinematic videos using the new API. Let’s start with a typical capture session for a video app.\n\nFirstly, we select the device from which we want to capture movies.\n\nThen we add it to a device input. Depending on the use cases, multiple outputs can be added to the session. Connection objects will be created when these outputs are added to the capture session.\n\nThis is not a trivial setup, but enabling Cinematic video capture is really easy. In iOS 26, we're adding a new property, isCinematicVideoCaptureEnabled on the AVCaptureDeviceInput class. By setting it to true, we configure the whole capture session to output Cinematic video. and each of the outputs will now receive the Cinematic treatment.\n\nThe movie file produced by the movie file output will be Cinematic. It contains the disparity data, metadata, and the original video that enables non-destructive editing. To play it back with the bokeh rendered or edit the bokeh effect, you can use the Cinematic Framework we introduced in 2023. To learn more about this framework, please check out the WWDC23 session Support Cinematic mode videos in your app. The video data output will produce frames with a shallow depth of field effect baked in. This is useful when you need direct access to the frames, such as when sending them to a remote device.\n\nSimilarly, the preview layer will have the bokeh rendered into it in real time. It's an easy way to build a viewfinder. With this high-level architecture in mind, let’s walk through some code in these following areas.\n\nWe will configure an AVCaptureSession with all its components required for Cinematic capture.\n\nThen we build an interface for video capture using SwiftUI.\n\nWe will walk through how to get metadata like face detections and how to draw them on the screen.\n\nWith different ways to manually drive focus, we tap into the full power of Cinematic video.\n\nAnd we finish off with some advanced features to make our app more polished.\n\nLet’s get started with the capture session. First, let’s find the video device from which we want to capture the movie. To find the device, we create an AVCaptureDevice.DiscoverySession object.\n\nCinematic video is supported on both the Dual Wide camera in the back and the TrueDepth camera in the front. In this case, we specify  .builtInDualWideCamera in the array of device types. Since we’re shooting a movie, we use .video as the mediaType.\n\nAnd we request the camera in the back of the device.\n\nAs we’re only requesting a single device type, we can just get the first element in the discovery session's devices array.\n\nIn order to enable Cinematic video capture, a format that supports this feature must be used.\n\nTo find such formats, we can iterate through all the device’s formats and use the one whose isCinematicVideoCaptureSupported property returns true.\n\nHere are all the supported formats.\n\nFor both Dual Wide and TrueDepth cameras, both 1080p and 4K are supported at 30 frames per second.\n\nIf you are interested in recording SDR or EDR content, you can use either 420 video range or full range. If we prefer 10-bit HDR video content, use x420 instead.\n\nSince we’re not making a silent film, we want sound as well. We will use the same DiscoverySession API to find the microphone.\n\nWith our devices in hand, we create the inputs for each one of them. Then we add these inputs to the capture session. At this point, we can turn on Cinematic video capture on the video input. To enhance the Cinematic experience, we can capture spatial audio by simply setting first order ambisonics as the multichannelAudioMode.\n\nTo learn more about spatial audio, please check out this year's session, “Enhance your app’s audio content creation capabilities.” Moving on to the outputs, we create an AVCaptureMovieFileOutput object and add it to the session.\n\nOur hands are never as steady as a tripod, so we recommend enabling video stabilization. To do so, we first find the video connection of the movieFileOutput and set its preferredVideoStabilizationMode. In this case, we use cinematicExtendedEnhanced.\n\nLastly, we need to associate our preview layer with the capture session. We’re done with the capture session for now. Let's move on to the user interface.\n\nSince AVCaptureVideoPreviewLayer is a subclass of CALayer, which is not part of SwiftUI, to make them interoperate, we need to wrap the preview layer into a struct that conforms to the UIViewRepresentable protocol. Within this struct, we make a UIView subclass CameraPreviewUIView.\n\nWe override its layerClass property to make the previewLayer the backing layer for the view.\n\nAnd we make a previewLayer property to make it easily accessible as an AVCaptureVideoPreviewLayer type.\n\nWe can then put our preview view into a ZStack, where it can be easily composed with other UI elements like camera controls.\n\nAs mentioned in the intro, shallow depth of field is an important tool for storytelling. By changing the simulatedAperture property on the device input, we can adjust the global strength of the bokeh effect. Displayed on the right, driving this property with a slider, we change the global strength of the blur.\n\nThis value is expressed in the industry standard f-stops, which is simply the ratio between the focal length and the aperture diameter.\n\nMoving them around, the aperture is the focal length divided by the f number.\n\nTherefore, the smaller the f number, the larger the aperture, and the stronger the bokeh will be.\n\nWe can find the minimum, maximum, and default simulated aperture on the format.\n\nWe use them to populate the appropriate UI elements, like a slider.\n\nNow, let’s build some affordances that allow the user to manually interact with Cinematic video. For users to manually drive focus, we need to show visual indicators for focus candidates like faces. And to do that, we need some detection metadata.\n\nWe will use an AVCaptureMetadataOutput to get these detections so we can draw their bounds on the screen for users to interact with. The Cinematic video algorithm requires certain metadataObjectTypes to work optimally. And they are communicated with the new property requiredMetadataObjectTypesForCinematicVideoCapture. An exception is thrown if the metadataObjectTypes provided differ from this list when Cinematic video is enabled.\n\nLastly, we need to provide a delegate to receive the metadata and a queue on which the delegate is called.\n\nwe receive metadata objects in the metadata output delegate callback.\n\nTo easily communicate this metadata to our view layer in SwiftUI, we use an observable class.\n\nWhen we update its property, the observing view will automatically refresh.\n\nIn our view layer, whenever our observable object is updated, the view is automatically redrawn. And we draw a rectangle for each metadataObject.\n\nWhen creating these rectangles, it’s important that we transform metadata’s bounds into the preview layer’s coordinate space. Using the layerRectConverted fromMetadataOutputRect method.\n\nNote that X and Y in the position method refer to the center of the view, instead of the upper left corner used by AVFoundation. So we need to adjust accordingly by using the midX and midY of the rect.\n\nWith metadata rectangles drawn on the screen, we can use them to manually drive focus.\n\nThe Cinematic Video API offers three ways to manually focus. Let's now walk through them one by one. The setCinematicVideoTrackingFocus detectedObjectID focusMode method can be used to rack focus to a particular subject identified by the detectedObjectID, which is available on the AVMetadata objects that you get from the metadata output. focusMode configures Cinematic video’s tracking behavior. The CinematicVideoFocusMode enum has three cases: none, strong, and weak. Strong tells Cinematic video to keep tracking a subject even when there are focus candidates that would have been otherwise automatically selected.\n\nIn this case, although the cat became more prominent in the frame, the strong focus, as indicated by the solid yellow rectangle, stayed locked on the subject in the back. Weak focus, on the other hand, lets the algorithm retain focus control. It automatically racks the focus when it sees fit. In this case, as the cat turned around, he was considered more important, and the weak focus shifted automatically to him, as indicated by the dashed rectangle.\n\nThe none case is only useful when determining whether a metadata object currently has the focus, so it should not be used when setting the focus.\n\nThe second focus method takes a different first parameter. Instead of a detected object ID, it takes a point in a view.\n\nIt tells Cinematic video to look for any interesting object at the specified point. When it finds one, it will create a new metadata object with the type salient object. So we can draw the rectangle around it on the screen.\n\nThe third focus method is setCinematicVideoFixedFocus that takes a point and the focus mode. It sets the focus at a fixed distance which is computed internally using signals such as depth. Paired with a strong focus mode, this method effectively locks the focus at a particular plane in the scene, ignoring other activities even in the foreground. Any apps can implement the focus logic that makes sense in their respective use cases. In our app, we do the following: Tapping on a detection rectangle not in focus, we rack the focus to it with a weak focus. With this, we can switch the focus back and forth between subjects in and out of focus.\n\nTapping on a metadata object already being weakly focused on turns it into a strong focus, indicated by the solid yellow rectangle.\n\nTapping at a point where there are no existing detections, we want Cinematic video to try to find any salient object and weakly focus on that. With a long press, we set a strong fixed focus. Here is how we can implement this logic in code. Firstly, we need to make two gestures.\n\nThe regular tap gesture can be easily done with a SpatialTapGesture, which provides the tap location that we need to set focus.\n\nWhen tapped, we call the focusTap method on our camera model object, where we have access to the underlying AVCaptureDevice.\n\nLong press, on the other hand, is a bit more complicated, as the built-in longPressGesture doesn’t provide the tap location we need to simulate a long press with a DragGesture.\n\nWhen pressed, we start at 0.3 second timer.\n\nWhen it fires, we call the focusLongPress method on the camera model.\n\nThen we create a rectangle view to receive the gestures. It’s inserted at the end of the ZStack, which puts it on top of all the detection rectangles so the user’s gesture input is not blocked.\n\nAs we already saw in the previous videos, it's important to visually differentiate the focused rectangles between weak focus, strong focus, and no focus to help the user take the right action.\n\nWe do this by implementing a method that takes an AVMetadataObject and returns a focused rectangle view. Let’s not forget that we need to transform the bounds of the metadata from the metadata output’s coordinate space to that of the preview layer.\n\nBy setting different stroke styles and colors, we can easily create visually distinct rectangles for each focus mode.\n\nWith the point passed from the view layer, we can determine which focus method to use. First, we need to figure out whether the user has tapped on a metadata rectangle. And we do this in the helper method, findTappedMetadataObject.\n\nHere, we iterate through all the metadata that we cache for each frame and check whether the point specified falls into one of their bounds. Again, we make sure the point and the rect are in the same coordinate space.\n\nComing back to the focusTap method, if a metadata object is found and is already in weak focus, then we turn it into a strong focus.\n\nIf it’s not already in focus, we focus on it weakly.\n\nIf the user didn’t tap on a metadata rectangle, then we tell the framework to try to find a salient object at this point. With a long press, we simply set a strong fixed focus at the specified point. At this point, we have a fully functional app that can capture Cinematic video. Let’s polish it up with a few more details. Currently, our video capture graph looks like this. We have three outputs to capture the movie, receive metadata, and the preview. If we want to support still image capture during the recording, we can do so by simply adding an AVCapturePhotoOutput to the session.\n\nSince our graph is already configured to be Cinematic, the photo output will get a Cinematic treatment automatically.\n\nThe image returned by the photo output will have the bokeh effect burned in.\n\nLastly, the Cinematic video algorithm requires sufficient amount of light to function properly. So in a room that’s too dark or the camera is covered, We want to inform users of such problem in the UI. In order to be notified when this condition occurs, you can key-value observe the new property cinematicVideoCaptureSceneMonitoringStatuses on the AVCaptureDevice class. Currently, the only supported status for Cinematic video is not enough light.\n\nIn the KVO handler, we can update the UI properly when we see insufficient light.\n\nAn empty set means that everything is back to normal.\n\nIn today’s talk, we had a recap on how Cinematic video enables our users to capture gorgeous pro-level movies, even for everyday moments like hanging out with their pets. And we had a detailed walkthrough on how to build a great Cinematic capture experience with the Cinematic Video API. We can’t wait to see how your apps can tap into these capabilities to deliver richer, more cinematic content. Thank you for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:26",
+      "title": "Select a video device",
+      "language": "swift",
+      "code": "// Select a video device\n\nlet deviceDiscoverySession = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInDualWideCamera], mediaType: .video, position: .back)\n        \nguard let camera = deviceDiscoverySession.devices.first else {\n    print(\"Failed to find the capture device\")\n    return\n}"
+    },
+    {
+      "timestamp": "5:07",
+      "title": "Select a format that supports Cinematic Video capture",
+      "language": "swift",
+      "code": "// Select a format that supports Cinematic Video capture\n\nfor format in camera.formats {\n\n    if format.isCinematicVideoCaptureSupported {\n\n       try! camera.lockForConfiguration()\n       camera.activeFormat = format\n       camera.unlockForConfiguration()\n\n       break\n    }\n\n}"
+    },
+    {
+      "timestamp": "5:51",
+      "title": "Select a microphone",
+      "language": "swift",
+      "code": "// Select a microphone\n\nlet audioDeviceDiscoverySession = AVCaptureDevice.DiscoverySession(deviceTypes [.microphone], mediaType: .audio, position: .unspecified)\n\nguard let microphone = audioDeviceDiscoverySession.devices.first else {\n    print(\"Failed to find a microphone\")\n    return\n}"
+    },
+    {
+      "timestamp": "6:00",
+      "title": "Add devices to input & add inputs to the capture session & enable Cinematic Video capture",
+      "language": "swift",
+      "code": "// Add devices to inputs\n\nlet videoInput = try! AVCaptureDeviceInput(device: camera)\nguard captureSession.canAddInput(videoInput) else {\n    print(\"Can't add the video input to the session\")\n    return\n}\n\nlet audioInput = try! AVCaptureDeviceInput(device: microphone)\nguard captureSession.canAddInput(audioInput) else {\n    print(\"Can't add the audio input to the session\")\n    return\n}\n\n// Add inputs to the capture session\n\ncaptureSession.addInput(videoInput)\ncaptureSession.addInput(audioInput)\n\n// Enable Cinematic Video capture\n\nif (videoInput.isCinematicVideoCaptureSupported) {\n  videoInput.isCinematicVideoCaptureEnabled = true\n}"
+    },
+    {
+      "timestamp": "6:17",
+      "title": "Capture spatial audio",
+      "language": "swift",
+      "code": "// Configure spatial audio\n\nif audioInput.isMultichannelAudioModeSupported(.firstOrderAmbisonics) {\n    audioInput.multichannelAudioMode = .firstOrderAmbisonics\n}"
+    },
+    {
+      "timestamp": "6:33",
+      "title": "Add outputs to the session & configure video stabilization & associate the preview layer with the capture session",
+      "language": "swift",
+      "code": "// Add outputs to the session\n\nlet movieFileOutput = AVCaptureMovieFileOutput()\nguard captureSession.canAddOutput(movieFileOutput) else {\n    print(\"Can't add the movie file output to the session\")\n    return\n}\ncaptureSession.addOutput(movieFileOutput)\n        \n\n// Configure video stabilization\n\nif let connection = movieFileOutput.connection(with: .video), \n    connection.isVideoStabilizationSupported {\n    connection.preferredVideoStabilizationMode = .cinematicExtendedEnhanced\n}\n\n// Add a preview layer as the view finder\n\nlet previewLayer = AVCaptureVideoPreviewLayer()\npreviewLayer.session = captureSession"
+    },
+    {
+      "timestamp": "7:11",
+      "title": "Display the preview layer with SwiftUI",
+      "language": "swift",
+      "code": "// Display the preview layer with SwiftUI\n\nstruct CameraPreviewView: UIViewRepresentable {\n\n    func makeUIView(context: Context) -> PreviewView {\n        return PreviewView()\n    }\n\n    class CameraPreviewUIView: UIView {\n\t\n\t\t\toverride class var layerClass: AnyClass {\n    \t\tAVCaptureVideoPreviewLayer.self\n\t\t\t}\n\n\t\t\tvar previewLayer: AVCaptureVideoPreviewLayer {\n  \t  \tlayer as! AVCaptureVideoPreviewLayer\n\t\t\t}\n\n\t\t\t...\n\t\t}\n\n...\n}"
+    },
+    {
+      "timestamp": "7:54",
+      "title": "Display the preview layer with SwiftUI",
+      "language": "swift",
+      "code": "// Display the preview layer with SwiftUI\n\n@MainActor\nstruct CameraView: View {       \n\n    var body: some View {\n        ZStack {\n            CameraPreviewView()  \n          \tCameraControlsView()\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "8:05",
+      "title": "Adjust bokeh strength with simulated aperture",
+      "language": "swift",
+      "code": "// Adjust bokeh strength with simulated aperture\n\n\nopen class AVCaptureDeviceInput : AVCaptureInput {\n\n\topen var simulatedAperture: Float\n\n\t...\n\n}"
+    },
+    {
+      "timestamp": "8:40",
+      "title": "Find min, max, and default simulated aperture",
+      "language": "swift",
+      "code": "// Adjust bokeh strength with simulated aperture\n\n\nextension AVCaptureDeviceFormat {\n\n\topen var minSimulatedAperture: Float { get }\n\n\topen var maxSimulatedAperture: Float { get }\n\n\topen var defaultSimulatedAperture: Float { get }\n\n\t...\n\n}"
+    },
+    {
+      "timestamp": "9:12",
+      "title": "Add a metadata output",
+      "language": "swift",
+      "code": "// Add a metadata output\n\nlet metadataOutput = AVCaptureMetadataOutput()\n\nguard captureSession.canAddOutput(metadataOutput) else {\n    print(\"Can't add the metadata output to the session\")\n    return\n}\ncaptureSession.addOutput(metadataOutput)\n\nmetadataOutput.metadataObjectTypes = metadataOutput.requiredMetadataObjectTypesForCinematicVideoCapture\n\nmetadataOutput.setMetadataObjectsDelegate(self, queue: sessionQueue)"
+    },
+    {
+      "timestamp": "9:50",
+      "title": "Update the observed manager object",
+      "language": "swift",
+      "code": "// Update the observed manager object\n\nfunc metadataOutput(_ output: AVCaptureMetadataOutput, didOutput metadataObjects: [AVMetadataObject], from connection: AVCaptureConnection) {\n\n   self.metadataManager.metadataObjects = metadataObjects\n\n}\n\n// Pass metadata to SwiftUI\n\n@Observable\nclass CinematicMetadataManager {\n    \n    var metadataObjects: [AVMetadataObject] = []\n    \n}"
+    },
+    {
+      "timestamp": "10:12",
+      "title": "Observe changes and update the view",
+      "language": "swift",
+      "code": "// Observe changes and update the view\n\nstruct FocusOverlayView : View {\n\n    var body: some View {\n\n\t        ForEach(\n\t      metadataManager.metadataObjects, id:\\.objectID)\n\t\t  \t{ metadataObject in\n\n    \t\t  rectangle(for: metadataObject)\n\n\t\t\t  }\n\t\t}\n}"
+    },
+    {
+      "timestamp": "10:18",
+      "title": "Make a rectangle for a metadata",
+      "language": "swift",
+      "code": "// Make a rectangle for a metadata\n\nprivate func rectangle(for metadata: AVMetadataObjects) -> some View {\n    \n    let transformedRect = previewLayer.layerRectConverted(fromMetadataOutputRect: metadata.bounds)\n    \n    return Rectangle()\n        .frame(width:transformedRect.width,\n               height:transformedRect.height)\n        .position(\n            x:transformedRect.midX,\n            y:transformedRect.midY)\n}"
+    },
+    {
+      "timestamp": "10:53",
+      "title": "Focus methods",
+      "language": "swift",
+      "code": "open func setCinematicVideoTrackingFocus(detectedObjectID: Int, focusMode: AVCaptureDevice.CinematicVideoFocusMode)\n\nopen func setCinematicVideoTrackingFocus(at point: CGPoint, focusMode: AVCaptureDevice.CinematicVideoFocusMode)\n\nopen func setCinematicVideoFixedFocus(at point: CGPoint, focusMode: AVCaptureDevice.CinematicVideoFocusMode)"
+    },
+    {
+      "timestamp": "10:59",
+      "title": "Focus method 1 & CinematicVideoFocusMode",
+      "language": "swift",
+      "code": "// Focus methods\n\nopen func setCinematicVideoTrackingFocus(detectedObjectID: Int, focusMode: AVCaptureDevice.CinematicVideoFocusMode)\n\n\npublic enum CinematicVideoFocusMode : Int, @unchecked Sendable {\n\n    case none = 0\n\n    case strong = 1\n\n    case weak = 2\n}\n\nextension AVMetadataObject {\n\n   open var cinematicVideoFocusMode: Int32 { get }\n\n}"
+    },
+    {
+      "timestamp": "12:19",
+      "title": "Focus method no.2",
+      "language": "swift",
+      "code": "// Focus method no.2\n\nopen func setCinematicVideoTrackingFocus(at point: CGPoint, focusMode: AVCaptureDevice.CinematicVideoFocusMode)"
+    },
+    {
+      "timestamp": "12:41",
+      "title": "Focus method no.3",
+      "language": "swift",
+      "code": "// Focus method no.3\n\nopen func setCinematicVideoFixedFocus(at point: CGPoint, focusMode: AVCaptureDevice.CinematicVideoFocusMode)"
+    },
+    {
+      "timestamp": "13:54",
+      "title": "Create the spatial tap gesture",
+      "language": "swift",
+      "code": "var body: some View {\n\nlet spatialTapGesture = SpatialTapGesture()\n    .onEnded { event in\n        Task {\n            await camera.focusTap(at: event.location)\n        }\n     }\n\n...\n}"
+    },
+    {
+      "timestamp": "14:15",
+      "title": "Simulate a long press gesture with a drag gesture",
+      "language": "swift",
+      "code": "@State private var pressLocation: CGPoint = .zero\n@State private var isPressing = false\nprivate let longPressDuration: TimeInterval = 0.3\n\nvar body: some View {\n  \n  ...\n  \n\tlet longPressGesture = DragGesture(minimumDistance: 0).onChanged { value in\n\t\tif !isPressing {\n\t\t\tisPressing = true\n\t\t\tpressLocation = value.location\n\t\t\tstartLoopPressTimer()\n\t\t}\n\t}.onEnded { _ in\n\t\tisPressing = false\n\t}\n  \n\t...\n  \n}\n\nprivate func startLoopPressTimer() {\n\tDispatchQueue.main.asyncAfter(deadline: .now() + longPressDuration) {\n\t\tif isPressing {\n\t\t\tTask {\n\t\t\t\tawait camera.focusLongPress(at: pressLocation)\n\t\t\t}\n\t\t}\n\t}\n}"
+    },
+    {
+      "timestamp": "14:36",
+      "title": "Create a rectangle view to receive gestures.",
+      "language": "swift",
+      "code": "var body: some View {\n\nlet spatialTapGesture = ...\nlet longPressGesture = ...\n\nZStack {\n  ForEach(\n    metadataManager.metadataObjects,\n    id:\\.objectID)\n  { metadataObject in\n\n    rectangle(for: metadataObject)\n\n  }\n  Rectangle()\n      .fill(Color.clear)\n      .contentShape(Rectangle())\n      .gesture(spatialTapGesture)\n  .gesture(longPressGesture)}\n\n  }\n}"
+    },
+    {
+      "timestamp": "15:03",
+      "title": "Create the rectangle view",
+      "language": "swift",
+      "code": "private func rectangle(for metadata: AVMetadataObject) -> some View {\n    \n    let transformedRect = previewLayer.layerRectConverted(fromMetadataOutputRect: metadata.bounds)\n    var color: Color\n    var strokeStyle: StrokeStyle\n    \n    switch metadata.focusMode {\n    case .weak:\n        color = .yellow\n        strokeStyle = StrokeStyle(lineWidth: 2, dash: [5,4])\n    case .strong:\n        color = .yellow\n        strokeStyle = StrokeStyle(lineWidth: 2)\n    case .none:\n        color = .white\n        strokeStyle = StrokeStyle(lineWidth: 2)\n    }\n    \n    return Rectangle()\n        .stroke(color, style: strokeStyle)\n        .contentShape(Rectangle())\n        .frame(width: transformedRect.width, height: transformedRect.height)\n        .position(x: transformedRect.midX, \n                  y: transformedRect.midY)\n}"
+    },
+    {
+      "timestamp": "15:30",
+      "title": "Implement focusTap",
+      "language": "swift",
+      "code": "func focusTap(at point:CGPoint) {\n    \n   try! camera.lockForConfiguration()\n        \n    if let metadataObject = findTappedMetadataObject(at: point) {\n        if metadataObject.cinematicVideoFocusMode == .weak {\n            camera.setCinematicVideoTrackingFocus(detectedObjectID: metadataObject.objectID, focusMode: .strong)\n            \n        }\n        else {\n            camera.setCinematicVideoTrackingFocus(detectedObjectID: metadataObject.objectID, focusMode: .weak)\n        }\n    }\n    else {\n        let transformedPoint = previewLayer.metadataOutputRectConverted(fromLayerRect: CGRect(origin:point, size:.zero)).origin\n        camera.setCinematicVideoTrackingFocus(at: transformedPoint, focusMode: .weak)\n    }\n    \n    camera.unlockForConfiguration()\n}"
+    },
+    {
+      "timestamp": "15:42",
+      "title": "Implement findTappedMetadataObject",
+      "language": "swift",
+      "code": "private func findTappedMetadataObject(at point: CGPoint) -> AVMetadataObject? {\n    \n    var metadataObjectToReturn: AVMetadataObject?\n    \n    for metadataObject in metadataObjectsArray {\n        let layerRect = previewLayer.layerRectConverted(fromMetadataOutputRect: metadataObject.bounds)\n        if layerRect.contains(point) {\n            metadataObjectToReturn = metadataObject\n            break\n        }\n    }\n    \n    return metadataObjectToReturn\n}"
+    },
+    {
+      "timestamp": "16:23",
+      "title": "Implement focusLongPress",
+      "language": "swift",
+      "code": "func focusLongPress(at point:CGPoint) {\n    \n   try! camera.lockForConfiguration()\n\n   let transformedPoint = previewLayer.metadataOutputRectConverted(fromLayerRect:CGRect(origin: point, size: CGSizeZero)).origin\n       camera.setCinematicVideoFixedFocus(at: pointInMetadataOutputSpace, focusMode: .strong)\n   \n    camera.unlockForConfiguration()\n}"
+    },
+    {
+      "timestamp": "17:10",
+      "title": "Introduce cinematicVideoCaptureSceneMonitoringStatuses",
+      "language": "swift",
+      "code": "extension AVCaptureDevice {\n\n   open var cinematicVideoCaptureSceneMonitoringStatuses: Set<AVCaptureSceneMonitoringStatus> { get }\n\n}\n\nextension AVCaptureSceneMonitoringStatus {\n\n   public static let notEnoughLight: AVCaptureSceneMonitoringStatus\n\n}"
+    },
+    {
+      "timestamp": "17:42",
+      "title": "KVO handler for cinematicVideoCaptureSceneMonitoringStatuses",
+      "language": "swift",
+      "code": "private var observation: NSKeyValueObservation?\n\nobservation = camera.observe(\\.cinematicVideoCaptureSceneMonitoringStatuses, options: [.new, .old]) { _, value in\n    \n    if let newStatuses = value.newValue {\n        if newStatuses.contains(.notEnoughLight) {\n            // Update UI (e.g., \"Not enough light\")\n        }\n        else if newStatuses.count == 0 {\n            // Back to normal.\n        }\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "AVCam: Building a camera app",
+        "url": "https://developer.apple.com/documentation/AVFoundation/avcam-building-a-camera-app"
+      },
+      {
+        "title": "AVFoundation",
+        "url": "https://developer.apple.com/documentation/AVFoundation"
+      },
+      {
+        "title": "Capturing cinematic video",
+        "url": "https://developer.apple.com/documentation/AVFoundation/capturing-cinematic-video"
+      },
+      {
+        "title": "Cinematic",
+        "url": "https://developer.apple.com/documentation/Cinematic"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/319/4/55797f51-c074-44e8-85fe-5aaa0780ba91/downloads/wwdc2025-319_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/319/4/55797f51-c074-44e8-85fe-5aaa0780ba91/downloads/wwdc2025-319_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "253",
+      "year": "2025",
+      "title": "Enhancing your camera experience with capture controls",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/253"
+    },
+    {
+      "id": "10204",
+      "year": "2024",
+      "title": "Build a great Lock Screen camera capture experience",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10204"
+    },
+    {
+      "id": "10105",
+      "year": "2023",
+      "title": "Create a more responsive camera experience",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10105"
+    },
+    {
+      "id": "10256",
+      "year": "2023",
+      "title": "Discover Continuity Camera for tvOS",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10256"
+    },
+    {
+      "id": "10106",
+      "year": "2023",
+      "title": "Support external cameras in your iPadOS app",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10106"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:21:50.848Z"
+}

@@ -1,0 +1,122 @@
+{
+  "id": "10091",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10091/",
+  "title": "Meet TabletopKit for visionOS",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Graphics & Games"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi! I'm Julia, and I work on the TabletopKit team. I'm so excited to introduce TabletopKit and talk about building games for Apple Vision Pro. Today I'll show you the fundamental pieces of building a tabletop game with TabletopKit.\n\nFor general game mechanics, players roll dice to move around a board, with the goal of collecting cards. My game board has surreal geometry and animations far beyond what is possible in the physical world, with no cleanup required. Sample code will be available along with this video. TabletopKit is a framework that helps you to build spatial, multiplayer tabletop experiences for Apple Vision Pro, like a card game, a dice game, or more complex board games. TabletopKit handles gestures and common layouts so you can focus on designing a fun and innovative experience for your users. TabletopKit integrates naturally with familiar frameworks like GroupActivities and RealityKit so you can add smooth networking and gorgeous rendering with only a few lines of code.\n\nOffering smart defaults and layers of convenience functions, you can quickly get a functional game up and running while maintaining the freedom to customize as you want and build something that is truly unique.\n\nTable top games have been a hit already on the Vision Pro. Solitaire on Game Room in the App Store is a great example. However, there are a lot of factors to consider when developing a game: table layout, animations and physics simulations, and performant multiplayer to name a few.\n\nTabletopKit was designed to bring down that barrier to entry and allow the creativity and fun of game design to shine. The game I'll show you today is a twist on a classic board game something that feels nostalgic and fun. First, I'll set up the initial state of the game, everything you can see and interact with during play.\n\nThen, I'll implement the logical mechanics of the game, like keeping score or disallowing invalid moves.\n\nNext, I'll add visual and audio effects using RealityKit to bring some life to my game. Lastly, I'll use GroupActivities to get multiplayer working with only a few extra lines. Let's start by taking a look at game setup.\n\nA tabletop game is easiest to think about from the tabletop up.\n\nSo, start with a table, and decide where everyone will sit. Place a board with game tiles on top, and then add the tangible objects, like player pawns, cards, and dice so the game comes to life.\n\nThe first thing to describe in a game is the table. All setup and gameplay happens on the tabletop. A table can be circular, with a radius, or rectangular, with a width, depth. Each game needs a table. A smaller circular table might be nice for a more intimate game, like checkers with a friend. A sprawling rectangular table is perfect for those super complex board games, with large boards and lots of pieces.\n\nOnce the table is established, all future positions and orientations are described relative to the table's origin and coordinate system. Describing a table is quite simple. The shape and dimensions here represent the playable area for the game you're about to build. Often times this shape will match the table entity you plan to render, but it doesn't necessarily have to! Here, I make a rectangular table, and the framework determines the bounding box of the entity. After defining the tabletop, I place seats around the table.\n\nSeats are positioned relative to the origin of the table. A seat may have only one player assigned to it at a time, and each player is required to have a seat to be able to interact with the game. Any spectators for the game should remain unseated.\n\nPlayers can claim different seats throughout the game.\n\nMy game has up to three players, so I'll place three seats with unique IDs, evenly spaced around the table and oriented to look at the center of the table.\n\nWhen in a multiplayer session, additional members may spectate, but they will remain unseated and thus may not interact with objects on the table. With a table and seats for players, all thats left is setting up the game itself! Everything on top of the table is equipment.\n\nIn my sample, the board, tiles, pawns, cards and dice are all different types of equipment.\n\nLet's look at a couple of examples of how I use equipment to represent the components of my game.\n\nFirst, I'll show you how I describe a pawn, which is the piece that each player moves around the board. A pawn is a physical object in the game, rendered as a RealityKit entity, so it has an inherent size and players can interact with it.\n\nEach pawn starts in front of the corresponding seat, and it is owned by that seat, so only that player sitting there is able to move it.\n\nHere is the code for the pawn in the sample. The pawn conforms to the EntityEquipment protocol, which means it has an attached RealityKit entity, so it is a tangible object in the game.\n\nIn the initial state, I set the key properties of the pawn. I set seatControl to only the corresponding seat, so that only that player can move their pawn.\n\nI give the pawn a starting location relative to the table, so a pawn initially appears right in front of each player.\n\nI also hand over the entity, so the framework can determine the bounding box of the pawn.\n\nAnother example of equipment in my game is the tiles. The lifted conveyor belt serves as the game board, and the pawns move around the tiles on top of it.\n\nEach tile is a specific spot on the board. During the game, the players move their pawn to various tiles.\n\nIn the case where two players land on the same tile, a tile may hold more than one pawn at a time.\n\nEach tile also has a category which impacts gameplay and the animations I trigger.\n\nHere is my conveyor tile, which conforms to the Equipment protocol.\n\nJust like the pawn, I describe various properties of the tile in the initial state. First, I set the parent to be the board. This means that the tiles will sit on top of the bounding box of the board.\n\nNext, I set the position. Since the tile is a child of the board, these positions are all relative to the board's coordinate system.\n\nLastly, since I am not rendering an entity for the tile, I explicitly state the bounding box.\n\nI follow a similar pattern to add a card deck, a die, and a hand for each player to collect their cards.\n\nNow that we have everything in the right place to start the game, we can build up the mechanics of the game. Generally, a game progresses as various players interact with the objects involved. You can choose how much of your game should be automated and how much should be left up to the players. For example, dealing can get boring, so maybe you add a button to automatically deal for everyone. However you still have players draw cards manually from the deck, so they feel involved and invested. For my sample, a player will roll a die, move their pawn, and collect cards. TabletopKit monitors for system gestures, so the same gestures you see when building any app with a SwiftUI scene. These gestures are processed and handed back to you in the form of interactions. On each interaction, you can append actions to modify the game state. Here's a concrete example: a player pinches and drags a card to draw from the deck and places it on one of the existing piles. Monitor for a system pinch, turn it into a TabletopKit interaction, and append an action to move the card to the new pile. System gestures generate TabletopKit interactions. On each change in the gesture, TabletopKit calls the interaction callback. The callback will specify what equipment is targeted, and the current phases. The gesture phase gives the phase of the system gesture, so it starts when the user pinches, and ends when they let go of the pinch. The interaction phase gives the phase of the TabletopKit interaction, so it may begin when the user picks up a die and end after the die has been tossed when it lands on the table.\n\nA gesture will be in the started phase exactly once as it begins, and then will stay in the update phase as it continues. At any point during the gesture, it can be cancelled for example, if you are dragging with your hand and then move that hand behind your back. A cancellation is separate than an intentional end, where you let go of the pinch to drop the object. When I attach my game to the RealityView, I provide my implementation of TabletopInteraction object.\n\nThe update callback is called on each gesture update. The context has some writeable properties, like which equipment is involved and where they can be placed, and some functions to modify the interaction, like cancelling or ending it.\n\nThe value has readable information, like the gesture and interaction phases, a proposed destination, and some relevant poses. Each interaction update is an opportunity to adjust the game state.\n\nActions are discrete operations applied to the game state, like moving a piece to a new group or flipping a card.\n\nActions are enqueued as they are proposed, and applied one-by-one.\n\nA common example is moving objects between parents. In this code snippet, I'll allow any interactable object to be dropped on any valid parent equipment.\n\nSo, when I receive the callback that the gesture has ended, I check if there is a valid proposed parent.\n\nIf there is, I append an action to the interaction context to move that piece of equipment into the proposed parent equipment. This means players can move their pawns around the game board, draw cards into their hand, and throw dice.\n\nYou are in full control of how the game state changes as play proceeds. TabletopKit provides information about what was moved around, and you can choose what should or should not happen. Let's say you are making a chess game. There could be one mode to learn the rules of the game, where possible moves are highlighted and enforced. There could be another freeplay mode, where some of the fun comes from the lack of enforced rules.\n\nGame mechanics are an important factor for a fun experience, but so are social dynamics. Each game will need a unique combination! At this point, the sample game is technically playable. However, games on Apple Vision Pro can be so much more than just playable. RealityKit has already done most of the work for you to bring some visual magic to your games. Hyper realistic models with shadows and lighting, or whimsical, stylized animations if you can make it, RealityKit can render it. For my sample app, the robot pawns will celebrate when they land on a good spot and despair when they land on a bad spot. It's quite cute.\n\nAs we saw earlier, TabletopKit will move around interactable equipment as the game progresses. Since you load the entities yourself, you can attach any special effects you'd like to them, and trigger them during interactions. It is super easy to play sound effects from RealityKit, so I'll add a sound when a die is rolled. Here is the interaction update callback we looked at earlier.\n\nI'll monitor for the gesture ended, when the player lets go of the die.\n\nI find the audio library component and then I look for my sound.\n\nWhen I have the sound resource, I just tell RealityKit to play the sound on the die entity. Since RealityKit is able to do spatial audio, the sound will originate from wherever the entity is in space.\n\nLet's see this all in action when I throw a die in my game.\n\nSolitaire is fun, but tabletop games shine brightest when they're played with others. Spatial personas in FaceTime are pretty amazing in just how real they feel, and they open up the door to start doing things, like playing games with friends and family, even when you aren't in the same room.\n\nFor a networking game with default seating, it's just a few lines of code to start a GroupActivities session and hand it off to the framework. From there, you can make use of the awesome new features and custom spatial templates to customize your experience and place players and spectators wherever you want around the room. TabletopKit has multiplayer networking handled for you, and it's super easy to set up. The framework ensures matching game state between all players by syncing actions.\n\nAs each player sends actions, like picking up a card, they are validated and added to the game state in a deterministic order. Some of the performance-heavy things, like animations or physics simulations, happen locally for each player to keep multiplayer feeling quick and smooth.\n\nIn the sample, I'll allow players to start SharePlay whenever they choose by providing a button on the toolbar. This code snippet shows a simple SharePlay button, a SwiftUI button with the SharePlay Symbol.\n\nWhen a player presses it, I activate a new GroupActivities session.\n\nOnce the session is active, I let TabletopKit know to coordinate with that group activities session. For basic networking, that's it! Game state is now synced between all active players. If you'd like your game to have a unique spatial layout, you can use the custom spatial Persona template API. By default, TabletopKit uses the seats described during setup to define a default spatial Persona template on your GroupActivities session. In the sample game, this means that each persona will be placed next to their seat on the table and rotated to face the center. If you want to have a different spatial setup, you can use the Custom Spatial Template API to set any template you like, and it will override the default one set by TabletopKit, check out the video to learn more.\n\nTabletopKit is here to help your game come to life. It is easier than ever to build compelling experiences that support social connection with spatial personas for FaceTime.\n\nWe solve some of the common, complex problems in game development, but how your game looks, feels, and behaves is completely up to you.\n\nWe integrate smoothly with other amazing Apple frameworks like RealityKit and GroupActivities to make the development process even simpler. You can learn even more by watching these videos.\n\nTabletopKit allows any developer to become a game developer, we can't wait to see what you dream up!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:52",
+      "title": "Make a rectangular table",
+      "language": "swift",
+      "code": "// Make a rectangular table.\n\nlet entity = try! Entity.load(named: \"table\", in: table_Top_KitBundle)\nlet table: Tabletop = .rectangular(entity: entity)"
+    },
+    {
+      "timestamp": "4:25",
+      "title": "Place seats",
+      "language": "swift",
+      "code": "// Place 3 seats around the table, facing the center.\n\nstatic let seatPoses: [TableVisualState.Pose2D] = [\n  .init(position: .init(x: 0, y: Double(GameMetrics.tableDimensions.z)),\n        rotation: .degrees(0)),\n  .init(position: .init(x: -Double(GameMetrics.tableDimensions.x), y: 0),\n        rotation: .degrees(-90)),\n  .init(position: .init(x: Double(GameMetrics.tableDimensions.x), y: 0),\n        rotation: .degrees(90))\n]"
+    },
+    {
+      "timestamp": "5:40",
+      "title": "Define player pawns",
+      "language": "swift",
+      "code": "// Define an object that describes a pawn for each player.\n\nstruct PlayerPawn: EntityEquipment {\n  let id: ID\n  let entity: Entity\n  var initialState: BaseEquipmentState\n\n  init(id: ID, seat: PlayerSeat, pose: TableVisualState.Pose2D, entity: Entity) {\n    self.id = id\n    self.entity = entity\n    initialState = .init(seatControl: .restricted([seat.id]),\n                pose: pose,\n                entity: entity)\n  }\n}"
+    },
+    {
+      "timestamp": "6:55",
+      "title": "Define an object that describes a tile",
+      "language": "swift",
+      "code": "// Define an object that describes a tile on the conveyor belt\n\nstruct ConveyorTile: Equipment {\n  enum Category: String {\n    case red\n    case green\n    case grey\n  }\n   \n  let id: ID\n  let category: ConveyorTile.Category\n  let initialState: BaseEquipmentState\n\n  init(id: ID, boardID: EquipmentIdentifier, position: TableVisualState.Point2D, category: ConveyorTile.Category) {\n    self.id = id\n    self.category = category\n    initialState = .init(parentID: boardID,\n              pose: .init(position: position, rotation: .init()),\n              boundingBox: .init(center: .zero, size: .init(x: 0.06, y: 0, z: 0.06)))"
+    },
+    {
+      "timestamp": "9:53",
+      "title": "Monitor interactions",
+      "language": "swift",
+      "code": "// The view contains all the content in the game.\n\nRealityView { (content: inout RealityViewContent) in\n  content.entities.append(loadedGame.renderer.root)\n}.tabletopGame(loadedGame.tabletop, parent: loadedGame.renderer.root) { _ in\n  GameInteraction(game: loadedGame)\n}\n\n\n// Define an object that manages player interactions.\n\nstruct GameInteraction: TabletopInteraction {\n  func update(context: TabletopKit.TabletopInteractionContext, \n                value: TabletopKit.TabletopInteractionValue) {\n    switch value.phase {\n      //...\n  }"
+    },
+    {
+      "timestamp": "10:48",
+      "title": "Respond to interaction updates",
+      "language": "swift",
+      "code": "// Respond to interaction updates.\n\nfunc update(context: TabletopKit.TabletopInteractionContext, \n              value: TabletopKit.TabletopInteractionValue) {\n  switch value.phase {\n    //...\n    case .ended: {\n      guard let dst = value.proposedDestination.equipmentID else {\n        return\n      }\n      context.addAction(.moveEquipment(matching: value.startingEquipmentID, childOf: dst))\n    }\n }"
+    },
+    {
+      "timestamp": "12:52",
+      "title": "Add a sound effect to the die roll",
+      "language": "swift",
+      "code": "// Respond to interaction updates.\n\n  func update(context: TabletopKit.TabletopInteractionContext, \n                value: TabletopKit.TabletopInteractionValue) {\n    switch value.gesturePhase {\n      //...\n      case .ended: {\n        if let die = game.tabletop.equipment(of: Die.self, \n                                       matching: value.startingEquipmentID) {\n          if let audioLibraryComponent = die.entity.components[AudioLibraryComponent.self] {\n            if let soundResource = audioLibraryComponent.resources[\"dieSoundShort.mp3\"] {\n              die.entity.playAudio(soundResource)\n            }\n          }\n        }\n      }\n    }\n  }"
+    },
+    {
+      "timestamp": "14:44",
+      "title": "Set up multiplayer with SharePlay",
+      "language": "swift",
+      "code": "// Set up multiplayer using SharePlay.\n// Provide a button to begin SharePlay.\n\nimport GroupActivities\nfunc shareplayButton() -> some View {\n  Button(\"SharePlay\", systemImage: \"shareplay\") {\n  Task {try! await Activity().activate() }\n  }\n}\n\n\n// After joining the SharePlay session, start multiplayer.\n\n    sessionTask = Task.detached { @MainActor in\n      for await session in Activity.sessions() {\n        tabletopGame.coordinateWithSession(session)\n      }\n    }"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Creating tabletop games",
+        "url": "https://developer.apple.com/documentation/TabletopKit/TabletopKitSample"
+      },
+      {
+        "title": "Forum: Graphics & Games",
+        "url": "https://developer.apple.com/forums/topics/graphics-and-games?cid=vf-a-0010"
+      },
+      {
+        "title": "TabletopKit",
+        "url": "https://developer.apple.com/documentation/TabletopKit"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10091/4/67E4D497-91F1-4537-9344-F08BBADDCD3F/downloads/wwdc2024-10091_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10091/4/67E4D497-91F1-4537-9344-F08BBADDCD3F/downloads/wwdc2024-10091_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10102",
+      "year": "2024",
+      "title": "Compose interactive 3D content in Reality Composer Pro",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10102"
+    },
+    {
+      "id": "10201",
+      "year": "2024",
+      "title": "Customize spatial Persona templates in SharePlay",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10201"
+    },
+    {
+      "id": "10239",
+      "year": "2023",
+      "title": "Add SharePlay to your app",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10239"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:29:46.151Z"
+}

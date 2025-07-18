@@ -1,0 +1,64 @@
+{
+  "id": "10113",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10113/",
+  "title": "Discover media performance metrics in AVFoundation",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello. My name is Nishant, and I'm an AVFoundation HLS engineer. I'm excited to share what we have been working on. Today, we will look at a new way to gather media performance metrics. In iOS 18, these metrics are represented as events. We will explore events, the different types, and later we will learn how your app can subscribe to these events. Before we do that, lets look at some common issues with media playback.\n\nThe first one being media playback taking too long to start and the other one is the playback stalling in between.\n\nTriaging such issues in the field is hard but if we have access to client-side metrics that makes it a lot easier.\n\nApart from that, client-side metrics provides insights into the workings of AVFoundation APIs.\n\nThis is useful to understand and improve performance.\n\nPreviously, for media playback, you could obtain some of the client-side metrics via access logs, error logs and various AVPlayer notifications.\n\nIn iOS 18, for HLS Streaming assets, we are enhancing the metrics which are available and providing more data points.\n\nNow, let's explore some of these new metrics by looking at the playback session with media playback issues. Here we have a timeline for video playback of duration 15 min. By zooming into the first two seconds, we can see what happened during the startup.\n\nTo begin, AVPlayer would start fetching the multi-variant playlist. This would appear as an event on the timeline.\n\nLater AVPlayer would fetch the video, the audio and subtitle playlist. This would similarly appear as events on the timeline. With the media playlist, AVPlayer would fetch the media segments along with any required content keys. When the AVPlayer has buffered enough, it has reached a stage where it can resume playback. This is represented by the \"likely to keep up\" event on the timeline. This event provides the startup time as well as details about things which affected startup such as related playlist, media segment and content key events.\n\nHere we see that startup took almost 2 seconds.\n\nSince the startup time is high, let's look at the preceding events.\n\nWe see that the majority of time at startup was spent waiting for the content key request.\n\nWe either need to improve the key server performance or look into preloading keys ahead of playback on the client-side. This would help improve startup time. With client-side metrics, you now have insights into what is going on within AVFoundation playback session.\n\nMoving on, let's take a look at the other issue where media playback stalls in between.\n\nZooming into the timeline between minutes 7 and 8 we see that a stall occurred.\n\nThis is represented as event on the timeline.\n\nLet's take a look at events just before the stall.\n\nWe see that AVPlayer is fetching media segments. Looking more closely, here we see that the video media segment seems to return HTTP 404 error.\n\nIt explains the variant switch from 20Mbps to 15Mbps.\n\nAfter the variant switch, the video media segment in the new variant again returns HTTP 404 error. AVPlayer at this point seems to run out of buffer resulting in the stall.\n\nWith access to the media segment event, we can now get a reference to NSURLSessionTask metrics. This can provide additional details on why the request failed such as the complete set of response headers and other network transaction details. We could use such information and session identifier to help narrow down the issue when working with our CDN partners. In this fashion, you can use client-side metrics to triage issues in the field.\n\nLastly, if you would like to monitor sessions at scale, AVPlayer also creates a summary event at the end.\n\nThis event provides different key performance indicators such as stall count, switch count for the session at glance. You can use the KPIs to keep track of media playback health at scale.\n\nTo recap, we looked at playlist, media segment and content key events. They provide information about the individual resource requests. Then we looked at stall and variant switch events which provide information about media playback stalls and variant switches. Finally, we have the summary event with KPIs at the end. Apart from these, AVPlayerItem also generates rate change events whenever playback rate changes, seek events when user seeks and error events when an error occurs. Now, lets explore how your app can subscribe to receive these events. In iOS 18, we are introducing a new AVFoundation API called AVMetrics. It provides a unified way to gather metrics from various AVFoundation interfaces. Your app would receive events as they happen on the media timeline and they are generated at the end of a particular activity such as media playlist fetch.\n\nIt follows the publisher/subscriber model which allows you to subscribe to only those events you are interested in. Now, let's look at some of the core concepts.\n\nPublishers are the AVFoundation interfaces which support publishing events and they conform to AVMetricEventStreamPublisher protocol.\n\nThis protocol provides support for publishing events of a particular metric event type or all the metrics.\n\nIn iOS 18, AVPlayerItem conforms to AVMetricEventStreamPublisher protocol. which means it can publish events. Now, lets take a look at an example. Here in this example, we are interested in \"likely to keep up\" and \"summary events\" and then later report them to our backend analytics server. First we grab the AVMetrics async sequence stream for \"likely to keep up\" and \"summary events.\" Then we would create chronologically merged stream. This merged stream would deliver both \"likely to keep up\" and \"summary events\" in a chronological fashion efficiently. On receiving events, we can serialize them and send them to our backend analytics server.\n\nIf you're a Objective-C developer, the AVMetrics API is a bit different. Here you would create AVMetricEventStream instance and set your subscriber.\n\nLater you subscribe to events you're interested in.\n\nThen, you would add the AVPlayerItem.\n\nAt this point, your subscriber will start receiving those events.\n\nYou serialize those events to be sent to your backend server.\n\nWith this, we now know how your app can subscribe and report client-side metrics to your back end analytics servers. To wrap up, we explored client-side metrics for AVPlayer, the various different event types and then we looked at how your app can subscribe to receive these metrics.\n\nWe are excited for you to adopt the new APIs in your app. We hope with the enriched client-side analytics, it would help triage issues in the field and improve media playback performance for your users. Thank you.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "6:27",
+      "title": "AVMetric Publishers",
+      "language": "swift",
+      "code": "public protocol AVMetricEventStreamPublisher \n{\n\tfunc metrics<MetricType: AVMetricEvent>(forType metricType: MetricType.Type) -> AVMetrics<MetricType>\n\n\tfunc allMetrics() -> AVMetrics<AVMetricEvent>\n}\n\nextension AVPlayerItem : AVMetricEventStreamPublisher"
+    },
+    {
+      "timestamp": "6:50",
+      "title": "Example showing how to obtain likely to keep up and summary metrics from AVPlayerItem - Swift",
+      "language": "swift",
+      "code": "let playerItem : AVPlayerItem = ...\n\t\t\t\nlet ltkuMetrics = item.metrics(forType: AVMetricPlayerItemLikelyToKeepUpEvent.self)\nlet summaryMetrics = item.metrics(forType: AVMetricPlayerItemPlaybackSummaryEvent.self)\n\t\t\nfor await (metricEvent, publisher) in ltkuMetrics.chronologicalMerge(with: summaryMetrics) \n{\n\t// send metricEvent to server\n}"
+    },
+    {
+      "timestamp": "7:26",
+      "title": "Example showing how to obtain likely to keep up and summary metrics from AVPlayerItem - Objective-C",
+      "language": "swift",
+      "code": "AVPlayerItem *item = ...\n\t\nAVMetricEventStream *eventStream = [AVMetricEventStream eventStream];\nid<AVMetricEventStreamSubscriber> subscriber = [[MyMetricSubscriber alloc] init];\n[eventStream setSubscriber:subscriber queue:mySerialQueue]\n\n[eventStream subscribeToMetricEvent:[AVMetricPlayerItemLikelyToKeepUpEvent class]];\n[eventStream subscribeToMetricEvent:[AVMetricPlayerItemPlaybackSummaryEvent class]];\n\n[eventStream addPublisher:item];"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Forum: Media Technologies",
+        "url": "https://developer.apple.com/forums/topics/media-technologies?cid=vf-a-0010"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10113/4/FADD3DD1-246C-483B-BA77-5D9BE374E39B/downloads/wwdc2024-10113_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10113/4/FADD3DD1-246C-483B-BA77-5D9BE374E39B/downloads/wwdc2024-10113_sd.mp4?dl=1"
+  },
+  "extractedAt": "2025-07-18T09:22:08.780Z"
+}

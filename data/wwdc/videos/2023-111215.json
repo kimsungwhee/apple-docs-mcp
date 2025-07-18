@@ -1,0 +1,129 @@
+{
+  "id": "111215",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/111215/",
+  "title": "Meet UIKit for spatial computing",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools",
+    "Essentials"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Mellow instrumental hip-hop ♪ ♪ Grace Kendall: Hi everyone, and welcome to \"Meet UIKit for spatial computing!\" My name is Grace Kendall and I'm an engineer on the UIKit team. My colleague Andrew and I are so excited to chat with you in this video about taking your existing UIKit apps and bringing them to a brand-new dimension. The new device has a stunning platform for spatial experiences and introduces a ton of new 3D capabilities. And best of all, it uses the UI frameworks you already know and love to do it. This video focuses entirely on the UIKit side of things. To learn more about SwiftUI on the platform, check out \"Meet SwiftUI for spatial computing\" and \"Elevate your windowed app for spatial computing.\" In this video, we'll start by talking about how to build your app for the new platform and the steps that you'll take along the way. We'll then go into some of the characteristics that make it unique and different from other Apple platforms and how to handle them in your code. After that, we'll go into polishing your app with new API introduced in UIKit. And finally, we'll take a look at using SwiftUI in addition to UIKit to add some brand-new 3D functionality. So let's get started! Here's a demo pixel art animation app that was written for iOS, all using UIKit. Some of my very best friends have contributed art to it. It looks and feels great on iPad, making use of a lot of system components, dynamic animations, and integrates Apple Pencil. Let's get it ready for spatial computing. The first thing that I'll need to do is to go to the General tab in the Xcode project and add the new run destination. Now, here in the Asset catalog, I can add a new app icon. That's because icons on this platform are special. They're three images overlaid on top of each other that respond dynamically when someone looks at your app icon. One of our teammates, Jessica, is a super talented artist and mocked up a new icon for the app in preparation for this, so I can add these files now.\n\nNext, I'll select the new device simulator as the target and build.\n\nOK, there are a few build errors. It looks like some of the APIs that were being used for the iPad app are not available on this platform. Let's talk about why. This is a brand-new platform with brand-new capabilities and characteristics that make it different from other Apple platforms. So here are some things you'll need to look out for when bringing an app over. When bringing your app over for the first time, two common areas to investigate are APIs that were deprecated on previous iOS releases and APIs that don't translate well to this platform. This device does not support APIs that were deprecated prior to iOS 14. With this brand-new platform, it's a great opportunity to move off of deprecated APIs and update your shared codebase to adopt the latest and greatest. There's also a collection of APIs that don't translate to this platform. For example, UIDeviceOrientation. This API assumes that the device can be used in multiple orientations, which does not apply here. UIScreen is another example. With this device, the premise of a single representation of a hardware screen does not hold. And tab bars have a much different design and do not lay out leading-to-trailing, so its leadingAccessoryView and trailingAccessoryViews are unavailable. These are just three examples of APIs that have been marked unavailable because they don't apply, but there are others as well. Please check the documentation for more details. Let's go back to the code now and investigate what may have been the problem. Let's check out the error here. In the EditorViewController extension there's a UIPencilInteraction. This device doesn't support Apple Pencil, so this API isn't available on the platform. I can easily conditionalize out this code to make it compile.  Let's go ahead and try to build and run again.\n\nOK! It looks like we're up and running! This is looking really good, and it's exciting to see the app running in the Shared Space. But I'm already noticing some things that I think I can improve. Let's take a tour now through the app to check it all out and find some things to polish. In the Simulator, clicking with the mouse simulates someone looking at that point and tapping their fingers together. The first thing I notice is the beautiful glass background of the app. And as I look at all the art, there are some really nice hover visuals that make the app feel lively and interactive. The search bar also has a new look, with a recessed appearance.\n\nI can still open the different art work and pixellate to my heart's content. OK, one thing I think I can improve is the black text for the title and gray text for the subtitle of the art. The black text looked really nice on the white background on iPad, but I don't love how it looks here on the glass. I think it could pop a little bit more. And I really like the appearance and dimension of the search bar. I think I want to have that for the title text fields too. Semantic colors aren't new, but they're especially valuable for this platform. It's important to use semantic colors, fonts, and materials so that the appearance of your app adapts to the platform, appearance, and accessibility settings. Many things, like UIColor.label, have new values so that everything looks pixel perfect. Semantic colors adapt to your platform, so instead of defining a color yourself with RGB values, instead use a system-provided color that will result in the correct appearance no matter what platform your app is running on. For example, system cyan is a slightly different shade of blue across iOS, macOS, and watchOS. On iPad, this has the added benefit of adapting between light and dark appearance. And on this platform, systemBackgroundColor is vibrant by default when placed on top of glass. Similarly, using semantic font styles like Headline or Body instead of setting a static font size will result in a more readable app. It's also the right thing to do for accessibility. Semantic font sizes scale with Dynamic Type to ensure readability. Here, the colors for the TextField text and subtitle labels are using RGB defined UIColors. Instead of using those, use the primary and secondary label semantic colors here, which will better adapt to this platform while still looking great on iPad. Additionally, all UILabels that use semantic colors get vibrancy by default. I can also set the text field's border style to roundedRect. This will add the recessed appearance on this view. And after building and running... ...I like this much better! The labels are easy to read, and it's clear that I can edit the titles of the art by using the text field. Next, let's talk materials. Materials are a huge cornerstone of this platform. They make your app look really beautiful and help it to feel like part of the surroundings. They also ensure legibility in any context. Materials adjust their contrast and color balance based on lighting conditions and the colors of objects behind them. Because of this, there is no distinction between dark and light appearances on this platform. All of the built-in controls and containers use vibrant materials by default, ensuring your app looks amazing. The glass that now serves as the background of the app looks really awesome. This comes by default for every UINavigationController and UISplitViewController. And this allows the details of the surroundings to bleed through. You can also override the new preferredContainer BackgroundStyle property on your UIViewController to return .automatic, .glass, or .hidden. Next, if I hover over some of the views in the app, a faint highlight appears. This really helps to make the app feel responsive. Using system components like controls or lists ensures that you get these hover effects, materials, vibrancy, and more by default. Hover effects indicate interactivity. Adding a hover effect to a view will make it easier to target. One important thing about this platform is that exactly where someone is looking is never delivered to the app's process. There's brand-new API in UIKit to add, customize, or disable hover effects. UIView has a new property, HoverStyle. Many interactive components have hover effects by default, like controls. You can customize the hoverStyle of your view by setting the HoverStyle property and providing an effect: either highlight or lift. And if you want to remove the hover effect, you can set this property to nil. And to go even further, you can use the new UIShape API to provide the shape of your hover effect. I like that I already have a hover shape on the collection view cell, but I wish it had rounded corners. To instead use a rounded rectangle as the hover shape, I need to set the hoverStyle property on the cell and pass in a rounded rectangle shape. And that takes the hover shape of the cell from this rectangle with square corners... ...to this rounded rect. I think this looks really nice with the rounded corners of the text field and the background. Now, when I look at each collection view cell, their hover shape will be rounded.\n\nThere's one last thing I want to look at, and that's input. This platform introduces a totally new input system for interacting with content. Looking at an element and pinching and releasing your fingers is equivalent to a TapGesture. Pinching, moving your hand, and releasing is a PanGesture. If you're close enough to the app, you can also reach out and touch it. If you pair a trackpad, you can also use that to interact with the system. And Apple's accessibility technologies are available on device as well. VoiceOver and Switch Control bring your app to everyone. System gesture recognizers just work with all of the input methods, including trackpad. But it's important to note that there is a maximum of two simultaneous inputs on this platform since each hand can only produce one distinct touch. There was actually this custom gesture in the iPad app that used a four-finger swipe to delete all of the existing art and start fresh. I want to keep the gesture, so I won't compile it out. Instead, I can change this code to check the user interface idiom, and if it's reality, I can set the number of touches required to two. After I've made all these changes to polish the app, now I think I'm ready to take this example app to the next level. I'll hand it over to my colleague Andrew to tell you more. Andrew: Thanks, Grace! Hi! I'm Andrew and I'm an engineer on the UIKit team. It's time to bring your UIKit apps out of their 2D bounds and into three dimensions. With Grace's updates, the example app is looking good! And it, as well as your existing UIKit apps, can be taken even further with new spatial APIs. I'm going to talk about three easy ways to update an existing app to create a great spatial experience. First, UIKit presentations have exciting new spatial styles that add depth to your view controller transitions. Second, there's a new API that enables you to take content to a place it's never gone before... outside the scene! These are called ornaments. Finally, there are powerful new ways to add RealityKit content right into your apps. Let's go over how each of these can take the example app to the next level. The UIKit presentations you know and love are making their spatial debut. On iPad, the example app uses sheets, alerts, and popovers. Let's go over how those behave on the new platform. First, let's open the app settings. The spatial sheet pushes the presenting view controller back and dims it. Unlike iPad, it won't dismiss due to touches outside the bounds or other gestures, regardless of the view controller's isModalInPresentation property. Next, let's check out the new alert style. A 2D representation of the app's icon is placed right at the top. Just like sheets, you should always present alerts from the view controller that should be pushed back. Finally, let's open the document details popover. Oh, this looks a little off. It's breaking outside the bounds, which is awesome, but it's presenting far from the center of the app. Let's go into the code to fix this. It looks like the view controller is being created, set to the popover style... Ah, I see the problem. The permittedArrowDirections is set to only right. On iPad, popovers are constrained to the scene, but on the spatial platform, this same constraint doesn't exist, similar to macOS. Let's update this to always use the system preferred placement.\n\nNow, when I tap the info button, I get the popover placement I was expecting. If you use standard presentations in your iPad app, your spatial app may already be breaking outside the bounds in a great way. UIKit handles all the details as long as you haven't hard coded any platform assumptions. The next way I'm going to elevate the example app is with ornaments. While the app's presentations are now spatial, the editor itself is not yet taking advantage of the extra space on the platform. The editor... ...eh, looks a little cramped. But with ornaments, we can take advantage of the extra room the spatial platform provides in a way we never could before. Ornaments let content be placed around an app's scene within reasonable limits. UIKit components use ornaments too, like popovers. That's how the example app popover appeared outside the scene, without getting clipped. Many of the built-in apps on the device are also using ornaments. Here's a cool look at TV in headset. The app uses a SwiftUI tab view, which places the tab bar in an ornament on the leading edge of the scene. Safari uses an ornament to bring their navigation bar above the web page. And Freeform uses an ornament to create their bottom toolbar. With ornaments, these apps keep their primary content in the center, pushing controls to the edge. And ornaments are lifted forward, adding depth. They are breaking outside the bounds in all directions! For the example app, I think bringing together all the editing controls in a toolbar ornament would be perfect. Let's go back into Xcode to add this. Ornaments host SwiftUI content, I'll need to make sure to import SwiftUI, which I already have done in this file. Next, I'll define the new ornament. The alignment parameters make it easy to express the layout of your content that best fits your needs. For example, if I want an ornament to hang off my scene's leading edge I would set a leading scene alignment and a trailing content alignment. If I instead want the ornament to hang inside the scene, I'd use a leading content alignment. For the editing toolbar, I want it to hang off the bottom of the scene, but with the tools centered on the edge so it still feels part of the editor. This means I want a bottom scene alignment and a center content alignment. I'll add in those alignments. For the content, I already made a new EditingControlsView earlier, and I'll use that here. Ornaments don't automatically add a background. This is because choosing the right background depends on what works best for your content. I want the toolbar to have the same glass background as my editor, so I'll use the new modifier. Next, I'll set the new ornaments property on UIViewController to an array with just the new ornament. If I had multiple ornaments, I would include them in this array too. Ornaments share their view controller's lifecycle. If a view controller is removed from the hierarchy, its ornaments are too. This association is critical for system interactions. For example, sheet presentations will keep ornaments relative to their view controller during transitions. Lastly, use care to avoid cases where overlapping can unintentionally occur. I have one last change to make in the code. Since I moved the controls to the ornament, I now have more room for the main editor. I'm going to make it a bit larger by using my custom edgeToEdge style. Time to run the app.\n\nPerfect! The toolbar is right where I wanted it, breaking outside the bottom of the editor. It's awesome. By taking advantage of ornaments, the example app is able to use more of the main area for what creators care most about -- their content -- while still keeping the editing tools close by. Making an ornament is so easy. It lets you focus your time and effort on what makes your app unique. Finally, I'll talk about adding RealityKit to a UIKit app. There's a new SwiftUI View, RealityView, that hosts RealityKit content. This enables entities to be parented in a SwiftUI hierarchy. To dive deeper into RealityView, make sure to check out \"Build spatial experiences with RealityKit.\" There's also an existing API, UIHostingController, which hosts SwiftUI views. This means you can take advantage of RealityView, as well as other new APIs in SwiftUI, without needing to rewrite your UIKit app. For the example app, I want to use RealityKit to bring the pixels to life. Let's open Xcode to make some magic. I've already created a new SwiftUI View called the PixelArtEntityView. It uses a RealityView to render the art's pixels as RealityKit entities. I'll make a new instance to start. Then I'll setup the UIHostingController, using the entity view as the root view. I'll add the hosting controller as a child of the EditorViewController and add the hosting controller's view as a subview of the EditorViewController's view. Next, I'll tell the hosting controller that it was moved to a new parent. Finally, I'll call my custom layout function to position the preview. All right, the hosting controller setup is complete. It's showtime.\n\nI'll press the play button and tap 3D Preview to see the new code in action. Just like that, I've added pixels with real depth to the app. With the simulator orbit control, I can even see how the lighting changes based on my perspective. This is so cool! And it's all happening in a UIKit app. RealityView has leveled up the animator preview. And thanks to UIHostingController, it was easy to add. Together, these APIs shorten the path to building a great spatial app. By using standard UIKit presentations, putting the editor controls in an ornament, and adding 3D pixels with RealityKit, the example app looks great in this new spatial world. And all with just a few lines of code. To learn about the design guidance for these spatial experiences, check out \"Principles of spatial design.\" We covered a ton in this video, so here's what you need to do next. Start by adding the new destination to your project. Update your uses of device-specific APIs, and move off of deprecated APIs. Use semantic styles, hover effects, and standard presentations to make your app feel consistent with the platform appearance. Extend your ideas and imagination beyond the bounds with ornaments. And take your app even further with new spatial SwiftUI features, right from UIKit. Thanks for watching! Grace and I are so excited to see your apps in a whole new dimension. ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "16:15",
+      "title": "permittedArrowDirections",
+      "language": "swift",
+      "code": "import UIKit\n\nextension EditorViewController {\n\n    @objc func showDocumentPopover(sender: UIBarButtonItem) {\n        let controller = DocumentInfoViewController(document: pixelDocument)\n        controller.modalPresentationStyle = .popover\n        if let presentationController = controller.popoverPresentationController {\n            presentationController.barButtonItem = sender\n            if traitCollection.userInterfaceIdiom == .reality {\n                presentationController.permittedArrowDirections = .any\n            } else {\n                presentationController.permittedArrowDirections = .right\n            }\n        }\n        present(controller, animated: true, completion: nil)\n    }\n\n}"
+    },
+    {
+      "timestamp": "19:46",
+      "title": "Ornament",
+      "language": "swift",
+      "code": "extension EditorViewController {\n\n    func showEditingControlsOrnament() {\n        let ornament = UIHostingOrnament(sceneAlignment: .bottom, contentAlignment: .center) {\n            EditingControlsView(model: controlsViewModel)\n                .glassBackgroundEffect()\n        }\n\n        self.ornaments = [ornament]\n\n        editorView.style = .edgeToEdge\n    }\n\n}"
+    },
+    {
+      "timestamp": "22:45",
+      "title": "UIHostingController",
+      "language": "swift",
+      "code": "extension EditorViewController {\n\n    func showEntityPreview() {\n        let entityView = PixelArtEntityView(model: entityViewModel)\n        let controller = UIHostingController(rootView: entityView)\n        addChild(controller)\n        view.addSubview(controller.view)\n        controller.didMove(toParent: self)\n        prepareEditorInteractions()\n    }\n\n}"
+    },
+    {
+      "timestamp": "22:46",
+      "title": "Using Semantic Colors",
+      "language": "swift",
+      "code": "private let titleLabelTextField: UITextField = {\n    textField.textColor = UIColor.label\n    return textField\n}()\n\nprivate let authorLabel: UILabel = {\n    label.textColor = UIColor.secondaryLabel\n    return label\n}()"
+    },
+    {
+      "timestamp": "22:47",
+      "title": "Adding a recessed appearance to a text field",
+      "language": "swift",
+      "code": "textField.borderStyle = .roundedRect"
+    },
+    {
+      "timestamp": "22:48",
+      "title": "Overriding preferredContainerBackgroundStyle",
+      "language": "swift",
+      "code": "class MyViewController: UIViewController {\n    override var preferredContainerBackgroundStyle: UIContainerBackgroundStyle {\n        return .glass\n    }\n}"
+    },
+    {
+      "timestamp": "22:49",
+      "title": "Customizing hover style",
+      "language": "swift",
+      "code": "class CollectionViewCell: UICollectionViewCell {\n    init(document: PixelArtDocument) {\n        self.hoverStyle = .init(\n            effect: .highlight, \n            shape: .roundedRect(cornerRadius: 8.0))\n    }\n}"
+    },
+    {
+      "timestamp": "22:50",
+      "title": "Checking user interface idiom",
+      "language": "swift",
+      "code": "func fourFingerSwipe() {\n    let gesture = UISwipeGestureRecognizer(\n        target: self, \n        action: #selector(self.deleteAll))\n    gesture.direction = .left\n    if traitCollection.userInterfaceIdiom == .reality {\n        gesture.numberOfTouchesRequired = 2\n    } else {\n        gesture.numberOfTouchesRequired = 4\n    }\n    self.view.addGestureRecognizer(gesture)\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/111215/4/E8A7CF44-A276-482B-9CFA-F264FD028F54/downloads/wwdc2023-111215_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/111215/4/E8A7CF44-A276-482B-9CFA-F264FD028F54/downloads/wwdc2023-111215_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10080",
+      "year": "2023",
+      "title": "Build spatial experiences with RealityKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10080"
+    },
+    {
+      "id": "10203",
+      "year": "2023",
+      "title": "Develop your first immersive app",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10203"
+    },
+    {
+      "id": "10110",
+      "year": "2023",
+      "title": "Elevate your windowed app for spatial computing",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10110"
+    },
+    {
+      "id": "10109",
+      "year": "2023",
+      "title": "Meet SwiftUI for spatial computing",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10109"
+    },
+    {
+      "id": "10072",
+      "year": "2023",
+      "title": "Principles of spatial design",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10072"
+    },
+    {
+      "id": "10090",
+      "year": "2023",
+      "title": "Run your iPad and iPhone apps in the Shared Space",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10090"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:40:45.998Z"
+}

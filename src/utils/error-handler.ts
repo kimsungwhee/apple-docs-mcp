@@ -257,3 +257,137 @@ export function handleCacheError(error: unknown, operation: string): AppError {
     ],
   };
 }
+
+/**
+ * Tool-specific error suggestions
+ */
+export const TOOL_ERROR_SUGGESTIONS: Record<string, Record<string, string[]>> = {
+  search_apple_docs: {
+    [ErrorType.NOT_FOUND]: [
+      'Try broader search terms (e.g., "UIView" instead of "UIViewAnimationOptions")',
+      'Use framework names like "SwiftUI" or "UIKit"',
+      'Check spelling and avoid special characters',
+      'For WWDC videos, use search_wwdc_content instead',
+    ],
+    [ErrorType.INVALID_INPUT]: [
+      'Provide specific API or framework names',
+      'Avoid generic terms like "how to" or "tutorial"',
+      'Use technical terms like class names or method names',
+    ],
+  },
+
+  get_apple_doc_content: {
+    [ErrorType.NOT_FOUND]: [
+      'Verify the URL starts with https://developer.apple.com/documentation/',
+      'Use search_apple_docs first to find valid URLs',
+      'Check if the API might have been renamed or moved',
+    ],
+    [ErrorType.INVALID_INPUT]: [
+      'URL must be a complete Apple Developer Documentation URL',
+      'Example: https://developer.apple.com/documentation/uikit/uiview',
+    ],
+  },
+
+  search_framework_symbols: {
+    [ErrorType.NOT_FOUND]: [
+      'Use list_technologies to find exact framework identifiers',
+      'Framework names should be lowercase (e.g., "uikit" not "UIKit")',
+      'Some frameworks might be part of larger frameworks',
+    ],
+    [ErrorType.INVALID_INPUT]: [
+      'Framework identifier must be in lowercase',
+      'Common identifiers: "uikit", "swiftui", "foundation", "combine"',
+      'Use list_technologies to discover available frameworks',
+    ],
+  },
+
+  list_wwdc_videos: {
+    [ErrorType.NOT_FOUND]: [
+      'Available years are 2020-2025',
+      'Use "all" to see videos from all years',
+      'Topic searches are case-insensitive partial matches',
+    ],
+    [ErrorType.INVALID_INPUT]: [
+      'Year should be a 4-digit string like "2025"',
+      'Topic can be any keyword like "SwiftUI" or "Performance"',
+    ],
+  },
+
+  search_wwdc_content: {
+    [ErrorType.NOT_FOUND]: [
+      'Try different search terms or broaden your query',
+      'Search is case-insensitive',
+      'Use technical terms that would appear in transcripts',
+    ],
+    [ErrorType.INVALID_INPUT]: [
+      'Query is required and cannot be empty',
+      'searchIn must be "transcript", "code", or "both"',
+    ],
+  },
+
+  get_platform_compatibility: {
+    [ErrorType.API_ERROR]: [
+      'Platform data might not be available for all APIs',
+      'Try using the single API mode instead of framework mode',
+      'Some newer APIs might not have compatibility data yet',
+    ],
+  },
+
+  find_similar_apis: {
+    [ErrorType.NOT_FOUND]: [
+      'Not all APIs have similar alternatives documented',
+      'Try using a broader search depth ("deep" instead of "shallow")',
+      'Consider using get_related_apis for inheritance relationships',
+    ],
+  },
+};
+
+/**
+ * Get tool-specific error suggestions
+ */
+export function getToolErrorSuggestions(toolName: string, errorType: ErrorType): string[] {
+  const toolSuggestions = TOOL_ERROR_SUGGESTIONS[toolName]?.[errorType];
+  if (toolSuggestions) {
+    return toolSuggestions;
+  }
+
+  // Default suggestions based on error type
+  switch (errorType) {
+    case ErrorType.NOT_FOUND:
+      return [
+        'Verify the input parameters are correct',
+        'Try using a search tool first to find valid values',
+        'Check if the resource exists on developer.apple.com',
+      ];
+    case ErrorType.INVALID_INPUT:
+      return [
+        'Check the parameter format and requirements',
+        'Refer to the tool description for examples',
+        'Ensure all required parameters are provided',
+      ];
+    case ErrorType.TIMEOUT:
+      return [
+        'Try with fewer results or simpler queries',
+        'The service might be temporarily slow',
+        'Consider breaking the request into smaller parts',
+      ];
+    default:
+      return [];
+  }
+}
+
+/**
+ * Create error response with tool-specific suggestions
+ */
+export function createToolErrorResponse(
+  error: AppError,
+  toolName: string,
+): ErrorResponse {
+  const toolSuggestions = getToolErrorSuggestions(toolName, error.type);
+
+  if (toolSuggestions.length > 0) {
+    error.suggestions = [...(error.suggestions ?? []), ...toolSuggestions];
+  }
+
+  return createErrorResponse(error);
+}

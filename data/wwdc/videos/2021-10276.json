@@ -1,0 +1,86 @@
+{
+  "id": "10276",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10276/",
+  "title": "Use the camera for keyboard input in your app",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Photos & Camera"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Bass music playing ♪  ♪ Ron Santos: Hey, everyone. I'm Ron Santos. I'm a software engineer working on Keyboards. And I'm here to show you how to make the most of a new feature that lets you input text, not by typing or by dictation, but by using the camera. So we've been working really hard on this new release and now that WWDC is finally here, I am so ready for a vacation. As soon as it's safe, I'd love to take some time off and travel. One thing about traveling that bugs me though, is dealing with all of that nondigital text. You know what I mean? Invoices, activity flyers, and that giant binder they leave for you in hotel rooms? Luckily, iOS 15 has a new feature that allows you to capture text from the world around you. Let me show you what I mean. Check it out! I'm building this travel journal app. I'll use it to document trips I've taken and places I've stayed, like my last trip to Hawaii. At the top here, I can add an image header; maybe a nice landscape photo from my Camera Roll. Then I have fields for hotel information like name, phone number, and address. I actually have all of that information on a document right in front of me.\n\nI don't want to have to type it all out, and now I don't have to. For example, if I tap twice on the Phone Number field, I see a new option in the editing menu to use Text from Camera. Once it launches, the camera instantly recognizes this group of text on the document. I can freeze it and select just the phone number. Then I tap Insert and I'm done. I think that's pretty awesome. Reminds me of that saying how a picture is worth a thousand words. But with this feature, we can literally take a thousand words from a picture. Anyways, like I said earlier, I'd love to show you how to get the most out of this feature. Let's get started by talking about filtering content. If you remember, I had to drag-select the phone number from the large block of text. Well, I shouldn't have to do that if the app knows I'm looking for a phone number. It should ignore everything else and just grab the number. So first, I'll show you how simple it is to filter for the content you want. Filtering is done by using the TextContentType and KeyboardType properties which are available on text fields and text views. In fact, you're probably already using these properties to support things like AutoFill. If so, terrific. You'll get the extra benefit for camera input. And if you haven't used them, here are some videos from previous years that show you how. OK, back to TextContentType. The TextContentType can be any one of these various values. But the camera won't filter for all of these types. It'll filter on just these seven. Let's look at some examples. These first four -- telephone number, full street address, URL, and email -- they all preexist in iOS today. New in iOS 15, we've added three additional types: flight number, shipment tracking number, and the combination of dates, times, and durations. You can imagine how flight number might be useful to travel apps, or how tracking numbers would be cool for package-tracking apps. Anyways, here's how you would use these content types. It's super simple. If you're in Interface Builder, look for Content Type and Keyboard Type in the Attributes inspector. If you're doing this in code, just assign the values you want. Here in my travel journal app, the Phone Number field is using the phone pad keyboard, and the Address field has textContentType of fullStreetAddress. And notice that for the phone number, I set the autocorrectionType to no. Because if there are no autocorrection or predictive text candidates, iOS gives you a button for quick access to the camera. OK, let's go back to my app, and we can try capturing the hotel phone number again, but this time, with our changes. Now, when I bring up the camera, it smartly ignores all the other text except for the phone number. Let's try that again with the Address field.\n\nThat's so much faster. A lot less tapping and swiping. So that's how you filter content. Let's move on to a different challenge. How do we make this functionality more discoverable to really encourage its use? As app developers, we love having a streamlined user interface. Which means we sometimes have additional functionality hidden behind menus and gestures the user doesn't know about. For example, if I use the Notes field in my app, it's not obvious that I can use the camera for input here. The editing menu only appears on a second tap. And the candidate bar has predictive text instead of the button I showed you earlier. So if you want a button onscreen hinting at camera input, you'll want to add your own dedicated launcher button. To do that, first we need to create a UIAction using the captureTextFromCamera factory method, new in iOS 15. The action knows how to launch the camera, but also provides an image and a label when it's used together with buttons and menus. Let's add a menu to my app with an item to insert text from the camera. So here's my app again. When editing the notes field, I have this toolbar shown above the keyboard. When the second item with a camera icon is tapped, I want a menu to appear for a bunch of camera-related actions, like our new feature, Text from Camera. Here we create the action. And notice, other than the optional identifier, the factory method just requires a responder to accept the text. Then, I create actions for the other menu items. Finally, I assemble the menu and populate it with each one of the actions I just created, including the textFromCamera action. Remember, I don't have to specify the title or which image to use. That's all provided by the action. The title will even be localized for me. OK, let's try it out. We're back in the app. Here's the Notes field and the toolbar with our camera menu. Let me insert some text from an activity flyer in front of me.\n\nAnd done! A user-discoverable launcher with just a few lines of code. There is, however, one thing to keep in mind. Before you add any camera launchers, you'll first want to check the result of canPerformAction withSender. That's because our UIAction works by invoking a new method on UIResponder objects called captureTextFromCamera, which works similar to standard edit actions like cut, copy, and paste. And those actions aren't always available, depending on the context. For example, you can't cut text if you have nothing selected. Same thing goes here; the captureTextFromCamera action has some prerequisites. That one method will make sure all the requirements are met. But let's go through each of them. That way, you have a better idea of why that method may return false. First, there are some hardware requirements; not all devices running iOS 15 support the feature. The device should be an iPhone. And not just any iPhone, one with the machine learning super powers of the Neural Engine. Aside from hardware, your responder has to handle text insertion. We'll talk more about that later. Next, and this might be obvious, but if your responder is a text view or text field, it has to be editable. And finally, users must have at least one of these seven supported languages in their list of preferred languages. You're now well-equipped to handle camera input. But before we wrap up, let me show you something fun I added to my app. Remember the header photo? It's nice, but I think it'd be kind of cool to add a caption over it. Maybe a caption taken from the camera. So I added a launcher button here just like what we did with the menu item.  And now, I can capture text and place it over the image. But how'd I do that, though? I mean, it's an image view and not a text control. Let's step back and figure out how the text controls work. And then we'll talk about image views later. Text controls adopt a protocol called UIKeyInput. It defines a basic set of methods for responders to accept keyboard input. The protocol has three methods, one of which is the insertText method. And that method is exactly what's used to transport text from the camera to your app. So for a responder to support camera input, it needs to adopt this protocol. I know I just said text controls adopt UIKeyInput. But in reality, they adopt a protocol called UITextInput, which is an extension of UIKeyInput. If you adopt UITextInput, you'll get an extra feature when using the camera: a preview of the text to be inserted. And that's done with the setMarkedText method shown here. Having a preview is optional, though. If you opt not to have it, you only need to adopt UIKeyInput. There's one last protocol to mention, and you might have caught it already a few minutes ago. UIKeyInput itself extends UITextInputTraits. That protocol consists only of optional properties like KeyboardType and TextContentType, which you know from earlier are used to filter camera input for specific content. So for camera input, you'll want to adopt UIKeyInput and, optionally, depending on the level of functionality you're after, adopt UITextInputTraits or UITextInput. OK. Now, let's bring it back to our ImageView. I'm going to create a new class called HeadlineImageView which subclasses UIImageView and adopts UIKeyInput. Here's it is in code. It's a simple subclass of UIImageView, and it has a UILabel subview that we'll use to display the caption. Remember, to adopt UIKeyInput we need three methods: hasText, deleteBackward, and insertText. Typically, responders adopt UIKeyInput to summon the keyboard. But because I only want camera input and not keyboard input, we only have to implement insertText. hasText can just return false and deleteBackward doesn't need to do anything. As for insertText, its implementation is really simple. It just takes the text from the camera and gives it to our label. That's all there is to it! Now we have an image view with a way of displaying a caption captured from the camera. Thanks for taking this trip with me! Here's what I hope you come away with. Take advantage of text content types. They help in more ways than one, including filtering text from the camera. Create your own launchers when you really want to promote camera input. We provide labels and images for a consistent look that users can associate with camera input across apps. But make sure you first check to see if the functionality is available. Finally, remember you can use camera input for your own custom responders that aren't text controls. You just need to adopt the UIKeyInput protocol. Safe travels and enjoy the rest of WWDC 2021! ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:33",
+      "title": "Filtering text field input",
+      "language": "swift",
+      "code": "phone.keyboardType = .phonePad\nphone.autocorrectionType = .no\n\naddress.textContentType = .fullStreetAddress"
+    },
+    {
+      "timestamp": "5:07",
+      "title": "Custom action to capture text from camera",
+      "language": "swift",
+      "code": "let textFromCamera = UIAction.captureTextFromCamera(responder: self.notes, identifier: nil)"
+    },
+    {
+      "timestamp": "5:41",
+      "title": "Adding custom UIAction for capture text to a menu",
+      "language": "swift",
+      "code": "let textFromCamera = UIAction.captureTextFromCamera(responder: self.notes, identifier: nil)\n\nlet choosePhotoOrVideo = UIAction(…)\nlet takePhotoOrVideo = UIAction(…)\nlet scanDocuments = UIAction(…)\n\nlet cameraMenu = UIMenu(children: [choosePhotoOrVideo, takePhotoOrVideo, scanDocuments, textFromCamera])\n\nlet menuToolbarItem = UIBarButtonItem(title: nil, image: UIImage(systemName: \"camera.badge.ellipsis\"), primaryAction: nil, menu: cameraMenu)"
+    },
+    {
+      "timestamp": "9:59",
+      "title": "Implementing UIKeyInput on a custom image view",
+      "language": "swift",
+      "code": "class HeadlineImageView: UIImageView, UIKeyInput {\n    var headlineLabel: UILabel = UILabel()\n    var hasText: Bool = false\n\n    override init(image: UIImage?) {\n        super.init(image: image)\n        initializeLabel()\n    }\n    \n    func insertText(_ text: String) {\n        headlineLabel.text = text\n    }\n\n    func deleteBackward() { }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10276/3/35E33348-1E17-4FF5-92BB-618ED251B0EC/downloads/wwdc2021-10276_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10276/3/35E33348-1E17-4FF5-92BB-618ED251B0EC/downloads/wwdc2021-10276_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10048",
+      "year": "2023",
+      "title": "What’s new in VisionKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10048"
+    },
+    {
+      "id": "10259",
+      "year": "2021",
+      "title": "Your guide to keyboard layout",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10259"
+    },
+    {
+      "id": "10115",
+      "year": "2020",
+      "title": "AutoFill everywhere",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10115"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:41:46.433Z"
+}

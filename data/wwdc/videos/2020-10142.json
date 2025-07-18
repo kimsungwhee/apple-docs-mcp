@@ -1,0 +1,98 @@
+{
+  "id": "10142",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10142/",
+  "title": "Build scalable enterprise app suites",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Business & Education"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello, and welcome to WWDC. Hi, I’m Eric and along with my colleague Pınar, we manage the Retail Store Apps Mobile Engineering team, and we're here to discuss building enterprise applications that are robust, flexible and maintainable. At Apple, we have over 500 stores where we work to constantly redefine the retail experience.\n\nOur amazing retail employees are the heart of our retail operations and we build the apps that support them... from our system that manages store reservations to our product catalog and managing store layout. They all work together to build a fluid system that makes our stores run smoothly. Now you know a bit about why we do what we do. The rest of this session covers how we do it, and how you can take advantage of the same practices in your own enterprise apps.\n\nOur agenda includes architecting for sharing across apps, which covers some of the basic principles you should consider when either building new apps or rearchitecting existing apps.\n\nWe'll also cover testing your apps after they've been built.\n\nAnd finally, Pınar will discuss some aspects of managing your app once it's been pushed to production.\n\nWhen building your apps, there are many features of iOS that make multiple apps work together nicely.\n\nI’ll go over a few of them. Enabling app groups, benefits of Swift packages and finding good package candidates.\n\nApp groups are one of the first iOS features that we took advantage of when developing our suite of apps. Once enabled, it gave us the ability to share multiple types of data via UserDefaults and shared files.\n\nAll of the setup can be done via the Signing and Capabilities section in your project file within Xcode. Let’s see how it works. First, click on the + Capability button and then select App Groups.\n\nThis will add a new App Group panel. Selecting the plus button in that panel will add a new App Group and add it to your developer portal as well, so other apps in the same portal have access to it.\n\nOnce you have your app group set up in Xcode, sharing data is easy. This example shows how to share data using UserDefaults. First, we’ve created an instance of UserDefaults, passing it to our app group to initialize it.\n\nAfter this initial setup, setting values is as easy as calling the set method. Reading values is also just as easy using one of the named type methods, such as string, integer, Boolean, et cetera. Next, let’s talk about Swift packages. There are many reasons we used Swift packages when looking at our existing apps, as well as when we build new ones. The most obvious is that it reduces code duplication. This decreases our development time and the risk of human error, thus increasing the reliability of our apps.\n\nIt also provides more flexibility in our organization, allowing people to move from team to team easier with less onboarding overhead since much of the codebase will already be known.\n\nWe’ve also built a team that solely works on developing these packages, allowing them to focus more in-depth on the problems the packages are solving. After building our iOS apps, our team identified many areas that were great candidates. Just like many of you, Apple uses standard authentication methods across our applications. Because of this, authentication was a perfect choice. We’ve built ours on top of URLSession, and in doing so, it removes the burden of thinking about auth from the engineer, allowing them to interact with the server as if the authentication doesn’t exist.\n\nAnother network-related package is for image caching and fetching. This allows us to queue images and cache them to disk as necessary, again, freeing our engineers from worrying about the network connection or where the image is coming from. Everything we build is based on UIKit. We use custom table view cells and product detail views, which we package to ensure consistency where the same UI is used across multiple apps.\n\nMany of our applications have similar objects, such as customers, reservations and products.\n\nThese model objects are prime candidates for extracting into a Swift package and sharing across each of our apps, allowing for standardized definitions of our model. The final package I want to talk to you today about is our scanning package. We built it on top of Vision and AVFoundation. This gives a common look and feel for our bar code, QR and text recognition across each of our apps. Let me show you what that looks like.\n\nUsing the Vision framework, our package is capable of scanning many symbologies, such as PDF417, DataMatrix and QR codes. In addition, it also allows us to do real-time OCR to capture text-based data. On top of the Vision framework, we've built a layer that can show a supplementary UI view to help the user target the camera, customize accessibility support, control the flash, and simplify configuration into a clean, common API. Let’s look at what a couple of those look like. Our code uses the same patterns whether you’re scanning a barcode or text. The setup is simple. Initialize the appropriate view controller, passing in a struct containing configuration options and assign a delegate. It’s that simple for the engineer. The delegate handles the messaging for successes and failures of the scanning process. I’ll show you a bit more how that works.\n\nHere, we create an instance of scan options, which is a struct that holds the configuration in our scanning package. We then initialize a new barcodeScannerViewController with that same configuration.\n\nThis configuration/initializer pattern allows us to easily save and reuse them across each of our apps.\n\nOur next example is very similar to the first. Rather than scanning a barcode, this controller allows us to scan and recognize text within the view area. We’ve kept the same configuration/initializer pattern as the barcode example, making it quick and easy to use either package.\n\nWith both of these, our API provides a default UI that can be replaced or fully customized to the needs of each application. This makes it easy to keep the UI in all of our apps consistent. We talked about app groups and Swift packages. Now let’s talk about testing.\n\nAfter our apps were built, we, of course, needed to test them to make sure that they did what we expected them to. We could have an army of people do this, but there are more efficient ways to go about it. Let's go over a few of the most common cases.\n\nThree of those are unit testing, UI testing and performance testing.\n\nUnit testing is the first step in our testing strategy and begins with the engineering team.\n\nAs they write the classes and functions that power the apps, it's important to create unit tests to make sure that they return the values that are expected for each code path.\n\nXcode provides fantastic support for unit tests with the XCTest framework, which enables you to quickly write and run your tests.\n\nFor more in-depth information, there are many sessions available. I would recommend starting with \"Testing in Xcode\" and \"Testing Tips and Tricks.\" We use UI testing as much as possible, as this is where you see real efficiency gains.\n\nUI testing takes the manual test cases your QE team has created and encodes them in Swift.\n\nXcode comes with XCUITest that provides a structure for building and running them.\n\nOnce we created these tests, we broke them down by importance.\n\nTests can take time to run, so breaking them down by priority allows us to run the most important tests more frequently than others. The more frequent they're run, the quicker we can catch any failures. We do this on a check-in, daily and weekly basis. The WWDC session \"UI Testing in Xcode 7\" is a great place to start for more info.\n\nWhen we look at performance testing on iOS devices, what we’re really looking at is two things: rendering performance and battery performance.\n\nThe CPU and GPU in modern iOS devices are very powerful, but we still need to focus on the performance of every interaction in our app. There’s nothing more frustrating for a user than a view that doesn’t scroll smoothly or a drag operation that takes a split second too long.\n\nBattery performance is also very important for us. Our devices are on the store floor all day long. When an employee has to step out of the front of house to take their device to a charging station, that’s lost productivity, not to mention the extra devices that we have to have on hand. Engineers have an excellent tool at their disposal that makes accomplishing these tasks easy and straightforward: Instruments. Instruments is a tool also built in to Xcode that has helped us analyze areas of our apps that are taking a long time to execute, have higher than expected memory or battery usage and much more.\n\nFor more information on Instruments, please check out the sessions \"Practical Approaches to Great App Performance\" and \"Improving Battery Life and Performance.\" Now, I’ll hand this off to Pınar to dive into managing apps once they’re deployed to production. Thank you, Eric. With all the wonderful info Eric just shared with you all, you might be wondering how we manage our apps in production with configurations. First, I will discuss why we develop with app configurations in mind. Then I will discuss points on backwards compatibility and requiring users to force update.\n\nThere are two configurations our applications currently support simultaneously: Client based configuration file and a Server based one, which is essentially Boolean values downloaded from our server. Let’s talk about client based configuration first.\n\nHaving a configuration file that is baked in our client but hosted on the server, allows us to have more flexibility and adaptability around the user experience in our application.\n\nThese elements can then be manipulated at the geo, market, and, in our case, at the Apple retail store level.\n\nChanging these attributes in production does not depend on any code changes.\n\nTherefore, no new client builds would be necessary.\n\nThis makes the application highly adaptable to our ever-changing business needs.\n\nOur applications also have server configurations in place which can also drive the app behavior. We rely on data from our server to show certain elements.\n\nThis provides a great flexibility where some features may not be used for certain geos, markets and, in our case, certain Apple retail stores.\n\nOur server can simply turn on or off features based on the global market level.\n\nJust like having a robust client config, changing values on the server does not require any code change. Once config values are deployed on the server, changes will automatically be reflected in our application’s behavior.\n\nServer configurations can also be exposed to business and operations teams, where they can take sole control of the values being set. They can then turn on or off features according to the business needs.\n\nThis partnership frees up developers' time to maintain these configs and allows them to focus on the engineering instead.\n\nHere’s a high-level illustration of how these configurations might work for your application. With client configuration, you can create a PLIST file with all the attributes you want to include.\n\nYour server can then host this file in a JSON format.\n\nDuring your startup sequence, your application can download all the attributes that are set. If, for any reason, during production you want to change a value for an attribute, you can just change it in the PLIST file and upload a new version of the config to the server.\n\nWhen your application launches again, the new changes will take place. I will show you how that can be done in just few minutes with an example. With server based configurations, your business or operations teams can take full control of setting the values.\n\nThis way they can turn on or off features at a global level and change values to adapt to business and market needs.\n\nYour iOS application can then fetch a service API where these attributes are set, and these flags will ultimately drive your application’s behavior.\n\nLet’s dive in to a client-based configuration as an example. Here we have all the fields we want to define for a customer form. We have First Name, Last Name, Email, and Phone Number, and maybe other info that we'd like to collect from our customers.\n\nThese attributes are carefully mapped in our client code and remain as generic as possible in our function definitions. That way, we can manipulate them in our PLIST files.\n\nHere's what the form looks like in our application’s UI in production. Now, let’s say our stakeholders do not need to collect customers’ email addresses any longer and want to remove that field from the UI right away.\n\nWe can simply delete the Email field in our configuration PLIST file and upload a new version of the config to our server. When the application is launched again, the email field is no longer seen. No code changes, no new client builds, it just works.\n\nNow let’s say our stakeholders do not need to collect customers’ phone numbers either and needs this change done right now.\n\nWe can repeat the same process and upload the new version of the config to our server.\n\nAnd again, when we pull the new config, Phone Number field is no longer shown. As you can see, having a config-driven user experience allows us to manage our application in production with greater flexibility and adaptability.\n\nWith server and client hand in hand and work in such close orchestration, backwards compatibility is something we always have to keep in mind as new changes in the server may not be supported in our old client and vice versa. In our experience, having config versioning in place has helped us a great deal in navigating these waters. Our application checks which version of the server and client configuration that is being downloaded at startup. We can then determine which user experience to show, or not show, to our users.\n\nThere are, of course, cases where we do need our users to force update to the version of the app, otherwise they will not be able to see the new features we developed.\n\nWhen a new value for an attribute is added in the client but server does not have mapping for it, neither server nor client can support each other. In such cases, requiring users to force update is necessary. And to wrap up, we covered app groups, shared frameworks and testing, we went over utilizing config-driven user experience, and, finally, discussed points in why backwards compatibility and requiring users to force updates are necessary. Thank you for watching. We look forward to seeing the apps you develop with iOS 14. Hope you have an enjoyable WWDC this year. Stay safe and healthy out there.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:02",
+      "title": "App Groups",
+      "language": "swift",
+      "code": "let sharedDefaults = UserDefaults(suiteName: “group.com.apple.myappgroup\")!\n        \nsharedDefaults.set(\"My Cool Value\", forKey: \"MyKeyName\")\n        \nlet myKeyNameValue = sharedDefaults.string(forKey: \"MyKeyName\")"
+    },
+    {
+      "timestamp": "5:04",
+      "title": "BarcodeScannerViewController",
+      "language": "swift",
+      "code": "import RetailScanner\n\nlet scanOptions = BarcodeScanOptions()\nscanOptions.scanRegion = .regular\nscanOptions.shouldAddSupplementaryView = false\nscanOptions.shouldShowBarcodeDetector = true\n\nlet barcodeViewController = BarcodeScannerViewController(scanOptions: scanOptions)\nbarcodeViewController.delegate = self"
+    },
+    {
+      "timestamp": "5:29",
+      "title": "OCRScannerViewController",
+      "language": "swift",
+      "code": "import RetailScanner\n\nlet scanOptions = OCRScanOptions(\n    scanRegion: .custom(CGSize(width: 400, height: 100)),\n    accessibilityBehavior: .vibrate,\n    shouldAddSupplementaryView: true,\n    validation: nil, \n    shouldShowResultView: true\n)\nscanOptions.recognitionLevel = .fast\n\nlet ocrViewController = OCRScannerViewController(\n    scanOptions: scanOptions\n)\nocrViewController.delegate = self"
+    },
+    {
+      "timestamp": "12:26",
+      "title": "Config-driven UI - Client based configuration hosted by server",
+      "language": "swift",
+      "code": "func configuredCellForLabel(for customerInfoField: CustomerInfoField, at indexPath: IndexPath) -> UITableViewCell { . . . }\n\n\n\nfunc configuredCellForPhoneNumber(for customerInfoField: CustomerInfoField, at indexPath: IndexPath) -> UITableViewCell { . . . }"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10142/6/570BD5D0-7BC7-4D3A-A1EC-E67D13CD87E0/wwdc2020_10142_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10142/6/570BD5D0-7BC7-4D3A-A1EC-E67D13CD87E0/wwdc2020_10142_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10169",
+      "year": "2020",
+      "title": "Swift packages: Resources and localization",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10169"
+    },
+    {
+      "id": "10091",
+      "year": "2020",
+      "title": "Write tests to fail",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10091"
+    },
+    {
+      "id": "410",
+      "year": "2019",
+      "title": "Creating Swift Packages",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/410"
+    },
+    {
+      "id": "417",
+      "year": "2019",
+      "title": "Improving Battery Life and Performance",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/417"
+    },
+    {
+      "id": "413",
+      "year": "2019",
+      "title": "Testing in Xcode",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/413"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:27:36.187Z"
+}

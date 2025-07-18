@@ -1,0 +1,228 @@
+{
+  "id": "10132",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10132/",
+  "title": "Meet async/await in Swift",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Swift"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Hi, I’m Nate, an engineer on the Swift team here at Apple. Today my colleague Robert and I will tell you about async/await in Swift. Asynchronous programming is a regular activity for many of you. So you know it’s all too easy to write asynchronous code that’s verbose, complex, and even incorrect. Async/await in Swift can help out. Using it, you can write asynchronous code just as easily as you write regular code. And when you do, your code will better reflect your ideas. It’ll be safer too. On top of that, the SDK has hundreds of awaitable methods available for you to use. For example, UIKit provides functionality to form a thumbnail from a UIImage. In fact, it provides both synchronous and asynchronous functions to complete that task.\n\nAs a quick reminder, when you call a function that is synchronous-- that is, a regular old function-- your thread is blocked, waiting for that function to finish. So if your fetchThumbnail function calls preparingThumbnail-- the synchronous function UIKit provides-- until it finishes, your thread can’t do anything else. In contrast, if you call prepareThumbnail (of:completionHandler:)-- the asynchronous version of that function-- while it runs, your thread is free to do other work. When it’s done, it will notify you by calling its completion handler. The SDK provides many asynchronous functions. They let you know that they’ve completed in a few different ways. Some use a completion handler like this. Others rely on delegate callbacks. And many are marked async and just return a value.\n\nWhat these asynchronous functions all have in common is this: when you call one, it unblocks your thread quickly, having kicked off its work. That allows the thread to do other things while that long running work completes. To see that difference, let’s take a look at an example that may be familiar to many of you.\n\nIn the app Robert and I are building together, we have a list of items, each row of which displays a thumbnail of an image stored on a server. When it’s time to get a thumbnail ready to be displayed in that list, in our view model, the fetchThumbnail method is called. It transforms a string to a UIImage via a series of steps. First, the view model’s thumbnailURLRequest method creates a URLRequest from the string. Next, URLSession’s dataTask method gets the data for that request. Then UIImage initWithData creates an image from that data, and finally, UIImage’s prepareThumbnail method renders a thumbnail from the original image. Each of these operations depends on the previous one’s result. That means they must be performed in sequence.\n\nSome of these operations return values quickly-- both constructing a URLRequest from a string and a UIImage from data are like this-- so it’s fine to run them on whatever thread the function happens to be on and for these to be synchronous calls. However, some of them take time. It takes awhile to download all the data that makes up an image. And rendering a nice-looking thumbnail from it requires a device to do some expensive work. That’s why the SDK provides asynchronous functions to complete those tasks. So these calls should be asynchronous.\n\nBefore Robert and I took async/await out for a spin, we were writing the function using completion handlers.\n\nThe function takes as its arguments a string, the input to the first operation and a completion handler, used to give the output back to the caller. When fetchThumbnail is called, we first call thumbnailURLRequest. This method is synchronous, so it doesn’t need a completion handler. Next we call dataTask on the shared URLSession instance, passing that URLRequest and a completion handler. It synchronously produces a URLSessionDataTask which must be resumed to kick off the asynchronous work. FetchThumbnail then returns, and the thread is free to do other work. That’s really important because downloading an image takes time, and you don’t want to block a thread waiting for data to stream in. Eventually either the image finishes downloading or something goes wrong. Either way, the request completes and the completion handler passed to dataTask is invoked with several optional values: the data, a response, and an error.\n\nIf something does go wrong, then we need to invoke the completion handler and pass the error along. If everything worked out, then we create an image from the data using UIImage’s initWithData. Because it’s synchronous, we get to write normal straight-line code to handle the results. If no image is produced, we’re done. And if an image was produced, then finally we call UIKit’s method prepareThumbnail on it and pass a completion handler. While its work completes, the thread is unblocked and freed up to do other work.\n\nAfter the thumbnail is prepared, that completion handler is invoked with an image if preparing a thumbnail succeeds or else nil. If it does succeed, then we call our completion handler and pass along the image.\n\nBut as Robert pointed out to me, there’s a problem. FetchThumbnail’s caller expects to be notified when fetchThumbnail finishes its work, even if it fails. And currently, we’re leaving the caller in the lurch. I’m so used to writing “guard else return” that I forgot to invoke the completion handler twice. So if creating a UIImage from data or preparing a thumbnail fails, the caller of fetchThumbnail will never be notified and the row will never be updated. It’ll just show a spinner forever.\n\nThat’s why it’s so important for us, the authors of fetchThumbnail, to notify our callers no matter what happens. So every path through the function should notify them. To do that, we need to invoke our completion handler if an error occurs and pass the error along. A normal function gives an error back to its caller by throwing it. And Swift ensures that no matter how execution proceeds through the function, if a value isn’t returned, an error is thrown. But we can’t use Swift’s usual error handling mechanism here. We can’t just throw an error from within these completion handlers if we run into a problem. That’s unfortunate because it means Swift can’t check our work. To Swift, a completion handler like fetchThumbnails is just a closure. While we want to be sure that it’s always invoked, in Swift there’s no way to enforce that it is. That’s why I didn’t get a compilation error when I just returned from those two guards. It took Robert pointing out that there was a problem for me to fix it. So it’s up to you to make sure that your completion handler eventually gets called. When the two of us sat down to write this function, we just wanted to do a few operations one after the next. Two were synchronous and two were asynchronous, taking completion handlers. We succeeded, but we ended up with around 20 lines of code containing five opportunities for subtle bugs to creep in. What we wanted was to perform those four operations in sequence, but what we got is hard to follow, hard to get right, and obscures our intent.\n\nNow, there are ways we could have made this a bit safer. For example, we could’ve used the standard library’s result type. And while this is a little safer, it also adds ceremony, making our code uglier and slightly longer. People have also used techniques like futures to improve asynchronous code in other ways. But none of these approaches give us code that is simple, easy, and safe. With async/await, we can do better. Robert and I rewrote the function that performs those four steps. And this time, we used async/await.\n\nThe function still takes a string as an argument. But while last time, a completion handler was passed as well, this time instead, the function is async. When you mark a function async, the keyword should go just before “throws” in the function signature, like this, or before the arrow if the function doesn’t throw. Marking the function async allows it and its signature to be simpler. If an image is thumbnailed successfully, that thumbnail is simply returned. And if an error is encountered, it’s just thrown. When fetchThumbnail is called, just like before, it starts off by calling thumbnailURLRequest. This function is synchronous, so the thread is blocked, doing its work.\n\nNext, it starts downloading data by calling data(for: request) on the shared URLSession. Like dataTask, this method is also provided by Foundation and is also asynchronous. But unlike dataTask, the data method is awaitable. So after it’s called, it suspends itself quickly, unblocking the thread. The thread is then free to do other work.\n\n“Try” is here because the data method is marked “throws.” In the earlier version, remember how we had to check for an error and then explicitly call our completion handler with it? Here in the awaitable version, all of that code is boiled down to just the try keyword. Just like “try” is needed to call functions that are marked “throws,” “await” is needed to call functions that are marked “async.” If an expression has multiple async function calls in it, you only need to write “await” once, just like you only need one “try” for an expression with multiple throwing function calls. All told, the function call is marked “try await.” When dealing with an async expression that throws, you’ll need to put try before await, like this.\n\nEventually, when the data finishes downloading, the data method will resume and return to fetchThumbnail. At that point, the values the data method returns or error it throws will flow in. If it threw an error, then fetchThumbnail will throw that error in turn itself. Otherwise, the data and response variables will be defined. This is similar to what happened in the earlier version of fetchThumbnail when the completion handler passed to URLSession’s dataTask method was invoked.\n\nIn both versions, values and errors that were produced by URLSession’s asynchronous method flowed in. But the awaitable version is so much simpler. It says exactly what we mean. Make this request and assign the values we get back to variables so we can use them. And if we happen to run into a problem, throw an error.\n\nNext, fetchThumbnail will try to create a UIImage from the data it downloaded. If that succeeds, then a thumbnail will be rendered for that image by accessing its thumbnail property. While the thumbnail is formed, the thread is free to do other things until the thumbnail property eventually resumes and returns to fetchThumbnail.\n\nIf a thumbnail is rendered, fetchThumbnail will return it. Otherwise, it’ll throw an error.\n\nIn contrast to the completion handler version, if no thumbnail is rendered, Swift ensures that we throw an error here or return a value. But we can’t just silently fail. And that’s it. That’s the all code we need. The function does exactly what the completion handler version did before. But instead of 20 lines of code, it just has 6. And it’s all straight-line code.\n\nThe four operations that need to be performed in sequence are listed one after the next. And Swift makes sure that the function always notifies its caller when it’s done, either by returning or by throwing if a problem comes up. This is just one example of how using async/await can transform your asynchronous Swift code, making it safer, shorter, and making it better reflect your intent.\n\nLet’s dig in to some of the details of how fetchThumbnail is implemented. On the second-to-last line, even though there’s no function call, the expression that kicks off rendering the thumbnail is marked with “await.” That’s because the thumbnail property is async. Not just functions can be async. Properties can be too, so can initializers. Now, the thumbnail property is not part of the SDK. It’s actually one that Robert added. Let’s take a look at it.\n\nHe defined this property in an extension on UIImage, and its implementation is short. It forms a CGSize and awaits the result of passing it along to byPreparingThumbnail(ofSize). By the way, this method on self is the awaitable version of the method we used earlier.\n\nThere are a couple things to notice. First, it has an explicit getter. This is required to mark a property async. As of Swift 5.5, property getters can also throw. And like with async function signatures, if a property is both async and throws, the async keyword goes right before throws.\n\nSecond, the property has no setter. Only read-only properties can be async.\n\nIn functions, properties, and initializers, await can be used on expressions to indicate where the function might unblock the thread. There’s another place that await can be used as well: in for loops to iterate over async sequences. An async sequence is just like a normal sequence except that it vends its elements asynchronously. So fetching the next item must be marked with the await keyword, indicating that it’s async.\n\nAs the function iterates over the async sequence, over and over, it may unblock the thread while awaiting the next element and then resume either with the next element into the body of the loop or, if there are no elements left, after the loop.\n\nTo learn more about AsyncSequence, watch the “Meet AsyncSequence” session. And if you’re interested in running many asynchronous tasks in parallel, check out the “Structured concurrency in Swift” session.\n\nSo there are a lot of places where you can use await. The keyword indicates that your async function might suspend there. What does it mean for an async function to suspend? To answer that, let’s think about what happens when you call a function.\n\nWhen you call any function, you hand control of the thread your function’s running on over to that function. If it’s a normal function you’re calling, like thumbnailURLRequest here, then the thread will be fully occupied doing work on behalf of that one function until it finishes.\n\nThat work might be in the body of the function itself or in other functions that it calls. Eventually, that function will finish, either by returning a value or throwing an error. When it does, it hands control back to your function. That’s the only way that a normal function can give up control of a thread: by finishing. And your function is the only one it can give control to. If it’s an async function you’re calling, things are different. Like a normal function, when it’s done, it will finish and return control to your function. But unlike a normal function, it can give up control of the thread in an entirely different way: by suspending.\n\nJust like a normal function, when you call an async function, you give control of the thread to it.\n\nOnce it’s running, an async function can suspend. When it does, it gives up control of the thread. But rather than giving control back to your function, it instead gives control of the thread to the system. When that happens, your function is suspended too. Suspending is the function’s way of telling the system, “I know you have a lot of work to do. You decide what’s most important.” How cooperative is that? So once the function suspends itself, the system is free to use the thread to do other work. At some point, the system will decide that the most important work to be done is to continue running the async function that had suspended itself earlier. At that point, the system will resume it. That async function is then back in control of the thread and able to keep going about its work.\n\nAnd if it wants, it can suspend itself again. In fact, it can suspend itself as many times as it needs to.\n\nOn the other hand, it may not need to suspend itself at all. While an async function may suspend, just because it’s marked async doesn’t necessarily mean that it will suspend. And by the same token, just because you see an “await” doesn’t mean the function will definitely suspend there. But eventually, whether without ever suspending or after resuming for the last time, the function will finish, handing control of the thread back to your function, along with a value or an error.\n\nLet’s take another look at fetchThumbnail to see what can happen when it suspends.\n\nWhen fetchThumbnail calls URLSession’s async data method, the data method stops executing on the thread in the special way that only async functions can: by suspending. It gives control of the thread to the system and asks the system to schedule the work for URLSession’s data method.\n\nBut at this point, the system is in control, and that work may not be started immediately. The thread can be used for other things instead. Let’s see how that might happen. Suppose that after fetchThumbnail has been called, the user taps a button which will upload some data. Say, for example, that they react to a post. Then the system is free to execute the work to post the user’s reaction before the previously queued-up work.\n\nOnce that late-breaking work has completed, URLSession’s data method may be resumed. Or the system might execute other work instead. Finally, once the data method finishes, it will return to fetchThumbnail. The fact that other work can be performed while a function is suspended is why Swift insists that you mark async calls with the await keyword. You need to be aware that the state of your app can change dramatically when your function suspends.\n\nNow, this is also true when you use completion handlers. But because you don’t have all the ceremony and indentation they entail in async/await code, the await keyword is how you notice that a block of code doesn’t execute as one transaction. The function may suspend, and other things may happen while it’s suspended between the lines of the function.\n\nMore than that, the function may resume onto an entirely different thread. To learn about these issues, see the “Protect mutable state with Swift actors” session. Here are a few important things to remember about async/await. First, when you mark a function async, you’re allowing it to suspend. And when a function suspends itself, it suspends its callers too. So its callers must be async as well.\n\nSecond, to point out where in an async function it might suspend one or many times, the await keyword is used.\n\nThird, while an async function is suspended, the thread is not blocked. So the system is free to schedule other work. Even work that gets kicked off later can be executed first. That means your app’s state can change a great deal while the function is suspended. Finally, when an async function resumes, the results returned from the async function it called flow back into the original function, and execution continues right where it left off. You’ve seen how async/await works in Swift. Now Robert will show you how to start using it in your own projects. Thanks, Nate. Earlier, Nate showed you the app we’re building together. The thumbnail function he converted to adopt async/await was called in a few places, so we’ll need to migrate them to adopt concurrency as well. Let’s start with something critical to modern software development: testing. We wanted testing async code to be just as easy as testing synchronous code, so XCTest supports async out of the box. What used to be a tedious process of setting up an expectation, calling the API under test, fulfilling the expectation, and then making sure to wait for an arbitrary amount of time becomes as easy as adding the async keyword to the test function, removing the XCTest expectations, its fulfillment, and the explicit await, and instead awaiting the results of calling the new asynchronous fetchThumbnail function that Nate showed you earlier.\n\nNow that our tests are settled, let’s zoom in on the application code itself. In particular, the SwiftUI code behind the thumbnail views in each of row of this list.\n\nAn image cell is created with a post, and each post has an ID that we pass to the viewModel so it can asynchronously retrieve the thumbnail. You’ve already seen how to transform this call from the testing code, so let’s give it a shot. First we remove the completion handler, then “try” is added to handle any errors, and “await” to complete the call to an async function. But when we try to build this code, something goes wrong. The Swift compiler is telling us that we cannot call async functions in contexts that aren’t themselves async. Here, the onAppear modifier takes a plain, non-async closure, so there needs to be a way to bridge the gap between the synchronous and the asynchronous worlds.\n\nThe solution is to use the async task function. An async task packages up the work in the closure and sends it to the system for immediate execution on the next available thread, like the async function on a global dispatch queue.\n\nIts main benefit here is that async code can be called from inside of sync contexts.\n\nAfter another rebuild, the compiler is satisfied. Async tasks are part of a family of APIs that allow you to build rich concurrent Swift code in a familiar and naturally structured style.\n\nTo learn more, See “Explore structured concurrency in Swift.” And to learn how you can take full advantage of async code in SwiftUI apps, see “Discover concurrency in SwiftUI.” We’ve finished up migrating all the places we were calling the fetchThumbnail function. But our app has a lot more opportunities to adopt async/await. To get up and running quickly, we recommend starting small with an async alternative to an existing API. The SDK offers hundreds of APIs that take completion handlers because they do work on your behalf in an asynchronous manner. When these APIs are lined up side by side, patterns begin to emerge.\n\nEven though they may have different names and different purposes, all of these functions have the same essential API contract. You call them, and they call you back with the provided completion handlers, passing the result they obtained. Earlier, Nate showed you that you could await the results of asynchronous functions to write more natural-looking code. Wouldn’t it be awesome if we could turn these callback blocks into these async functions? As of Swift 5.5, this is exactly what happens. The Swift compiler automatically takes a look at completion handler code imported from Objective-C and provides an async alternative. But we didn’t stop there. Many delegate APIs also include methods that pass a completion handler to you. Calling the handler cooperatively informs the framework when an asynchronous task has completed. Take this ClockKit complication data source that calls fetchThumbnail to display a timeline entry for a given post.\n\nJust as before, we have to make sure to call the completion handler on all paths, and there’s a lot of extra noise here because of the closure.\n\nWith async await, this no longer needs to be the case. This delegate method has an async alternative we can use instead. First, the async alternative’s name is used which drops the leading “get.” We recommend that async functions omit leading words like “get” that communicate when the results of a call are not directly returned. After all, since this is an async alternative function, it returns a timeline entry directly. Now that there is an async context set up, we call the async version of fetchThumbnail. Finally, we return a timeline entry from this method rather than calling the now-deleted completion block.\n\nThe async APIs we’ve highlighted here barely scratch the surface.\n\nTo learn more, see these sessions which go into much greater detail about the APIs themselves and how you can use them when adopting async/await.\n\nAll of these are examples of situations where Swift will create async alternatives on your behalf. But there will inevitably be places in your code where you will need to create an async alternative yourself.\n\nLet’s see what this looks like in practice.\n\nIn our app, we use this getPersistentPosts function to retrieve any posts we persisted to our Core Data store. This function is called in a lot more places in our app than the async thumbnail function was, so it would be a really big change to just use async everywhere. And since we’re using NSAsynchronousFetchRequest, it seems like this function is a perfect candidate for an async alternative. First, we make an async function and convert the return value. Since this function can yield an error, we mark this function “throws” as well.\n\nNext, we call the completion handler version of getPersistentPosts and, well, now we’re stuck.\n\nWe need to return the result from the callback back to the places awaiting calls to the async persistentPosts function. Not only that, those callers are in a suspended state. We need to make sure to resume them at the right point in time and with the right data so that they can get on with the rest of their work.\n\nEarlier, Nate showed you how Swift and the system cooperate to take care of resuming async code for us. Let’s dive a little deeper into how this suspend/resume process works to see if we can come up with a similar solution for our problem.\n\nWhen the async version of persistentPosts is called, it calls into Core Data. At some later time, Core Data calls the completion handler and passes the result of the fetch request. This situation looks almost identical to the one Nate showed you earlier when our fetchThumbnail function asked the system, not Core Data, to resume a suspended async function call.\n\nAll that’s missing is a bridge to await the completion handler and resume with the fetch request’s results.\n\nThis pattern comes up all the time, and it has a name: a continuation. Throughout this session, Nate and I have already showed you lots of examples of continuations: methods that take completion blocks.\n\nThe caller of the method awaits the result of the function call and provides a closure to specify what to do next. When the function call completes, it calls the completion handler to resume whatever the caller wanted to do with the result. This kind of cooperative execution is exactly the way async functions in Swift work.\n\nTo make this explicit, Swift provides a feature so that you can create, manage, and resume continuations in a high-level and safe way.\n\nLet’s return to our example to see how continuations can help us finish writing our async alternative.\n\nThe withCheckedThrowingContinuation function lifts completion blocks with errors up to throwing async Swift functions. It has a counterpart called withCheckedContinuations for the situations where you know a function will never throw an error. These functions are the way to gain access to a continuation value you can use to resume a suspended async function. This also builds the first part of the bridge by allowing us to await calls to getPersistentPosts.\n\nLet’s finish building the bridge. The continuation value provides a resume function into which we place the results from the completion handler. Not only that, but resume provides the missing link we need to unsuspend any calls awaiting the result of the persistentPosts function. And there, in one neat package, is our finished bridge from completion handlers to async functions.\n\nContinuations provide a powerful way to manually take control over the execution of an async function, but there are some things to keep in mind. Continuations have a simple but important contract. Resume must be called exactly once on every path. But don’t worry. Swift has your back here.\n\nIf the continuation is discarded without resume being called, the Swift runtime will log a warning since this will result in async calls never unsuspending.\n\nIf a continuation is resumed multiple times in the same function, however, this is a more serious error as it can corrupt program data. To combat this, the Swift runtime will detect attempts to call resume multiple times and will ensure a fatal error occurs at the second resumption point.\n\nWith this in mind, let’s highlight one more important place you might use checked continuations.\n\nMany APIs are event driven. They provide delegate callbacks to notify our application at specific critical points and allow it to respond appropriately. In order to properly adopt async/await, we’ll have to store the continuation and resume it later. As before, we create a checked continuation.\n\nThen we save it and kick off the work.\n\nTo respect the API contract of checked continuations, we make sure to resume the active continuation, and finally nil it out so we’re protected from calling it more than once.\n\nAlways remember: the checked continuation value here represents the ability to manually resume any async calls to this API, so it must be called on all paths.\n\nIf your delegate API is called many times or not at all in certain circumstances, it is critical to resume any active continuations exactly once.\n\nTo learn more about the lower-level details of Swift concurrency, including continuations, see the “Swift concurrency: Behind the scenes” session.\n\nThis has been a whirlwind tour of async/await in Swift. We’ve shown you just how the async and await keywords work at runtime and how you can adopt them in your applications and frameworks. To get you started, we gave you a sampling of the async APIs available in the SDK and showed you how to bridge your existing code from the synchronous world to the async world.\n\nAsync/await is the foundation of a whole universe of Swift concurrency features. We’re excited to see what you build with them. Thank you for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:43",
+      "title": "Writing a function using completion handlers",
+      "language": "swift",
+      "code": "func fetchThumbnail(for id: String, completion: @escaping (UIImage?, Error?) -> Void) {\n    let request = thumbnailURLRequest(for: id)\n    let task = URLSession.shared.dataTask(with: request) { data, response, error in\n        if let error = error {\n            completion(nil, error)\n        } else if (response as? HTTPURLResponse)?.statusCode != 200 {\n            completion(nil, FetchError.badID)\n        } else {\n            guard let image = UIImage(data: data!) else {\n                completion(nil, FetchError.badImage)\n                return\n            }\n            image.prepareThumbnail(of: CGSize(width: 40, height: 40)) { thumbnail in\n                guard let thumbnail = thumbnail else {\n                    completion(nil, FetchError.badImage)\n                    return\n                }\n                completion(thumbnail, nil)\n            }\n        }\n    }\n    task.resume()\n}"
+    },
+    {
+      "timestamp": "8:00",
+      "title": "Using completion handlers with the Result type",
+      "language": "swift",
+      "code": "func fetchThumbnail(for id: String, completion: @escaping (Result<UIImage, Error>) -> Void) {\n    let request = thumbnailURLRequest(for: id)\n    let task = URLSession.shared.dataTask(with: request) { data, response, error in\n        if let error = error {\n            completion(.failure(error))\n        } else if (response as? HTTPURLResponse)?.statusCode != 200 {\n            completion(.failure(FetchError.badID))\n        } else {\n            guard let image = UIImage(data: data!) else {\n                completion(.failure(FetchError.badImage))\n                return\n            }\n            image.prepareThumbnail(of: CGSize(width: 40, height: 40)) { thumbnail in\n                guard let thumbnail = thumbnail else {\n                    completion(.failure(FetchError.badImage))\n                    return\n                }\n                completion(.success(thumbnail))\n            }\n        }\n    }\n    task.resume()\n}"
+    },
+    {
+      "timestamp": "8:30",
+      "title": "Using async/await",
+      "language": "swift",
+      "code": "func fetchThumbnail(for id: String) async throws -> UIImage {\n    let request = thumbnailURLRequest(for: id)  \n    let (data, response) = try await URLSession.shared.data(for: request)\n    guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw FetchError.badID }\n    let maybeImage = UIImage(data: data)\n    guard let thumbnail = await maybeImage?.thumbnail else { throw FetchError.badImage }\n    return thumbnail\n}"
+    },
+    {
+      "timestamp": "13:15",
+      "title": "Async properties",
+      "language": "swift",
+      "code": "extension UIImage {\n    var thumbnail: UIImage? {\n        get async {\n            let size = CGSize(width: 40, height: 40)\n            return await self.byPreparingThumbnail(ofSize: size)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "14:17",
+      "title": "Async sequences",
+      "language": "swift",
+      "code": "for await id in staticImageIDsURL.lines {\n    let thumbnail = await fetchThumbnail(for: id)\n    collage.add(thumbnail)\n}\nlet result = await collage.draw()"
+    },
+    {
+      "timestamp": "21:22",
+      "title": "Testing using XCTestExpectation",
+      "language": "swift",
+      "code": "class MockViewModelSpec: XCTestCase {\n    func testFetchThumbnails() throws {\n        let expectation = XCTestExpectation(description: \"mock thumbnails completion\")\n        self.mockViewModel.fetchThumbnail(for: mockID) { result, error in\n            XCTAssertNil(error)\n            expectation.fulfill()\n        }\n        wait(for: [expectation], timeout: 5.0)\n    }\n}"
+    },
+    {
+      "timestamp": "21:56",
+      "title": "Testing using async/await",
+      "language": "swift",
+      "code": "class MockViewModelSpec: XCTestCase {\n    func testFetchThumbnails() async throws {\n        XCTAssertNoThrow(try await self.mockViewModel.fetchThumbnail(for: mockID))\n    }\n}"
+    },
+    {
+      "timestamp": "22:30",
+      "title": "Bridging from sync to async",
+      "language": "swift",
+      "code": "struct ThumbnailView: View {\n    @ObservedObject var viewModel: ViewModel\n    var post: Post\n    @State private var image: UIImage?\n\n    var body: some View {\n        Image(uiImage: self.image ?? placeholder)\n            .onAppear {\n                Task {\n                    self.image = try? await self.viewModel.fetchThumbnail(for: post.id)\n                }\n            }\n    }\n}"
+    },
+    {
+      "timestamp": "25:56",
+      "title": "Async APIs in the SDK",
+      "language": "swift",
+      "code": "import ClockKit\n\nextension ComplicationController: CLKComplicationDataSource {\n    func currentTimelineEntry(for complication: CLKComplication) async -> CLKComplicationTimelineEntry? {\n        let date = Date()\n        let thumbnail = try? await self.viewModel.fetchThumbnail(for: post.id)\n        guard let thumbnail = thumbnail else {\n            return nil\n        }\n\n        let entry = self.createTimelineEntry(for: thumbnail, date: date)\n        return entry\n    }\n}"
+    },
+    {
+      "timestamp": "26:59",
+      "title": "Async alternatives and continuations",
+      "language": "swift",
+      "code": "// Existing function\nfunc getPersistentPosts(completion: @escaping ([Post], Error?) -> Void) {       \n    do {\n        let req = Post.fetchRequest()\n        req.sortDescriptors = [NSSortDescriptor(key: \"date\", ascending: true)]\n        let asyncRequest = NSAsynchronousFetchRequest<Post>(fetchRequest: req) { result in\n            completion(result.finalResult ?? [], nil)\n        }\n        try self.managedObjectContext.execute(asyncRequest)\n    } catch {\n        completion([], error)\n    }\n}\n\n// Async alternative\nfunc persistentPosts() async throws -> [Post] {       \n    typealias PostContinuation = CheckedContinuation<[Post], Error>\n    return try await withCheckedThrowingContinuation { (continuation: PostContinuation) in\n        self.getPersistentPosts { posts, error in\n            if let error = error { \n                continuation.resume(throwing: error) \n            } else {\n                continuation.resume(returning: posts)\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "31:44",
+      "title": "Storing the continuation for delegate callbacks",
+      "language": "swift",
+      "code": "class ViewController: UIViewController {\n    private var activeContinuation: CheckedContinuation<[Post], Error>?\n    func sharedPostsFromPeer() async throws -> [Post] {\n        try await withCheckedThrowingContinuation { continuation in\n            self.activeContinuation = continuation\n            self.peerManager.syncSharedPosts()\n        }\n    }\n}\n\nextension ViewController: PeerSyncDelegate {\n    func peerManager(_ manager: PeerManager, received posts: [Post]) {\n        self.activeContinuation?.resume(returning: posts)\n        self.activeContinuation = nil // guard against multiple calls to resume\n    }\n\n    func peerManager(_ manager: PeerManager, hadError error: Error) {\n        self.activeContinuation?.resume(throwing: error)\n        self.activeContinuation = nil // guard against multiple calls to resume\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "The Swift Programming Language: Concurrency",
+        "url": "https://docs.swift.org/swift-book/documentation/the-swift-programming-language/concurrency/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10132/5/33A0E99C-1E53-4143-8A63-809D2E6CBA66/downloads/wwdc2021-10132_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10132/5/33A0E99C-1E53-4143-8A63-809D2E6CBA66/downloads/wwdc2021-10132_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10142",
+      "year": "2022",
+      "title": "Efficiency awaits: Background tasks in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10142"
+    },
+    {
+      "id": "110351",
+      "year": "2022",
+      "title": "Eliminate data races using Swift Concurrency",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110351"
+    },
+    {
+      "id": "110360",
+      "year": "2022",
+      "title": "Use Xcode for server-side development",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110360"
+    },
+    {
+      "id": "110350",
+      "year": "2022",
+      "title": "Visualize and optimize Swift concurrency",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110350"
+    },
+    {
+      "id": "10017",
+      "year": "2021",
+      "title": "Bring Core Data concurrency to Swift and SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10017"
+    },
+    {
+      "id": "10296",
+      "year": "2021",
+      "title": "Diagnose unreliable code with test repetitions",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10296"
+    },
+    {
+      "id": "10019",
+      "year": "2021",
+      "title": "Discover concurrency in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10019"
+    },
+    {
+      "id": "10134",
+      "year": "2021",
+      "title": "Explore structured concurrency in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10134"
+    },
+    {
+      "id": "10325",
+      "year": "2021",
+      "title": "Friday@WWDC21",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10325"
+    },
+    {
+      "id": "10058",
+      "year": "2021",
+      "title": "Meet AsyncSequence",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10058"
+    },
+    {
+      "id": "10321",
+      "year": "2021",
+      "title": "Monday@WWDC21",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10321"
+    },
+    {
+      "id": "10133",
+      "year": "2021",
+      "title": "Protect mutable state with Swift actors",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10133"
+    },
+    {
+      "id": "10254",
+      "year": "2021",
+      "title": "Swift concurrency: Behind the scenes",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10254"
+    },
+    {
+      "id": "10194",
+      "year": "2021",
+      "title": "Swift concurrency: Update a sample app",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10194"
+    },
+    {
+      "id": "10095",
+      "year": "2021",
+      "title": "Use async/await with URLSession",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10095"
+    },
+    {
+      "id": "10054",
+      "year": "2021",
+      "title": "What's new in AppKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10054"
+    },
+    {
+      "id": "10086",
+      "year": "2021",
+      "title": "What's new in CloudKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10086"
+    },
+    {
+      "id": "10192",
+      "year": "2021",
+      "title": "What‘s new in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10192"
+    },
+    {
+      "id": "10146",
+      "year": "2021",
+      "title": "What’s new in AVFoundation",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10146"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:48:27.897Z"
+}

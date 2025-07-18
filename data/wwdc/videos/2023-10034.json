@@ -1,0 +1,148 @@
+{
+  "id": "10034",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10034/",
+  "title": "Create accessible spatial experiences",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Accessibility & Inclusion"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Mellow instrumental hip-hop ♪ ♪ Dan Golden: Hi, I'm Dan from the Accessibility team. I am thrilled to talk about accessibility in spatial computing, alongside my colleague Drew. In this talk, I'll give you an overview of some of the accessibility features available on this platform. Next, I'll dive into some of the specifics of what you can do in your apps to support people who are blind or low vision. Then, I'll hand it off to Drew to discuss motor, cognitive, and hearing accessibility in spatial computing. Let's get started! We've designed this immersive platform for everyone. While spatial computing experiences are often built with stunning visual features and a variety of hand inputs, that doesn't mean that vision or physical movement are required to engage with them. In fact, these experiences have the potential to be incredibly impactful to people who are blind or low vision, have limited mobility, or limb differences. For example, someone who is blind could interact with the real world without having to see what's on the displays. Therefore, it's important to keep people of all abilities in mind when you're building out your app, so that everyone can enjoy and benefit from them. At Apple, we recognize that access to technology is a fundamental human right, and this platform contains the largest list of accessibility features we've ever included in the first generation of a product. You'll recognize many features you already know and love, like Dynamic Type support, Increase Contrast, and Spoken Content features. And we've reimagined our flagship assistive technologies specifically for spatial computing. We are so excited about these features, and as a developer, you can help by making sure the experiences that you're building include everyone. Let's start by talking about the ways you can support people who are blind or low vision in your apps. There are a few things to consider when discussing vision accessibility: VoiceOver support, visual design, and motion. Let's start by talking about VoiceOver support. VoiceOver is the built-in screen reader available on all Apple platforms, and I'm excited to say we've brought it to this one as well. Drew and I have been working on a really fun app called Happy Beam that utilizes ARKit and RealityKit. In the app, you make heart gestures with your hands to turn grumpy clouds happy. Let's take a look at some of the ways we can improve the VoiceOver experience in this app. We've gone ahead and added VoiceOver to the Accessibility Shortcut in Settings > Accessibility > Accessibility Shortcut, so that whenever we triple-press the Digital Crown, VoiceOver will toggle on or off. This is a great tool when we're testing the accessibility of our app. Let's open the app and toggle VoiceOver on with a triple-press of the Digital Crown. ♪ Ethereal instrumental music ♪ VoiceOver: Happy Beam. Choose how you will cheer up grumpy clouds. Dan: On this platform, VoiceOver uses different finger pinches on different hands to perform different actions. By default, you can move focus to the next item by pinching your right index finger. ♪ VoiceOver: Make a heart with two hands, button. Use a pinch gesture or a compatible device, button. Dan: To move focus to the previous item, pinch your right middle finger. VoiceOver: Make a heart with two hands, button. Dan: To activate an item, pinch your right ring finger or your left index finger.  Now that we're familiar with some of VoiceOver's basic controls, let's explore the rest of the app. VoiceOver: Three, two, one.  Happy beam. Back button. Score zero. Stop music, button. Twenty-nine seconds remaining. Pause, button. Dan: Things are looking pretty good here. This app is built using SwiftUI, so a lot of the standard controls we're using are already accessible, and we've taken care to adopt SwiftUI's accessibility modifiers on the rest of the views to ensure appropriate accessibility information is being provided to VoiceOver. To learn more, check out our talks on SwiftUI Accessibility. Let's take a look at the rest of the app and see how we can interact with the clouds. VoiceOver: Close, button. Pop-up. App placement bar. App placement --  App placement -- App placement bar. Dan: That sound that you hear indicates that VoiceOver can't find any other items to interact with, so the clouds are inaccessible to VoiceOver. The clouds are generated using RealityKit, so we can fix this using the new accessibility component available in RealityKit. The accessibility component allows you to specify accessibility properties on RealityKit entities. You can configure accessibility labels, values, and traits, as well as custom rotors, custom content, and custom actions. You can also configure system accessibility actions, such as the activate and adjustable actions. To make the clouds accessible, let's start by creating a new accessibility component, and then set isAccessibilityElement to true to indicate to assistive technologies that the cloud should be navigable. Next, we'll give the cloud the button trait, so that technologies like Switch Control and Voice Control understand that this cloud is a user-interactive item. We'll also give it the playsSound trait, since the clouds play a sound when they turn happy. Next, we can give the cloud a name via the label property, and a value describing its grumpy or happy state. Any time the state in your app is updated, make sure you update the relevant property on the accessibility component. Here, in the didSet handler of our isHappy variable, we're using one of the convenience properties to update the accessibilityValue on the cloud. Any time you use a convenience property, the cooresponding property on the accessibility component is updated accordingly. Labels and values are stored as LocalizedStringResources, which can be created using string literals, but automatically resolve to a localized value that you've provided at runtime. Lastly, we'll set the component on the entities component list. Let's take a look at our app now that the cloud should be accessible. ♪ VoiceOver: App pl-- Cloud, grumpy. Button. Dan: Great! We can navigate to the clouds and their state is communicated to us. VoiceOver uses Spatial Audio to provide cues as to where objects are located. So let's try to make a heart gesture at one of our clouds to turn it happy. ♪ What's going on? We just showed that cloud so much love, but it still didn't turn happy. That's because when VoiceOver is enabled, your app won't receive hand input by default. This is to ensure that your app won't inadvertently perform an action while someone is performing VoiceOver gestures, enabling them to explore safely. On this platform, VoiceOver includes a new Direct Gesture Mode, and when it's enabled, VoiceOver won't process its standard gestures and instead allow your app to directly process hand input. People can choose to run your app both in Direct Gesture Mode and in VoiceOver's default interaction mode, and there are accessibility considerations to keep in mind in each case. Let's start by talking about VoiceOver's Default Interaction Mode. Let's add an activate action so that we can turn the clouds happy using VoiceOver. To do this, we'll add the activate action to the systemActions property on the accessibilityComponent. Then, we'll subscribe to the activate event on the content inside our RealityView. Any time we receive an activate event in the callback, we'll update the game model so that the state of the relevant cloud is updated accordingly. Let's take a look at our app again with actions added. VoiceOver: App placement -- Close -- Cloud, grumpy. Cloud, grumpy. Dan: Awesome! Now we can turn the clouds happy using VoiceOver. The AccessibilityComponent also offers additional APIs such as custom actions, custom rotors, and custom content. These are great tools for improving the accessibility experience in your app. To learn more about, check out our talks on the corresponding topics. Next, let's talk about Direct Gesture Mode. This is a new way to interact with apps while using VoiceOver on this platform. VoiceOver's activate action isn't available in Direct Gesture Mode, so we'll need to provide feedback to the hand-input interactions that we'll be using instead. Let's start by posting an announcement when the clouds appear, describing them and their placement in the world. To do this, we'll create a new AccessibilityNotification with an Announcement type, pass in the string we'd like to have spoken, and then call the post function on the announcement. In spatial experiences, it's critical to provide information about what items are available and where they are located, so this will be a crucial announcement in our app. Let's also post an announcement any time a heart gesture is recognized or when a cloud changes from grumpy to happy. Always announce any meaningful event to VoiceOver, so that it's clear what is happening, and what interactions are being performed. For example, in a fully immersive app, any time you enter a new room or environment, make sure to announce that change in context to VoiceOver, and describe any new items that are available in the world. Also consider utilizing sounds when actions are performed. The sounds that play in Happy Beam when a cloud turns happy are a great way to keep the app feeling fun and spatial, even if we can't see the visual transformation of the cloud. Let's take a look at our app one last time with some announcements added. When the game starts, we'll enable Direct Gesture Mode with a left index finger triple-pinch and hold. Then, we can make heart gestures to turn the clouds happy and get feedback about all of the interactions. VoiceOver: Three, two, one. Happy Beam. Three clouds above and in front of you to the right. Direct Gestures enabled. Press the crown to ac-- Casting beam. ♪ Grumpy cloud hit. Hiding beam. Dan: Awesome! We received some great feedback there about all of the interactions as they were being performed. Our app is shaping up to have some great VoiceOver support. But there's still a lot you can do to support people with low vision who aren't using your app with VoiceOver, especially if you're building any custom components or controls. Just like on all other Apple platforms, make sure your app responds to changes in Dynamic Type, especially at the largest sizes available in accessibility settings. Audit your app for any UI that might benefit from being laid out vertically instead of horizontally at these larger sizes. Also ensure you're using at least a four-to-one contrast ratio between foreground and background colors. To learn more, check out \"Make your apps visually accessible.\" In spatial experiences, anchors can be used to place content relative to different anchor points, such as a hand or a specific position in the world. You can also configure content to be anchored to the virtual camera, so that it appears on the same spot on the displays. While you may be familiar with camera anchors in Reality Kit on other Apple platforms, on this platform, the content follows your head as you look around, which has the potential to impact people with low vision differently. Head anchors should be avoided and used sparingly, so that people with low vision can get closer to content to read it or view its details. Additionally, people using the accessibility Zoom feature won't be able to easily position head-anchored content inside of the Zoom lens, since the Zoom lens is also head anchored. Instead, consider using a world anchor or lazily move your content after a delay. In the rare cases where it's absolutely necessary to use head anchors, keep the content decorative. Critical information should not only be accessible through head-anchored content. Always provide alternatives for head anchors, even when they might be the best mainstream experience in your app. The new accessibilityPrefers HeadAnchorAlternative Environment variable in SwiftUI, and the AX PrefersHeadAnchor Alternative API in the Accessibility framework, let you know when you should use alternate anchors. Observe these APIs anywhere your app employs head anchors. We've taken care to adopt this API in the system ourselves. By default, Control Center is head anchored in its collapsed state. You can see here that, as you look around, Control Center follows you.\n\nWhile this design makes it easy to access Control Center from anywhere, we knew it might be challenging for some people. I mentioned earlier that Zoom is also head anchored. This is a feature that magnifies content for people with low vision. When Zoom is enabled or someone has otherwise indicated that they prefer alternatives to head anchors, Control Center moves freely about the Y axis. Here, you can see that, as you tilt your head up, the Zoom lens follows your head, but Control Center does not. Enabling you to position Control Center inside of the Zoom lens and interact with it. It's also important to be mindful of the usage of motion in your app. Motion can be dizzying for some people, and wearing a headset can be an especially jarring experience, even when subtle motion effects are used. Avoid the use of motion that move a person rapidly through your app, or involve a bouncing or wave-like movement. Zooming animations, animations that involve movement along more than one axis, spinning or rotating effects, and persistent background effects should all also be avoided. Always provide alternatives for these types of animations when Reduce Motion is enabled. You can check whether Reduce Motion is active with the accessibilityReduceMotion Environment variable in SwiftUI. In UIKit, you can query UIAccessibility. isReduceMotionEnabled, and observe changes to the preference with the corresponding notification. If you're having trouble finding a suitable replacement for the motion in your app, consider utilizing a crossfade. Here's an example of how we've adopted Reduce Motion in the system. Check out the water here in the Mount Hood Environment, as the water persistently ripples in the background. When we toggle Reduce Motion on, the water is changed to statically show a ripple effect, which achieves a similar visual effect without requiring the usage of motion. That's an overview of some of the ways you can improve the vision accessibility in your apps, but there's still a lot to consider when discussing motor, cognitive, and hearing accessibility. And for that, here's Drew to tell you more. Drew Haas: Thanks, Dan. Really great work! My name is Drew Haas and I'm an engineer on the Accessibility team. Now that we've learned about meaningful ways to improve the visual accessibility of your spatial experiences, there is so much I want to share about how to create your apps to be inclusive to people with disabilities which affect physical and motor function, cognition, and hearing. Let's start first with motor! The default input system is driven by a combination of eyes and hands. For example, looking at a button with your eyes, and pinching with your hand sends a selection event to activate the button. However, not everyone can perform these physical actions. Our accessibility features provide alternate input methods for people with disabilities which impact their use of eyes, hands, or both. The Dwell Control accessibility feature allows people to select and interact with the UI without using their hands. Dwell Control supports gestures like tap, scroll, long press, and drag. You should design your app to have full functionality with this gesture set so people using Dwell Control aren't excluded. It's a breeze to switch gesture modes by using the Dwell Control menu, allowing people to operate their device using accommodations without sacrificing efficiency. This is by design: giving people a frictionless experience even if they're using nondefault inputs. Let's see how our Happy Beam app is designed to support a variety of inputs, which makes it fully playable using Dwell Control. When Happy Beam is launched, the player will first choose how they'll cheer up those grumpy clouds. You saw the first option earlier in this session: using two hands in the shape of a heart and aiming it at the clouds. The second option supports Bluetooth accessories like keyboards and game controllers. When playing with these inputs, the happy beam is fired using this heart turret. The turret also responds to tap-and-drag gestures, which means you can play with one hand. And, people playing with Dwell Control have full functionality over the turret. So plan and design for your app to support different inputs like Happy Beam does. This is the best way to ensure you don't accidentally exclude people. There is another accessibility feature that works really well with Dwell. Enter Pointer Control, one of my favorite accessibility features. This feature transforms the input experience, allowing people to use different input sources to control the system focus instead of using their eyes. Eyes is the default, but here people can change the system focus to be driven by head position, wrist position, or index finger. Since Pointer Control can change the input signal to follow head position, remember to use camera-anchored content sparingly. This is another reason you should prefer to use world anchors or provide alternatives to camera-anchored content. Both Dwell Control and Pointer Control -- either on their own or utilizing their feature sets combined -- provide tons of flexibility with how people interact with their device. These features accommodate the physical requirements to use the system. Allow multiple avenues for physical interaction, because you never know what kind of disabilities someone using your app may have. Spatial experiences enable new, dimensional ways to interact with content. Switch Control has new menu options for adjusting the camera's position in world space. Here we're using a keyboard with Switch Control to activate the new camera position modifiers. This moves your spatial position downward without you physically moving your body. Not everyone will be able to move comfortably or freely in their environment. While these camera position options are available for Switch Control, if you have experiences that require people to position themselves in certain ways, provide options to bypass them. Next, I want to talk about Cognitive accessibility, and how you can support people with disabilities that affect the way they learn, remember, and process information. Guided Access is a cognitive accessibility feature that promotes focus by restricting the system to a single app. It aims to minimize distractions by backgrounding other apps, removing ornamental UI which may be distracting, and by suppressing hardware button events that could take someone out of their experience. Being able to adjust the system in this way can make it easier for someone to stay focused on their current task, without distractions or easy ways to get sidetracked. To learn more about how to use Guided Access and implement the custom restrictions APIs, check out my talk from last year, \"Create accessible Single App Mode experiences.\" By following just a few best practices for cognitive accessibility, you make your app easier to use for everyone, but especially people with disabilities. Some people need a little more help breaking down the complexity of your app. Interactions which require complex hand gestures can be hard for people to pick up on and retain. You can help create a consistent and familiar visual experience by using Apple's UI frameworks like SwiftUI. This reduces the amount of time someone may need to feel comfortable using your app, because it's likely they've used other apps built using the same UI framework. And finally, allow people to take their time immersing themselves and experiencing all that you have to offer. There is no need to rush people through an experience. Immersive content can promote focus and attention, which is a fantastic way to create a comfortable environment for someone with sensory processing disorders. Remember that not everyone processes information at the same speed, so some people may prefer or need a little extra time to work through an experience. Finally, I want to share some of the best ways to provide access and accommodation to people that are deaf or hard of hearing. It's common to use audio and speech as a way to immerse people in a spatial experience. For people with hearing loss or auditory processing disorders, one of the most impactful things you can do is provide quality captions so they can access your content. A comfortable reading experience is easy to create by using pop-on captions -- which render the phrase all at once and are easy to read -- instead of using roll-up captions, which appear word-by-word and can cause reading fatigue and nausea when reading for a long duration. Did you know that people can customize the visual appearance of captions on their device? Captions can be widely customized, modifying things like text size, font, and color, as well as stroke outlines or backgrounds. These options allow people to customize their captions so they're easy to see and read. AVKit and AVFoundation provide built-in support for supplying captions in your app. These frameworks automatically handle the caption appearance and visual style. If you are not using AVFoundation because you're implementing your own captions system, there are two APIs that you should know about. First, the isClosedCaptioningEnabled API. Use this to check whether someone already has Closed Captions turned on in Accessibility settings. If you have separate caption settings in your app, you should use this API to inform the default state of captioning. This way, people who rely on captions get access to them right away. The second can be found in the Media Accessibility framework, which has APIs to access each style attribute individually. You should check these styles and apply them to your captions to keep a consistent reading experience across the entire system. No matter which way you choose to provide captions, you should have a high standard for their quality. Captions should represent all audio content, including music and sound effects. It's also helpful to indicate where in space the audio is coming from if directionality is important to your experience, basically telling the user to \"keep in mind, the nearest audio source may be behind you.\" An impressive accessibility experience comes from considering all people and their needs. Provide rich RealityKit experiences by setting accessibility properties on your entities. This is the foundation for your app's accessibility for technologies like VoiceOver, Voice Control, and Switch Control. Be flexible and provide options for physical interaction like we saw in Happy Beam to include all players and their play styles. Strive to remove ambiguity and provide clarity and focus for people with cognitive disabilities, and spend time and care on captioned content for audio experiences so that people that are deaf or hard of hearing can enjoy your creation. If you're not sure where to start, turn on some of these accessibility features and open up your app! Trying out these features for yourself is a great way to dive right in. This platform is designed for everyone, and with all of the considerations Dan and I have shared today, you are equipped to create accessible and inclusive spatial experiences. Thank you! ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "5:28",
+      "title": "Use AccessibilityComponent with RealityKit",
+      "language": "swift",
+      "code": "var accessibilityComponent = AccessibilityComponent()\naccessibilityComponent.isAccessibilityElement = true\naccessibilityComponent.traits = [.button, .playsSound]\naccessibilityComponent.label = \"Cloud\"\naccessibilityComponent.value = \"Grumpy\"\ncloud.components[AccessibilityComponent.self] = accessibilityComponent\n\n// ...\n\nvar isHappy: Bool {\n    didSet {\n        cloudEntities[id].accessibilityValue = isHappy ? \"Happy\" : \"Grumpy\"\n    }\n}"
+    },
+    {
+      "timestamp": "8:04",
+      "title": "Add an activate action",
+      "language": "swift",
+      "code": "var accessibilityComponent = AccessibilityComponent()\naccessibilityComponent.isAccessibilityElement = true\naccessibilityComponent.traits = [.button, .playsSound]\naccessibilityComponent.label = \"Cloud\"\naccessibilityComponent.value = \"Grumpy\"\naccessibilityComponent.systemActions = [.activate]\ncloud.components[AccessibilityComponent.self] = accessibilityComponent\n\n// ...\n\ncontent.subscribe(to: AccessibilityEvents.Activate.self, componentType: nil) { activation in\n    handleCloudCollision(for: activation.entity, gameModel: gameModel)\n}"
+    },
+    {
+      "timestamp": "9:23",
+      "title": "Announce meaningful events and changes in context",
+      "language": "swift",
+      "code": "AccessibilityNotification.Announcement(\"8 clouds in front of you\").post()"
+    },
+    {
+      "timestamp": "13:15",
+      "title": "Provide alternatives to head anchored content",
+      "language": "swift",
+      "code": "// SwiftUI\n@Environment(\\.accessibilityPrefersHeadAnchorAlternative)\nprivate var accessibilityPrefersHeadAnchorAlternative\n\n// UIKit\nAXPrefersHeadAnchorAlternative()\nNSNotification.Name.AXPrefersHeadAnchorAlternativeDidChange"
+    },
+    {
+      "timestamp": "15:04",
+      "title": "Provide alternatives when Reduce Motion is enabled",
+      "language": "swift",
+      "code": "// SwiftUI\n@Environment(\\.accessibilityReduceMotion)\nprivate var accessibilityReduceMotion\n\n// UIKit\nUIAccessibility.isReduceMotionEnabled\nUIAccessibility.reduceMotionStatusDidChangeNotification"
+    },
+    {
+      "timestamp": "23:35",
+      "title": "Check whether captions are enabled",
+      "language": "swift",
+      "code": "UIAccessibility.isClosedCaptioningEnabled\nUIAccessibility.closedCaptioningStatusDidChangeNotification"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Accessibility",
+        "url": "https://developer.apple.com/documentation/swiftui/view-accessibility"
+      },
+      {
+        "title": "Diorama",
+        "url": "https://developer.apple.com/documentation/visionOS/diorama"
+      },
+      {
+        "title": "Improving accessibility support in your visionOS app",
+        "url": "https://developer.apple.com/documentation/visionOS/improving-accessibility-support-in-your-app"
+      },
+      {
+        "title": "Media Accessibility",
+        "url": "https://developer.apple.com/documentation/MediaAccessibility"
+      },
+      {
+        "title": "UIAccessibility",
+        "url": "https://developer.apple.com/documentation/UIKit/UIAccessibility"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10034/5/DF004F28-FE27-41BB-B1BB-4CF81F3F2695/downloads/wwdc2023-10034_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10034/5/DF004F28-FE27-41BB-B1BB-4CF81F3F2695/downloads/wwdc2023-10034_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10109",
+      "year": "2023",
+      "title": "Meet SwiftUI for spatial computing",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10109"
+    },
+    {
+      "id": "10152",
+      "year": "2022",
+      "title": "Create accessible Single App Mode experiences",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10152"
+    },
+    {
+      "id": "10119",
+      "year": "2021",
+      "title": "SwiftUI Accessibility: Beyond the basics",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10119"
+    },
+    {
+      "id": "10121",
+      "year": "2021",
+      "title": "Tailor the VoiceOver experience in your data-rich apps",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10121"
+    },
+    {
+      "id": "10020",
+      "year": "2020",
+      "title": "Make your app visually accessible",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10020"
+    },
+    {
+      "id": "10116",
+      "year": "2020",
+      "title": "VoiceOver efficiency with custom rotors",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10116"
+    },
+    {
+      "id": "238",
+      "year": "2019",
+      "title": "Accessibility in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/238"
+    },
+    {
+      "id": "250",
+      "year": "2019",
+      "title": "Making Apps More Accessible With Custom Actions",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/250"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:07:42.055Z"
+}

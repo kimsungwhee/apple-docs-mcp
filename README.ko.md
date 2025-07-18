@@ -16,6 +16,7 @@
 - 📰 **문서 업데이트**: WWDC 발표, 기술 업데이트, 릴리스 노트 추적
 - 🎯 **기술 개요**: Apple 플랫폼 및 기술에 대한 포괄적인 가이드와 계층적 탐색
 - 💻 **샘플 코드 라이브러리**: Apple 기술을 보여주는 완전한 작업 예제 프로젝트를 탐색하고 검색
+- 🎥 **WWDC 비디오 라이브러리**: 전체 트랜스크립트, 코드 예제 및 리소스를 포함한 WWDC 세션 검색 및 탐색
 - 🔗 **관련 API 발견**: 지능적 추천을 통한 관련, 유사 및 대안 API 찾기
 - 📊 **플랫폼 호환성**: Apple 생태계 전반의 플랫폼 지원 및 버전 호환성 분석
 - ⚡ **고성능**: 콘텐츠 타입별 최적화된 TTL을 가진 메모리 기반 캐싱 시스템
@@ -295,6 +296,35 @@ npm install && npm run build
 "베타 샘플 코드 프로젝트만 보여줘"
 ```
 
+### 🎥 WWDC 비디오 검색
+```
+"SwiftUI에 대한 WWDC 비디오 검색"
+"머신러닝 WWDC 세션 찾기"
+"WWDC 2024 비디오 보여줘"
+"async/await WWDC 강연 검색"
+"Swift 동시성에 대한 WWDC 비디오 찾기"
+"접근성 주제의 WWDC 세션 보여줘"
+```
+
+### 📺 WWDC 비디오 상세 정보
+```
+"WWDC 세션 10176의 상세 정보 가져와"
+"WWDC23 SwiftData 세션의 대본 보여줘"
+"WWDC 비디오 10019의 코드 예제 가져오기"
+"Vision Pro WWDC 세션의 리소스 보여줘"
+"'Meet async/await in Swift' 세션의 대본 가져와"
+```
+
+### 📋 WWDC 주제 및 연도
+```
+"모든 WWDC 주제 나열"
+"Swift 주제의 WWDC 비디오 보여줘"
+"개발자 도구에 대한 WWDC 비디오 가져오기"
+"2023년 WWDC 비디오 나열"
+"모든 SwiftUI 및 UI 프레임워크 세션 보여줘"
+"머신러닝 WWDC 콘텐츠 가져오기"
+```
+
 ## 🛠️ 사용 가능한 도구
 
 | 도구 | 설명 | 주요 기능 |
@@ -310,6 +340,10 @@ npm install && npm run build
 | `resolve_references_batch` | API 참조 일괄 해결 | 문서에서 모든 참조 추출 및 해결 |
 | `get_platform_compatibility` | 플랫폼 호환성 분석 | 버전 지원, 베타 상태, 사용 중단 정보 |
 | `find_similar_apis` | 유사한 API 발견 | Apple 공식 권장사항, 주제 그룹화 |
+| `search_wwdc_videos` | WWDC 비디오 세션 검색 | 키워드 검색, 주제/연도 필터링, 세션 메타데이터 |
+| `get_wwdc_video_details` | WWDC 비디오 상세 정보 및 대본 | 전체 대본, 코드 예제, 리소스, 플랫폼 정보 |
+| `list_wwdc_topics` | 사용 가능한 모든 WWDC 주제 나열 | Swift부터 공간 컴퓨팅까지 19개 주제 카테고리 |
+| `list_wwdc_years` | 사용 가능한 모든 WWDC 연도 나열 | 비디오 개수와 함께 학년 정보 |
 
 ## 🏗️ 기술 아키텍처
 
@@ -328,7 +362,12 @@ apple-docs-mcp/
 │   │   ├── get-related-apis.ts       # 관련 API 발견
 │   │   ├── resolve-references-batch.ts # 일괄 참조 해결
 │   │   ├── get-platform-compatibility.ts # 플랫폼 분석
-│   │   └── find-similar-apis.ts      # 유사한 API 추천
+│   │   ├── find-similar-apis.ts      # 유사한 API 추천
+│   │   └── wwdc/                     # WWDC 비디오 도구
+│   │       ├── wwdc-handlers.ts      # WWDC 도구 핸들러
+│   │       ├── content-extractor.ts  # 비디오 콘텐츠 추출
+│   │       ├── topics-extractor.ts   # 주제 리스트
+│   │       └── video-list-extractor.ts # 비디오 리스트 파싱
 │   └── utils/                        # 유틸리티 함수 및 헬퍼
 │       ├── cache.ts                  # TTL 지원 메모리 캐시
 │       ├── constants.ts              # 애플리케이션 상수 및 URL
@@ -357,6 +396,7 @@ apple-docs-mcp/
 | 프레임워크 인덱스 | 1시간 | 100 항목 | 안정적인 구조, 변경 빈도 낮음 |
 | 기술 목록 | 2시간 | 50 항목 | 거의 변경되지 않음, 대용량 콘텐츠 |
 | 문서 업데이트 | 30분 | 100 항목 | 정기 업데이트, WWDC 발표 |
+| WWDC 비디오 데이터 | 2시간 | 무제한 | 안정적인 콘텐츠, 로컬 JSON 파일 |
 
 ## 🧪 개발
 

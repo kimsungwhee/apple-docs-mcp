@@ -1,0 +1,74 @@
+{
+  "id": "10180",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10180/",
+  "title": "Discover streamlined location updates",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Siraj: Hello, everyone. My name is Siraj, and I'm an Engineer in CoreLocation. Thanks for joining \"Discover Streamlined Location Updates,\" where I'll be talking about our new CoreLocation API for getting locations. Let's get started.\n\nGetting location updates now is as simple as writing this one line of code. How cool! Isn't it? This is our new Swift native API, with out of box support for modern swift concurrency to get location updates. Let's take a deep dive then. We'll start the talk by describing in detail the structure of our new CLLocationUpdate API, Followed by how to get location updates using this API. Then I'll go over what needs to be done in order to get location updates in the background. Followed by how updates can pause and resume automatically. Finally, we'll wrap up by describing the lifecycle of your app as it gets updates through this API. Let's explore the structure of the CLocationUpdate API. We are introducing a new class CLLocationUpdate, which has a static function liveUpdates, that returns an AsyncSequence called Updates. Which can directly be iterated using for/try/await, to yield an element of type CLLocationUpdate, that contains a location of type CLLocation, and a boolean flag isStationary for managing automatic, pause and resume. liveUpdates also consumes an optional argument of LiveConfiguration enum type. Now, let's do some code walkthrough and see how we can get updates using this new API. Let's build a basic app that starts location updates from the Foreground. First import CoreLocation. Then we'll call the static factory function liveUpdates provided by the CLLocationUpdate class to get the Updates AsyncSequence. Which can directly be iterated using for/try/await to get a CLLocationUpdate in the closure. And then get the location by accessing its location property. All right, so at this point our updates have started. How about if we have to stop it? Stopping is as simple as breaking from the for loop. Remember isStationary? Let's break out of the for loop when this isStationary is reported to be true, automatically stopping the updates. Explicit start and stop messages are not required anymore. Let's check out the AsyncSequence returned by CLLocationUpdate API. All the powerful things which we can do over an AsyncSequence like finding, selecting, and excluding elements can also be performed on this updates sequence. In this example, I'll walk you through how we can use the first filter directly on the AsyncSequence. Under the hood updates are started and the location of each element is checked for speed. As soon as an update whose speed is more than 200 is found, that first element will be returned, completing the operation. Updates will automatically stop once the first match is found. But did you notice the speed here? This is 200 meter per second, so roughly around 447 miles per hour. That's too fast, right? So we need to be careful while using these filters because execution will get stuck until a match is found, and be even more careful if you try using this for filtering the locations based on horizontalAccuracy. Okay, so this is our sample code from the previous slide for getting updates where we are not specifying any configuration to liveUpdates. So they are configured automatically with a default config. But liveUpdates API can take an explicit configuration. This configuration is a new enum type which we are introducing as part of this API. Let's see what are the members of this enum type and their use. LiveConfiguration enum is a collection of pre-baked configurations an app can choose from to start the updates. It has default, automotiveNavigation, otherNavigation, fitness, and airborne as its members. If your app is already using a particular CLActivityType with existing location updates API, then you can choose a corresponding LiveConfiguration member to have the same location experience while adopting the new API. But if you don't have the need for a specific activityType, then you can start the updates either with default configuration or don't specify any configuration at all. So what does this \"updates\" AsyncSequence yield? When you iterate it, it gives you an object, which is of type CLLocationUpdate. It contains an optional location of type CLLocation. If no location is available, we deliver an update with location marked as nil. It also contains a boolean property isStationary through which we manage automatic pause / resume of location updates. All right, so we just covered how to get updates from the foreground. Now let's talk about how to get updates when your app is running in the background. LiveActivity is the best way to enable background location updates. As long as your LiveActivity remains active, your app can receive updates without any other additional setup. But don't worry if your app doesn't have a LiveActivity yet. This won't be a blocker for adopting the new API. Instead you can use CLBackgroundActivitySession. Let's explore how it works. Many of you might already be familiar with this blue background location indicator, which is displayed when an app authorized as While Using gets updates in the background. CLBackgroundActivitySession uses the same indicator to provide background location capability to your app. It does so by maintaining the visibility for user regarding location services being used in the background. And since the visibility is maintained, it keeps the app effectively in-use letting it access locations even from the background. CLBackgroundActivitySession supports the app's authorization as a whole. So it will enable your app not only to receive updates while in the background, but also to monitor for events using CLMonitor. BackgroundActivitySession has no dependency on Updates being started. Just creating the session displays the indicator when your app is in the background, letting it receive updates and events as needed. In order to use CLBackgroundActivitySession, you need to instantiate it and hold it. Be cautious about the hold part, because object deallocation will automatically invalidate the session potentially ending your app's access to background location. Your app still needs to have location in its UIBackgroundModes array, in order for BackgroundActivitySession to work effectively. If you don't have an outstanding session, then you must start the new session from the foreground, but you can only rejoin an existing one from the the background. Let's do a quick code walk through and see how to use backgroundActivitySession. This is our same \"how to get updates\" code slide from the previous section.\n\nBefore starting the updates, you should instantiate a CLBackgroundActivitySession object to start a new session. Note, we are assigning the session to self.backgroundActivity, which is a property and not to a local variable. And this is important because if we used a local variable, then when it goes out of scope, the object it holds would be deallocated, invalidating the session and potentially ending your app's access to location. Then when we want to end our session, we can do that by sending the invalidate message or by letting the object be destroyed. So that's how your app can get updates in the background, either through LiveActivity or through CLBackgroundActivitySession. Now let's see how this new API contributes to battery life by automatically pausing and resuming the updates.\n\nLet's assume the app is receiving updates while the user is moving. But multiple times in a day, the device will become stationary. For example, when a user reaches their office, they may leave their device on the desk. In such a situation we would be giving your app the same locations over and over.\n\nInstead, we can be power efficient here by pausing the updates. This off loads your app as well, by not giving it redundant locations to process. So once the device is in stationary state for a sufficient amount of time, CLLocationUpdate API will recognize this and trigger Automatic Pause. When pause is triggered, we will send an update with a non-nil location and isStationary flag marked as True. This is how you know that the user has ceased to move, rather than their location becoming unavailable. Later, when the device becomes non-stationary, updates will automatically resume without any user interaction. With this resuming update, we will send isStationary marked as False, continuing the delivery of updates to your app. So automatically pausing and resuming the updates while your app is in background does have an impact on its lifecycle. Let's go through the various lifecycle phases your app will undergo while running in the background, and what action needs to be taken to maintain the continuity of background updates. Your app while running in foreground and receiving updates may transition from foreground running to background running and vice versa. But now with this new API, at times your app might transition from the background running state to the suspended state. This will likely happen when there are no updates to deliver. For example, due to automatic pause, because of a stationary device, or because Location Services is not able to compute a location fix. But don't worry! CLLocationUpdate is not going to leave your app in the suspended state. Instead, as soon as updates are available, either because automatic resume kicked in or maybe location is now available, we will unsuspend your app, transitioning it back into the background running state. When your app is resumed from the suspended state, no action is required to continue the updates in background. Suspended is not the only state. It's possible that your app can transition all the way into the terminated state. And this transition can happen in several ways. Let's go through them. First, directly from background running due to app crash, or user close or system termination when resources are constrained. Second, your app can transition into Terminated state even from the suspended state, due to user close or resource constraint. But we have a good news for you. Our API can recover your app in most cases, even when it's terminated and not running at all. We will recover your app as soon as location updates are available by launching it in the background, and this will transition your app from terminated to background running But after receiving the launch, you have to perform some steps to make sure your background location session can continue.\n\nYou need to restart the updates by calling liveUpdates, and if your app was previously using a background activity session then you also need to recreate a CLBackgroundActivitySession. Remember I mentioned, you can only rejoin an existing CLBackgroundActivitySession from the background, but can not start a new one? Here is some more explanation on that. The background activity session object you just recreated? It is not the start of a new session. You have just created a new session object. Now, since your app has already started a session before it was terminated, this recreation allowed your app to rejoin that existing session from the background, allowing your app to continue its background location updates. Okay, so we just discussed how you should be recreating your liveUpdates and background activity session after receiving background app launch. Related with recreation, there are few things that you should be careful about.\n\nYour app should perform any recreation immediately upon receiving background app launch. Place the recreation of these objects somewhere that will get executed when your app receives a background launch. For our sample app, we have placed the recreation in UIApplicationDelegate's - didFinishLaunchingWithOptions, which gets called once the app launch has finished. All right! So this is our new location updates API with simplified adoption and improved battery performance. It will be available starting this year on all the platforms. I highly encourage you all to try CLLocationUpdate in your apps and provide your valuable feedback to us through Feedback Assistant. We also have a sample app showcasing how to use this new API, which you can download from the Resources section. Apple Developer docs for CLLocationUpdate are also available for more API details. I also recommend watching our \"Meet Core Location Monitor\" session, which covers Core Location Monitoring API we are adding this year. That's all from my side on \"Discover streamlined location updates.\" Thanks for watching! ♪ ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "0:26",
+      "title": "Getting location updates is easy!",
+      "language": "swift",
+      "code": "for try await update in CLLocationUpdate.liveUpdates() {\n    print(\"My current location : \\(update.location)\")\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Adopting live updates in Core Location",
+        "url": "https://developer.apple.com/documentation/corelocation/adopting_live_updates_in_core_location"
+      },
+      {
+        "title": "Core Location",
+        "url": "https://developer.apple.com/documentation/CoreLocation"
+      },
+      {
+        "title": "Monitoring location changes with Core Location",
+        "url": "https://developer.apple.com/documentation/CoreLocation/monitoring-location-changes-with-core-location"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10180/3/BF2CDA20-2D8F-46B8-B850-E1799030451B/downloads/wwdc2023-10180_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10180/3/BF2CDA20-2D8F-46B8-B850-E1799030451B/downloads/wwdc2023-10180_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10146",
+      "year": "2023",
+      "title": "Meet Core Location for spatial computing",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10146"
+    },
+    {
+      "id": "10147",
+      "year": "2023",
+      "title": "Meet Core Location Monitor",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10147"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:13:13.012Z"
+}

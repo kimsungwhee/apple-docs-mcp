@@ -1,0 +1,152 @@
+{
+  "id": "10157",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10157/",
+  "title": "Extend your app’s controls across the system",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, my name is Cliff, and I’m an engineer on the System Experience team. Today, we’re going to discuss how you can build controls, a new type of widget in iOS 18. I’ll first cover what a control is and how people use them. Then, I’ll show you how to build a control, have it perform an action and maintain its state, support configuration, and refine its integration with the system.\n\nControls are a new way to extend your app’s functionality into system spaces including Control Center, the Lock Screen, and the Action button, and they’re created using WidgetKit. iOS 14 introduced WidgetKit, which allows apps to display visually rich, custom-styled content with detailed information, making a widget the perfect way to display the Weather or your next Calendar event. iOS 18 extends WidgetKit even further by adding controls. Controls are a great way to provide quick access to actions from your app. They focus on actions and succinct information, making something like turning on the flashlight or deep-linking into the Clock app a great use case for a control. If you know how to build a widget, building a control is similar and uses the same underlying architecture. There are two types of controls: buttons and toggles. Buttons perform discrete actions, which can include launching your app, while toggles change a piece of boolean state, like turning something on or off.\n\nLike an interactive widget, a control uses an app intent to perform its action.\n\nFundamentally, controls are actions that take the visual form of the system space they’re in using the information provided by your app.\n\nYour app provides a symbol, title, tint color, and additional content to the system. People can then add a control into any of the supported system spaces, and the system space displays the control contextually.\n\nIn Control Center, it can be displayed at any of three different sizes, so the title and value text won’t always be visible. I love using timers to stay focused during work while also giving myself breaks! Today, I’ll build a productivity timer control that will let me chunk my work and breaks into intervals. When the timer is running, a live activity will show the remaining time.\n\nI can start the timer from the Lock Screen, stop it in Control Center, and even use the Action button to start and stop it as well.\n\nI’ll build this productivity timer control from the ground up, starting with a basic toggle and then taking advantage of the rich feature set of controls.\n\nI already have a WidgetBundle for my existing Productivity Widgets, so I’ll start by adding a TimerToggle() entry into this WidgetBundle. I’ll then define the TimerToggle() Control in this same widget extension by adding a TimerToggle type conforming to ControlWidget. To define a control, I’ll provide the information to display in the control as well as the action to perform.\n\nI’ll start with a StaticControlConfiguration, which means this control is not configurable. I’ll add configuration later on.\n\nThe control takes a kind as its unique identifier and a definition for the type of control: the ControlWidgetToggle.\n\nI’ll then give the control a title and provide its state.\n\nI also provide the action to perform when the control is interacted with. Just like with interactive widgets, the control executes actions using an app intent.\n\nLastly, I provide the symbol Image defining the control. Now that it has all the required information, the system is able to display the control.\n\nI can place the control in Control Center, where it displays my title, symbol, and the on/off state.\n\nThis timer control could be made even better by displaying different symbols when the timer is running or stopped.\n\nTo do that, I’ll use the isOn argument to the closure to display the flowing \"hourglass\" symbol when the control is on to indicate that time is counting down.\n\nExcellent! Now, the control displays a flowing hourglass symbol only when running.\n\nI’d also like to refine the value text for this state, which currently reads on and off.\n\nThis is the default value text for a toggle, but people typically think of a timer as being running or stopped rather than on or off.\n\nI can customize the control’s value text by changing the Image to a Label that includes both the value text and systemImage. Now, the control displays appropriate, relevant value text describing the state it’s in instead of the default on/off text.\n\nKeep in mind that this value text won’t be displayed when your control is on the Lock Screen or when the control is in the small size in Control Center, where only the symbol is shown.\n\nI’m liking where this control is headed but, in the on state, the symbol has the default systemBlue tint, which doesn’t follow my productivity app’s branding.\n\nTo give the control a characteristic color instead of the default systemBlue, provide a tint color.\n\nI’ll use the color of my productivity app, purple. Purple for productivity! The tint color will be used to tint the symbol when the toggle is on.\n\nHere’s the fully styled control working on the Lock Screen and with the Action button, using the same code that makes it work in Control Center. When the control is on, the symbol and any value text have the specified tint color. Let’s examine how a toggle displays and manages its state. So far, I’ve been providing the current timer state to my control using a TimerManager class. In this example, my TimerManager looks for data in a shared group container that accesses the same data that my productivity app does, and the running state is synchronously fetched. Let’s explore how the system reloads your control when its state or content changes.\n\nWhen the system needs to reload your control, it runs the body of the control in your widget extension process to ask for your control’s current value and generate the control’s content. Your control’s value and content are then passed back to the system and are used to display your control. So, your widget extension provides your control’s current state and content for that state.\n\nThere are three kinds of events that cause the system to reload your control: when your control action is performed, when your app requests a reload of the control on-demand, and when a push notification invalidates your control. The first of these events is when your control action is performed. Each time someone interacts with your control, the system automatically reloads it when the control’s app intent’s perform() function returns. Make sure to finish all updates before it returns.\n\nIn my timer control, the action is the ToggleTimerIntent().\n\nThis intent sets the \"Running\" state of the timer and starts or stops the LiveActivity.\n\nThis app intent is a SetValueIntent since it sets the timer’s \"Running\" state to the value provided by the system, and it’s a LiveActivityIntent since it modifies the timer LiveActivity. When the perform function completes, the system updates the control with its new state. Interacting with a timer control isn’t the only way I can change its state, however. I can also open the Productivity app and start or stop the timer from there, and I want the control to stay up-to-date.\n\nTo do this, when the timer state changes, my app can use the ControlCenter API to refresh the control by specifying the kind of my timer control as the control to reload. Now, when I start the timer in my app, the control’s state stays up-to-date! If the state or content of your control needs to be refreshed, your app can ask the system to reload your control. The same refresh tools that are available for widgets and live activities are available for controls. As you are developing your control and refreshing its state frequently, enable WidgetKit Developer Mode in Developer Settings to remove system policies from your control. Now that my productivity timer is working great on this device, I want to make it work across multiple devices and have them all access the same timer state on a server.\n\nSince my control will reflect state from a server that is not available on the device, I’ll need to fetch the timer state asynchronously, and to do this, I can use a ValueProvider.\n\nA ControlValueProvider has two requirements: currentValue() and previewValue.\n\ncurrentValue() is asynchronous to allow you to fetch data from where you need to, such as your database or server. In my case, the TimerManager queries the timer state from a server asynchronously.\n\nYou can also throw an error to tell the system that the state couldn’t be computed, indicating that the control needs to be reloaded at a later date.\n\npreviewValue is where you choose the value to display when the control is being previewed by someone, before they add the control, such as in the controls gallery, when they customize their Lock Screen, and in Action button settings. The previewValue should be predetermined and very quick to return, and it should be a value that corresponds to your control’s off state. I can use my ValueProvider in a different control initializer that takes a ValueProvider, and the provided value is passed into the closure where I define the toggle. In my case, I then use the value as the isOn state of the control. In this example, I’m using a simple Bool as the value, but I could have the value include a lot more information. I’ll show an example of that later on. When the system reloads a control with a ValueProvider, it first runs the ValueProvider to fetch the current value and then passes this value to the control closure to generate the content. This all takes place in the widget extension process.\n\nNow that my productivity timer’s state lives on a server, it can be changed from different devices. So, when I start or stop the timer from my iPad, for example, I want this off-device state change to trigger a reload of the control on my other devices. To handle this case, I can use the Push Notification API to define a push handler for my control, which will configure the control to be reloaded when external state-change push notifications are received. The push handling documentation goes into more detail about how to do this and best practices.\n\nNow, when I stop the timer on my iPad, the control on my iPhone stops as well! My productivity timer is working well, but I’d love to have separate timers for work and personal endeavors, like practicing my violin, so that my app tracks them separately. It would be great if I could have different controls for each and put both of them in Control Center. Since controls are built just like widgets with WidgetKit, I can accomplish this by making the control user-configurable. After adding one of my timer controls to Control Center, I’ll want to be able to choose whether it starts and stops my work or personal timer. This will allow me to have one control for each of my work and personal timers in Control Center. To start, I can update my ValueProvider to conform to a new protocol, AppIntentControlValueProvider, which makes the value dependent on the configuration of an intent. The app intent that determines the configuration is the SelectTimerIntent, which allows someone to choose which timer they want the control to interact with. Notice that I now make sure to fetch the running state of the configuration’s particular timer, and the value I return is now a custom struct that contains both the timer and its running state.\n\nI can use the configurable ValueProvider with an AppIntentControlConfiguration() to make my Control configurable. The value passed to the closure is now my timerState struct, and I use its timer and running state to complete the toggle. Note that I want to display the particular timer’s name as the control’s title, and the toggle timer app intent now acts on that particular timer.\n\nNow, when someone is customizing Control Center, my control allows them to choose which timer they want the control to interact with. I’ve now got my separate work and personal timer controls side-by-side in Control Center, each controlling a different timer! If your control requires configuration to be functional, you can use the promptsForUserConfiguration() modifier to have the system automatically prompt someone to configure the control when it is added to a system space.\n\nYou can refine your control even further to provide the most understandable and relevant content when the system’s default values don’t fit your use case. For example, an action hint is displayed when someone interacts with the Action button before the action is performed. My control’s action hints currently are: Hold for Running and Hold for Stopped.\n\nLet’s more closely examine why that’s the case.\n\nBefore I customized the value label of the control with \"Running\"/\"Stopped\" text, the system synthesized default Hold to Turn On, Hold to Turn Off action hints, similarly to how it synthesized the default on/off value text. When I customized the value text, it was also used to form the action hints. The system synthesized Hold for Running and Hold for Stopped action hints. These hints can definitely be improved, so I’ll customize them to fit the use case.\n\nI’ll customize the Action button hint text with the controlWidgetActionHint modifier to choose the action hint to display, which should start with a verb. The hint provided is the action to go to a particular state, so the action hint for the timer’s on state is \"Start\" so that the hint for starting the timer is Hold to Start. With the action hint of \"Stop\" for the off state, the action hint for stopping the timer is Hold to Stop. This sounds great and feels natural for a timer! Controls can display a momentary status in Control Center when the action is performed using the controlWidgetStatus modifier. If your control has additional information to convey about its action, its state, or the duration of effectiveness of that state, consider adding a status. Status text should be used sparingly and only to call attention to pertinent information that isn’t already conveyed by the control.\n\nWhen adding my control from the controls gallery, right now, it’s called Productivity, which is the name of my app. A control’s app’s name is the default display name for the control.\n\nI’ll customize the displayName of my control to be \"Productivity Timer\". Make sure to choose a displayName for each of your controls that is specific to what it does. As a last refinement, I’ll also add a description, which will be shown when the control is being configured. With just a few steps, I’ve created a productivity timer control that I can place in Control Center, the Lock Screen, or the Action button, and syncs across all of my devices. Controls are a powerful capability that you can now build into your apps on iOS and iPadOS 18 to provide quick access to your app’s key actions in system spaces. Use the modifiers we discussed today to tailor your control’s style to the action it performs, and make sure that your controls feature distinctive symbols.\n\nIf you’re building a control that lets people capture content with the camera, consider building a capture extension, and watch the session \"Build a great Lock Screen camera capture experience\".\n\nThanks for watching!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:13",
+      "title": "Add the control to the Widget Bundle",
+      "language": "swift",
+      "code": "@main\nstruct ProductivityExtensionBundle: WidgetBundle {\n    \n    var body: some Widget {\n        ChecklistWidget()\n        TaskCounterWidget()\n        TimerToggle()\n    }\n    \n}"
+    },
+    {
+      "timestamp": "3:29",
+      "title": "Complete the control",
+      "language": "swift",
+      "code": "struct TimerToggle: ControlWidget {\n    var body: some ControlWidgetConfiguration {\n        StaticControlConfiguration(\n            kind: \"com.apple.Productivity.TimerToggle\"\n        ) {\n            ControlWidgetToggle(\n                \"Work Timer\",\n                isOn: TimerManager.shared.isRunning,\n                action: ToggleTimerIntent()\n            ) { _ in\n                Image(systemName:\n                      \"hourglass.bottomhalf.filled\")\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "4:41",
+      "title": "Specify different symbols when on and off​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​",
+      "language": "swift",
+      "code": "struct TimerToggle: ControlWidget {\n    var body: some ControlWidgetConfiguration {\n        StaticControlConfiguration(\n            kind: \"com.apple.Productivity.TimerToggle\"\n        ) {\n            ControlWidgetToggle(\n                \"Work Timer\",\n                isOn: TimerManager.shared.isRunning,\n                action: ToggleTimerIntent()\n            ) { isOn in\n                Image(systemName: isOn\n                      ? \"hourglass\"\n                      : \"hourglass.bottomhalf.filled\")\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "5:21",
+      "title": "Specify custom value text​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​ and add a custom tint color",
+      "language": "swift",
+      "code": "struct TimerToggle: ControlWidget {\n    var body: some ControlWidgetConfiguration {\n        StaticControlConfiguration(\n            kind: \"com.apple.Productivity.TimerToggle\"\n        ) {\n            ControlWidgetToggle(\n                \"Work Timer\",\n                isOn: TimerManager.shared.isRunning,\n                action: ToggleTimerIntent()\n            ) { isOn in\n                Label(isOn ? \"Running\" : \"Stopped\",\n                      systemImage: isOn\n                      ? \"hourglass\"\n                      : \"hourglass.bottomhalf.filled\")\n            }\n            .tint(.purple)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "8:14",
+      "title": "Implement timer toggling",
+      "language": "swift",
+      "code": "struct ToggleTimerIntent: SetValueIntent, LiveActivityIntent {\n    static let title: LocalizedStringResource = \"Productivity Timer\"\n    \n    @Parameter(title: \"Running\")\n    var value: Bool  // The timer’s running state\n    \n    func perform() throws -> some IntentResult {\n        TimerManager.shared.setTimerRunning(value)\n        return .result()\n    }\n}"
+    },
+    {
+      "timestamp": "8:54",
+      "title": "Refresh the control from within the app",
+      "language": "swift",
+      "code": "func timerManager(_ manager: TimerManager,\n                  timerDidChange timer: ProductivityTimer) {\n    ControlCenter.shared.reloadControls(\n        ofKind: \"com.apple.Productivity.TimerToggle\"\n    )\n}"
+    },
+    {
+      "timestamp": "10:03",
+      "title": "Define a Value Provider",
+      "language": "swift",
+      "code": "struct TimerValueProvider: ControlValueProvider {\n    \n    func currentValue() async throws -> Bool {\n        try await TimerManager.shared.fetchRunningState()\n    }\n    \n    let previewValue: Bool = false\n}"
+    },
+    {
+      "timestamp": "11:00",
+      "title": "Provide asynchronously fetched state with a Value Provider",
+      "language": "swift",
+      "code": "struct TimerToggle: ControlWidget {\n    var body: some ControlWidgetConfiguration {\n        StaticControlConfiguration(\n            kind: \"com.apple.Productivity.TimerToggle\",\n            provider: TimerValueProvider()\n        ) { isRunning in\n            ControlWidgetToggle(\n                \"Work Timer\",\n                isOn: isRunning,\n                action: ToggleTimerIntent()\n            ) { isOn in\n                Label(isOn ? \"Running\" : \"Stopped\",\n                      systemImage: isOn\n                      ? \"hourglass\"\n                      : \"hourglass.bottomhalf.filled\")\n            }\n            .tint(.purple)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "13:06",
+      "title": "Make the Value Provider configurable",
+      "language": "swift",
+      "code": "struct ConfigurableTimerValueProvider: AppIntentControlValueProvider {\n    func currentValue(configuration: SelectTimerIntent) async throws -> TimerState {\n        let timer = configuration.timer\n        let isRunning = try await TimerManager.shared.fetchTimerRunning(timer: timer)\n        return TimerState(timer: timer, isRunning: isRunning)\n    }\n    \n    func previewValue(configuration: SelectTimerIntent) -> TimerState {\n        return TimerState(timer: configuration.timer, isRunning: false)\n    }\n}"
+    },
+    {
+      "timestamp": "13:40",
+      "title": "Make the timer configurable",
+      "language": "swift",
+      "code": "struct TimerToggle: ControlWidget {\n    var body: some ControlWidgetConfiguration {\n        AppIntentControlConfiguration(\n            kind: \"com.apple.Productivity.TimerToggle\",\n            provider: ConfigurableTimerValueProvider()\n        ) { timerState in\n            ControlWidgetToggle(\n                timerState.timer.name,\n                isOn: timerState.isRunning,\n                action: ToggleTimerIntent(timer: timerState.timer)\n            ) { isOn in\n                Label(isOn ? \"Running\" : \"Stopped\",\n                      systemImage: isOn\n                      ? \"hourglass\"\n                      : \"hourglass.bottomhalf.filled\")\n            }\n            .tint(.purple)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "14:26",
+      "title": "Prompt for user configuration automatically",
+      "language": "swift",
+      "code": "struct SomeControl: ControlWidget {\n    var body: some ControlWidgetConfiguration {\n        AppIntentControlConfiguration(\n            // ...\n        )\n        .promptsForUserConfiguration()\n    }\n}"
+    },
+    {
+      "timestamp": "15:42",
+      "title": "Custom action hint -> hint treated as verb phrase",
+      "language": "swift",
+      "code": "struct TimerToggle: ControlWidget {\n    var body: some ControlWidgetConfiguration {\n        AppIntentControlConfiguration(\n            kind: \"com.apple.Productivity.TimerToggle\",\n            provider: ConfigurableTimerValueProvider()\n        ) { timerState in\n            ControlWidgetToggle(\n                timerState.timer.name,\n                isOn: timerState.isRunning,\n                action: ToggleTimerIntent(timer: timerState.timer)\n            ) { isOn in\n                Label(isOn ? \"Running\" : \"Stopped\",\n                      systemImage: isOn\n                      ? \"hourglass\"\n                      : \"hourglass.bottomhalf.filled\")\n                .controlWidgetActionHint(isOn ?\n                                         \"Start\" : \"Stop\")\n            }\n            .tint(.purple)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "16:56",
+      "title": "Specify a display name and add a description",
+      "language": "swift",
+      "code": "struct TimerToggle: ControlWidget {\n    var body: some ControlWidgetConfiguration {\n        AppIntentControlConfiguration(\n            kind: \"com.apple.Productivity.TimerToggle\",\n            provider: ConfigurableTimerValueProvider()\n        ) { timerState in\n            ControlWidgetToggle(\n                timerState.timer.name,\n                isOn: timerState.isRunning,\n                action: ToggleTimerIntent(timer: timerState.timer)\n            ) { isOn in\n                Label(isOn ? \"Running\" : \"Stopped\",\n                      systemImage: isOn\n                      ? \"hourglass\"\n                      : \"hourglass.bottomhalf.filled\")\n                .controlWidgetActionHint(isOn ?\n                                         \"Start\" : \"Stop\")\n            }\n            .tint(.purple)\n        }\n        .displayName(\"Productivity Timer\")\n        .description(\"Start and stop a productivity timer.\")\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Adding refinements and configuration to controls",
+        "url": "https://developer.apple.com/documentation/WidgetKit/Adding-refinements-and-configuration-to-controls"
+      },
+      {
+        "title": "Creating a camera experience for the Lock Screen",
+        "url": "https://developer.apple.com/documentation/LockedCameraCapture/Creating-a-camera-experience-for-the-Lock-Screen"
+      },
+      {
+        "title": "Creating controls to perform actions across the system",
+        "url": "https://developer.apple.com/documentation/WidgetKit/Creating-controls-to-perform-actions-across-the-system"
+      },
+      {
+        "title": "Forum: App & System Services",
+        "url": "https://developer.apple.com/forums/topics/app-and-system-services?cid=vf-a-0010"
+      },
+      {
+        "title": "Human Interface Guidelines: Controls",
+        "url": "https://developer.apple.com/design/human-interface-guidelines/controls"
+      },
+      {
+        "title": "Updating controls locally and remotely",
+        "url": "https://developer.apple.com/documentation/WidgetKit/Updating-controls-locally-and-remotely"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10157/5/5DC0FBFA-B601-4A2F-BE3D-40FBF3757522/downloads/wwdc2024-10157_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10157/5/5DC0FBFA-B601-4A2F-BE3D-40FBF3757522/downloads/wwdc2024-10157_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10204",
+      "year": "2024",
+      "title": "Build a great Lock Screen camera capture experience",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10204"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:12:14.000Z"
+}

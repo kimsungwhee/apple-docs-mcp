@@ -1,0 +1,178 @@
+{
+  "id": "278",
+  "year": "2025",
+  "url": "https://developer.apple.com/videos/play/wwdc2025/278/",
+  "title": "What’s new in widgets",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, my name is Tanner Oakes, and I’m an engineer on the System Experience team. Widgets are a great way to surface timely information and actions across the system, keeping your app useful even when it’s not front and center. WidgetKit continues to expand, making your widgets more capable and taking your widgets to new places. My friend Luca has a caffeine logging app. I've been helping him update it. Throughout this talk, I’ll show you how it takes advantage of everything new in widgets. In this video, I’ll cover widgets, Live Activities, and controls in new places across our platforms.\n\nI’ll also cover a new way to show relevant widget content in the Smart Stack on watchOS.\n\nAnd finally, I’ll show you how to keep your widgets up to date across devices with push notifications.\n\nWidgets, Live Activities, and controls are in a lot of new places.\n\nBut first, I’ll cover a new look for widgets in the places where they first got their start.\n\nIn iOS 26, the Home Screen can be configured to present icons and widgets in a clear glass presentation, or further customized by selecting a specific tint color, like blue here.\n\nThese looks can be configured for widgets on the desktop and Notification Center in macOS Tahoe as well.\n\nThese new presentations are constructed similarly across iOS and macOS. First, the widgets content is generated using accented rendering mode, tinting all of the content to white. Then the widgets background is removed and replaced with a themed glass or tinted color effect. My caffeine tracker widget looks great in accented mode, without having to do anything. Some widgets might need some tweaking to look their best in accented mode. I’ve added a widget to my app that shows me my most frequently consumed beverage. For me, it's a matcha latte. My widget has a big image representing the beverage, a title at the bottom, and a gradient behind the text, making it more readable when placed on top of the image. When accented rendering is applied, all of the widget’s content is tinted white. For opaque content like my latte cup, it is all a single white color. Partially transparent content like my gradient is tinted white while maintaining its opacity. This is really not the look I'm going for. I can’t make out the image anymore and text is hard to read.\n\nI’ll show you how I can update my widget to better handle accented rendering. Here is my widget’s view. I have a ZStack with the beverage image, the gradient, and then the text view. First, I’ll add the widgetRenderingMode environment variable to my widget view. I’ll conditionally display the large image and linear gradient only if the widget is being rendered in full color.\n\nThen I’ll bring my image back above the text by adding in a VStack and conditionally displaying my Image if the widget’s in accented mode. I think my layout is looking pretty good. Now I just need to improve the look of my image.\n\nI’ll add the widgetAccentedRenderingMode modifier to my Image, setting it to desaturated. widgetAccentedRenderingMode is a SwiftUI modifier that can be applied to Images in widgets. The argument I pass in gives me precise control over how my Image should be shown when in accented mode. There are five different options widgetAccentedRenderingMode accepts. I’ll show you how each of these modes affect the presentation of images, comparing iOS and macOS accented mode to an accented mode on a watch face.\n\nFor widgetAccentedRenderingMode, passing in nil is the same as not applying the modifier at all. It applies the primary content color to the image. For both my iOS and watchOS widget, this makes my image completely white.\n\nPassing in accented tints the image to the accent color. On iOS and macOS, both primary and accent colors are white, making my image white. On watchOS, the accent color matches the color on the watch face, making my watchOS widget's image blue. Passing in desaturated will desaturate the color in the image. This effect looks the same on both iOS and watchOS presentation styles.\n\nPassing in accentedDesaturated will apply both the effects, desaturate the colors in the image, and apply the accent color from the selected theme. On iOS, this means the Image is a little whiter, while on watchOS, my desaturated image now takes on the theme’s blue accent color.\n\nPassing in fullColor shows the Image completely unmodified in accented rendering mode. To best blend in with the watch face, this option is ignored on watchOS.\n\nFor most widgets, use either desaturated or accented desaturated to help the Image content blend in with the rest of the home screen. Use fullColor for Images that represent media content, such as album artwork or a book cover. Next, I’m excited to show you how to take your widgets into a whole new dimension. With visionOS 26, your visionOS apps can now include widgets. And if you already have a compatible iPhone or iPad app with widgets, those automatically become available in visionOS. All of the system family sizes from iOS and macOS are supported. And widgets in visionOS have interaction and animation capability, just like other platforms. I’ll show you how widgets work on visionOS and new options that WidgetKit provides.\n\nIn visionOS, widgets can be added into the room and then pinned to a surface. By default, they’ll take on an elevated look, sitting directly on top of the surface. Widgets can also be recessed, making the widget appear like it’s embedded directly into the surface.\n\nIf one of these styles isn’t a good fit for your widget, use the supportedMountingStyles modifier on your widget configuration to specify which options should be provided. This modifier is available for both visionOS and iOS widgets.\n\nBy default, all widgets will be rendered beneath a glass texture. For visionOS apps, an alternative paper texture can be specified, giving the widget a poster style look. Here on the left I have my frequent beverage widget configured with glass, and on the right I’m testing out the same widget but with the paper texture applied.\n\nUse the widgetTexture modifier on your widget configuration to specify whether your widget should be rendered with a paper texture or behind a pane of glass. To complete the look of poster style widgets, a new systemExtraLargePortrait widget family is available in visionOS. This is a vertically oriented version of the existing horizontal systemExtraLarge widget family.\n\nAdd this to your widget configuration using the supportedFamilies modifier.\n\nIn visionOS, the widget’s color theme can also be customized. By default, the widget will appear in a full color presentation. If I select this green theme, the widget’s content is displayed using accented rendering mode. The widget frame and content get tinted with my selected color. Then the background is removed and replaced with a solid color that complements the selected color theme.\n\nThis style applies the same rendering approach discussed earlier for iOS and macOS. Use the same techniques I covered to make your widget look its best in these color themes. Use the widgetAccentedRenderingMode modifier to customize the presentation of your images. And use the widgetRenderingMode environment variable to conditionally apply more substantial modifications.\n\nOn visionOS, widgets can be brought into your environment and placed on multiple surfaces. As you move about your space, widgets stay in their fixed position. Even if a widget is far away on a wall across the room, it remains visible. Just like real physical objects, widgets that are further away are smaller and harder to see. Unlike physical objects, widgets in visionOS can adapt based on their distance using a new level of detail API. I’ll show you how I can add levelOfDetail to my caffeine tracking widget.\n\nHere I have my existing widget that shows my total caffeine for the day, the last beverage I drank, as well as a handy button to add another drink to the log.\n\nWhen this widget is further away from me, I’d like to make the total caffeine value larger and easier to read. I’d also like to hide the button, since it will be harder to hit further away. Here’s my caffeine tracker widget. I want to update my TotalCaffeineView, changing its size, and conditionally show or hide my LogDrinkView at the bottom.\n\nFirst, I’ll add this environment property, levelOfDetail, to my view. LevelOfDetail can be one of two values. Default is the normal level of detail expected of widgets. On visionOS, widgets are shown in the default level of detail when they are at a comfortable distance. If the widget is physically far enough away, the level of detail changes to simplified, providing an opportunity to display a simpler, more easily glanceable representation of the widget. I’ll add this conditional around my LogDrinkView to only display if the levelOfDetail is default. Now I need to update the caffeine amount.\n\nIn my total caffeine view, I’m displaying the title and the formatted total caffeine amount. First, I’ll add the levelOfDetail environment variable to my view.\n\nIn order to make this bigger, I’ll conditionally change the font of my caffeine amount from title to large title based on the level of detail.\n\nNow, whenever the widget is far enough away, my widget transitions to show a simpler, more easily glanceable version of my widget.\n\nAnd just like timeline changes within your widget, level of detail changes also animate. To learn more about when to customize your spatial style, recommendations for level of detail, and other considerations for bringing your widgets to this new platform, check out “Design Widgets for visionOS.” Shifting gears, now widgets and Live Activities, are hitting the open road with CarPlay.\n\nIn CarPlay Ultra, widgets appear in one or more stacks to the left of the dashboard. And starting with iOS 26, this feature now comes to all CarPlay cars. Widgets can be configured in the Settings app under CarPlay. In CarPlay, glanceable information, large typography, and legibility are all important to help make your widget easy to read on the car’s display.\n\nTo support this, CarPlay renders widgets in a StandBy style, using the systemSmall family in fullColor with the widget background removed. Widget interactions are supported on touchscreens, and you can use the CarPlay simulator available on the developer site to test your widget.\n\nGet more tips on how to adapt your widget for a StandBy presentation in “Bring widgets to new places” from WWDC 23.\n\nLive Activities can also be displayed on the home screen in CarPlay. By default, your Live Activity’s Dynamic Island leading and trailing views will be shown. Here I have my Coffee Order Tracking Live Activity being displayed in CarPlay. This is a good start, but with just a little bit of extra code, I can make this even better.\n\nHere’s the code for my Live Activity. Currently, my leading and trailing views are shown.\n\nTo customize this Live Activity presentation for CarPlay, I’ll add the supplementalActivityFamilies modifier, passing in small as an argument to my ActivityConfiguration.\n\nNow, rather than using the leading and trailing views, CarPlay will display my ActivityView, the same view that’s used on the iPhone lock screen. For some Live Activities, this may look great, but mine is a little cramped with some of my content cut off. Luckily, I can customize this even further.\n\nHere is my ActivityView. I’ll add the activityFamily environment variable to my view.\n\nWith that added, in my views body, I can conditionally display different content or adjust the layout to provide a great experience.\n\nWhen the activityFamily is small, I’ll provide a shop order view that is optimized for a smaller layout. Otherwise, I’ll display my default order view.\n\nWith that little bit of extra code, my Live Activity now looks great in CarPlay. Now I can quickly glance and see how much longer until my order is ready.\n\nBy adopting supplementalActivityFamily, I’ve also greatly improved how my Live Activity looks when presented on a paired Apple Watch. Your iPhone app gets this automatically, without the need for a separate watchOS app.\n\nTo learn more about how to make your Live Activity look its best in the Smart Stack on watchOS, check out “Design Live Activities for Apple Watch.” And check out “Turbocharge your app for CarPlay” to learn more about how to really accelerate your widgets in CarPlay.\n\nCarPlay isn’t the only new place for Live Activities.\n\nLive Activities from a paired iPhone will now appear in macOS Tahoe. Just like in the Dynamic Island on iPhone, my coffee order tracker Live Activity presents the leading and trailing views together in the menu bar.\n\nWhen the Live Activity is selected, the lock screen presentation from iPhone will appear. Clicking on the lock screen presentation will launch the associated app using iPhone Mirroring.\n\nLive Activities on macOS can be provided by iPhones running iOS 18 and later. There are no code changes required, and just like iPhone widgets on macOS, they support interaction and deep links.\n\nNow I’ll cover new places for controls on macOS and watchOS. On macOS, controls can be provided by apps running on the Mac, whether they’re built with the macOS SDK, Catalyst, or from iOS apps running on Apple Silicon Macs.\n\nControls can be added in the Control Center. The same small, medium, and large presentations available on iOS can also be configured on macOS.\n\nControls can also be placed directly on the menu bar. Now that I’ve added a coffee tracker control to my app on macOS, I can easily update my coffee log right from the menu bar. In watchOS 26, controls can appear in three places.\n\nThey can be configured in the Control Center, accessible from the side button. Controls can also be executed when pressing the Action button on Apple Watch Ultra.\n\nAnd they can be configured in the Smart Stack, where they appear alongside other widgets displaying the control’s symbol, title, and current value. Controls can be provided from a watchOS app or from an iPhone app on a paired device. For an extensive guide to building controls, check out “Extend your app’s controls across the system” from WWDC24. Next, I’ll show you relevance widgets in the Smart Stack in watchOS 26.\n\nI’ve added a widget to my caffeine tracking app on watchOS that helps me keep track of when my favorite coffee shops have half price happy hours. There’s two things I’d like to improve with my widget.\n\nFirst, since I’m tracking the happy hours for several coffee shops, often their happy hours overlap, meaning the content on my widget in the Smart Stack is pretty cramped.\n\nSecond, the happy hours tend to happen around the same time. So for the rest of the day, my widget isn’t very useful.\n\nI’d really like my happy hours widget to only show up in the Smart Stack if it was relevant and show more detailed information for each active happy hour.\n\nWith relevance widgets in watchOS 26, I can do just that. I’ll show how I can configure my happy hours as a relevance widget.\n\nTo define a relevance widget, create a Widget type and instead of a StaticConfiguration or AppIntentConfiguration, provide a RelevanceConfiguration. Just like other configurations, it takes a kind String, a provider object, and a closure to transform your custom entry into a SwiftUI view.\n\nThe provider type is a RelevanceEntriesProvider. The placeholder and relevance methods are similar to TimelineEntriesProvider. For placeholder, I can return a simple Entry to be displayed while my content is getting prepared. For relevance,  I first fetch a collection of configuration objects that I’ve defined.\n\nFor my happy hours widget, a configuration is relevant between the start and end time of that happy hour. I’ll define the relevance attribute with this context using the date interval for each happy hour. Then I implement the entry method. Unlike a Timeline widget, a RelevanceEntriesProvider only provides a single entry for a configuration. I have all the data I need for this entry in my configuration, the shop data and the time range for the happy hour, so I can create that immediately. If I needed any other data or assets, I could fetch them here since this method is marked async.\n\nNow with my relevance widget set up, my happy hours widget only displays in the Smart Stack when it’s relevant.\n\nPlus, if I have multiple configurations that are relevant at the same time, I can see multiple instances of my widget in the Smart Stack. Relevance widgets are a powerful new feature in watchOS 26, giving you the ability to directly connect widget content with its relevance. These widgets are a great addition on their own or alongside existing timeline based widgets.\n\nTo learn more about Relevance widgets, check out “What’s new in watchOS 26” with Anne. Now that there’s so many more places and platforms that widgets can appear, I’d like to keep my widgets always up to date wherever they are. I’ve recently added a server so I can keep my caffeine log data in sync across my devices. I’ll cover what options are available for refreshing my widget, starting with scheduled widget reloads.\n\nIn this diagram, on the left I have my app bundle, which contains my app as well as my widget extension. On the right side, I have a box representing WidgetKit. When a widget is configured on a device, such as on the iPhone home screen, or on a watch face, WidgetKit requests a timeline from the widget extension. The extension responds with a widget timeline, which includes a TimelineReloadPolicy. WidgetKit uses this to determine the next appropriate time to reload that widget.\n\nUsing the TimelineReloadPolicy is a great option for widgets that need to update at regular intervals, such as a widget that displays the hours of a cafe, a weather widget, or a stock widget. The scheduled timeline reload is budgeted by the system to help maintain performance and battery life.\n\nThe WidgetCenter API is another option available to apps. Inside an app, if a data change occurs that should be reflected in its widget, WidgetCenter’s reloadAllTimelines or reloadTimelines(ofKind:) method can be called. This tells WidgetKit that the widget’s content is outdated and needs to be reloaded. WidgetKit then requests a timeline from the widget extension to update the widget.\n\nThis is a great option if widget content primarily changes inside the app, such as updating a caffeine log, changing a note, or checking off a reminder. Since the app is running when this API is called, the system does not budget this request.\n\nBut what happens if a data change occurs on the server or on another device? This is where widget push updates come in. A server tracking data changes can send a push notification to APNs, which will tell WidgetKit to reload that app’s widgets. And like other updates, WidgetKit will then request an updated timeline from the widget.\n\nWidget push updates are a great tool if data can change external to that device. Just like the TimelineReloadPolicy, widget push notification updates are also budgeted to maintain performance and battery life.\n\nWith this capability, widgets now have a full suite of reload options to handle a variety of situations. These are not mutually exclusive. Some widgets may want to use two or even all three of these options. With widget push updates, my widget’s caffeine log can stay up to date across devices whether I log an update on my iPad app, my Vision Pro widget, or my macOS menu bar control.\n\nI’ll show you how I can add this to my widget. I’ll create a WidgetPushHandler and add it to my widget configuration, add the Push Notification entitlement to my widget extension, and construct a widget update push request.\n\nFirst, I’ll create a struct conforming to the WidgetPushHandler protocol. This type is how we notify you when your push token changes or when the set of configured widgets changes. Use the pushTokenDidChange method as an opportunity to send your push token and widget info to your server.\n\nNext, I need to update my widget configuration. Here I have the configuration for my caffeine tracker widget.\n\nI’ll add the pushHandler modifier to my widget to register its support for push notifications.\n\nFor this modifier, I pass in the type of the widget pushHandler I implemented.\n\nFinally, in Xcode, I’ll go to the Signing and Capabilities tab for my widget extension.\n\nHere, I’ll add the push notification entitlement so it can communicate with APNs. Now that my widget is configured for push updates, I’ll show you how to send a widget update push notification. To update your widget via push notification, send an HTTPS POST request to the Apple Push server.\n\nUse the widget push token provided in your WidgetPushHandler as the last part of the request path. For your headers, use the widgets APNs push type, and set the APNS topic header using the app’s bundle ID, suffixed with .push-type.widgets.\n\nIn the body of your request in the aps dictionary, set the value of the content changed key to true. To learn more about push notifications, watch the “Push Notifications Primer”. And check out “Meet Push Notifications Console” to see how you can easily test push notification requests. Push updates for widgets help keep widget content more up to date, but are performed opportunistically and aren’t a direct replacement for other notification experiences.\n\nIf you have an urgent or important update to show, provide a User Notification.\n\nIf you have updates occurring regularly during a limited period of time, such as a beverage order, updating sports scores, or flight updates, use a Live Activity.\n\nUse widget push updates to keep widget content up to date. Widget push updates are available across all platforms that support widgets. When you send a widget push notification, this will update all of the push enabled widgets configured on the device. Remember that these widget reloads are budgeted. Try to keep your update pushes limited, such as by throttling updates on your server. And during development and test, you can use the WidgetKit developer mode in Settings to ignore push and reload budgets for your app.\n\nI've covered a lot today. Take some time to explore these new platforms for widgets. Check out some of the videos listed earlier to help get inspired. Make sure your widgets look great in new appearances on iOS and macOS. And finally, if your widgets data may be updated from external sources or other devices, consider adding push notifications to keep them up to date. I’m so excited about all the new capabilities and places for widgets. I can’t wait to take your widgets with me wherever I go. Thanks for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:44",
+      "title": "Observe .widgetRenderingMode",
+      "language": "swift",
+      "code": "struct MostFrequentBeverageWidgetView: View {\n    @Environment(\\.widgetRenderingMode) var renderingMode\n    \n    var entry: Entry\n    \n    var body: some View {\n        ZStack {\n            if renderingMode == .fullColor {\n                Image(entry.beverageImage)\n                    .resizable()\n                    .aspectRatio(contentMode: .fill)\n            \n                LinearGradient(gradient: Gradient(colors: [.clear, .clear, .black.opacity(0.8)]), startPoint: .top, endPoint: .bottom)\n            }\n            \n            VStack {\n                if renderingMode == .accented {\n                    Image(entry.beverageImage)\n                        .resizable()\n                        .widgetAccentedRenderingMode(.desaturated)\n                        .aspectRatio(contentMode: .fill)\n                }\n                \n                BeverageTextView()\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "6:08",
+      "title": "visionOS Widget Configuration",
+      "language": "swift",
+      "code": "struct CaffeineTrackerWidget: Widget {\n    var body: some WidgetConfiguration {\n        StaticConfiguration(\n            kind: \"BaristaWidget\",\n            provider: Provider()\n        ) { entry in\n            CaffeineTrackerWidgetView(entry: entry)\n        }\n        .configurationDisplayName(\"Caffeine Tracker\")\n        .description(\"A widget tracking your caffeine intake during the day.\")\n        .supportedMountingStyles([.elevated])\n        .widgetTexture(.paper)\n        .supportedFamilies([.systemExtraLargePortrait])\n    }\n}"
+    },
+    {
+      "timestamp": "8:56",
+      "title": "LevelOfDetail - CaffeineTrackerWidgetView",
+      "language": "swift",
+      "code": "struct CaffeineTrackerWidgetView : View {\n    @Environment(\\.levelOfDetail) var levelOfDetail\n    \n    var entry: CaffeineLogEntry\n\n    var body: some View {\n        VStack(alignment: .leading) {\n            TotalCaffeineView(entry: entry)\n\n            if let log = entry.log {\n                LastDrinkView(log: log)\n            }\n\n            if levelOfDetail == .default {\n                LogDrinkView()\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "9:46",
+      "title": "LevelOfDetail - TotalCaffeineView",
+      "language": "swift",
+      "code": "struct TotalCaffeineView: View {\n    @Environment(\\.levelOfDetail) var levelOfDetail\n    \n    let entry: CaffeineLogEntry\n\n    var body: some View {\n        VStack {\n            Text(\"Total Caffeine\")\n                .font(.caption)\n\n            Text(totalCaffeine.formatted())\n                .font(caffeineFont)\n        }\n    }\n    \n    var caffeineFont: Font {\n        if levelOfDetail == .simplified {\n            .largeTitle\n        } else {\n            .title\n        }\n    }\n    \n    var totalCaffeine: Measurement<UnitMass> {\n        entry.totalCaffeine\n    }\n}"
+    },
+    {
+      "timestamp": "11:49",
+      "title": "Add .supplementalActivityFamilies",
+      "language": "swift",
+      "code": "struct ShopOrderLiveActivity: Widget {\n    var body: some WidgetConfiguration {\n        ActivityConfiguration(for: Attributes.self) { context in\n            ActivityView(context: context)\n        } dynamicIsland: { context in\n            DynamicIsland {\n                DynamicIslandExpandedRegion(.leading) {\n                    ExpandedView(context: context)\n                }\n            } compactLeading: {\n                LeadingView(context: context)\n            } compactTrailing: {\n                TrailingView(context: context)\n            } minimal: {\n                MinimalView(context: context)\n            }\n        }\n        .supplementalActivityFamilies([.small])\n    }\n}"
+    },
+    {
+      "timestamp": "12:27",
+      "title": "Add .activityFamily",
+      "language": "swift",
+      "code": "struct ActivityView: View {\n    @Environment(\\.activityFamily) var activityFamily\n    var context: ActivityViewContext<Attributes>\n    \n    var body: some View {\n        switch activityFamily {\n        case .small:\n            ShopOrderSmallView(context: context)\n        default:\n            ShopOrderView(context: context)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "16:20",
+      "title": "Define relevance widget with RelevanceConfiguration",
+      "language": "swift",
+      "code": "struct HappyHourRelevanceWidget: Widget {\n    var body: some WidgetConfiguration {\n        RelevanceConfiguration(\n            kind: \"HappyHour\",\n            provider: Provider()\n        ) { entry in\n            WidgetView(entry: entry)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "16:41",
+      "title": "Implement RelevanceEntriesProvider",
+      "language": "swift",
+      "code": "struct Provider: RelevanceEntriesProvider {\n    func placeholder(context: Context) -> Entry {\n        Entry()\n    }\n    \n    func relevance() async -> WidgetRelevance<Configuration> {\n        let configs = await fetchConfigs()\n        var attributes: [WidgetRelevanceAttribute<Configuration>] = []\n        \n        for config in configs {\n            attributes.append(WidgetRelevanceAttribute(\n                configuration: config,\n                context: .date(interval: config.interval, kind: .default)))\n        }\n        \n        return WidgetRelevance(attributes)\n    }\n    \n    func entry(configuration: Configuration,\n               context: RelevanceEntriesProviderContext) async throws -> Entry {\n        Entry(shop: configuration.shop, timeRange: configuration.timeRange)\n    }\n}"
+    },
+    {
+      "timestamp": "21:13",
+      "title": "Handle push token and widget configuration changes",
+      "language": "swift",
+      "code": "struct CaffeineTrackerPushHandler: WidgetPushHandler {\n    func pushTokenDidChange(_ pushInfo: WidgetPushInfo, widgets: [WidgetInfo]) {\n        // Send push token and subscription info to server\n    }\n}"
+    },
+    {
+      "timestamp": "21:30",
+      "title": "Add pushHandler to WidgetConfiguration",
+      "language": "swift",
+      "code": "struct CaffeineTrackerWidget: Widget {\n    var body: some WidgetConfiguration {\n        StaticConfiguration(\n            kind: Constants.widgetKind,\n            provider: Provider()\n        ) { entry in\n            CaffeineTrackerWidgetView(entry: entry)\n        }\n        .configurationDisplayName(\"Caffeine Tracker\")\n        .pushHandler(CaffeineTrackerPushHandler.self)\n    }\n}"
+    },
+    {
+      "timestamp": "22:29",
+      "title": "Push Notification Request Body",
+      "language": "swift",
+      "code": "{\n    \"aps\": {\n        \"content-changed\": true\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Increasing the visibility of widgets in Smart Stacks",
+        "url": "https://developer.apple.com/documentation/WidgetKit/Widget-Suggestions-In-Smart-Stacks"
+      },
+      {
+        "title": "Optimizing your widget for accented rendering mode and Liquid Glass",
+        "url": "https://developer.apple.com/documentation/WidgetKit/optimizing-your-widget-for-accented-rendering-mode-and-liquid-glass"
+      },
+      {
+        "title": "RelevanceKit",
+        "url": "https://developer.apple.com/documentation/RelevanceKit"
+      },
+      {
+        "title": "Updating widgets with WidgetKit push notifications",
+        "url": "https://developer.apple.com/documentation/WidgetKit/Updating-widgets-with-widgetkit-push-notifications"
+      },
+      {
+        "title": "Updating your widgets for visionOS",
+        "url": "https://developer.apple.com/documentation/WidgetKit/Updating-your-widgets-for-visionOS"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/278/6/2b85cabe-2b0a-4290-a667-9170e4b5ae18/downloads/wwdc2025-278_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2025/278/6/2b85cabe-2b0a-4290-a667-9170e4b5ae18/downloads/wwdc2025-278_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "255",
+      "year": "2025",
+      "title": "Design widgets for visionOS",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/255"
+    },
+    {
+      "id": "216",
+      "year": "2025",
+      "title": "Turbocharge your app for CarPlay",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/216"
+    },
+    {
+      "id": "334",
+      "year": "2025",
+      "title": "What’s new in watchOS 26",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/334"
+    },
+    {
+      "id": "10098",
+      "year": "2024",
+      "title": "Design Live Activities for Apple Watch",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10098"
+    },
+    {
+      "id": "10157",
+      "year": "2024",
+      "title": "Extend your app’s controls across the system",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10157"
+    },
+    {
+      "id": "10027",
+      "year": "2023",
+      "title": "Bring widgets to new places",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10027"
+    },
+    {
+      "id": "10025",
+      "year": "2023",
+      "title": "Meet Push Notifications Console",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10025"
+    },
+    {
+      "id": "10095",
+      "year": "2020",
+      "title": "The Push Notifications primer",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10095"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:51:31.492Z"
+}

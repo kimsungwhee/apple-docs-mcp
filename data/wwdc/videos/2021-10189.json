@@ -1,0 +1,94 @@
+{
+  "id": "10189",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10189/",
+  "title": "Coordinate media playback in Safari with Group Activities",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Bass music playing ♪  ♪ Jer Noble: Hello, I'm Jer! And I work on media playback in WebKit and Safari here at Apple. People love watching their favorite shows and movies and listening to their music together, whether it’s with people in the same room, next door, or on the other side of the world. And now with GroupActivities, it’s easier than ever to provide a SharePlay experience to your users, wherever they are. In this session, we'll cover four topics. An introduction to coordinated playback in Safari; how to prepare your iOS app to work with SharePlay in Safari; how to adopt the Media Session API in your app's web page; and a new web API for coordinating playback across multiple devices. So let’s start by talking a little bit about SharePlay and Safari. In the previous session, you learned how to create an amazing SharePlay experience in your iPhone and iPad applications with GroupActivities. And on macOS Monterey, you can bring that same experience -- along with your great iPhone and iPad apps -- to Mac using Catalyst. And if your application has a companion website, you can bring that same amazing SharePlay experience to your Mac Safari 15 users, without requiring those users to download your app from the App Store. And that’s what I’m going to show you how to do in this session. I’ve been working on an iPhone application that lets you watch movie trailers. I’ve already added support for GroupActivities to my app, and that lets friends watch movie trailers together over FaceTime. But my movie trailers app also has a website. And here’s how it should look once I add support for GroupActivities in that web page as well. I’m on a FaceTime call with my friend Sam. Sam loves watching movie trailers, so I’ve asked them to help me test this new Movie Trailers app. When they start playing a new trailer in that app during our call, I’ll be invited to watch that trailer through a notification. It will give me the option to join the session in Safari. When I click that notification, Safari will be launched with a URL for the shared content, and when Sam starts playing the trailer, it will play here in Safari at the same time. I can pause, play, and even seek the video here in Safari, and everyone else in the session will see those same commands reflected in their local video at the same time. It's going to be really great! So, what will it take to add GroupActivities support to the movie trailers website? Before we take a look under the hood of Safari -- at the new Web APIs available in Safari 15 -- let's talk about how to get your app ready to work with Safari through GroupActivities. In order to join a GroupActivities session with Safari, a user with your iPhone or iPad app will need to create a GroupSessionActivity with a fallbackURL that points to your website. The fallbackURL must identify not just your website, but the specific content to be played. When a Watch Together invitation is issued by an iPhone user to a user on a Mac, Safari will be launched and asked to load the URL that you provide in GroupSessionActivity. Once the fallbackURL is loaded in Safari, your site will need to implement a few simple but important Web APIs. The first is Media Session. Media Session is a standard Web API which allows your site to tell the browser -- Safari -- more about the current state of media playback within your page. Your site can tell the browser the current play state, the duration of your content. It can provide artwork for the current playback item. It can even tell the browser that the current content is an advertisement that can be skipped. Once the Browser has all this metadata available, it can provide that metadata to the rest of the operating system and present it to your users outside of the browser window itself. One place the operating system displays that data is within something called \"Now Playing.\" Now Playing is a great way for users to quickly see and control the media that they’re enjoying right now. In iOS, users can access Now Playing from the Control Center as well as from the Lock screen. And now in macOS Monterey, users can access Now Playing directly from the menu bar. And Safari will use the information provided through Media Session to populate Now Playing with your content’s title, duration, play state, artwork, and more. Now Playing also allows users to control playback of what they’re listening to, by showing the user a simple set of playback controls. Your site can register with the Media Session for specific actions to perform when a user interacts with Now Playing, so that for example, when a user taps the Play button in Now Playing, Safari can run your site’s own action handler to begin playback. Media Session gives your site complete control over what metadata to expose to the browser, as well as control over how to implement playback commands. Need to do some set up or preflighting before beginning playback? No problem. With mediaSession’s play action handler, now you can. If your site has previously adopted Media Session, you’re halfway done already. But the movie trailers site hasn’t adopted Media Session yet, so let’s add support for that now. This site will want to add actions for play, pause, and seekto. To do so, we’ll use the mediaSession property of navigator. Let’s first add an action handler for play. We’ll call mediaSession. setActionHandler(), passing in the string play and an inline function that just calls play() on our video element. Then, we’ll do the same for pause and seekto. And to make sure that we’re accurately representing playback state to the browser, we’ll add event listeners to our video element and update mediaSession when that state changes. First, let’s add a function called updateMediaSessionState(). It will query the video element to find out if it’s playing or paused. Then it will set mediaSession’s playbackState property to either the string playing or paused, depending on the video element’s playback state. Next, it will query the video element’s duration, playback rate, and current time. Then, using those values, it will call mediaSession’s setPositionState() function, passing in those values in the dictionary parameter. Then, let’s add an event listener to detect when those values change, and call updateMediaSessionState() to update mediaSession with those new values. We’ll need an event listener for playing, pause, duration change, rate change, and time change. And last, because the movie trailers website has both a title string and a URL for the title artwork, we can set the Media Session’s metadata property to a new MediaMetadata object containing those values. So let’s try it out! I’ll reload my page in Safari, begin playing, then click on the Now Playing icon in the system menu. And I see the title and artwork in the Now Playing panel. And when I tap the Pause button, our pause action handler is called and playback pauses. Media Session provides the building blocks for a Watch Together experience in a web page, by providing a mechanism for the browser to tell the page it should start or stop playback. Now we’re ready move onto the second part of creating a cowatching experience in our web page: coordinating playback across every device in the session. To do so, we’ve extended Media Session by adding a new property on it called \"Coordinator.\" Your page will use Media Session's Coordinator to inform every other user in the session of the page’s intent to begin or pause playback, to seek to a specific point in the media’s timeline, or to move to the next item in a playlist. The Coordinator will communicate those intents with all the other devices in the session and listen for changes to every other device's play state, resolve conflicts, and wait for everyone to be ready to begin playback. And when everyone is ready, the Coordinator will use the Media Session action handlers we added earlier to start playback along all the other users in the session. And if another user pauses playback for whatever reason, the Coordinator will call your Media Session’s pause action handler. That said, I’d like to point out a few caveats. The Coordinator interface is an experimental web API; it has yet to go through standardization, and while that process will likely improve this API, some aspects of the API may change. To find out more, please watch the W3C’s Media Session GitHub page. This API is currently only implemented in Safari, though the GroupActivities framework, which Safari uses to implement the Coordinator, can -- and we hope will -- be adopted by other Mac browsers. And the final caveat is that while your users can join an existing session in Safari, a GroupSession currently must be initiated from an iPhone, iPad, or macOS application. So let’s add support for the Coordinator now. The first thing I’d like to do is join the session once it becomes available. So I’m going to add a coordinatorchange event listener to mediaSession. In the handler, if there’s a non-null coordinator property on mediaSession, I’ll call its join() function. I’d also like to add an icon to my controls to show that we’re playing back in a session. So in the handler, I’ll either show or hide the icon, based on whether there’s a coordinator property on mediaSession. I’m also going to hook up a click event listener to the icon to call leave() on the coordinator. Next, I’m going to modify the event handlers for my custom controls to check for the presence of a coordinator, and if we have one, call the appropriate coordinator function instead. I’ll add one for my Play button, and then for my Pause button, and also for timeline slider. And let’s see it in action! I’ve got an invite here from my friend Sam, and I’m going to accept it. My page loads to the same content that Sam is watching on their iPhone. And when I click the Play button, both Sam's iPhone and my web page begin playing simultaneously. Allie Fox: The way we get there is an adventure. Dina: I'm scared. Allie: If it didn't feel that way, it wouldn't be an adventure. ♪ < That was great. Now that the trailer's ended, Sam uses the iPhone to scrub back to the beginning.\n\nWe think that users are going to love watching or listening to their favorite content together in your applications, whether it’s on their iPhone, iPad, Apple TV, or in Safari running on their Mac. And we hope you can now bring that experience to all of your users, wherever they are. For more information about GroupActivities APIs, start with the sessions \"Coordinate media playback with Group Activities\" and \"Design for Group Activities.\" If you’re interested in the other new web APIs that will be available in Safari 15, make sure to check out the session, \"Develop advanced web content.\" Thanks for coming and enjoy the rest of your WWDC21. ♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:50",
+      "title": "Preparing your app",
+      "language": "swift",
+      "code": "struct WatchTogether: GroupActivity {\n\n    var contentIdentifier: String\n\n    func metadata() async -> GroupActivityMetadata {\n        var metadata = ActivityMetadata()\n        metadata.fallbackURL = URL(string: \"https://example.com/title/\\(contentIdentifier)\")\n        return metadata\n    }\n}"
+    },
+    {
+      "timestamp": "5:29",
+      "title": "Adopting Media Session",
+      "language": "swift",
+      "code": "if (navigator.mediaSession) {\n    navigator.mediaSession.setActionHandler('play', () => video.play() );\n    navigator.mediaSession.setActionHandler('pause', () => video.pause() );\n    navigator.mediaSession.setActionHandler('seekto', details => {\n        video.currentTime = details.seekTime;\n    });\n}\n\nlet updateMediaSessionState = function() {\n    if (!navigator.mediaSession)\n        return;\n    let playbackState = video.paused ? 'paused' : 'playing';\n    navigator.mediaSession.playbackState = playbackState;\n\n    let positionState = { video.duration, video.playbackRate, video.currentTime };\n    navigator.mediaSession.setPositionState(positionState);\n};\n\nfor (var event of ['playing', 'pause', 'durationchange', 'ratechange', 'timechange'])\n    video.addEventListener(event, updateMediaSessionState);\n\nnavigator.mediaSession.metadata = new MediaMetadata({\n    title: myPlayer.titleString,\n    artwork: [{ src: myPlayer.artworkURL }]\n});"
+    },
+    {
+      "timestamp": "9:32",
+      "title": "Adopting Coordinator",
+      "language": "swift",
+      "code": "navigator.mediaSession.addEventListener('coordinatorchange', coordinator => {\n    if (coordinator)\n        coordinator.join();\n    controls.inSessionIcon.style.hidden = !coordinator;\n});\n\ncontrols.inSessionIcon.addEventListener('click', event => {\n    let coordinator = navigator.mediaSession.coordinator;\n    if (coordinator && coordinator.state == 'joined')\n        navigator.mediaSession.coordinator.leave();\n});\n\ncontrols.playButton.addEventHandler('click', event => {\n    if (navigator.mediaSession.coordinator)\n        navigator.mediaSession.coordinator.play();\n    else\n        video.play();\n});\ncontrols.pauseButton.addEventHandler('click', event => {\n    if (navigator.mediaSession.coordinator)\n        navigator.mediaSession.coordinator.pause();\n    else\n        video.pause();\n});\ncontrols.timeline.addEventHandler('onchange', event => {\n    if (navigator.mediaSession.coordinator)\n        navigator.mediaSession.coordinator.seekTo(event.target.value);\n    else\n        video.currentTime = event.target.value;\n});"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Group Activities",
+        "url": "https://developer.apple.com/documentation/GroupActivities"
+      },
+      {
+        "title": "Supporting Coordinated Media Playback",
+        "url": "https://developer.apple.com/documentation/AVFoundation/supporting-coordinated-media-playback"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10189/6/94D452D6-3731-4C08-8EFA-BD8F6B8853ED/downloads/wwdc2021-10189_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10189/6/94D452D6-3731-4C08-8EFA-BD8F6B8853ED/downloads/wwdc2021-10189_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10225",
+      "year": "2021",
+      "title": "Coordinate media experiences with Group Activities",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10225"
+    },
+    {
+      "id": "10184",
+      "year": "2021",
+      "title": "Design for Group Activities",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10184"
+    },
+    {
+      "id": "10030",
+      "year": "2021",
+      "title": "Develop advanced web content",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10030"
+    },
+    {
+      "id": "10183",
+      "year": "2021",
+      "title": "Meet Group Activities",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10183"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:24:25.960Z"
+}

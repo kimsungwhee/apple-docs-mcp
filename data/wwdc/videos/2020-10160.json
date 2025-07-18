@@ -1,0 +1,126 @@
+{
+  "id": "10160",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10160/",
+  "title": "Formatters: Make data human-friendly",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Accessibility & Inclusion"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nHello, everyone. My name is Karan Miśra, and today I'd like to talk about how we can format data in our apps to be friendly and understandable.\n\nEvery day, we use many apps which shows us all different kinds of data. Some apps, like Weather, are full of different measurements.\n\nOthers, like Health, show us some key statistics with trends.\n\nAnd yet others, like Notes, may only show us a simple date or time stamp. No matter how prominently the data is shown, it's important to get it right all the way from what units are used to what formats are used. And this is crucially important regardless of whether the app is available in just one language or whether it's available in dozens of different languages.\n\nWe also update the underlying algorithms and data sets that power our formatters, and one of our focus areas has been expanding our support for combinations of languages and regions. Why? Because we're living in an increasingly globalized world and we find that people all over the world are using their devices in languages that may not be traditionally associated with that region.\n\nFor example, someone living in Abu Dhabi might be using their iPhone in French.\n\nBefore, this meant that we would get number formats that were intended for France with the decimal separator as a comma, as shown here in the Home App.\n\nNow with iOS 14, and the latest versions of Mac OS, watchOS and tvOS, we will get formats that are better suited for the region, which is UAE in this case. And it goes without saying that this change is not limited to a single language or region but is a general algorithm that will improve the formats across hundreds of combinations of languages and regions.\n\nI want to show you the power of using the formatter APIs in your app, how much time and effort these APIs can save you, and how you can use these APIs to build versatile UIs.\n\nI'm going to walk through several sections, and as I walk through each of them, I will focus on real-world examples from Apple's own apps, going down in order from most specific to most generic. My goal is to show that we have an extensive set of APIs at our disposal, that simple things are easy and complex things are possible.\n\nLet's get started with dates and times.\n\nLet's start with a simple example. In the Notes app, at the top of every note, you will see the last modification date and time.\n\nLet's see how we can do this.\n\nHere we want to show a full date with day, month and year and also the time. This is something that can be accomplished with the predefined styles in dateFormatter, with the medium style for the date and the short style for the time.\n\nNote that the word \"at\" is automatically added here as a consequence of this being a medium-length format. So, as I said, simple things are easy.\n\nNow let me show you that more complex things are possible too. Here, we have the Screen Time UI in Settings and we want to show the day of the week followed by the day and month but not the year. This is not something that any of the predefined styles can offer you, but it is possible by specifying a template.\n\nAs one more example from Screen Time, which you will see in many other UIs too, if you just want the abbreviations for the days of the week, you can request that with a custom template. As we can see, the template mechanism is really powerful. So let's dive a little deeper into templates.\n\nUnicode publishes various technical reports, including this one on dates, one of a seven-part series, in fact, for which I'm proud to say that Apple, as a Unicode member, has been one of the key contributors. This is an excellent reference for templates, and there are lots of explanations and examples. So when I was looking for day of the week earlier, I scrolled down, and found this section. Here you can see that I can choose between an uppercase \"E,\" a lowercase \"e\" and a lowercase \"c.\" So which one should I use? Now, as you may recall, I was showing these days of the week labels in a graph, so these are stand-alone and not part of a longer format. This helps me choose the lowercase \"c\" for my template.\n\nNow that we've chosen a template, let's see how it works.\n\nHere, you're seeing the output of different lengths of lowercase \"c.\" Notice that here the template with five C's is the one that's appropriate, because we want the most abbreviated form. Also, note the way that these lengths are interpreted across different languages will vary. Here, we see that in English each of the five lengths produces a different output but not so in Arabic or Japanese. So it's important to choose the right template and consider all the locales that we're supporting, since some distinctions may only manifest for certain languages or locales.\n\nThis is also why it was very important that we chose the stand-alone style. It may not make a difference in English, but it may make a difference for other languages.\n\nAnother important thing to note about templates is that the order of the fields does not matter. This template is the same as this template which is the same as this template.\n\nThe template takes the pieces of data that we're interested in and it is the formatter's job to assemble them into something that makes sense for the locale.\n\nSo for American English, you'll see that it adds a comma.\n\nFor British English, you'll see that it makes sure that the month follows the day and not the other way around.\n\nAnd as one last example, you'll see that for Japanese it adds the characters for month and day which are needed to produce a sensible-looking date in Japanese.\n\nLastly, I should point out that dateFormatter has a property called dateFormat, and we should never set the template directly onto that property, since it will cause it to be interpreted literally and almost certainly produce the wrong result. Instead, we should always create our date formats from a template first.\n\nThere are a few more APIs for formatting dates and times.\n\nDateComponentsFormatter helps you format components, such as those used in durations.\n\nYou can also format ranges of time, like this example from the Health app by using DateIntervalFormatter.\n\nIt even takes care of avoiding repeating elements that are both in the start and end date.\n\nLastly, the RelativeDateTimeFormatter is a powerful tool for dates in the past or future which you want to present in a natural manner.\n\nNext up, let's take a look at measurements.\n\nIf your app uses any kind of measurements, MeasurementFormatter is your friend. Let me show you a few examples that we use in the Weather app.\n\nLet's start with temperature. Note that in all these examples, I am setting the measurements in metric units, but the display you see on the right has everything localized for the US, which uses imperial units. So the temperature of 16 degrees Celsius will come out as 61 degrees Fahrenheit. The same goes for speed. Here the value is converted to miles per hour for the US.\n\nAnd similarly for pressure. I'm showing these examples because your data source for measurements may use metric or other units and MeasurementFormatter does all the heavy lifting for you, not only across units but also across languages and locales. Now, while I just showed you examples of three different kinds of measurements, MeasurementFormatter supports many, many more. And, in case it doesn't support a unit that you'd like to use, it can even support custom units. For all this and more, do check out the excellent WWDC 2016 talk on \"Measurements and Units.\" Next, let's talk about names.\n\nNames are one of the most personal bits of data that we display in our apps, and we all have a very strong response when we see our names on screen.\n\nSo getting name formatting right is absolutely crucial to making a good impression.\n\nLuckily, PersonNameComponentsFormatter, which I like to call \"Name Formatter\" for short, makes it easy to do the right thing.\n\nAll we need to do is to populate the components object and ask for the formatted strings.\n\nBy default, Name Formatter will choose the medium style which includes all the primary components like family name and given name.\n\nWe can also request a short style, which, depending on user preferences, may use the nickname or a shortened version of the name.\n\nThe abbreviated style is intended for specific use cases like monograms, as shown here. Over the past few years, more and more apps have been using monograms. So let's dive a little deeper into them.\n\nMonograms are a great alternative in the absence of an avatar or photo while still making the UI feel friendly and inviting. And the Name Formatter was designed with monograms in mind. However, it is important to note that monograms cannot be generated for all names and some abbreviated names may be too long to fit in a given UI.\n\nWith Swift, it's easy to restrict monograms based on a length check. Because Swift's count is based on user-visible characters and not Unicode code points, this works well across languages.\n\nOf course, a character count cannot determine how tall or wide the string would be when rendered. So we still need to make sure that the string fits appropriately.\n\nWhen the character count is too long or the string is too large to fit, a fallback option needs to be used, such as a generic icon that can be used in place of a monogram.\n\nLastly, it's worth mentioning that the Name Formatter has a lot of intelligence built in and uses several pieces of information when formatting names, such as the user's language settings, their contact settings, such as name order, as well as the name itself.\n\nFor example, here a Japanese name is shown on an iPhone running in English. I've intentionally chosen this example to show you that the Name Formatter will render the name appropriately in all cases, even in cases where the language of the name is different from the iPhone language.\n\nFor names written in Chinese, Japanese and Korean, this means that they will always use the family name followed by given name, which is the only appropriate way to write these names.\n\nNext up, let's see how we can make well-formatted lists. Anytime we're showing a list of items that's formatted as human readable text, we can use ListFormatter. Let me show you how it can not only save us time but also make our app look polished by getting the nuances right.\n\nThe API couldn't be easier. We simply specify an array of strings or other objects that we want to combine into a list, and we get back a concatenated list.\n\nLet's see the subtle benefits we get by doing this. This is the keyboard settings UI, and here we're formatting a very simple list with two elements: the language names \"English\" and \"Spanish.\" In English, all this takes is inserting the word \"and\" in the middle.\n\nAnd if the order of the languages is changed, it's still the same.\n\nBut if we take a look at the same UI now localized to Spanish, we'll see that the word for \"and\" is in Spanish, but did you know that the Spanish word for \"and\" can vary based on context? Notice that when the order of the elements is changed, so is the Spanish word for \"and.\" In fact, in iOS 14, as well as the latest versions of macOS, tvOS and watchOS, ListFormatter has been updated to adhere to the grammatical rules of several languages, including Spanish.\n\nThis is one of the many reasons that we should use formatter APIs wherever possible. Not only do they abstract away a ton of complexity and provide localization for free, as the underlying implementation is updated and improved, our app gets improved behavior without modifying a single line of code. Now let's talk about two generic data types. Let's start with numbers. Here is a quick quiz. What's the number you're seeing onscreen? It's a little bit of a trick question. Depending on what language we use and what region we're in, we may interpret this as 32,768 or as 32.768. In this case, the decimal separator button on the calculator gives it away and tells us that this is actually 32.768.\n\nAnd this is how we can format it super easy.\n\nNow what happens if the app is instead launched with the language set to Arabic and the region to Egypt? As we see here, NumberFormatter does all the heavy lifting to ensure that everything is localized appropriately.\n\nIt's also worth noting that if we need to access certain symbols that change according to the language or locale, there are convenience methods to fetch the percentSymbol and the decimalSeparator. In fact, there are also convenience APIs for many more symbols that aren't shown here.\n\nNumberFormatter supports several different styles, including a percent style. And, as we would expect, it handles nuances across languages and regions here too.\n\nFor example, we can see that it correctly formats the number with the percent sign going in front of the number for Turkish.\n\nI'm not going to go into more detail on NumberFormatter here because it is chock-full of useful functionality, but please do check out the documentation, or try using it in an Xcode Playground. Lastly, let's talk about strings.\n\nWhile the various formatter APIs will cover a wide range of data types that are commonly formatted across all apps, your app may have its own kinds of data that don't have a standard formatter. For example, there's no standard formatter that will format the number of photos. Let's see an example of how this would work.\n\nDoing this is extremely simple. Using the text element in SwiftUI, we specify the text as we normally do. As far as code goes, that's all we need to write.\n\nThen all we need to do is to make sure that we have a stringsdict file that contains the corresponding string.\n\nTo learn more about stringsdict, or even more about localization in general, do take a look at the documentation at the URL mentioned here. Let's say our translators have translated the text into English and Arabic. Let's see what the result looks like. When a single photo is selected, note that while the English uses the numeral \"1,\" in Arabic, it spells out the words, as that is more natural.\n\nWhen two photos are selected, the English, again, uses a number, but \"photo\" becomes \"photos,\" following English's grammar. On the other hand, in Arabic, the dual form is used following Arabic grammar.\n\nFor three photos, both English and Arabic look similar, using the number followed by the plural form of the word \"photo.\" And this goes on for numbers up to ten. For 11 photos or more, Arabic grammar dictates that a different plural form be used. Now, maybe you're interested in learning the grammar rules of a hundred languages. I know I am. However, what I want you to take away from this is that if you correctly localize strings using stringsdict, and if you use the formatters wherever you can in your app, your app will shine regardless of whether you support only one language or a hundred. Also, all of this is code that you need to write only once, no matter how many languages you support in your app, either now or in the future.\n\nLastly, to show you even more features of all the formatters I talked about and let you explore, we have a sample app that you can download and play with. So happy formatting.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:25",
+      "title": "Dates and times",
+      "language": "swift",
+      "code": "// Dates and Times\n\n// Date with Day/Month/Year and Time\nlet dateFormatter = DateFormatter()\ndateFormatter.dateStyle = .medium\ndateFormatter.timeStyle = .short\ndateFormatter.string(from: Date())\n\n// Day of Week + Date + Month\nlet dateFormatter = DateFormatter()\ndateFormatter.setLocalizedDateFormatFromTemplate\n    (\"MMMMdEEEE\")\ndateFormatter.string(from: Date())\n\n// Abbreviated Day of Week\nlet dateFormatter = DateFormatter()\ndateFormatter.setLocalizedDateFormatFromTemplate\n    (\"ccccc\")\ndateFormatter.string(from: Date())"
+    },
+    {
+      "timestamp": "5:56",
+      "title": "Date components formatter",
+      "language": "swift",
+      "code": "// Dates and Times\n\n// Date and Time Components\nlet formatter = DateComponentsFormatter()\nformatter.unitsStyle = .abbreviated\nlet components = DateComponents(hour: 2, minute: 26)\nformatter.string(from: components)\n\n// Date and Time Intervals\nlet formatter = DateIntervalFormatter()\nformatter.dateTemplate = \"dMMM\"\nformatter.string(from: startDate, to: endDate)\n\n// Relative Dates and Times\nlet formatter = RelativeDateTimeFormatter()\nformatter.dateTimeStyle = .named\nformatter.localizedString(from: DateComponents(day: -1))"
+    },
+    {
+      "timestamp": "6:29",
+      "title": "Measurements",
+      "language": "swift",
+      "code": "// Measurements\n\n// Temperature\nlet formatter = MeasurementFormatter()\nlet temperature = Measurement<UnitTemperature>\n    (value: 16, unit: .celsius)\nformatter.numberFormatter.maximumFractionDigits = 0\nformatter.string(from: temperature)\n\n// Speed\nlet speed = Measurement<UnitSpeed>\n    (value: 14, unit: .kilometersPerHour)\nformatter.string(from: speed)\n\n// Pressure\nlet pressure = Measurement<UnitPressure>\n    (value: 1.01885, unit: .bars)\nformatter.string(from: pressure)"
+    },
+    {
+      "timestamp": "7:49",
+      "title": "Names",
+      "language": "swift",
+      "code": "// Names\n\nlet formatter = PersonNameComponentsFormatter()\nvar nameComponents = PersonNameComponents()\nnameComponents.familyName = \"Iwasaki\"\nnameComponents.givenName = \"Akiya\"\nnameComponents.nickname = \"Aki-chan\"\n\n// Full Name\nformatter.string(from: nameComponents)\n\n// Short Name: Respects User Preferences\nformatter.style = .short\nformatter.string(from: nameComponents)\n\n// Abbreviated Name\nformatter.style = .abbreviated\nformatter.string(from: nameComponents)"
+    },
+    {
+      "timestamp": "8:31",
+      "title": "Abbreviated name (monogram)",
+      "language": "swift",
+      "code": "// Abbreviated Name: Monogram\nformatter.style = .abbreviated\nlet monogram = formatter.string(from: nameComponents)\nif (monogram.count <= 2) {\n    // Use Monogram\n}\nelse {\n    // Use Icon\n}"
+    },
+    {
+      "timestamp": "9:23",
+      "title": "Name formatter",
+      "language": "swift",
+      "code": "// Names\n\nlet formatter = PersonNameComponentsFormatter()\nvar nameComponents = PersonNameComponents()\nnameComponents.familyName = \"岩崎\"\nnameComponents.givenName = \"晃也\"\nnameComponents.nickname = \"あきちゃん\"\n\n// Full Name\nformatter.string(from: nameComponents)\n\n// Short Name: Respects User Preferences\nformatter.style = .short\nformatter.string(from: nameComponents)\n\n// Abbreviated Name\nformatter.style = .abbreviated\nformatter.string(from: nameComponents)"
+    },
+    {
+      "timestamp": "10:15",
+      "title": "Lists",
+      "language": "swift",
+      "code": "// Lists\n\n// English Localization\n\nlet items = [ \"English\", \"French\", \"Spanish\" ] ListFormatter.localizedString(byJoining: items)\n\nlet items = [ \"English\", \"Spanish\" ] ListFormatter.localizedString(byJoining: items)\n\nlet items = [ \"Spanish\", \"English\" ] ListFormatter.localizedString(byJoining: items)\n\n// Spanish Localization\n\nlet items = [ \"Inglés\", \"Español\" ] ListFormatter.localizedString(byJoining: items)\n\nlet items = [ \"Español\", \"Inglés\" ] ListFormatter.localizedString(byJoining: items)"
+    },
+    {
+      "timestamp": "12:01",
+      "title": "Numbers",
+      "language": "swift",
+      "code": "// Numbers\n\nlet formatter = NumberFormatter()\nformatter.numberStyle = .decimal\nformatter.string(from: 32.768) // French (France)\n\nlet formatter = NumberFormatter()\nformatter.numberStyle = .decimal\nformatter.string(from: 32.768) // Arabic (Egypt)\n\nformatter.percentSymbol\n\nformatter.decimalSeparator"
+    },
+    {
+      "timestamp": "12:33",
+      "title": "Numbers formatter",
+      "language": "swift",
+      "code": "// Numbers\n\nlet formatter = NumberFormatter()\nformatter.numberStyle = .percent\nformatter.string(from: 0.71) // English (US)\n\nlet formatter = NumberFormatter()\nformatter.numberStyle = .percent\nformatter.string(from: 0.71) // Turkish (Turkey)"
+    },
+    {
+      "timestamp": "13:24",
+      "title": "Strings",
+      "language": "swift",
+      "code": "// Strings\n\nvar body: some View {\n    Text(\"\\(photosCount) Photos Selected\")\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Displaying Human-Friendly Content",
+        "url": "https://developer.apple.com/documentation/foundation/displaying_human-friendly_content"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10160/4/CC254390-2967-444F-B9EA-01A5DE7E8D39/wwdc2020_10160_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10160/4/CC254390-2967-444F-B9EA-01A5DE7E8D39/wwdc2020_10160_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10110",
+      "year": "2022",
+      "title": "Build global apps: Localization by example",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10110"
+    },
+    {
+      "id": "10221",
+      "year": "2021",
+      "title": "Streamline your localized strings",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10221"
+    },
+    {
+      "id": "10140",
+      "year": "2020",
+      "title": "Build location-aware enterprise apps",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10140"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:09:21.255Z"
+}

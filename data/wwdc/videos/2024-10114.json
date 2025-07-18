@@ -1,0 +1,100 @@
+{
+  "id": "10114",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10114/",
+  "title": "Enhance ad experiences with HLS interstitials",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi everyone. I'm Julian, an AVFoundation engineer. In recent years, we introduced HLS interstitials as a simple way to insert ads into your main content. This year we are offering new ways to present and navigate with interstitials. So if you're interested in including ads or just want to learn how to incorporate HLS interstitials in new ways, you tuned into the right session.\n\nIn this talk, we will start with a recap of how HLS interstitial works today.\n\nWe will follow this with discussing our new Integrated Timeline API which provides a data model for building your app's UI experience.\n\nLastly, we will discuss what's new with Interstitial SharePlay.\n\nLets quickly review HLS interstitials.\n\nWith HLS interstitials, ads or interstitials are separate assets that can be scheduled on the main content timeline. This is your typical media playlist. If we want to schedule an interstitial at 5s into the content, we simple specify the start date as 5s from content's Program-Date-Time. The content will then play primary content up until 5 and then start playing the interstitial URL. Finally, we will resume playback of primary content after the interstitial completes.\n\nHLS interstitials provides many benefits in comparison to direct insertion of ads into the main content. Interstitials allows for late binding ad decisioning and does not require ads to be conditioned with the primary content. While HLS interstitials has primarily been used for ad insertion, we would like to encourage its usage for presenting other auxiliary content such as show promos, studio banners and program recap segments as a drop in replacement to content served as discontinuities. This is scratching the surface of inserting HLS interstitials in your content. If you'd like to learn more please checkout \"Explore dynamic pre-rolls and mid-rolls in HLS\".\n\nThis year we are offering a new AVFoundation API called Integrated Timeline. This API introduces a data model for timing and sequence of playback of content with interstitials. You'll be able to utilize this data model to build new UI experiences and enable your user to seamlessly navigate in and out of interstitials.\n\nWe will start off with an overview of different ways interstitials can be presented on the integrated timeline.\n\nAfterwards, we will move onto understanding the API and how you can use it.\n\nWe will then take a look at an example app using integrated timeline for building its UI. Lastly, we will discuss new HLS syntax for describing how an interstitial should behave in integrated timeline.\n\nLets jump in and look at some of the ways interstitials can be presented on a timeline.\n\nA common use case when inserting ads with VOD content is marking the interstitials as a point on the transport bar.\n\nWhen playback reaches the point, the playhead stops as we play the interstitial. After the interstitial ends, primary content resumes and the playhead proceeds onwards.\n\nAnother use case with interstitials is representing the interstitials as a range in the transport bar such that interstitial's duration is included in the overall transport bar duration.\n\nThis would be commonly used with ads in broadcast style live streams or anywhere you replace burned-in content with interstitials.\n\nThis last example is an extension to the previous example. In the previous example, we clearly denoted the interstitial in the UI with a yellow highlight. In this case, the interstitial to be incorporated as indistinguishable from the primary content. This is useful when using HLS interstitials with rating bumpers, pre-rolls such as a show recap or post-rolls for dub cards. In particular for cases where the content is closely related to the primary content.\n\nNow that we looked at the different cases that integrated timeline will model, lets learn the additions to AVPlayerInterstitalEvent API for signaling each of these use-cases.\n\nFor signaling a point on the timeline, we can create an interstitial event. And set a new property called timelineOccupancy with the value as singlePoint.\n\nThis time for signaling a range on the timeline, we can set the event's timelineOccupancy to fill. However, since interstitial events are loaded dynamically as the playhead approaches, the actual duration of the event may be discovered late. We can provide a plannedDuration as a fallback for the timeline to use until the actual duration is known. It is best practice to set this property for range interstitials.\n\nFor the final case where the range interstitial should be indistinguishable in the UI, we can set supplementsPrimaryContent to true.\n\nNow that we looked at how we can signal interstitials behavior on the timeline, lets look at the Integrated Timeline API.\n\nFor observing timeline progression, IntegratedTimeline provides an API for obtaining the currentTime.\n\nWhen the playhead reaches the PointEvent, currentTime stops progressing while the event plays.\n\nAfter the event finishes playing, currentTime progresses again. And in this case when we reach the next interstitial event, currentTime continues to progress as we play the event.\n\nIntegrated Timeline also provides the ability to seek into an interstitial. Suppose, the client would like to seek forward by 10s. This would land in the middle of this FillEvent. Without this API, it would be difficult to accomplish this seek. In particular because the interstitial event is neither loaded nor enqueued on AVPlayer at this moment. However, this API makes it easy to accomplish seeking arbitrarily to any location on the timeline irrespective whether its the main content or an interstitial.\n\nAs part of Integrated Timeline it vends out a new object called AVPlayerItemSegment. Each region on the timeline is a segment where each segment provides key details about the content and time it occupies on the timeline. Even ranges of the primary content are considered as segments.\n\nOne of the biggest benefits of the integrated timeline is that it makes it easy to draw your playback UI. But to do so can be difficult as the timeline is constantly changing. In order to provide a self-consistent state, we introduced a snapshot object which the timeline can vend out. The snapshot represents an entire set of self-consistent properties that are needed to draw your UI.\n\nNow as playback progresses and the timeline changes, the snapshot on the bottom stays static and does not mutate.\n\nWith an AVPlayerItemIntegratedSnapshot, we can obtain a list of all the AVPlayerItemSegments in that snapshot. In this example, I pulled out a couple of segments so we can take a look at their values.\n\nFor example, the first Primary segment in the snapshot would mark itself as primary and occupy a range from 0 to 5 on the timeline.\n\nThe next segment is the interstitial, PointEvent. Here the segment indicates it occupies 5 to 5, a zero duration. It will also provide access to the interstitial event, which would also contain its timelineOccupancy as singlePoint.\n\nLastly, the final segment selected is the FillEvent. This segment occupies 20 to 30 on the timeline with a timeline occupancy of fill.\n\nNow that we understand all of the key objects, lets look how we can build a simple UI with Integrated Timeline. We will start off by creating our primary AVPlayerItem. We then obtain the integratedTimeline from our AVPlayerItem. Now we can grab a snapshot from the timeline to draw the current state.\n\nLets assume we have a routine to draw a UISlider that just needs the start, end and currentPosition. We can obtain all these values from the snapshot. Our start will be zero, our duration is simply the snapshot's duration and the currentPosition is the snapshot's currentTime. At this point, we have a simple transport bar that would include the fill interstitials as part of the overall slider. Now we want to start drawing single points in the timeline. In order to obtain the locations for the point events, we can filter on the snapshot segments and only include segments that have a type of interstitial and a timelineOccupancy of singlePoint.\n\nNow, for each of these segments, we will draw a point using the segment's timeMapping target start as its position on the overall timeline.\n\nLastly, lets highlight the fill interstitials. Here we will filter the snapshot's segments and include segments representing interstitials with an occupancy of fill. Since supplement primary content indicates that the event should not be distinguished in the UI, we will ignore any interstitials with that set. Once we have the segments, we simply use the segment's timeMapping target and highlight that region on the UI slider.\n\nThe timeline can be very dynamic and can change often as interstitials get resolved or is frequently updating in the case of live streams. As such, it is necessary to listen to snapshotsOutOfSyncNotification from the timeline to update our UI when this occurs. When the notification closure is called, we can examine the reason in the userInfo. For example, if the reason is segmentsChanged, we may want to redraw our transport bar using a new snapshot. However, when the reason is currentSegmentChanged, we may want to update playerControls or other UI elements if we are transitioning into an interstitial or out of one.\n\nNow that we look at the API and some sample code, lets look at an example app attached to this talk.\n\nIn this sample app, we have included different examples. Lets take a look at example called Fill Interstitial. This example includes a range interstitial scheduled at 10s into the content.\n\nThe transport bar at the bottom shows the interstitial with a yellow range starting at 10s. As we play, playback transition to the interstitial at the expected time.\n\nNow we can try some seeks and seek back into primary content. Finally, we performed a seek back into the interstitial.\n\nAwesome! Earlier I showed you how to construct interstitials in your app, but you can also specify them in your primary playlists. Here's how you can describe their appearance on the timeline from the server.\n\nStarting with the point example, here is a DateRange tag for a HLS interstitial. In order for the timeline to consider this a POINT, we have introduced a new attribute, X-TIMELINE-OCCUPIES where the value is set as POINT. We also include a new attribute in DateRange tag, X-TIMELINE-STYLE with a value of HIGHLIGHT. This denotes that client should mark this point in their UI presentation.\n\nFor the range case, the new X-TIMELINE-OCCUPIES attribute is set with the value RANGE. The X-TIMELINE-STYLE remains the same as the previous example.\n\nLastly, for the case of presenting the interstitial indistinguishable in the UI. X-TIMELINE-OCCUPIES remains as RANGE. X-TIMELINE-SYTLE is set to PRIMARY to indicate that the app's UI should not mark this uniquely.\n\nSince Integrated Timeline would allow for interstitials to be presented part of the primary content in the UI, it would make sense that these interstitials can also be coordinated during a SharePlay session. So this year, we are adding support for interstitials to be coordinated.\n\nLets take a look at how Interstitial SharePlay will work and how you can enable it. So, here we have two players in a coordinated SharePlay session. The idea is that both Player1 and Player2 would continue to synchronize playback during playback of Event1.\n\nFor seeks, suppose Player1 wants to seek out of Event1 back into the primary content. This seek will get proposed to Player2 and both players will continue to synchronize playback from this new point. One of the key requirements for enabling SharePlay support with interstitials is requiring the interstitial event to be common with all participants. In other words, Event1 in this example needs to be common for both players and must be the same content. If the interstitials are not common, the player should not coordinate playback during the interstitials. Lets see how we can signal this requirement.\n\nOne of the new additions to AVPlayerInterstitialEvent is a boolean to specify whether the content will vary across participants or playback sessions. In this example, setting contentMayVary to false will signal that this interstitial is static or common and allow this event to be coordinated.\n\nLastly, we can also signal the same behavior in the DateRange tag using a new attribute, X-CONTENT-MAY-VARY and setting that to NO.\n\nOkay, lets now take look at our sample app which supports SharePlay. We have two phones setup in a FaceTime call. For this demo, we will choose the Fill (Supplements Primary) example that includes an interstitial at 10s into the content.\n\nNotice that both phones start in sync and when we transition to the interstitial they continue in sync. We then issue a pause, followed by a seek backwards and lastly we seek forward.\n\nNotice how all of these commands work seamlessly with both devices. To wrap up, you can now use Integrated Timeline to build your UI experience with interstitials. You can customize the interstitial experience by specifying the behavior either in the API or using the new DateRange attributes. You can now also enable SharePlay support for interstitials assets by marking the interstitial as not variable in the API.\n\nFor additional related talks, please see \"Explore dynamic pre-rolls and mid-rolls in HLS\" for learning more about HLS interstitials. For learning more about SharePlay, see \"Coordinate media experiences with Group Activities\". Thank you for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:55",
+      "title": "Create a point interstitial event",
+      "language": "swift",
+      "code": "// Creating a single point interstitial event\n \nlet pointEvent = AVPlayerInterstitialEvent(primaryItem: playerItem, time: ten)\n\npointEvent.timelineOccupancy = .singlePoint"
+    },
+    {
+      "timestamp": "4:07",
+      "title": "Create a fill interstitial event",
+      "language": "swift",
+      "code": "// Creating a fill interstitial event\n    \nlet fillEvent = AVPlayerInterstitialEvent(primaryItem: playerItem, time: ten)\n\nfillEvent.timelineOccupancy = .fill\nfillEvent.plannedDuration = CMTime(value: 15, timescale: 1)"
+    },
+    {
+      "timestamp": "4:32",
+      "title": "Create fill interstitial supplementing primary",
+      "language": "swift",
+      "code": "// Creating a fill interstitial event supplementing primary\n \nlet fillEvent2 = AVPlayerInterstitialEvent(primaryItem: playerItem, time: ten)\n\nfillEvent2.supplementsPrimaryContent = true\nfillEvent2.timelineOccupancy = .fill\nfillEvent2.plannedDuration = CMTime(value: 15, timescale: 1)"
+    },
+    {
+      "timestamp": "7:14",
+      "title": "Draw simple transport bar with integrated timeline",
+      "language": "swift",
+      "code": "// Create AVPlayerItem and obtain its integrated timeline\n\nlet item = AVPlayerItem(url: ...)\nlet integratedTimeline = item.integratedTimeline\n\n//  Any time we need a new representation of the timeline state, we can request for a snapshot\nlet snapshot = integratedTimeline.currentSnapshot\n\n//  Using our snapshot, we can build a simple transport bar\ndrawUISlider(start: .zero, duration: snapshot.duration, currentPosition: snapshot.currentTime)\n\n// Draw single-point interstitials on the transport bar\nlet pointSegments = snapshot.segments.filter { segment in\n    segment.segmentType == .interstitial &&\n    segment.interstitialEvent?.timelineOccupancy == .singlePoint\n}\nfor segment in pointSegments {\n    drawPoint(position: segment.timeMapping.target.start)\n}\n\n// Draw range interstitials on the transport bar\nlet highlightFillSegments = snapshot.segments.filter { segment in\n    if (segment.segmentType == .interstitial) {\n        if let interstitialEvent = segment.interstitialEvent {\n            return interstitialEvent.timelineOccupancy == .fill &&\n                   !interstitialEvent.supplementsPrimaryContent\n        }\n    }\n    return false\n}\n\nfor segment in highlightFillSegments {\n    let range = segment.timeMapping.target\n    highlightRegion(start: range.start, end: range.end)\n}"
+    },
+    {
+      "timestamp": "8:26",
+      "title": "Listen to snapshotsOutOfSyncNotification to update our UI",
+      "language": "swift",
+      "code": "// Listen to integrated timeline notifications to update our logic\n\nfor await _ in NotificationCenter.default.notifications(named: AVPlayerItemIntegratedTimeline.snapshotsOutOfSyncNotification, object: integratedTimeline) {\n\n    let reason = _.userInfo![AVPlayerItemIntegratedTimeline.snapshotsOutOfSyncReasonKey] \n                as! AVPlayerIntegratedTimelineSnapshotsOutOfSyncReason\n                \n    switch(reason) {\n    case .segmentsChanged:\n        redrawTransportBar(snapshot: integratedTimeline.currentSnapshot)\n    case .currentSegmentChanged:\n        updatePlayerControls(snapshot: integratedTimeline.currentSnapshot)\n    }\n}"
+    },
+    {
+      "timestamp": "11:42",
+      "title": "Set ContentMayVary to false for Interstitial SharePlay support",
+      "language": "swift",
+      "code": "// Set contentMayVary to false for SharePlay support\nlet event = AVPlayerInterstitialEvent(primaryItem: playerItem, time: ten)\nevent.contentMayVary = false\nevent.timelineOccupancy = .fill\nevent.plannedDuration = CMTime(value: 15, timescale: 1)\nevent.supplementsPrimaryContent = truensert code snippet."
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Forum: Media Technologies",
+        "url": "https://developer.apple.com/forums/topics/media-technologies?cid=vf-a-0010"
+      },
+      {
+        "title": "Providing an integrated view of your timeline when playing HLS interstitials",
+        "url": "https://developer.apple.com/documentation/AVFoundation/providing-an-integrated-view-of-your-timeline-when-playing-hls-interstitials"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10114/4/EA8643B4-5978-424A-AFCE-5E8A7D6A6DF1/downloads/wwdc2024-10114_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10114/4/EA8643B4-5978-424A-AFCE-5E8A7D6A6DF1/downloads/wwdc2024-10114_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10225",
+      "year": "2021",
+      "title": "Coordinate media experiences with Group Activities",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10225"
+    },
+    {
+      "id": "10140",
+      "year": "2021",
+      "title": "Explore dynamic pre-rolls and mid-rolls in HLS",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10140"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:22:03.356Z"
+}

@@ -1,0 +1,76 @@
+{
+  "id": "10023",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10023/",
+  "title": "Build a multi-device workout app",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Health & Fitness"
+  ],
+  "hasTranscript": true,
+  "hasCode": false,
+  "transcript": {
+    "fullText": "♪ Mellow instrumental hip-hop ♪ ♪ Hello and welcome.\n\nMy name is Sirisha, and I'm an engineer on the HealthKit team.\n\nToday, there are hundreds of health and fitness apps in the App Store that help users get healthy and stay healthy.\n\nAnd for them all, HealthKit provides a centralized encrypted database, so your amazing apps can show your users a cohesive view of their health data.\n\nNow, the Workout APIs are some of the most powerful that HealthKit provides, and I love them.\n\nFor today's video, I've created a sample cycling app for Apple Watch to track my cycling workouts.\n\nAnd for easier access, I would love to mount my iPhone on the handlebars to use as a cycling computer.\n\nThat way, I can get a quick and easy view of the live metrics displayed on my Apple Watch without having to take my hands off the handlebars.\n\nHealthKit is introducing new Workout APIs to control and mirror active workout sessions between Apple Watch and iPhone.\n\nUpdating support for cycling workouts with the addition of new data types for tracking cycling speed, power, cadence, and functional threshold power, or FTP.\n\nAnd if that wasn't enough, HealthKit along with the Health app is now on iPad.\n\nNow, your customers signed into their iCloud account on iPad will see their health data synced through HealthKit to their iPad.\n\nJust imagine the richer health and post-workout experience you can provide.\n\nToday, I'll use my sample app to demonstrate how to mirror a workout running on Apple Watch with a paired iPhone.\n\nThen, I'll add some code to show you how to collect new cycling metrics and sync them across devices.\n\nAnd I'll wrap up with the authorization details required to display workouts on iPad.\n\nSo let's check out how Apple Watch, iPhone, and iPad can work together to provide a great workout experience.\n\nIn my example, I'm running the workout on Apple Watch.\n\nI'm using a workout session as a centralized object to manage its life cycle, starting, pausing, and stopping.\n\nIf you're not already familiar with workout sessions, you might want to watch previous talks, \"New ways 'to work with Workouts,\" and \"Build a workout app for Apple Watch.\" Now, for me to control the workout from my iPhone, I need to get this workout session from my Apple Watch to my iPhone.\n\nAnd to do so, I'll use HealthKit's new mirrored session APIs.\n\nWhen a mirrored session starts on my Apple Watch, if my iPhone app is not running, it will be launched in the background and handed over the workout session.\n\nTo receive the session, my iPhone app needs to be ready.\n\nSo, first I'll set up a handler in the iPhone app launch sequence using the HealthStore.\n\nThat way, it will be ready to receive the session from my Apple Watch.\n\nEvery time my iPhone app is launched in the foreground or the background, I'll implement the mirroring start handler in order to receive the active workout session passed from my Apple Watch.\n\nNext, I'll create a workout configuration with an activity type of cycling.\n\nThen I'll call the existing Start Watch App API in my iPhone app to launch the app on my paired Apple Watch and pass the workout configuration.\n\nWhen I receive the configuration from my iPhone, I can create a workout session in my Apple Watch app.\n\nThe workout session on my Apple Watch is called the primary session.\n\nAnd the workout session on my iPhone is called the mirrored session.\n\nSo here's how it looks.\n\nWhen I start a workout in my iPhone app, my app on my Apple Watch gets launched with the configuration sent from my iPhone.\n\nSo far, so good.\n\nNow the thing that makes this API so convenient is that HealthKit takes care of keeping both the primary and the mirrored session states in sync.\n\nFor example, when the primary session is paused on my Apple Watch, the mirrored session on my iPhone is paused as well.\n\nIn addition to getting a copy of the active workout session to my iPhone, HealthKit also provides a new API to exchange relevant workout data between both devices, and provides the ability to begin and end activities as well as generate events.\n\nOK, now that I have my primary session ready and my iPhone ready to receive the handler, I'll start mirroring from my Apple Watch by calling startMirroringToCompanionDevice and start the primary session.\n\nOnce I call startMirroring on Apple Watch, HealthKit launches my companion iPhone app in the background, gives my app 10 seconds to start a live activity and call a handler to start mirroring.\n\nGreat, so we have started the session on the Apple Watch and got the copy on iPhone.\n\nNow, let me show you how the session state is communicated between the devices.\n\nIn my example app, I want to show my users the state of the workout session, like whether the session is running, paused, et cetera.\n\nSo I'll set up the session delegate on Apple Watch and iPhone to monitor the session state updates and the events generated.\n\nKeep in mind that it is important to keep a reference to the retrieved mirrored session on the iPhone app.\n\nCalling startActivity on my Apple Watch starts the primary session and changes the session state to running.\n\nThis state update is delivered to my Apple Watch app since it's set as session delegate of the primary session.\n\nMy app on my iPhone also gets the state update through the mirrored session delegate.\n\nIt's that easy to bring an active workout session to iPhone and monitor the changes on a session.\n\nSo here's what it looks like.\n\nWhen a workout session is started on my Apple Watch, the pause button on my iPhone and my Apple Watch is activated to indicate that the workout session is running.\n\nIn addition to syncing session states between the primary and the mirrored session, I can also generate and send events like pause and resume.\n\nWhen I pause the workout session on my Apple Watch, both my Apple Watch app and the mirrored session on my iPhone get notified about the pause event through their session delegate.\n\nAnd that looks like this.\n\nWhen I pause a workout session on my Apple Watch, the resume button on both my devices becomes active.\n\nNow that I have a workout session on my iPhone, I can control the workout from iPhone as well.\n\nWhen I resume the mirrored session on my iPhone, the primary session delegate on my Apple Watch gets notified about the state change and the mirrored session delegate gets a resume event.\n\nNext, I would like to show you how to take advantage of the new cycling features HealthKit is introducing this year, including new data types such as cycling speed, power, cadence; a new ability to directly connect to Bluetooth devices designed to provide these data types, similar to how a heart rate monitor collects and writes heart rate data to the health database; and finally, the ability for HealthKit on Apple Watch to automatically calculate and save FTP based on the data collected from these Bluetooth devices.\n\nMy bike has a power meter that collects power and cadence, which I paired with my Apple Watch.\n\nThe sensor writes the data to my Apple Watch, and I would like to extend my app to send that data to my iPhone for display as I ride.\n\nTo do this, I'll first start collecting cycling metrics using the recommended workout builder API beginCollection.\n\nAnd then I'll send the data using the sendData(toRemoteWorkoutSession) API.\n\nTo send the cycling metrics, I'll package the speed, cadence, and power data received from Bluetooth sensors on my Apple Watch and call sendData(toRemoteWorkoutSession) on the primary session.\n\nAs a result, the mirrored session delegate on my iPhone will receive the didReceiveDataFromRemoteDevice call with the package data, which I can unpack and display on my iPhone.\n\nHere is how it looks like with my example app sending cycling metrics from my Apple Watch and how they are displayed in my iPhone app.\n\nUsing sendData(toRemoteWorkoutSession) I can also send data in the opposite direction from my iPhone to my Apple Watch.\n\nIn my example, I want to keep track of my water intake during a workout so I can analyze it afterwards in the hopes of creating a better hydration plan for my next ride.\n\nTo do this, I'll package and send the amount of water I consume on the mirrored session from my iPhone to Apple Watch.\n\nThe primary session's delegate method didReceiveDataFromRemoteDevice is called with the packaged data which I'll unpack and save on my Apple Watch.\n\nSo here's how it looks in my example app.\n\nWhen I tap the button to count each ounce of water I take, it sends it to my Apple Watch, where it displays the total amount of water consumed.\n\nNow I can stop mirroring the session anytime during the workout by calling stopMirroringToCompanionDevice API.\n\nCalling this method will stop sending data to the companion device and the mirrored session's didDisconnectFromRemoteDevice WithError delegate method will be called.\n\nAnd when I'm done cycling, I'll end the primary session and save it on the Apple Watch by finishing the builder.\n\nAfter saving the workout sample on Apple Watch, it syncs to my other devices, and I can now show the post-workout summary with more detailed charts and visualizations.\n\nGreat! My next step is to present the post-workout summary in my app running on my iPad.\n\nSince the workout I just saved on Apple Watch automatically syncs to iPad, I only need to make a few changes to visualize my workout data.\n\nLike any app accessing HealthKit data, my app on iPad will will first need to get user authorization.\n\nWhen an app requests authorization, the authorization sheet is shown if needed.\n\nOn iPad, your app might have multiple window scenes, so it's important to ensure that the authorization sheet is shown over the appropriate scene.\n\nTo do this in my app, I'll first import HealthKitUI framework.\n\nI'll specify the data types I'm interested in reading, specifically active energy, cycling speed, power, cadence, heart rate, and workout samples.\n\nThen, since I built a SwiftUI app, I'll use the new healthDataAccessRequest view modifier from the HealthKitUI framework and pass the data types I want to share and read, as well as a trigger.\n\nSetting the trigger to true will present the authorization sheet in my app.\n\nFor a UIKit app, you would set the healthStores.authorizationView ControllerPresenter property, and then request authorization with the types to share and read.\n\nNow, with the authorization taken care of, let's check out my workout on iPad.\n\nAmazing! Now I can access my workout data and take advantage of the iPad's screen size to create a richer experience for my app.\n\nIsn't it super easy? Now you can start and control a workout from your iPhone, collect and sync rich cycling data from your Apple Watch, and finally, view the workout details on your iPad.\n\nTo wrap up, be sure to update your app to support authorization on iPad.\n\nIf your Fitness app involves cycling, you can add support for new data types.\n\nIf you build workout apps on iPhone and Apple Watch, check out the new mirrored session APIs to start mirroring data and controlling state between both devices.\n\nIf your app needs it, use sync identifiers and version numbers to keep the data consistent across your server and users' devices.\n\nAnd finally, give us your feedback.\n\nWe want to support the features you need to keep building those amazing apps to keep the world healthy.\n\nThank you for watching.\n\n♪",
+    "segments": []
+  },
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Building a multidevice workout app",
+        "url": "https://developer.apple.com/documentation/HealthKit/building-a-multidevice-workout-app"
+      },
+      {
+        "title": "HealthKit",
+        "url": "https://developer.apple.com/documentation/HealthKit"
+      },
+      {
+        "title": "HealthKit updates",
+        "url": "https://developer.apple.com/documentation/Updates/HealthKit"
+      },
+      {
+        "title": "watchOS updates",
+        "url": "https://developer.apple.com/documentation/Updates/watchos"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10023/4/4BFDA0EE-E7FB-44E3-BB58-F46D18A9802C/downloads/wwdc2023-10023_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10023/4/4BFDA0EE-E7FB-44E3-BB58-F46D18A9802C/downloads/wwdc2023-10023_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10016",
+      "year": "2023",
+      "title": "Build custom workouts with WorkoutKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10016"
+    },
+    {
+      "id": "10009",
+      "year": "2021",
+      "title": "Build a workout app for Apple Watch",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10009"
+    },
+    {
+      "id": "10184",
+      "year": "2020",
+      "title": "Synchronize health data with HealthKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10184"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:37:42.560Z"
+}

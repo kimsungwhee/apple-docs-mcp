@@ -1,0 +1,188 @@
+{
+  "id": "10168",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10168/",
+  "title": "Generalize APIs with parameter packs",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Sophia: Hello, and welcome to \"Generalize APIs with parameter packs.\" My name is Sophia, and I work on the Swift compiler team. Today I will be talking to you about Swift parameter packs and how they provide a new dimension of flexibility with generic programming.\n\nThis is an advanced talk, and it builds upon the existing generics system. If you are unfamiliar with the topic, I encourage you to watch \"Embrace Swift generics\" from WWDC22. Today, I will walk you through the types of problems that parameter packs can solve, how to think about parameter packs when you encounter them in libraries, and finally, I will dive into how to implement your own code that utilizes parameter packs. Before I jump into parameter packs, it is important to know why they exist. So I will begin by talking a little bit about generics and then variadics. The code you write is fundamentally composed of two categories: values and types. You can abstract over values by writing functions that accept different values as parameters. An example could be a radians(from:) function that as input will accept any Double value representing degrees and for output will return a new Double value representing radians. You can abstract over types by writing generic code that accepts varying types for its parameters. For example, the standard library Array type is designed to hold any form of data that you might wish to fill it with. It has an Element type parameter which is a placeholder for the concrete type that you will use for a given instance of an Array. In both cases, concrete values or concrete types are passed as arguments to the abstraction. Most generic code abstracts over both types and values. To explore this, I am going to write some code to send queries to a server.\n\nIts basic implementation will receive a Request of some Payload type, then it will pass that as a query to the server, and finally return a server response of type Payload. The function has one parameter, but I want to support querying multiple requests in the same call. For the ability to have a variable number of arguments, we have variadic parameters. Variadic parameters allow for a function to flexibly accept any number of arguments of a single type. But variadic parameters have limitations. For example, you might want to map the given arguments to a tuple whose length is the same as the number of arguments. However, with variadic parameters, there is no way to declare a return type that is based on the argument length. There also is no way for variadic parameters to accept varying types without using type erasure, and therefore no way to preserve the specific static type information of each argument. What we lack with the generics system and variadic parameters is the ability to both preserve type information and vary the number of arguments. Today, the only way to do this is with overloading, which forces you to choose an upper bound of the number of arguments you support. I wonder, will two parameters be enough? Probably not. Handling up to three parameters is better. But what if we want four? This overloading pattern, as well as its limitations, are pervasive across APIs that conceptually handle varying numbers of type parameters. This approach has the downside of redundancy, but more importantly, it forces choosing an arbitrary upper limit to the number of arguments that will be supported. Exceeding whatever limit was chosen will result in a compiler error about extra arguments. This is the kind of problem that parameter packs solve. If you find yourself falling into this overloading pattern, then that is a strong sign that you want to use parameter packs. In Swift 5.9, the generics system is gaining first class support for abstraction over argument length with a new construct called \"parameter packs.\" I'm now going to talk about what parameter packs mean when you see them in APIs. In code, most of the time, you work with a single type or value. A parameter pack can hold any quantity of types or values and pack them together to pass them as an argument to a function. A pack that holds individual types is called a type pack. For example, you could have a type pack that holds three individual types: Bool, Int, and String. A pack that holds individual values is called a value pack. For example, you could have a value pack that holds three individual values: true, the number 10, and an empty string. Type packs and value packs are used together. A type pack provides each individual type for each individual value in a value pack. The corresponding type and value are at the same position in their respective packs. At position 0, the type of the value true is Bool. At position 1, the type of the integer literal 10 is Int. And at position 2, the type of the empty string literal is String. Parameter packs allow you to write one piece of generic code that works with every individual element in a pack. This concept might sound familiar because you're already used to writing one piece of code that works with different, individual elements when you use Collections in Swift. The way that you write such code is through iteration. For example, the body of a for-in loop operates on each individual element of an array. What makes parameter packs different from collections is that each element in the pack has a different static type, and you can work with packs at the type-level. Normally, you write generic code that works with different concrete types by declaring a type parameter inside angle brackets. In Swift 5.9, you can declare a pack of type parameters with the keyword \"each\". Instead of having a single type parameter, the function accepts each Payload type that you want to query. This is called a type parameter pack. In order for the names of type packs and value packs to read naturally, use a singular naming convention, such as \"each Payload\" rather than \"each Payloads\". Generic code that uses parameter packs can operate on each Payload individually using repetition patterns. A repetition pattern is expressed using the 'repeat' keyword, followed by a type called the pattern type. The pattern will contain one or more references to pack elements. 'repeat' indicates that the pattern type will be repeated for every element in the given argument pack. 'each' acts as a placeholder that is replaced with individual pack elements at every iteration. Let's see how this replacement works with a concrete type pack containing Bool, Int, and String. The pattern will be repeated three times and the placeholder 'each Payload' is replaced with the concrete type in the pack during each repetition. The result is a comma-separated list of types: Request of Bool, Request of Int, and Request of String. Because repetition patterns produce comma-separated lists of types, they can only be used in positions that naturally accept comma-separated lists. This includes types wrapped in parentheses, which are either a tuple type or a single type. Additionally, they can be used in function parameter lists, and repetition patterns can be used in generic argument lists. Using a repetition pattern as the type of a function parameter turns that function parameter into a value parameter pack. This enables the caller to pass in an arbitrary number of Request instances, and the argument values will be collected into a pack and passed to the function. That covers the fundamental concept of parameter packs and the syntax that is used. Next, to demonstrate how they can simplify as well as extend the functionality of APIs, let's return to our query API. I had added multiple generic overloads in order to provide variable request arguments and corresponding return types. The declaration of each overload follows a predictable pattern. Each overload has 1, 2, 3, and 4 type parameters, respectively. Each overload maps each type parameter to a Request over that type in the parameter list. And each overload contains a list of each type parameter in the return type. Using parameter packs, these 4 overloads can be collapsed down into a single function. Let's first consider the type parameter declarations, then the function parameter list, and finally the return type. Each type parameter can be collapsed down into a type parameter pack. Each individual Request parameter can be collapsed down to a value parameter pack. And the return type can be collapsed down into a tuple constructed by repeating each Payload type. Now you have one query function that can handle any number of request arguments. Because the function parameter and return type are both dependent types of the type parameter pack 'each Payload,' you know that the length of the function's value parameter pack will always match the number of elements in the tuple that is returned. Now that I have adopted parameter packs in this API, you can call this single query function with one argument or with three arguments or any amount you wish. Parameter packs handle all argument lengths the same way. Let's focus on the call with three arguments. The concrete argument pack is inferred from the arguments at the call-site. Every concrete type for the placeholders 'each Payload' is collected from the argument list into a type pack. And the concrete type pack is substituted in to produce the return type. 'each Payload' appears in the parameter list and the return type. The concrete type pack \"Int, String, Bool\" is substituted in both places, causing the pattern to be repeated three times. In the end, the code that is run is equivalent to an iteration over all three types of the type pack. Now let's go back to our query API to see how to add constraints to parameter packs. Suppose that our query payloads should be Equatable. By adding a colon and the protocol name Equatable following the type parameter pack, every element in the Payload pack is required to conform to Equatable. More general requirements can be declared with a 'where' clause, just like ordinary generics. Remembering that parameter packs can contain zero or more arguments, you may be thinking that this server query API has no particular reason to accept zero arguments. Fortunately, there is a simple technique to require a minimum argument length. In this case, I want to require at least one argument, to give the function something to do. To achieve this, I add a regular type parameter preceding the type parameter pack and a corresponding value parameter preceding the value parameter pack. Any constraints on the type parameter pack should be applied to the new type parameter as well, which, in this example, is conformance to Equatable. Now callers to your function must provide at least one argument. At this point, we have covered the foundation of what parameter packs solve and how to read them in an API. Next, let's go over how to implement code that uses parameter packs. We're going to build out the implementation of the server query using parameter packs. The query function accepts a value pack where every individual element is a Request over every element in the type pack. The Request struct has a single type parameter called Payload and an evaluate method that returns an instance of Payload. The body of the query function will operate on the 'item' value pack. Inside the body of query, I want to call the evaluate method for every item in the value pack. You can express this using repetition patterns. Repetition patterns are expressed using the same syntax at the type-level and at the value-level. At the value level, the 'repeat' keyword is followed by the pattern expression. The pattern expression will contain one or more value packs. The pack is iterated through every value it contains, and the expression is evaluated once per value. To produce a list of all evaluation results contained within a tuple, you can wrap the pattern expression in parentheses. If the value pack that is passed to the function is empty, the result will be the empty tuple. If the value pack has a single element, the result will be another single value. If the value pack has multiple elements, the result will be a tuple. And that's it. Now, we have a query function that accepts a value pack of results, evaluates every individual request, and returns the result of every request together in a tuple. This is the foundation of how you make use of parameter packs in your code. This continues to be far less code than the earlier example that used multiple overloads rather than parameter packs, and that version didn't even have an implementation. Maintenance is easier, and errors that often arise from repetitive code patterns are gone. Now let's add a little more flexibility. I'm going to refactor my example to: enable the query API to store state, allow each request evaluation to have different input and output types, and manage control flow during parameter pack iteration.\n\nI will move the query function inside an Evaluator struct and lift the type parameter pack from the query method to the Evaluator type. The Evaluator struct can store the request pack in a stored property by wrapping it in parentheses to make it a tuple value. Given a concrete Payload type argument pack, the 'item' variable will either be a single request or a tuple of every request. Next, I'll change Request from a struct to a protocol that has an associated type named Output. And I will add another associated type to the Request protocol named Input. I will then update the evaluate method in Request to make its argument the protocol's Input type. This enables the method's return type to differ from that of the argument's type. After this, I update the Evaluator to require all Payload types to conform to Request and correspondingly update the 'item' stored property to now be simply of type 'each Payload.' However, at this point, the name \"Payload\" for Evaluator's type parameter pack doesn't really fit. Payload is no longer what is contained within a Request but instead conforms to the entirety of Request. Therefore, we will change the name of Payload to be Request and the name of the protocol to be RequestProtocol. The query method can now accept a pack of each Request's Input type, and it will return a list of each Request's Output type. Finally, the new parameter 'input' to the query method simply needs to be passed along to the calls to every item's evaluate method. Now we are able to have a different type returned from the server's response than the type of data that we include inside our query. You can know that the length of the method's value argument pack will match the length of the value pack that is returned because their types are both based upon the Evaluator's type pack. The same goes for the length of arguments in the stored property 'item'. Given that using parameter packs is a form of iteration, you might wonder about control flow if you were to want to exit early from the iteration. Perhaps it is the case that the consequences of a collection of queries should only take effect if every query is successful. Throwing errors can be used for this. In our example, you could update RequestProtocol's evaluate method to be a throwing function and modify the return type of Evaluator's query method to be optional. You can move the body of the query method into a do-catch statement, placing the return statement within the do clause and returning nil from the catch clause. Now any individual query's evaluation is able to halt iteration over all of the queries, if that might be needed. In this session, we have talked about how parameter packs allow you to abstract over types as well as the number of arguments in generic code. We walked through how you can use parameter packs to both simplify and remove limitations in your code by writing a single generic implementation that previously would have required numerous overloads. Finally, we wrote code to implement sending queries to a server while utilizing parameter packs. To learn more about generics, check out the session \"Embrace Swift generics\" from WWDC22. And to learn more about protocols and type erasure, check out the session \"Design protocol interfaces in Swift\" from WWDC22. Swift parameter packs are a powerful tool to expand what is possible in your generic code while also enabling you to simplify common generic patterns. We can't wait to see what you build with them. Thank you for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:13",
+      "title": "radians function",
+      "language": "swift",
+      "code": "func radians(from degrees: Double) -> Double"
+    },
+    {
+      "timestamp": "1:26",
+      "title": "Array type",
+      "language": "swift",
+      "code": "struct Array<Element>"
+    },
+    {
+      "timestamp": "1:48",
+      "title": "radians function and Array type with concrete expressions",
+      "language": "swift",
+      "code": "func radians(from degrees: Double) -> Double\nradians(from: 180)\n\nstruct Array<Element>\nArray<Int>"
+    },
+    {
+      "timestamp": "2:04",
+      "title": "generic query",
+      "language": "swift",
+      "code": "func query<Payload>(_ item: Request<Payload>) -> Payload"
+    },
+    {
+      "timestamp": "2:22",
+      "title": "variadic query",
+      "language": "swift",
+      "code": "func query(_ item: Request...)"
+    },
+    {
+      "timestamp": "3:23",
+      "title": "two query overloads",
+      "language": "swift",
+      "code": "func query<Payload>(\n    _ item: Request<Payload>\n) -> Payload\n\nfunc query<Payload1, Payload2>(\n    _ item1: Request<Payload1>,\n    _ item2: Request<Payload2>\n) -> (Payload1, Payload2)"
+    },
+    {
+      "timestamp": "3:28",
+      "title": "three query overloads",
+      "language": "swift",
+      "code": "func query<Payload>(\n    _ item: Request<Payload>\n) -> Payload\n\nfunc query<Payload1, Payload2>(\n    _ item1: Request<Payload1>,\n    _ item2: Request<Payload2>\n) -> (Payload1, Payload2)\n\nfunc query<Payload1, Payload2, Payload3>(\n    _ item1: Request<Payload1>,\n    _ item2: Request<Payload2>,\n    _ item3: Request<Payload3>\n) -> (Payload1, Payload2, Payload3)"
+    },
+    {
+      "timestamp": "3:31",
+      "title": "four query overloads with extra argument error",
+      "language": "swift",
+      "code": "func query<Payload>(\n    _ item: Request<Payload>\n) -> Payload\n\nfunc query<Payload1, Payload2>(\n    _ item1: Request<Payload1>,\n    _ item2: Request<Payload2>\n) -> (Payload1, Payload2)\n\nfunc query<Payload1, Payload2, Payload3>(\n    _ item1: Request<Payload1>,\n    _ item2: Request<Payload2>,\n    _ item3: Request<Payload3>\n) -> (Payload1, Payload2, Payload3)\n\nfunc query<Payload1, Payload2, Payload3, Payload4>(\n    _ item1: Request<Payload1>,\n    _ item2: Request<Payload2>,\n    _ item3: Request<Payload3>,\n    _ item4: Request<Payload4>\n) -> (Payload1, Payload2, Payload3, Payload4)\n\nlet _ = query(r1, r2, r3, r4, r5)"
+    },
+    {
+      "timestamp": "5:52",
+      "title": "for-in loop over requests",
+      "language": "swift",
+      "code": "for request in requests {\n    evaluate(request)\n}"
+    },
+    {
+      "timestamp": "8:41",
+      "title": "four query overloads",
+      "language": "swift",
+      "code": "func query<Payload>(\n    _ item: Request<Payload>\n) -> Payload\n\nfunc query<Payload1, Payload2>(\n    _ item1: Request<Payload1>,\n    _ item2: Request<Payload2>\n) -> (Payload1, Payload2)\n\nfunc query<Payload1, Payload2, Payload3>(\n    _ item1: Request<Payload1>,\n    _ item2: Request<Payload2>,\n    _ item3: Request<Payload3>\n) -> (Payload1, Payload2, Payload3)\n\nfunc query<Payload1, Payload2, Payload3, Payload4>(\n    _ item1: Request<Payload1>,\n    _ item2: Request<Payload2>,\n    _ item3: Request<Payload3>,\n    _ item4: Request<Payload4>\n) -> (Payload1, Payload2, Payload3, Payload4)"
+    },
+    {
+      "timestamp": "9:37",
+      "title": "parameter pack query interface",
+      "language": "swift",
+      "code": "func query<each Payload>(_ item: repeat Request<each Payload>) -> (repeat each Payload)"
+    },
+    {
+      "timestamp": "10:01",
+      "title": "parameter pack query with single argument call",
+      "language": "swift",
+      "code": "func query<each Payload>(_ item: repeat Request<each Payload>) -> (repeat each Payload)\n\nlet result = query(Request<Int>())"
+    },
+    {
+      "timestamp": "10:08",
+      "title": "parameter pack query with single and triple argument calls",
+      "language": "swift",
+      "code": "func query<each Payload>(_ item: repeat Request<each Payload>) -> (repeat each Payload)\n\nlet result = query(Request<Int>())\n\nlet results = query(Request<Int>(), Request<String>(), Request<Bool>())"
+    },
+    {
+      "timestamp": "10:15",
+      "title": "parameter pack query with triple argument call",
+      "language": "swift",
+      "code": "func query<each Payload>(_ item: repeat Request<each Payload>) -> (repeat each Payload)\n\nlet results = query(Request<Int>(), Request<String>(), Request<Bool>())"
+    },
+    {
+      "timestamp": "10:56",
+      "title": "parameter pack query interface",
+      "language": "swift",
+      "code": "func query<each Payload>(\n    _ item: repeat Request<each Payload>\n) -> (repeat each Payload)"
+    },
+    {
+      "timestamp": "11:03",
+      "title": "parameter pack query interface with conformance",
+      "language": "swift",
+      "code": "func query<each Payload: Equatable>(\n  _ item: repeat Request<each Payload>\n) -> (repeat each Payload)"
+    },
+    {
+      "timestamp": "11:17",
+      "title": "parameter pack query interface with where clause",
+      "language": "swift",
+      "code": "func query<each Payload>(\n    _ item: repeat Request<each Payload>\n) -> (repeat each Payload)\n    where repeat each Payload: Equatable"
+    },
+    {
+      "timestamp": "11:44",
+      "title": "parameter pack query interface with minimum parameter count",
+      "language": "swift",
+      "code": "func query<FirstPayload, each Payload>(\n    _ first: Request<FirstPayload>, _ item: repeat Request<each Payload>\n) -> (FirstPayload, repeat each Payload) \n    where FirstPayload: Equatable, repeat each Payload: Equatable"
+    },
+    {
+      "timestamp": "13:42",
+      "title": "parameter pack query implementation",
+      "language": "swift",
+      "code": "struct Request<Payload> {\n    func evaluate() -> Payload\n}\n\nfunc query<each Payload>(_ item: repeat Request<each Payload>) -> (repeat each Payload) {\n    return (repeat (each item).evaluate())\n}"
+    },
+    {
+      "timestamp": "16:04",
+      "title": "parameter pack query implementation with different input and output types",
+      "language": "swift",
+      "code": "protocol RequestProtocol {\n    associatedtype Input\n    associatedtype Output\n    func evaluate(_ input: Input) -> Output\n}\n\nstruct Evaluator<each Request: RequestProtocol> {\n    var item: (repeat each Request)\n\n    func query(_ input: repeat (each Request).Input) -> (repeat (each Request).Output) {\n        return (repeat (each item).evaluate(each input))\n    }\n}"
+    },
+    {
+      "timestamp": "17:05",
+      "title": "parameter pack query implementation with control flow break",
+      "language": "swift",
+      "code": "protocol RequestProtocol {\n    associatedtype Input\n    associatedtype Output\n    func evaluate(_ input: Input) throws -> Output\n}\n\nstruct Evaluator<each Request: RequestProtocol> {\n    var item: (repeat each Request)\n\n    func query(_ input: repeat (each Request).Input) -> (repeat (each Request).Output)? {\n        do {\n            return (repeat try (each item).evaluate(each input))\n        } catch {\n            return nil\n        }\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10168/4/C4DB8728-EFE7-49D9-B61E-3061B8F31EF5/downloads/wwdc2023-10168_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10168/4/C4DB8728-EFE7-49D9-B61E-3061B8F31EF5/downloads/wwdc2023-10168_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10164",
+      "year": "2023",
+      "title": "What’s new in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10164"
+    },
+    {
+      "id": "110353",
+      "year": "2022",
+      "title": "Design protocol interfaces in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110353"
+    },
+    {
+      "id": "110352",
+      "year": "2022",
+      "title": "Embrace Swift generics",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110352"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:41:50.056Z"
+}

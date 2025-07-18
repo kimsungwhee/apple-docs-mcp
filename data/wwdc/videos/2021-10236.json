@@ -1,0 +1,94 @@
+{
+  "id": "10236",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10236/",
+  "title": "Host and automate your DocC documentation",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, my name is David, and I'm an engineer on the Documentation Tools team here at Apple. In this session, you'll learn about hosting DocC documentation and automating documentation builds. First, I'll talk about building documentation in Xcode and how you can host the built documentation archives on a server. Next, I'll go into more detail of how documentation builds work and how you can automate building documentation.\n\nThroughout this talk, I'll be showing you SlothCreator, a project that my colleagues and I have been working on. We made a website to help people get started. And now, we're really excited about using the new documentation features in Xcode to build a version of our documentation that we can host right on our website. That's going to make it even easier for people to get started. So let's look at how we can accomplish that.\n\nThe new documentation features in Xcode 13 makes it really easy to build documentation for your Swift frameworks, libraries, and packages. You can start using it right away without any setup and then expand your documentation with additional material over time. And it's just as easy to export your documentation from the Developer Documentation window.\n\nYou can share the exported documentation archive with others so that they can import and read the documentation in Xcode, or you can host the documentation archive online. If you want to learn more about documentation in Xcode and about authoring documentation for your symbols, my colleagues Victoria and Ethan talk about just that in the \"Meet DocC documentation in Xcode\" session. In the second half of this presentation, I'll talk about how you can automate building documentation on the command line. But for now, I'll use the documentation archive that I exported from Xcode to host on our server.\n\nThe documentation archive itself is a container that holds all the data to both read the documentation in Xcode and to host it online.\n\nIt is structured as a single page Vue.js web app that's used to render both your reference documentation and articles and your rich and interactive tutorials.\n\nThere are two different types of requests that the server needs to handle to host the documentation archive. Requests for documentation and tutorial pages where the request URL starts with /documentation/ or /tutorials/ and requests for additional files and data that is loaded by the web app, where the request URL matches the relative file path for one of the files in the documentation archive.\n\nLet's look at an example of the requests that make up a page and how the server should respond to them.\n\nWhen a developer goes to read your hosted documentation and the browser requests a page, if the request starts with /documentation/ or /tutorials/ then the server should respond with the index.html file that's located in the documentation archive. That file references CSS and JavaScript within the documentation archive, which the browser requests to load the rest of the web app.\n\nOnce that is loaded, the web app requests the content for that page and any images or other media that it references.\n\nBoth the files that is referenced by the index.html file and the content and media that is loaded by the web app use request URLs that match the folder structure of the documentation archive.\n\nNow that you've seen how the hosting server needs to respond to incoming requests, let's look at that in a demo. Many of you may already have a server that hosts your website. For our project, we're using an Apache server, but you can use any server that allows for custom routing. This is our website about SlothCreator. We've added this \"Read Documentation\" button below the introductory text in the center of the page, but the button doesn't work just yet. So let's fix that. I've already copied the documentation archive into the directory where we're hosting our website and added an empty .htaccess file. But I haven't set up any of the routing in it.\n\nThere are two routing rules that I need to add: one for the documentation and tutorial pages and one for the additional files and data. For the first rule, the pattern that I want to match is any URL that starts with \"documentation\" or \"tutorials\" as its first path component. Any request that matches this pattern, I want to reroute to the index.html file within the documentation archive. Lastly, I'll end the rule with a flag to stop evaluating rules if the request matches this rule. For the second rule, I'm going to be more explicit about the pattern. Since we're also hosting our website with this server, we don't want to reroute requests for the website to files in the documentation archive.\n\nIf I look inside of the documentation archive, you can see that there are a handful of top-level files and folders that I can match in a pattern. So I'll add a pattern that matches all of those.\n\nIn this case, the request URL is a relative file path for one of the files in the documentation archive, so I'll reroute the request to the matched pattern but prefixed with SlothCreator.doccarchive. And just like before, I added the same flag to stop evaluating rules. Now, if I reload the webpage and click on the documentation link, you'll see that the server now hosts both our website and our documentation.\n\nThe main SlothCreator page groups important symbols into topics related to higher level tasks.\n\nAnd each of those group related symbols into more specific topics.\n\nDocC comes with a built-in, clean design that's made to fit in well with a variety of projects. This makes it really easy to have good-looking, elegant documentation for your projects, like our SlothCreator documentation here. Now that we host a copy of our documentation on our website, let's look at how to automate building and updating the documentation archive. To do that, I'm going to write a script that calls xcodebuild. Once I have a script that does this, I can run it whenever new changes are made so that the hosted documentation is always up to date. New in Xcode 13, you can build documentation on the command line with xcodebuild's new docbuild action. When you build documentation in Xcode or xcodebuild, it works like a standard build that also builds documentation.\n\nDuring the build, the Swift compiler gathers detailed information about all the public symbols, their relationships, and in-source documentation comments and passes this as a file called a symbol graph to the documentation compiler to produce a documentation archive with all the necessary data to both read the documentation in Xcode and to host it online. If the target has an associated documentation catalog with additional articles, media, or tutorials for your project, then the documentation compiler is going to combine all of that content with the symbol information when it produces the documentation archive.\n\nIf you want to learn more about documentation catalogs, check out the \"Elevate your DocC documentation in Xcode\" session where my colleagues Bea and Jack talk about the different types of documentation and how you can leverage each of them to offer developers a great way for learning about your project.\n\nBuilding documentation doesn't just apply to your targets. If your target has dependencies to other Swift frameworks, libraries, or packages, then the same process is applied to all of those as well so that you get all the relevant documentation for your project all in one place. Since I'm looking to automate building and updating our hosted documentation with a script, xcodebuild on the command line is going to be perfect for that.\n\nThe new docbuild action in xcodebuild works just like the default build action, but it also builds documentation.\n\nLike the build action, you pass it the scheme that you want to build and the project or workspace that it's a part of. You can also call xcodebuild from within the directory that contains your project, workspace, or Swift package and only pass it the scheme. Depending on your project and scheme, you may want to pass other flags such as sdk, destination, or configuration to customize how your project is built.\n\nIt's not required to do so. But to make it more easy to follow, I'll specify a custom derivedDataPath, where the build products and the built documentation will be written. After the build has completed, I can find all of the built documentation archives using the .doccarchive file extension and copy each of them to another location or to another machine.\n\nLet's take a look at that in a demo.\n\nThis is our hosted documentation from before. It groups related symbols into topics so that it's easy for developers to find the core types for a specific task.\n\nIn the time since we built this version, my colleagues have added some new articles and tutorials that appear in the Essentials section. So now is a great time for me to write that automation script that builds the latest documentation and updates our website.\n\nLike you just saw, we build documentation by calling xcodebuild's docbuild action and update our website by finding and copying the documentation archive into the directory where we're hosting our website from.\n\nI already know what scheme I need to pass because it's the same as I see in the scheme selector in Xcode. If I didn't already have Xcode open, I could also run xcodebuild -list on the command line to list all of the available schemes.\n\nAgain, the custom derivedDataPath is not required, but it makes it easier to follow where the built documentation is written and found.\n\nAfter the build has completed, I can find all of the documentation archives and copy each of them into the directory where we're hosting our website from. And with that done, I'm ready to run the script.\n\nNow, if I refresh, you can see the added article and tutorial in the Essentials section. With these latest changes, our documentation looks more complete. And people who are new to SlothCreator have a great place to get started, whether they prefer the content of an article or the step-by-step instructions in one of our tutorials.\n\nNow, updating our hosted documentation is as easy as running a script. And if we run it as part of a post-merge hook on our continuous integration server, then we can ensure that our hosted documentation always stays up to date.\n\nTo recap what we talked about in this session, you can share documentation archives or host them online to give a great documentation experience to consumers of your framework, even before they've started using it in Xcode. And building documentation on the command line allows you to include documentation in your automation workflows. If you want to learn more about DocC documentation, \"Meet DocC documentation in Xcode\" is a fantastic introduction to the new documentation features in Xcode. \"Elevate your DocC documentation in Xcode\" goes deep into how you can enhance your documentation with DocC catalogs. And \"Build interactive tutorials using DocC\" details how you can structure your ideas and create amazing tutorials for your project. Thank you for watching. [music]",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:49",
+      "title": "Custom routing in a .htaccess file",
+      "language": "swift",
+      "code": "# Enable custom routing.\nRewriteEngine On\n\n# Route documentation and tutorial pages.\nRewriteRule ^(documentation|tutorials)\\/.*$ SlothCreator.doccarchive/index.html [L]\n\n# Route files within the documentation archive.\nRewriteRule ^(css|js|data|images|downloads|favicon\\.ico|favicon\\.svg|img|theme-settings\\.json|videos)\\/.*$ SlothCreator.doccarchive/$0 [L]"
+    },
+    {
+      "timestamp": "9:17",
+      "title": "Build documentation on the command line",
+      "language": "swift",
+      "code": "# Build documentation for the project.\nxcodebuild docbuild                    \\\n  -scheme \"SlothCreator\"               \\\n  -derivedDataPath MyDerivedDataFolder\n  \n# Find all the built documentation archives\n# to copy them to another location.\nfind MyDerivedDataFolder               \\\n  -name \"*.doccarchive\""
+    },
+    {
+      "timestamp": "9:18",
+      "title": "Build and update the hosted documentation",
+      "language": "swift",
+      "code": "#!/bin/sh\n\n# Build the SlothCreator documentation.\nxcodebuild docbuild                  \\\n  -scheme \"SlothCreator\"             \\\n  -derivedDataPath MyDerivedDataPath\n  \n# Copy the documentation archive to ~/www where we\n# host the SlothCreator website and documentation.\nfind MyDerivedDataPath               \\\n  -name \"*.doccarchive\"              \\\n  -exec cp -R {} ~/www \\;"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Distributing documentation to other developers",
+        "url": "https://developer.apple.com/documentation/Xcode/distributing-documentation-to-other-developers"
+      },
+      {
+        "title": "SlothCreator: Building DocC Documentation in Xcode",
+        "url": "https://developer.apple.com/documentation/xcode/slothcreator_building_docc_documentation_in_xcode"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10236/6/93E69517-B140-4720-B821-A542F64CC5C8/downloads/wwdc2021-10236_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10236/6/93E69517-B140-4720-B821-A542F64CC5C8/downloads/wwdc2021-10236_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10235",
+      "year": "2021",
+      "title": "Build interactive tutorials using DocC",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10235"
+    },
+    {
+      "id": "10167",
+      "year": "2021",
+      "title": "Elevate your DocC documentation in Xcode",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10167"
+    },
+    {
+      "id": "10166",
+      "year": "2021",
+      "title": "Meet DocC documentation in Xcode",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10166"
+    },
+    {
+      "id": "10192",
+      "year": "2021",
+      "title": "What‘s new in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10192"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:42:40.527Z"
+}

@@ -1,0 +1,233 @@
+{
+  "id": "10153",
+  "year": "2024",
+  "url": "https://developer.apple.com/videos/play/wwdc2024/10153/",
+  "title": "Dive deep into volumes and immersive spaces",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Spatial Computing",
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello! My name is Owen, and I’m a SwiftUI engineer. And I’m Troy. I’m also a SwiftUI engineer. In this video, we’ll be taking a deep dive into working with 3D content in volumes and immersive spaces on visionOS.\n\nvisionOS has three scene types: Windows, Volumes, and Immersive Spaces. All three can be used together to create unique and exciting experiences. Today, we’ll be focusing on Volumes and Immersive Spaces. These scene types are unique to visionOS, and used for rich, immersive 3D content. Volumetric apps using these scene types are one of the most exciting and unique features of Apple Vision Pro. They enable a new dimension for apps and games, letting people experience your app existing in the real world.\n\nThere are already many delightful spatial experiences available on visionOS. These apps take advantage of the third dimension, displaying information in clever ways and providing fun and playful interactions that can both mimic the real world and do entirely new things.\n\nThese apps take advantage of spatial API built for visionOS. And now in visionOS 2, we have added lots of new features to let you bring even more life to your volumetric apps. Troy and I will be going through building a new volumetric app, called Botanist. I’m going to start by adding a volume and building it out using new API to make it really shine. After that, Troy will expand the app to fill the room using an immersive space.\n\nSo let’s get started with a Volume! When I create a new volumetric app, or link an existing app against the visionOS 2 SDK, one of the first things to notice is the new baseplate.\n\nIt appears automatically when looked at, highlighting the bottom edges of the volume.\n\nHere’s the baseplate in action on my brand new volume. It gently guides me to the edges of the volume, so I know immediately how much space I’m working with.\n\nBaseplates are great for content that sits inside a volume, but doesn’t fill its bounds. It gives people a sense of the edges of the volume even when the content occupies a smaller amount of space inside it. However, for cases where your app’s content already pushes out to the bounds of the volume, or if you draw your own surface already, it’s better to disable the baseplate so that it doesn’t conflict with your app, and let the content itself guide people to the edges.\n\nOn visionOS 2 the baseplate is enabled by default, and can be controlled using the volume baseplate visibility modifier. The automatic behavior in visionOS 2 fades in the baseplate when it’s looked at. This is the equivalent of writing the modifier with visible. The baseplate can also be explicitly turned off by setting it to hidden.\n\nStarting with the baseplate gives me an immediate sense of the bounds of my volume, even without any additional content.\n\nAnd now as I add in the circular level for the Botanist app, the baseplate helps me to find the edges and corners of the volume, where the window controls are. This is especially important in visionOS 2, because volumes now have new resize handles at the corners, just like windows do.\n\nNotice how the baseplate guides me to the resize handle at the corner. But when I try to resize the scene it just springs back to its original size. What’s going on here? Volumes inherit their minimum and maximum sizes from the size of their content by default. In SwiftUI, this is the behavior provided by the windowResizability modifier with contentSize behavior. The automatic behavior for volumes is as if this modifier were written on them. And this means the volume’s minimum size and maximum size are both going to come from the size of its views.\n\nOn ExplorationView, I have written a frame with a specific width, height, and depth. Because of this, the volume’s size is fixed to match that view’s frame.\n\nIf I change this to instead specify minimum values for the frame, the view is saying it can resize larger. And because the volume inherits the size of its content, it will now also allow resizing.\n\nSpecifying a maximum size will also cap the size of the volume.\n\nNow when I drag on the resize handles, the volume smoothly resizes.\n\nThat’s pretty neat! This behavior means you can also drive the size of your volume in code. As your app updates its content, any changes to the frames of your views inform the volume about its size as well. This means it’s easy to accommodate changing content without worrying about clipping at the bounds of the scene. And because people look for the resize handles at the corners close to your content, this also ensures those controls are never too far away.\n\nTo change the size of my volume programmatically, I add a new state variable for the scale.\n\nWhen I change the value of my scale variable, it updates the frame values of my view, and the volume will automatically resize itself to fit that new size.\n\nI also scale the RealityKit entity for the circular exploration level by that amount. Now, I need a control to change the scale.\n\nI add a button to toggle the size, and for now I just put it into an overlay.\n\nNow, when I press the button, the level switches between its small and large size, and the volume adjusts its bounds to match. However, the button itself looks a little bit out of place here. It would fit perfectly in a toolbar.\n\nVolumes support toolbars that float below them in an ornament. This is a great and easy way to provide a collection of common app controls.\n\nThis toolbar automatically scales as the volume is moved so its content remains accessible regardless of the placement of the volume. A toolbar like this is the best way to group together common app controls, so I’ll go ahead and add one to the app.\n\nTo put controls into the toolbar, I write a toolbar modifier on a view of the app.\n\nInside the toolbar, I can create toolbar items and toolbar item groups.\n\nI specify a .bottomOrnament placement for each item. For visionOS 1 compatibility, this is required. But in visionOS 2 the automatic placement will also resolve to the bottom ornament. If your app only targets visionOS 2, you can leave the argument out.\n\nInside the toolbar items, I add my buttons to perform different actions in the game.\n\nAnd just like that, my controls appear in the toolbar! And new in visionOS 2, the toolbar will automatically move to the side of the volume I’m standing on, along with the window controls. This encourages people to get a new angle on the experience, while keeping all the tools exactly where they’re needed. Alongside the toolbar, you can now add additional ornaments to a volume. Ornaments are great for providing extra controls, or more detail about the current content.\n\nThey help to reduce clutter in the main window by floating auxiliary information above and around the window of an app. Windows can add ornaments anywhere. Not just as a toolbar, but at any position around the window as well. And now, volumes can do the exact same, including with control over how deeply the ornament is positioned on the volume. Ornaments also dynamically scale keeping them at a comfortable size when the volume is moved further away.\n\nOrnaments offer a lot of flexibility, but it’s important to not overdo it.\n\nPutting many ornaments around the volume can crowd out your incredible content, the real hero of your app. A single ornament makes a great container for a group of controls and information. Additionally, some system-provided controls, such as the toolbar and Tab View are also in ornaments, so make sure your custom ornaments don’t conflict with these.\n\nIn the app, I added this view that shows the player’s progress toward their planting goals. Right now, that view is inside the Volume’s main view.\n\nBecause of this it doesn’t update as I walk around the volume, and if I move the volume further away, this view gets smaller and harder to read. It would be great to pull this view out into an ornament, so I get those automatic behaviors. Here, the view is inside the body of the volume. To put it inside an ornament, I move the view into an ornament modifier.\n\nI provide a scene anchor with a UnitPoint3D, which will account for the width, height, and depth of the volume when placing the ornament. In my case, a topBack placement puts the ornament centered above and behind the main level. Let’s try it out in the app.\n\nHere it is, floating behind the main level. Just like the toolbar, all ornaments will also follow around the volume, making sure they’re always accessible from any direction. Its position in the scene is always determined relative to the side I’m viewing the volume from.\n\nEach side of the volume is a viewpoint. As you move around a volume, the window controls and ornaments automatically move to the viewpoint closest to you.\n\nThe system automatically updates the positions of my ornaments based on the current viewpoint, but now that I’ve added my little robot friend, it just faces the front. It doesn’t know where I am. It would bring a sense of life to the app if the robot could also face me as I move around.\n\nFirst, in order to get updates on the viewpoint, I add a new modifier, onVolumeViewpointChange. It gets called whenever the active viewpoint updates. Using this, I set the variable in the app state that tracks the active viewpoint. When the robot updates, it will use this value to move in the world and face the current viewpoint.\n\nI use the squareAzimuth value of the viewpoint. This type normalizes the position around a volume to one of four values, representing the four faces of the volume.\n\nThe four sides of the Square Azimuth provide semantic values for front, left, right, and back. These semantic values also include a specific Rotation3D, which can be applied directly as a rotation onto views and entities.\n\nIn the code that handles the robot’s movement, I’ve added a bit of code to turn the robot toward that position when it is in idle mode. Then I fire off a little waving animation.\n\nAnd now, the robot turns to face me.\n\nAnd it gives me a little wave! This makes the app really come alive and feel more vibrant.\n\nNot all apps want to support every viewpoint, however. I want to limit the viewpoints only to the front and sides.\n\nTo specify the supported viewpoints, I use another new View modifier, supportedVolumeViewpoints. By default all viewpoints are supported.\n\nIn my case, I only want to support the front and sides of the volume, and not the back. To do this, I pass in an option set containing the front, left, and right values.\n\nNow, the ornaments and window controls will not move to the back of the volume when I move there. Right now, the robot stops as well. Since the robot has been reactive to my movement up until now, I feel like it should let me know I’m on the wrong side.\n\nIn order to still have my volume viewpoint change block get called, even when the new value is not in the set of supported viewpoints, I add a new argument for viewpoint update strategy. By specifying all, I will get updates for all viewpoints, including unsupported ones. I check if the new value is in my supported set, and if it isn’t, I trigger a new animation on the robot, to give an indication that I should move back around to one of the supported viewpoints.\n\nNow as I walk to the back of the volume, my ornaments all stop on the last supported side and the robot gets upset with me, wanting me to move back around.\n\nThere we go, that’s better! There are also a couple new options options to control how volumes present themselves within the world. The first one of these is world alignment. This controls whether the volume remains gravity aligned, keeping its base parallel to the floor, or tilts itself down as the volume is raised. In most cases, the adaptive tilting behavior will be most comfortable. This is the default in visionOS 2. The volume begins parallel to the ground, but as it is lifted above the horizon, it begins to tilt itself. This keeps the contents of the volume usable usable even from a reclined position, which is much more comfortable for interactive content.\n\nHowever, some volumetric apps don’t require a lot of interaction, or are designed to provide more ambient content.\n\nIn these cases, the gravity-aligned behavior is better.\n\nThe volumeWorldAlignment modifier allows overriding the adaptive alignment, keeping the volume aligned with the floor.\n\nAlso, volumes can now be made dynamic scale. Windows in visionOS change their scale scale as they get moved around in the world. As the window gets moved further away, it scales up to maintain its size in your field of view. This is useful because windows often contain text and controls that would get difficult to use at further distances.\n\nThis is the same behavior as the toolbar and ornaments on volumes.\n\nVolumes themselves, on the other hand, default to fixed scale, which helps to increase their sense of presence in the world.\n\nThey remain a fixed size as they get moved further away, so their content appears smaller at a distance.\n\nFor a lot of volumetric apps, this looks great, because it lets you visualize the virtual content in your room, like it was right there with you.\n\nHowever, Volumetric experiences that rely on dense content with a large number of different interactive areas also benefit from dynamic scale.\n\nTo make a volume dynamic scale, use the new Scene modifier called default world scaling behavior. Because Botanist is an interactive game, it makes sense for the level to be dynamic scale, so I enable this behavior with the .dynamic option.\n\nThis is a great start. We have a very fun app in a volume. You've certainly spoken volumes about that. Alright, so what's next? I want to bring the robot out into the real world with an immersive space. That sounds out of this world.\n\nWith Immersive Spaces, developers are building rich experiences on Apple Vision Pro. I'm really enjoying the progress Owen made to allow the botanist to explore the volume in the shared space. Next, I'm going to go beyond the window and create a rich immersive experience that enables the greenhouse to fill the room.\n\nThe very first thing to do is create the immersive space itself. There are options to configure this in the New Project dialogue in Xcode, but in this case I add it myself.\n\nI have an immersive space, but it’s empty right now.\n\nWhen the immersive space is opened, I'll transplant all of the RealityKit content out of the volume and into the immersive space. This should happen seamlessly, giving surprise and delight when the botanist is able to start exploring around in the real world. There's a named coordinate space especially for this introduced in visionOS 1.1, called Immersive Space.\n\nCoordinate spaces are a tool to precisely specify position relative to a particular frame of reference.\n\nThe new immersive coordinate space fits in alongside SwiftUI's existing local and global coordinate spaces.\n\nLocal refers to the current view’s coordinate space, with the origin at the top left of the view.\n\nGlobal refers to the window’s coordinate space, with the origin at the top-left of the window.\n\nFor volumes, the origin is at the top-left-back.\n\nImmersive Space sits above Global and has its origin defined as the point on the ground below you while the immersive space is open. I'll use coordinate spaces with RealityView to build the transition to the immersive space. RealityView provides a host of convert functions that I'll use to go between RealityKit and SwiftUI coordinate spaces. First, I'll handle converting the robot's transform from RealityKit scene space for the volume to SwiftUI immersive space. In the update closure of my RealityView, I call out to my first convert function.\n\nHere I convert the robot's transform from local RealityKit scene space for the volume to SwiftUI's immersive space. Then I store the converted transform in the app model for later use.\n\nI then re-parent the robot from the volume to the root entity of the immersive space. With the robot reparented and the transform to take the robot from the volume calculated, I mark the conversions from the volume view as completed. I'll continue the conversions in the immersive space view.\n\nIn the immersive space view, I'll call another convert function.\n\nThere, I calculate a transform to go from SwiftUI immersive space to RealityKit scene space. Then I compose these two transforms. I do that by multiplying the one I just computed by the one I stored earlier on my app model. The result converts from the local coordinate space in the volume to the one in the immersive space. I update the robot's transform to place the robot in the immersive space to match where it appeared in the volume.\n\nWith the robot's transform converted, I start the jump.\n\nThe transition is now ready for action! With the power of coordinate conversion APIs the robot is able to jump out of the volume and into the world of the immersive experience. It stuck the landing! Next I'll pick an immersion style for the Botanist app. By default, the immersive experience starts with a mixed style, displaying the app in the context of your surroundings. The progressive style provides a bridge between passthrough and fully immersive, using a radial portal to display the app while allowing passthrough around it. In the full style, the immersive app completely replaces the surroundings. I'll pick the progressive style.\n\nIt's a great fit for enabling the botanist to explore the world.\n\nWhen adopting the progressive style in the Botanist app, by default the initial size of the portal covers around half of a person's field of view. The system also defines the supported immersion range by providing fixed fixed minimum and maximum immersion amounts.\n\nI need to make the Botanist app start out more immersive. New in visionOS 2, that can be achieved with custom immersion amounts. that let me dial down, or dial up the immersion, to really showcase the botanist leaping out of the volume into the immersive space. Let's dive in to this new API.\n\nI start by using a new initializer to create a progressive immersion style that takes in a custom immersion range as well as a value for the initial amount. When the progressive style is applied to an Immersive Space, the system will use the provided values to define the minimum, maximum and initial value of the progressive effect applied to the scene.\n\nI need the immersive experience for the Botanist app to start out more immersive so I pick an initial immersion amount of 80%. For the custom immersion range in the Botanist app, I specify a minimum of 20% with a maximum of 100% corresponding to full immersion.\n\nLet's check out custom immersion amounts in action. Starting out more immersive really helps highlight the botanist jumping out of the volume. This looks great through the whole range I specified. I can use the Digital Crown to dial in my experience.\n\nNext, I want to make the botanist react as the Digital Crown is used to dial through the supported immersion amounts. Use the onImmersionChange modifier to react to changes to the immersion amount. This provides a context value with the new immersion level.\n\nWhen the immersion changes, I read the value from the provided context. For Botanist, I store it so I can compare the before and after values.\n\nI use onChange to handle changes to the stored immersion amount, extracting the new and old values from the closure to pass along.\n\nTo make the robot react to changes in immersion amounts, I call a function that triggers the robot to move outward when the immersion amount increases. And I call a function that triggers the robot to move inward when the immersion amount decreases. Let's check it out! Now the botanist reacts as the immersion level changes. It moves toward me as I increase the immersion and away from me as I decrease it.\n\nLet's dial the immersion back up again. The botanist now reacts to move out and explore the expanding space as the immersion amount increases, but it feels like the environment is a little sparse at the moment.\n\nTo address that, I'll make the floor tappable to enable placing plants relative to the floor of the environment for the botanist to explore. To place plants at a specific location on the floor, I'll need to place the plants relative to a floor anchor and for that I'll need the 3D location of the anchor to be available.\n\nYou can provide your app access to the 3D location of anchors with the new Spatial Tracking Session API in RealityKit to enable people to authorize which anchor capabilities they want to track.\n\nTo use this API, first I create a spatial tracking session.\n\nThen I create a task that calls a function to run the spatial tracking session when the immersive space is opened.\n\nTo run the session, I first set up a configuration for plane anchor tracking.\n\nThen I run the session with the configuration to prompt for authorization to plane anchor transforms.\n\nNow that I’ve registered for plane tracking, I need to add an anchor to track.\n\nI specify a horizontal alignment for a target plane with floor classification to create a floor anchor entity to track.\n\nThen I add the floor anchor to the RealityView content in the immersive space. Finally, I need to use the 3D location of my new anchor to place plants in my room.\n\nI add a spatial tap gesture that can be used to detect taps on targeted entities in the immersive space.\n\nWhen the gesture ends, I pass the gesture value along to a function that handles the tap.\n\nTo handle the tap, I first use the convert function on the gesture value to get the location of the gesture relative to the floor anchor. This step requires the transform of the floor anchor to be available to the app.\n\nFinally, I can place the plant by adding the plant as a child of the floor anchor and using the converted location to set the plant entity's position.\n\nNow, I pick a plant from the list. The hover effect on the floor indicates where the plant will be placed. I just tap, and a plant is placed! I love how placing plants in the room makes the Botanist app feel more alive.\n\nFor a deeper dive on the Spatial Tracking Session API, check out the session titled \"Build a spatial drawing app with RealityKit\".\n\nThe immersive greenhouse experience is really starting to come together. Check out how the plants play a growth celebration animation as they're visited by the botanist.\n\nI'd like to add to the celebration. Currently, each plant in our environment is placed in a planter with an associated tint color. Tinting the passthrough to match the planter's tint color is a great way to add to the celebration.\n\nThe preferred Surroundings Effect API can be used to tint the surrounding passthrough. I'll update the immersive experience in the Botanist app to tint the passthrough using the tint color of the planter for the actively celebrating plant. First, I'll pick the tint colors to complement the planters.\n\nI add a tint color property to the custom Plant Component. Then I switch over the plant type to choose a tint color. For example, light blue for coffee berry.\n\nTo trigger the tint effect, I need to detect when the botanist is near a planter. Collision detection with RealityKit is the right tool for this job.\n\nWhen handling the robot's movement over time, I use the collision closure to process hit entities. I then pass the collision value to a helper function.\n\nTo learn more about collision detection with RealityKit, check out Develop your first immersive app.\n\nIn my helper function, I first check whether the botanist has collided with a plant, returning if not.\n\nThen I play the celebration animation.\n\nFinally, if I'm in an immersive space, I store the active tint color on the app model for later use.\n\nBack in the immersive view, I create a color multiply Surroundings Effect based on the stored active tint color. And tint the passthrough using that surroundings effect.\n\nLet's check out the updated celebration colors that now tint the passthrough as plants are visited by the botanist.\n\nMagenta for poppy.\n\nLight green for yucka.\n\nLight blue for coffee berry. Nice work botanist! In this session, we've covered a lot of new ways to build volumes and immersive spaces in your app. Try the new resizability behaviors to fine tune how volumes resize in your app. Use viewpoints to allow your app to respond to people moving around your volumes. Break out of the volume and into the immersive space the power of coordinate conversions. Respond to changes in immersion level in your immersive space. Spatial apps are an entirely new frontier for experiences people have never dreamed of. With the powerful, expressive tools of SwiftUI and RealityKit, the possibilities are limitless. And with a bit of whimsy and imagination, you can make something that astounds. Thanks!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:09",
+      "title": "Baseplate",
+      "language": "swift",
+      "code": "// Baseplate\n\nWindowGroup(id: \"RobotExploration\") {\n    ExplorationView()\n        .volumeBaseplateVisibility(.visible) // Default!\n}\n.windowStyle(.volumetric)"
+    },
+    {
+      "timestamp": "4:29",
+      "title": "Enabling resizability",
+      "language": "swift",
+      "code": "// Enabling resizability\n\nWindowGroup(id: \"RobotExploration\") {\n    let initialSize = Size3D(width: 900, height: 500, depth: 900)\n\n    ExplorationView()\n        .frame(minWidth: initialSize.width, maxWidth: initialSize.width * 2,\n               minHeight: initialSize.height, maxHeight: initialSize.height * 2)\n        .frame(minDepth: initialSize.depth, maxDepth: initialSize.depth * 2)\n}\n.windowStyle(.volumetric)\n.windowResizability(.contentSize) // Default!"
+    },
+    {
+      "timestamp": "6:10",
+      "title": "Programmatic resize",
+      "language": "swift",
+      "code": "// Programmatic resize\n\nstruct ExplorationView: View {\n    @State private var levelScale: Double = 1.0\n\n    var body: some View {\n        RealityView { content in\n            // Level code here\n        } update: { content in\n            appState.explorationLevel?.setScale(\n                [levelScale, levelScale, levelScale], relativeTo: nil)\n        }\n        .frame(width: levelSize.value.width * levelScale,\n               height: levelSize.value.height * levelScale)\n        .frame(depth: levelSize.value.depth * levelScale)\n        .overlay { Button(\"Change Size\") { levelScale = levelScale == 1.0 ? 2.0 : 1.0 } }\n    }\n}"
+    },
+    {
+      "timestamp": "7:39",
+      "title": "Toolbar ornament",
+      "language": "swift",
+      "code": "// Toolbar ornament\n\nExplorationView()\n.toolbar {\n\t\tToolbarItem {\n      \tButton(\"Next Size\") {\n          \tlevelScale = levelScale == 1.0 ? 2.0 : 1.0\n        }\n    }\n  \tToolbarItemGroup {\n      \tButton(\"Replay\") {\n          \tresetExploration()\n        }\n      \tButton(\"Exit Game\") {\n          \texitExploration()\n          \topenWindow(id: \"RobotCreation\")\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "10:41",
+      "title": "Ornaments",
+      "language": "swift",
+      "code": "// Ornaments\n\nWindowGroup(id: \"RobotExploration\") {\n    ExplorationView()\n    .ornament(attachmentAnchor: .scene(.topBack)) {\n        ProgressView()\n    }\n}\n.windowStyle(.volumetric)"
+    },
+    {
+      "timestamp": "12:08",
+      "title": "Volume viewpoint",
+      "language": "swift",
+      "code": "// Volume viewpoint\n\nstruct ExplorationView: View {\n    var body: some View {\n        RealityView { content in\n            // Some RealityKit code\n        }\n        .onVolumeViewpointChange { oldValue, newValue in\n            appState.robot?.currentViewpoint = newValue.squareAzimuth\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "13:06",
+      "title": "Using volume viewpoint",
+      "language": "swift",
+      "code": "// Volume viewpoint\n\nclass RobotCharacter {\n\n    func handleMovement(deltaTime: Float) {\n        if self.robotState == .idle {\n            characterModel.performRotation(toFace: self.currentViewpoint, duration: 0.5)\n            self.animationState.transition(to: .wave)\n        } else {\n            // Handle normal movement\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "13:43",
+      "title": "Supported viewpoints",
+      "language": "swift",
+      "code": "// Supported viewpoints\nstruct ExplorationView: View {\n  \tlet supportedViewpoints: Viewpoint3D.SquareAzimuth.Set = [.front, .left, .right]\n  \n  \tvar body: some View {\n      \tRealityView { content in\n        \t\t// Some RealityKit code\n        }\n      \t.supportedVolumeViewpoints(supportedViewpoints)\n      \t.onVolumeViewpointChange { _, newValue in\n        \t\tappState.robot?.currentViewpoint = newValue.squareAzimuth\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "14:30",
+      "title": "Viewpoint update strategy",
+      "language": "swift",
+      "code": "// Viewpoint update strategy\n\nstruct ExplorationView: View {\n    let supportedViewpoints: Viewpoint3D.SquareAzimuth.Set = [.front, .left, .right]\n\n    var body: some View {\n        RealityView { content in\n            // Some RealityKit code\n        }\n        .supportedVolumeViewpoints(supportedViewpoints)\n        .onVolumeViewpointChange(updateStrategy: .all) { _, newValue in\n            appState.robot?.currentViewpoint = newValue.squareAzimuth\n            if !supportedViewpoints.contains(newValue) {\n                appState.robot?.animationState.transition(to: .annoyed)\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "16:42",
+      "title": "World alignment",
+      "language": "swift",
+      "code": "// World alignment\n\nWindowGroup {\n    ExplorationView()\n    .volumeWorldAlignment(.gravityAligned)\n}\n.windowStyle(.volumetric)"
+    },
+    {
+      "timestamp": "18:05",
+      "title": "Dynamic scale",
+      "language": "swift",
+      "code": "// Dynamic scale\n\nWindowGroup {\n    ContentView()\n}\n.windowStyle(.volumetric)\n.defaultWorldScalingBehavior(.dynamic)"
+    },
+    {
+      "timestamp": "19:16",
+      "title": "Starting with an empty immersive space",
+      "language": "swift",
+      "code": "struct BotanistApp: App {\n    var body: some Scene {\n        // Volume\n        WindowGroup(id: \"Exploration\") {\n            VolumeExplorationView()\n        }\n        .windowStyle(.volumetric)\n\n        // Immersive Space\n        ImmersiveSpace(id: \"Immersive\") {\n            EmptyView()\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "20:52",
+      "title": "Callout to convert function from volume view",
+      "language": "swift",
+      "code": "// Coordinate conversions\n// Convert from RealityKit entity in volume to SwiftUI space\nstruct VolumeExplorationView: View {\n    @Environment(ImmersiveSpaceAppModel.self) var appModel\n\n    var body: some View {\n        RealityView { content in\n            content.add(appModel.volumeRoot)\n            // ...\n        } update: { content in\n            guard appModel.convertingRobotFromVolume else { return }\n\n            // Convert the robot transform from RealityKit scene space for\n            // the volume to SwiftUI immersive space\n            convertRobotFromRealityKitToImmersiveSpace(content: content)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "21:08",
+      "title": "Convert robot's transform to SwiftUI immersive space",
+      "language": "swift",
+      "code": "// Coordinate conversions\n// Convert from RealityKit entity in volume to SwiftUI space\nfunc convertRobotFromRealityKitToImmersiveSpace(content: RealityViewContent) {\n    // Convert the robot transform from RealityKit scene space for\n    // the volume to SwiftUI immersive space\n    appModel.immersiveSpaceFromRobot =\n        content.transform(from: appModel.robot, to: .immersiveSpace)\n\n    // Reparent robot from volume to immersive space\n    appModel.robot.setParent(appModel.immersiveSpaceRoot)\n\n    // Handoff to immersive space view to continue conversions.\n    appModel.convertingRobotFromVolume = false\n    appModel.convertingRobotToImmersiveSpace = true\n}"
+    },
+    {
+      "timestamp": "21:42",
+      "title": "Callout to convert function from immersive space view",
+      "language": "swift",
+      "code": "// Coordinate conversions\n// Convert from SwiftUI immersive space back to RealityKit local space\nstruct ImmersiveExplorationView: View {\n    @Environment(ImmersiveSpaceAppModel.self) var appModel\n\n    var body: some View {\n        RealityView { content in\n            content.add(appModel.immersiveSpaceRoot)\n        } update: { content in\n            guard appModel.convertingRobotToImmersiveSpace else { return }\n\n            // Convert the robot transform from SwiftUI space for the immersive\n            // space to RealityKit scene space\n            convertRobotFromSwiftUIToRealityKitSpace(content: content)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "21:48",
+      "title": "Compute transform to place robot in matching position in immersive space",
+      "language": "swift",
+      "code": "// Coordinate conversions\n// Calculate transform from SwiftUI to RealityKit scene space\nfunc convertRobotFromSwiftUIToRealityKitSpace(content: RealityViewContent) {\n    // Calculate transform from SwiftUI immersive space to RealityKit\n    // scene space\n    let realityKitSceneFromImmersiveSpace =\n    content.transform(from: .immersiveSpace, to: .scene)\n\n    // Multiply with the robot's transform in SwiftUI immersive space to build a\n    // transformation which converts from the robot's local\n    // coordinate space in the volume and ends with the robot's local\n    // coordinate space in an immersive space.\n    let realityKitSceneFromRobot =\n    realityKitSceneFromImmersiveSpace * appModel.immersiveSpaceFromRobot\n\n    // Place the robot in the immersive space to match where it\n    // appeared in the volume\n    appModel.robot.transform = Transform(realityKitSceneFromRobot)\n\n    // Start the jump!\n    appModel.startJump()\n}"
+    },
+    {
+      "timestamp": "23:54",
+      "title": "Customizing immersion",
+      "language": "swift",
+      "code": "// Customizing immersion\nstruct BotanistApp: App {\n    // Custom immersion amounts\n    @State private var immersionStyle: ImmersionStyle = .progressive(0.2...1.0, initialAmount: 0.8)\n\n    var body: some Scene {\n        // Immersive Space\n        ImmersiveSpace(id: \"ImmersiveSpace\") {\n            ImmersiveSpaceExplorationView()\n        }\n        .immersionStyle(selection: $immersionStyle, in: .mixed, .progressive, .full)\n    }\n}"
+    },
+    {
+      "timestamp": "25:17",
+      "title": "Callout to function to handle immersion amount changed",
+      "language": "swift",
+      "code": "// Reacting to immersion\nstruct ImmersiveView: View {\n    @State var immersionAmount: Double?\n  \n    var body: some View {\n        ImmersiveSpaceExplorationView()\n            .onImmersionChange { context in\n                immersionAmount = context.amount\n            }\n            .onChange(of: immersionAmount) { oldValue, newValue in\n                handleImmersionAmountChanged(newValue: newValue, oldValue: oldValue)\n            }\n    }\n}"
+    },
+    {
+      "timestamp": "25:39",
+      "title": "Handle function to make robot react to changed immersion amount",
+      "language": "swift",
+      "code": "// Reacting to immersion\nfunc handleImmersionAmountChanged(newValue: Double?, oldValue: Double?) {\n    guard let newValue, let oldValue else {\n        return\n    }\n\n    if newValue > oldValue {\n        // Move the robot outward to react to increasing immersion\n        moveRobotOutward()\n    } else if newValue < oldValue {\n        // Move the robot inward to react to decreasing immersion\n        moveRobotInward()\n    }\n}"
+    },
+    {
+      "timestamp": "26:57",
+      "title": "Create spatial tracking session",
+      "language": "swift",
+      "code": "// Create and run spatial tracking session\nstruct ImmersiveExplorationView {\n    @State var spatialTrackingSession: SpatialTrackingSession\n        = SpatialTrackingSession()\n\n    var body: some View {\n        RealityView { content in\n            // ...\n        }\n        .task {\n            await runSpatialTrackingSession()\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "27:11",
+      "title": "Run spatial tracking session",
+      "language": "swift",
+      "code": "// Create and run the spatial tracking session\nfunc runSpatialTrackingSession() async {\n    // Configure the session for plane anchor tracking\n    let configuration =\n        SpatialTrackingSession.Configuration(tracking: [.plane])\n\n    // Run the session to request plane anchor transforms\n    let _ = await spatialTrackingSession.run(configuration)\n}"
+    },
+    {
+      "timestamp": "27:32",
+      "title": "Create a floor anchor to track",
+      "language": "swift",
+      "code": "// Create a floor anchor to track\nstruct ImmersiveExplorationView {\n    @State var spatialTrackingSession: SpatialTrackingSession\n        = SpatialTrackingSession()\n\n    let floorAnchor = AnchorEntity(\n        .plane(.horizontal, classification: .floor, minimumBounds: .init(x: 0.01, y: 0.01))\n    )\n\n    var body: some View {\n        RealityView { content in\n            content.add(floorAnchor)\n        }\n        .task {\n            await runSpatialTrackingSession()\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "27:54",
+      "title": "Detect taps on entities in immersive space",
+      "language": "swift",
+      "code": "// Detect taps on entities in immersive space\nRealityView { content in\n    // ...\n}\n.gesture(\n    SpatialTapGesture(\n        coordinateSpace: .immersiveSpace\n    )\n    .targetedToAnyEntity()\n    .onEnded { value in\n        handleTapOnFloor(value: value)\n    }\n)"
+    },
+    {
+      "timestamp": "28:09",
+      "title": "Handle tap event to place plant",
+      "language": "swift",
+      "code": "// Handle tap event\nfunc handleTapOnFloor(value: EntityTargetValue<SpatialTapGesture.Value>) {\n    let location =\n        value.convert(value.location3D, from: .immersiveSpace, to: floorAnchor)\n\n    plantEntity.position = location\n    floorAnchor.addChild(plantEntity)\n}"
+    },
+    {
+      "timestamp": "29:47",
+      "title": "Add tint color to custom plant component",
+      "language": "swift",
+      "code": "// Add tint color to custom plant component\nstruct PlantComponent: Component {\n    var tintColor: Color {\n        switch plantType {\n        case .coffeeBerry:\n            // Light blue\n            return Color(red: 0.3, green: 0.3, blue: 1.0)\n        case .poppy:\n            // Magenta\n            return Color(red: 1.0, green: 0.0, blue: 1.0)\n        case .yucca:\n            // Light green\n            return Color(red: 0.2, green: 1.0, blue: 0.2)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "30:09",
+      "title": "Handle collisions with robot",
+      "language": "swift",
+      "code": "// Handle collisions with robot\n//\n// Handle movement of the robot between frames\nfunc handleMovement(deltaTime: Float) {\n    // Move character in the collision world\n    appModel.robot.moveCharacter(by: SIMD3<Float>(...), deltaTime: deltaTime, relativeTo: nil) { collision in\n        handleCollision(collision)\n    }\n}"
+    },
+    {
+      "timestamp": "30:29",
+      "title": "Set active tint color when colliding with plant",
+      "language": "swift",
+      "code": "// Set active tint color when colliding with plant\n//\n// Handle collision between robot and hit entity\nfunc handleCollision(_ collision: CharacterControllerComponent.Collision) {\n    guard let plantComponent = collision.hitEntity.components[PlantComponent.self] else {\n        return\n    }\n\n    // Play the plant growth celebration animation\n    playPlantGrowthAnimation(plantComponent: plantComponent)\n\n    if inImmersiveSpace {\n        appModel.tintColor = plantComponent.tintColor\n    }\n}"
+    },
+    {
+      "timestamp": "30:48",
+      "title": "Apply effect to tint passthrough",
+      "language": "swift",
+      "code": "// Apply effect to tint passthrough\nstruct ImmersiveExplorationView: View {\n    var body: some View {\n        RealityView { content in\n            // ...\n        }\n        .preferredSurroundingsEffect(surroundingsEffect)\n    }\n\n    // The resolved surroundings effect based on tint color\n    var surroundingsEffect: SurroundingsEffect? {\n        if let color = appModel.tintColor {\n            return SurroundingsEffect.colorMultiply(color)\n        } else {\n            return nil\n        }\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "BOT-anist",
+        "url": "https://developer.apple.com/documentation/visionOS/BOT-anist"
+      },
+      {
+        "title": "Forum: UI Frameworks",
+        "url": "https://developer.apple.com/forums/topics/ui-frameworks?cid=vf-a-0010"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10153/4/0A359A0C-A9DB-4D61-872E-FCEA96763C78/downloads/wwdc2024-10153_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2024/10153/4/0A359A0C-A9DB-4D61-872E-FCEA96763C78/downloads/wwdc2024-10153_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10104",
+      "year": "2024",
+      "title": "Build a spatial drawing app with RealityKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10104"
+    },
+    {
+      "id": "10203",
+      "year": "2023",
+      "title": "Develop your first immersive app",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10203"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:45:25.468Z"
+}

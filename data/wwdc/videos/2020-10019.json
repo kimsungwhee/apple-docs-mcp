@@ -1,0 +1,97 @@
+{
+  "id": "10019",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10019/",
+  "title": "App accessibility for Switch Control",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Accessibility & Inclusion",
+    "Design"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello, and welcome to WWDC.\n\nI'm Sommer, and I'm here to talk about app accessibility for Switch Control. Today I'm really excited to be discussing a very important technology that supports our users with motor impairments: Switch Control. We often talk about our APIs in terms of visual accessibility, but less frequently in terms of motor. When it comes to our Switch Control users, we may need to take a few additional steps to truly empower these customers. Today we'll cover what Switch Control is and who uses this feature. Then, we'll dive into the APIs that you can use to specifically support users of Switch Control.\n\nAnd we'll finish off by going over some general best practices to support better accessibility for anyone with motor impairments.\n\nSo let's get started and learn a bit more about Switch Control.\n\nSwitch Control is a technology built into Apple devices that allows users with limited motor abilities to interact with those iOS devices using one or more external switches or buttons.\n\nThey use these switches to navigate a cursor around their screen. Activating these switches can then bring up menus that allow users to tap, gesture, scroll, control the volume, and much more. Because those who use switch systems often have limited use of their limbs, it's common for these switches or buttons to be mounted on wheelchairs and operated by head taps, tongue clicks, or breathing in or out into a straw.\n\nSince these devices are mounted to a chair, they're often powered as well, allowing the screen to remain on.\n\nOf course, the best way to understand Switch Control is to see one of our customers using it. Here, we meet Ian McKay as he's navigating the woods and taking a picture using his mouth-operated switch.\n\nNotice how he can use different mouth gestures to move an on-screen cursor, tap, and more.\n\nWhile we saw Ian using multiple switches via his mouth in the last video, it's also very common for our Switch Control users to utilize an automatic cursor that advances through items until they interact with it.\n\nHere we can see a close-up of that autoscanning behavior.\n\nI'm using a switch to add a new clock to my world clock for one of my favorite cities, Amsterdam.\n\nNotice that the cursor advances automatically. I don't have to do anything. When I do tap the switch, the cursor navigates into the group that it's on, or, if it's on a leaf item, Switch Control shows the menu.\n\nThis is a very common way for our users to interact with their devices when using Switch Control.\n\nWhen building apps that work well for users of Switch Control, there's some extra information to consider.\n\nBecause when using the autoscanner, they often have to wait for the correct item or group to be selected, tap-timing is very important.\n\nA mistap can result in numerous more steps to perform a simple action.\n\nAdditionally, the efficiency and grouping of these navigation items is key for Switch Control users, as poor grouping can lead to large wait times to arrive at the item of interest. Finally, some switch users may have tremors or other involuntary movements. This can lead to a higher rate of mistaps than we often see with other assistive technologies. If there's an option to delete all data or log out, one accidental tap could have quite destructive consequences for a Switch Control user, so error tolerance is very important.\n\nNow that we've gotten a better understanding of who uses Switch Control and important considerations for this user group, let's take a look at how we can build our apps with these users in mind.\n\nBut before we dive into code, I want to call out one important point.\n\nVery often, you don't have to do anything extra for Switch Control. By making an app that's 100% accessible to VoiceOver, it will likely already be great for Switch Control.\n\nSometimes, however, we'll want to add a bit more polish to our Switch Control experience, especially where we may need specialized behaviors that don't apply to VoiceOver. Also, by understanding these Switch-Control-specific APIs, we can even design and build apps specifically targeted at customers who use Switch Control. Now let's dive into some code and see how. Lately, a lot of my friends have been having kids.\n\nAnd as those kids are getting older, they're starting to learn their numbers and shapes and colors. Now, I've always been a fan of handmade gifts, so I thought it would be fun to make an app for them. This is a game called Shape Shuffle. In it, children can travel down a learning path by completing more and more challenging quests to build groups of objects of different counts and shapes and colors. Let's watch this video of how it works. In the home screen, we can select a level on our winding road of shapes. I'll select level three.\n\nWhen we enter the level, we get a prompt like we see here: Two Blue Squares. Now we can flip cards by tapping on them to try to find a set of three cards that will complete the prompt. Ah. I just found the blue card. I can double-tap the blue card to commit it to my answer.\n\nSo I double-tap, and there it is. Now I'll keep on tapping cards, searching for either two or square.\n\nHmm. Not yet.\n\nAh, I found two. Now I can double-tap that one and continue looking for that square.\n\nNow, if I'm not sure if something is a square, I can put a pin in it with a long press to remind me where it was, and that will help me remember to come back to it. Then, I can keep looking.\n\nSo now I can decide between a few shapes until I'm sure I've found my square. Hmm. I think the bottom one is it.\n\nSo I double-tap, and there we go. I've solved my first level. Two Blue Squares.\n\nWhile this game is simple and fun for our touch users, it poses some challenges for our Switch Control users.\n\nFirst of all, on the home screen, there's no clear element grouping. Normally, the Switch Control cursor will travel top to bottom, left to right.\n\nThis will cause it to travel through our levels in the wrong order because of the curvy path.\n\nAlso, because we don't group levels at all, a user looking for level 30 would have a long time to wait for the switch cursor to get all the way there.\n\nSecondly, we're relying on tapping cards to see them.\n\nIn order to see a card, a manual Switch Control user might need to interact with their switch multiple times. This might get exhausting, as the number of cards increases in higher levels.\n\nFinally, double-tap and long-press gestures have to be performed frequently. While these are possible for someone using Switch Control, they require navigating into the gestures submenu, and that could slow down game play even more.\n\nSo let's see how we can address that first issue, where we have too many elements for Switch Control on our levels screen and they are navigated out of order. There are two steps. First, we need to tell Switch Control to group items in a single levels section by setting accessibility-Navigation-Style to combined. Luckily this is easy because I already built my view hierarchy using container views for every three levels.\n\nNext, we need to control the ordering of elements so the top-to-bottom, left-to-right ordering doesn't prevail. We do this by explicitly setting the Accessibility Elements array to return the precise ordering that we want. This will cause Switch Control to jump first to level four before five and then to six.\n\nThe next issue we had was that touching to reveal cards requires multiple interactions from our Switch Control users.\n\nWhile those using autoscanning may not mind this, those manually scanning may find card navigation taxing. For these users, we've added an extra setting to auto-flip cards when their cursor gets to them.\n\nTo implement this, whenever a card gets focus, accessibility-Element-Did-Become-Focused will be called. When this happens, we just flip our card and show the front. Whenever a card loses focus, we will get a call for accessibility-Element-Did-Lose-Focus, and we'll flip the card back over. Now, let's see how this looks. Notice how the flips are happening automatically. There's no menu interaction required.\n\nBefore we solve our last issue of our game requiring multiple gestures, I want to quickly introduce the concept of Accessibility Custom Actions. Custom Actions give assistive technologies like VoiceOver and Switch Control quick access to common behaviors in your app that might be hard to reach by cursor navigation. For example, in reminders, the swipe actions such as Delete and Flag are presented as Custom Actions.\n\nBy making these items Custom Actions rather than views the user has to navigate their cursor to, we greatly reduce clutter.\n\nAlso, we make navigation much faster for common behaviors and thus more convenient. Now, let's loop back to our app. Our game has frequent double-taps and long presses which would cause a Switch Control user to have to return to that gestures menu repeatedly.\n\nSo, we should turn those into actions that our users can easily get to on that top-level menu. We can use Accessibility Custom Actions API to do just this.\n\nFor each action we'd like to show up in that top-level menu of Switch Control, we simply create a UI-Accessibility-Custom-Action.\n\nOnce we've created an item for each action, we just assign those items as an array to Accessibility-Custom-Actions.\n\nNow they will show up in the top level of the Switch Control menu when the user activates their switch on that view. But before we leave this slide, I want to call out one more thing. We've introduced a new API in iOS 14 to allow you to set an image for your custom action. As you can see here, I've used SF Symbols to make a pin for my pin action and a plus sign for my add action.\n\nAnd if you don't use an image, you'll see our old default behavior. The menu item will display the first letter of the action's name.\n\nNow, let's take a look at our game running with Switch Control. In order to show the auto-flipping, I've turned off autoscanning, so you'll see me using two switches.\n\nI'm using the right red switch to move my cursor to the next item and the left yellow switch to enter a group or activate my menu on an item.\n\nSince I'm doing manual scanning, you'll notice that I have auto-flipping behavior turned on for my cards.\n\nAs I search for my six blue triangles, I'll use my new pin action in my top level menu to pin the card on the top right. Then, with a little more card flipping, I'll find and add that blue card with another action.\n\nBefore we move away from API, I wanted to call out a couple more useful methods and properties that we have for Switch Control.\n\nFirst, if you ever need to detect when Switch Control is running, you can call is-Switch-Control-Running or use the associated notification.\n\nSecondly, there are sometimes cases when you have UI that would otherwise be static, like a UI-Label, that updates when the user taps. In this case, we want to let Switch Control know that it should navigate to this item, even though it looks like static text, so we can set accessibility-Responds- To-User-Interaction to true. And that's it for API. Hopefully you've learned a few useful tips to hone and polish your app for Switch Control. Or perhaps, now you have a vision for an app built entirely for your Switch Control customers. To wrap up, I'd like to share with you some general best practices when it comes to making sure that your app is accessible to users with motor impairments. However, these suggestions are not only for Switch Control. They'll bring a better experience to all of your users.\n\nFirst, make sure you confirm any destructive behaviors or high-consequence behaviors in your applications.\n\nThis is especially important for Switch Control users who may be more likely to mistap an item. It should never be too easy for a user to delete all their data or delete their account. Next, we recommend against having any timeouts in your apps, at least when Switch Control is running.\n\nScreens for entering pairing codes and authentication codes will often have short timeouts for security purposes. However, as Switch Control users often enter information more slowly, due to waiting on the cursor, and take longer to correct input errors, these timeouts may become frustrating.\n\nThird, be sure that your view hierarchy makes it easy to group items on screen. All users benefit from clear and easy-to-follow item groupings. Once Switch Control is running, those groups become even more important for the efficiency and speed of cursor navigation.\n\nAnd finally, remember that Switch Control users can use devices mounted on wheelchairs, and this means that it might be harder for them to keep their screens private. Avoid putting private information like account numbers or medical information on screen for longer than it needs be. And with that, we're at the end of our session. I hope you've been able to better understand who uses Switch Control and some of the key considerations to keep in mind for this user group as you build your apps. With just a few additional lines of code, we were able to customize our game to provide a smooth and easy Switch control experience. And finally, we learned how some best practices have a disproportionately large impact for our Switch Control users. We hope this helps you build apps that are truly accessible to everyone.\n\nThank you so much for your time,\nand have a great WWDC 2020.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "7:53",
+      "title": "Navigation Style and Element Ordering",
+      "language": "swift",
+      "code": "containerView.accessibilityNavigationStyle = .combined\n\ncontainerView.accessibilityElements = [ levelFourView, levelFiveView, levelSixView]"
+    },
+    {
+      "timestamp": "8:47",
+      "title": "Follow Focus API",
+      "language": "swift",
+      "code": "// Following Focus API \n\nclass CardView : UIView { \n    var orientation: CardOrientation\n    \n    enum CardOrientation {\n        case front\n        case back\n    }\n    \n    override func accessibilityElementDidBecomeFocused() {\n        self.flip(to: .front)\n    } \n\n\t\toverride func accessibilityElementDidLoseFocus() {\n        self.flip(to: .back)\n    }\n    \n// The rest of the class…\n}"
+    },
+    {
+      "timestamp": "9:56",
+      "title": "Custom Actions API",
+      "language": "swift",
+      "code": "// Custom Actions API (VoiceOver uses this too)\n\nfunc configureActions() {\n\n  let pinAction = UIAccessibilityCustomAction(\n      name: \"Pin Card\") { (_) -> Bool in\n          self.setPinned(true)\n          return true\n      }\n  pinAction.image = UIImage(systemName: \"pin\")\n       \n  let addAction = UIAccessibilityCustomAction(\n      name: \"Add Card\") { (_) -> Bool in\n          self.setSelected(true)\n          return true\n      }\n    addAction.image = UIImage(systemName: \"add.square\")\n\n        \n\tself.accessibilityCustomActions = [addAction, pinAction]\n}"
+    },
+    {
+      "timestamp": "11:51",
+      "title": "Other Useful API",
+      "language": "swift",
+      "code": "static var isSwitchControlRunning: Bool { get }\n\nvar accessibilityRespondsToUserInteraction: Bool { get set }"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Accessibility for UIKit",
+        "url": "https://developer.apple.com/documentation/UIKit/accessibility-for-uikit"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10019/8/B498FE5F-E963-44CB-BE5E-1053289B5D7B/wwdc2020_10019_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10019/8/B498FE5F-E963-44CB-BE5E-1053289B5D7B/wwdc2020_10019_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "257",
+      "year": "2019",
+      "title": "Accessibility Inspector",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/257"
+    },
+    {
+      "id": "250",
+      "year": "2019",
+      "title": "Making Apps More Accessible With Custom Actions",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/250"
+    },
+    {
+      "id": "244",
+      "year": "2019",
+      "title": "Visual Design and Accessibility",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/244"
+    },
+    {
+      "id": "254",
+      "year": "2019",
+      "title": "Writing Great Accessibility Labels",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/254"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:09:08.117Z"
+}

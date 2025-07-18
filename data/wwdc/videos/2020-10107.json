@@ -1,0 +1,84 @@
+{
+  "id": "10107",
+  "year": "2020",
+  "url": "https://developer.apple.com/videos/play/wwdc2020/10107/",
+  "title": "What's new in PencilKit",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello and welcome to WWDC.\n\nHi. I'm Jenny, and I'm an engineer on the Pencil and Paper team. Welcome to \"What's New in PencilKit.\" In iOS 13, we introduced PencilKit, a new framework for easily adding a low-latency expressive drawing experience to your app. In iOS 14, we've added some new features to the out-of-the-box PencilKit experience. Next, we'll go over some of the changes we've made to the finger versus pencil drawing policy across the system. Finally, we'll cover some API changes that we've made, in addition to a sneak peek at some of the new APIs that we're exposing that will really expand the possibilities of what you can do with PencilKit. In iOS 13, we showed you how you can adopt PencilKit with only a few lines of code with PKCanvasView. It was great to see how you adopted it. If you haven't adopted PencilKit yet, check out our talk from 2019 to see just how easy it is. The Apple Pencil has so much potential, and it can really unlock the capabilities of productivity and the iPad. And so, we can't wait to show you some of the new enhancements that we've added to the PencilKit experience, and the best part is that they require zero adoption.\n\nPencilKit documents have gotten smarter as we infuse intelligence across handwritten notes. We've provided a rich-selection experience that mirrors the way that you select type text. So you can double-tap for a word, double-tap again to select a line, or even use the grab handles to expand your selection.\n\nWe've improvised some enhanced gestures, like a velocity-sensitive tap-and-pan so that you can make noncontiguous selections by brushing over specific strokes.\n\nWe've also introduced an easy way to insert space between your handwritten content. Have you ever written stuff and realized you've forgotten something right in between? Instead of having to write super tiny and squeeze additions in the margins, you can just tap on the white space, tap \"Insert Space\" from the callout bar, use the grab handle to adjust the amount of space...\n\nand then easily add the new content in between.\n\nWe also adopted the new UIKit system standard color picker, which features rich new ways to choose more colors for your drawings. You'll have a rainbow of color options using the spectrum or sliders, be able to save your custom colors for later, or even use the eye dropper to sample colors. For existing PencilKit clients, there's nothing that you'll need to add to your app. You'll get it for free. For more information about how to easily adopt this, check out the UIKit talk, \"Build With iOS Pickers, Menus and Actions.\" We've also made some great latency optimizations for third parties. In iOS 13, we recommended techniques to avoid impacting latency, such as avoiding any visual effect views or blur effects. In iOS 14, that's no longer the case, and you can use different visual effect view materials and bars to your heart's content.\n\nIn addition, we've also added PKCanvasView support for Catalyst. The tool picker is not supported, but you can easily set inks on the canvas through the PKCanvasView APIs. And, just as a reminder, for smart selection, insert space, and the new color picker, no extra adoption is required. And that's why we made it a system-wide experience so we could keep enhancing it year after year, providing a consistent enhanced experience across the system. We've also done some work to distinguish the finger versus Pencil drawing experience and how it can be more unified across the system. PencilKit is supported on both phones and iPads. Drawing with both finger and Apple Pencil is allowed, and you have to remember that not everyone has a Pencil.\n\nIn iOS 13, we introduced the allowsFingerDrawing property, which meant that if you had it on, one finger would draw, while two fingers would scroll.\n\nIn iOS 14, we have a new global setting that can be set from the new Apple Pencil menu in settings via the Prefer Only Pencil Drawing toggle. This is for all third parties who use Pencil, both for apps who adopted PencilKit, and for those with their own drawing engine.\n\nThis setting can be accessed via UIPencilInteraction in UIKit. Non-PencilKit clients that have their own drawing engine should respect the setting by querying UIPencilInteraction.prefersPencilOnlyDrawing parameter. On the phone, this value is always \"false,\" as finger is your only drawing tool available.\n\nOn the other hand, PencilKit clients get this for free, as it's surfaced in the tool picker. This toggles the global setting that you see in the settings pane. So when the Draw with Finger switch is toggled on in Notes, then that means it will also be turned on across the system, such as screenshots, Markup, other PencilKit clients, and the new value will also be reflected in settings.\n\nWe've also updated the call on PKCanvasView to account for this new global finger drawing toggle. We've deprecated allowsFingerDrawing in favor of setting the PKCanvasViewDrawingPolicy on the canvas.\n\nPlease do not set the drawing gesture recognizer allowedTouchTypes, and instead set the drawing policy on the canvas to control Pencil vs finger touches.\n\nThere are three different kinds of drawing policies. The first, PKCanvasViewDrawingPolicy.anyInput, means that you allow any input, allowing both finger and Pencil drawing.\n\nThe second policy, pencilOnly, means you only allow Pencil, so finger will scroll or do smart selection gestures.\n\nThe third, which is the default, is dependent on if the tool picker is hidden or not. If the tool picker is visible, it respects UIPencilInteraction's prefersPencilOnlyDrawing state, a.k.a, what the user set in settings or toggled in the tool picker.\n\nIf the tool picker is hidden, then only Pencil will ever draw. Whenever finger scrolls, you can also perform smart selection gestures. Let me show you. You don't even have to choose the lasso tool. When the pen is selected, you can scroll and perform smart selection gestures on your handwritten content so that you can easily go back and forth between writing...\n\nand selecting.\n\nIf your app is purely a Pencil app, you might not want to show the Draw With Finger toggle. To turn this off in the UI, you'll need to set PKToolPicker.showsDrawingPolicyControls to false. By default, it will always be true on iPads, meaning they will always show the Draw With Finger toggle in the tool picker. If the canvas drawing policy is set to Pencil only, you'll want to set this to false, so users won't be confused when they flip the switch and nothing changes on the canvas.\n\nWe've also updated the PKToolPicker initialization methods. Instead of having a single shared tool picker for a UIWindow, you can now initialize individual instances of the tool picker. By doing so, you can now have independent PKToolPickers with their own state.\n\nGiven this state, it's useful to have multiple tool pickers for different canvases or windows in your app. However, one of the implications of this is that you must always retain your own tool picker instance by having an Ivar reference it.\n\nAnd so, when should you have a single instance versus creating a new one? As a refresher from our \"Introducing PencilKit\" talk, you may have other UI responders that set visible to \"true\" to keep the tool picker visible.\n\nYou should always pass your unique tool picker instance around to each of these responders.\n\nOn the other hand, when do you need separate tool pickers? Let's say my app has two modes, a note-taking mode and a coloring mode.\n\nMy note-taking canvas wants a default drawing policy, versus I want to allow both finger and Pencil drawing on my coloring canvas.\n\nIn this case, each of the canvases should have their own unique tool picker instance with their own unique state, since I'll want to hide the drawing policy controls on my coloring canvas.\n\nThe tool pickers will also have different states in terms of their selected tool. I'll make the selected tool on my notes canvas a black pen, while my coloring canvas will have a purple marker as the default. The tool pickers in your app might also have other varying states, such as different color user interface styles if you're drawing versus marking up an image.\n\nFinally, one of the biggest changes we made to PencilKit in iOS 14 is providing access to strokes, letting you peek inside the internals of PKDrawing. With the strokes, you'll be able to access inks, paths, points, and more.\n\nFor more information, check out the \"Inspect, Modify and Construct PencilKit Drawings\" talk. Access to strokes can unlock so many more interesting custom PencilKit experiences involving annotations, animations, recognition, and machine learning.\n\nAnd that's what's new in PencilKit. For existing PencilKit clients, you'll get some new feature enhancements with zero adoption, including smart selection, insert space, and the new color picker.\n\nMove away from the deprecated APIs to the new APIs to make sure that you provide the best finger and Pencil drawing experience.\n\nAnd, finally, you can introspect the strokes inside of PKDrawing with some new PencilKit APIs, taking your Pencil experience to the next level. Thanks for watching, and we're looking forward\nto seeing what you will do with PencilKit.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "5:21",
+      "title": "PKCanvasView drawingPolicy",
+      "language": "swift",
+      "code": "var drawingPolicy: PKCanvasViewDrawingPolicy"
+    },
+    {
+      "timestamp": "7:06",
+      "title": "PKToolPicker showDrawingPolicyControls",
+      "language": "swift",
+      "code": "PKToolPicker.showsDrawingPolicyControls"
+    },
+    {
+      "timestamp": "8:40",
+      "title": "Toolpicker per canvas",
+      "language": "swift",
+      "code": "notesCanvas.drawingPolicy = .default\nnotesToolPicker.showsDrawingPolicyControls = true\nnotesToolPicker.selectedTool = PKInkingTool(.pen, color: .black, width: 2)\n\ndrawingCanvas.drawingPolicy = .anyInput\ndrawingToolPicker.showsDrawingPolicyControls = false\ndrawingToolPicker.selectedTool = PKInkingTool(.marker, color: .purple, width: 20)"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Drawing with PencilKit",
+        "url": "https://developer.apple.com/documentation/PencilKit/drawing-with-pencilkit"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10107/4/91342955-14B4-436D-AE84-4FAA3BCC547F/wwdc2020_10107_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2020/10107/4/91342955-14B4-436D-AE84-4FAA3BCC547F/wwdc2020_10107_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10052",
+      "year": "2020",
+      "title": "Build with iOS pickers, menus and actions",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10052"
+    },
+    {
+      "id": "10148",
+      "year": "2020",
+      "title": "Inspect, modify, and construct PencilKit drawings",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10148"
+    },
+    {
+      "id": "221",
+      "year": "2019",
+      "title": "Introducing PencilKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2019/221"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:56:04.937Z"
+}

@@ -1,0 +1,228 @@
+{
+  "id": "10133",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10133/",
+  "title": "Protect mutable state with Swift actors",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Swift"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ Bass music playing ♪  ♪ Dario Rexin: Hi, my name is Dario Rexin, and I am an engineer on the Swift team here at Apple.\n\nToday, my colleague Doug and I will talk about actors in Swift and how they are utilized to protect mutable state in concurrent Swift applications.\n\nOne of the fundamentally hard problems with writing concurrent programs is avoiding data races.\n\nData races occur when two separate threads concurrently access the same data and at least one of those accesses is a write.\n\nData races are trivial to construct but are notoriously hard to debug.\n\nHere's a simple counter class with one operation that increments the counter and returns its new value.\n\nLet's say we go ahead and try to increment from two concurrent tasks.\n\nThis is a bad idea.\n\nDepending on the timing of the execution, we might get 1 and then 2, or 2 and then 1.\n\nThis is expected, and in both cases, the counter would be left in a consistent state.\n\nBut because we've introduced a data race, we could also get 1 and 1 if both tasks read a 0 and write a 1.\n\nOr even 2 and 2 if the return statements happen after both increment operations.\n\nData races are notoriously hard to avoid and debug.\n\nThey require nonlocal reasoning because the data accesses causing the race might be in different parts of the program.\n\nAnd they are nondeterministic because the operating system's scheduler might interleave the concurrent tasks in different ways each time you run your program.\n\nData races are caused by shared mutable state.\n\nIf your data doesn't change or it isn't shared across multiple concurrent tasks, you can't have a data race on it.\n\nOne way to avoid data races is to eliminate shared mutable state by using value semantics.\n\nWith a variable of a value type, all mutation is local.\n\nMoreover, \"let\" properties of value-semantic types are truly immutable, so it's safe to access them from different concurrent tasks.\n\nSwift has been promoting value semantics since its inception because they make it easier to reason about our program and those same things also make them safe to use in concurrent programs.\n\nIn this example, we create an array with some values.\n\nNext, we assign that array to a second variable.\n\nNow we append a different value to each copy of the array.\n\nWhen we print both arrays at the end, we see that both copies contain the values that the array was initialized with, but each appended value is only present in the respective copy we appended them to.\n\nThe majority of types in Swift's standard library have value semantics, including collection types like dictionary, or as in this example, array.\n\nNow that we have established that value semantics solve all of our data races, let's go ahead and make our counter a value type by turning it into a struct.\n\nWe also have to mark the increment function as mutating, so it can modify the value property.\n\nWhen we are now trying to modify the counter we will get a compiler error because the counter is a let, which prevents us from mutating it.\n\nNow, it seems very tempting to just change the counter variable to a var to make it mutable.\n\nBut that would leave us, again, with a race condition because the counter would be referenced by both concurrent tasks.\n\nLuckily, the compiler has us covered and does not allow us to compile this unsafe code.\n\nWe can instead assign the counter to a local mutable variable inside each concurrent task.\n\nWhen we execute our example now, it will always print 1 for both concurrent tasks.\n\nBut even though our code is now race-free, the behavior is not what we want anymore.\n\nThis goes to show that there are still cases where shared mutable state is required.\n\nWhen we have shared mutable state in a concurrent program, we need some form of synchronization to ensure that concurrent use of our shared mutable state won't cause data races.\n\nThere are a number of primitives for synchronization, from low-level tools like atomics and locks to higher-level constructs like serial dispatch queues.\n\nEach of these primitives has its various strengths, but they all share the same critical weakness: they require careful discipline to use exactly correctly, every single time, or we'll end up with a data race.\n\nThis is where actors come in.\n\nActors are a synchronization mechanism for shared mutable state.\n\nAn actor has its own state and that state is isolated from the rest of the program.\n\nThe only way to access that state is by going through the actor.\n\nAnd whenever you go through the actor, the actor's synchronization mechanism ensures that no other code is concurrently accessing the actor's state.\n\nThis gives us the same mutual exclusion property that we get from manually using locks or serial dispatch queues, but with actors, it is a fundamental guarantee provided by Swift.\n\nYou can't forget to perform the synchronization, because Swift will produce a compiler error if you try.\n\nActors are a new kind of type in Swift.\n\nThey provide the same capabilities as all of the named types in Swift.\n\nThey can have properties, methods, initializers, subscripts, and so on.\n\nThey can conform to protocols and be augmented with extensions.\n\nLike classes, they are reference types; because the purpose of actors is to express shared mutable state.\n\nIn fact, the primary distinguishing characteristic of actor types is that they isolate their instance data from the rest of the program and ensure synchronized access to that data.\n\nAll of their special behavior follows from those core ideas.\n\nHere, we've defined our counter as an actor type.\n\nWe still have the instance property value for the counter, and the increment method to increment that value and return the new value.\n\nThe difference is that the actor will ensure the value isn't accessed concurrently.\n\nIn this case, that means the increment method, when called, will run to completion without any other code executing on the actor.\n\nThat guarantee eliminates the potential for data races on the actor's state.\n\nLet's bring back our data race example.\n\nWe again have two concurrent tasks attempting to increment the same counter.\n\nThe actor's internal synchronization mechanism ensures that one increment call executes to completion before the other can start.\n\nSo we can get 1 and 2 or 2 and 1 because both are valid concurrent executions, but we cannot get the same count twice or skip any values because the internal synchronization of the actor has eliminated the potential for data races on the actor state.\n\nLet's consider what actually happens when both concurrent tasks try to increment the counter at the same time.\n\nOne will get there first, and the other will have to wait its turn.\n\nBut how can we ensure that the second task can patiently await its turn on the actor? Swift has a mechanism for that.\n\nWhenever you interact with an actor from the outside, you do so asynchronously.\n\nIf the actor is busy, then your code will suspend so that the CPU you're running on can do other useful work.\n\nWhen the actor becomes free again, it will wake up your code -- resuming execution -- so the call can run on the actor.\n\nThe await keyword in this example indicates that the asynchronous call to the actor might involve such a suspension.\n\nLet's stretch our counterexample just a bit further by adding an unnecessarily slow reset operation.\n\nThis operation sets the value back to 0, then calls increment an appropriate number of times to get the counter to the new value.\n\nThis resetSlowly method is defined in an extension of the counter actor type so it is inside the actor.\n\nThat means it can directly access the actor's state, which it does to reset the counter value to 0.\n\nIt can also synchronously call other methods on the actor, such as in the call to increment.\n\nThere's no await required because we already know we're running on the actor.\n\nThis is an important property of actors.\n\nSynchronous code on the actor always runs to completion without being interrupted.\n\nSo we can reason about synchronous code sequentially, without needing to consider the effects of concurrency on our actor state.\n\nWe have stressed that our synchronous code runs uninterrupted, but actors often interact with each other or with other asynchronous code in the system.\n\nLet's take a few minutes to talk about asynchronous code and actors.\n\nBut first, we need a better example.\n\nHere we are building an image downloader actor.\n\nIt is responsible for downloading an image from another service.\n\nIt also stores downloaded images in a cache to avoid downloading the same image multiple times.\n\nThe logical flow is straightforward: check the cache, download the image, then record the image in the cache before returning.\n\nBecause we are in an actor, this code is free from low-level data races; any number of images can be downloaded concurrently.\n\nThe actor's synchronization mechanisms guarantee that only one task can execute code that accesses the cache instance property at a time, so there is no way that the cache can be corrupted.\n\nThat said, the await keyword here is communicating something very important.\n\nWhenever an await occurs, it means that the function can be suspended at this point.\n\nIt gives up its CPU so other code in the program can execute, which affects the overall program state.\n\nAt the point where your function resumes, the overall program state will have changed.\n\nIt is important to ensure that you haven't made assumptions about that state prior to the await that may not hold after the await.\n\nImagine we have two different concurrent tasks trying to fetch the same image at the same time.\n\nThe first sees that there is no cache entry, proceeds to start downloading the image from the server, and then gets suspended because the download will take a while.\n\nWhile the first task is downloading the image, a new image might be deployed to the server under the same URL.\n\nNow, a second concurrent task tries to fetch the image under that URL.\n\nIt also sees no cache entry because the first download has not finished yet, then starts a second download of the image.\n\nIt also gets suspended while its download completes.\n\nAfter a while, one of the downloads -- let's assume it's the first -- will complete and its task will resume execution on the actor.\n\nIt populates the cache and returns the resulting image of a cat.\n\nNow the second task has its download complete, so it wakes up.\n\nIt overwrites the same entry in the cache with the image of the sad cat that it got.\n\nSo even though the cache was already populated with an image, we now get a different image for the same URL.\n\nThat's a bit of a surprise.\n\nWe expected that once we cache an image, we always get that same image back for the same URL so our user interface remains consistent, at least until we go and manually clear out of the cache.\n\nBut here, the cached image changed unexpectedly.\n\nWe don't have any low-level data races, but because we carried assumptions about state across an await, we ended up with a potential bug.\n\nThe fix here is to check our assumptions after the await.\n\nIf there's already an entry in the cache when we resume, we keep that original version and throw away the new one.\n\nA better solution would be to avoid redundant downloads entirely.\n\nWe've put that solution in the code associated with this video.\n\nActor reentrancy prevents deadlocks and guarantees forward progress, but it requires you to check your assumptions across each await.\n\nTo design well for reentrancy, perform mutation of actor state within synchronous code.\n\nIdeally, do it within a synchronous function so all state changes are well-encapsulated.\n\nState changes can involve temporarily putting our actor into an inconsistent state.\n\nMake sure to restore consistency before an await.\n\nAnd remember that await is a potential suspension point.\n\nIf your code gets suspended, the program and world will move on before your code gets resumed.\n\nAny assumptions you've made about global state, clocks, timers, or your actor will need to be checked after the await.\n\nAnd now my colleague Doug will tell you more about actor isolation. Doug? Doug Gregor: Thanks, Dario.\n\nActor isolation is fundamental to the behavior of actor types.\n\nDario discussed how actor isolation is guaranteed by the Swift language model, through asynchronous interactions from outside the actor.\n\nIn this section, we'll talk about how actor isolation interacts with other language features, including protocol conformances, closures, and classes.\n\nLike other types, actors can conform to protocols so long as they can satisfy the requirements of the protocol.\n\nFor example, let's make this LibraryAccount actor conform to the Equatable protocol.\n\nThe static equality method compares two library accounts based on their ID numbers.\n\nBecause the method is static, there is no self instance and so it is not isolated to the actor.\n\nInstead, we have two parameters of actor type, and this static method is outside of both of them.\n\nThat's OK because the implementation is only accessing immutable state on the actor.\n\nLet's extend our example further to make our library account conform to the Hashable protocol.\n\nDoing so requires implementing the hash(into) operation, which we can do like this.\n\nHowever, the Swift compiler will complain that this conformance isn't allowed.\n\nWhat happened? Well, conforming to Hashable this way means that this function could be called from outside the actor, but hash(into) is not async, so there is no way to maintain actor isolation.\n\nTo fix this, we can make this method nonisolated.\n\nNonisolated means that this method is treated as being outside the actor, even though it is, syntactically, described on the actor.\n\nThis means that it can satisfy the synchronous requirement from the Hashable protocol.\n\nBecause nonisolated methods are treated as being outside the actor, they cannot reference mutable state on the actor.\n\nThis method is fine because it's referring to the immutable ID number.\n\nIf we were to try to hash based on something else, such as the array of books on loan, we will get an error because access to mutable state from the outside would permit data races.\n\nThat's enough of protocol conformances.\n\nLet's talk about closures.\n\nClosures are little functions that are defined within one function, that can then be passed to another function to be called some time later.\n\nLike functions, a closure might be actor-isolated or it might be nonisolated.\n\nIn this example, we're going to read some from each book we have on loan and return the total number of pages we've read.\n\nThe call to reduce involves a closure that performs the reading.\n\nNote that there is no await in this call to readSome.\n\nThat's because this closure, which is formed within the actor-isolated function \"read\", is itself actor-isolated.\n\nWe know this is safe because the reduce operation is going to execute synchronously, and can't escape the closure out to some other thread where it could cause concurrent access.\n\nNow, let's do something a little different.\n\nI don't have time to read just now, so let's read later.\n\nHere, we create a detached task.\n\nA detached task executes the closure concurrently with other work that the actor is doing.\n\nTherefore, the closure cannot be on the actor or we would introduce data races.\n\nSo this closure is not isolated to the actor.\n\nWhen it wants to call the read method, it must do so asynchronously, as indicated by the await.\n\nWe've talked a bit about actor isolation of code, which is whether that code runs inside the actor or outside it.\n\nNow, let's talk about actor isolation and data.\n\nIn our library account example, we've studiously avoided saying what the book type actually is.\n\nI've been assuming it's a value type, like a struct.\n\nThat's a good choice because it means that all the state for an instance of the library account actor is self-contained.\n\nIf we go ahead and call this method to select a random book to read, we'll get a copy of the book that we can read.\n\nChanges we make to our copy of the book won't affect the actor and vice versa.\n\nHowever, if the turn the book into a class, things are a little different.\n\nOur library account actor now references instances of the book class.\n\nThat's not a problem in itself.\n\nHowever, what happens when we call the method to select a random book? Now we have a reference into the mutable state of the actor, which has been shared outside of the actor.\n\nWe've created the potential for data races.\n\nNow, if we go and update the title of the book, the modification happens in state that is accessible within the actor.\n\nBecause the visit method is not on the actor, this modification could end up being a data race.\n\nValue types and actors are both safe to use concurrently, but classes can still pose problems.\n\nWe have a name for types that are safe to use concurrently: Sendable.\n\nA Sendable type is one whose values can be shared across different actors.\n\nIf you copy a value from one place to another, and both places can safely modify their own copies of that value without interfering with each other, the type can be Sendable.\n\nValue types are Sendable because each copy is independent, as Dario talked about earlier.\n\nActor types are Sendable because they synchronize access to their mutable state.\n\nClasses can be Sendable, but only if they are carefully implemented.\n\nFor example, if a class and all of its subclasses only hold immutable data, then it can be called Sendable.\n\nOr if the class internally performs synchronization, for example with a lock, to ensure safe concurrent access, it can be Sendable.\n\nBut most classes are neither of these, and cannot be Sendable.\n\nFunctions aren't necessarily Sendable, so there is a new kind of function type for functions that are safe to pass across actors.\n\nWe'll get back to those shortly.\n\nYour actors -- in fact, all of your concurrent code -- should primarily communicate in terms of Sendable types.\n\nSendable types protect code from data races.\n\nThis is a property that Swift will eventually start checking statically.\n\nAt that point, it will become an error to pass a non-Sendable type across actor boundaries.\n\nHow does one know that a type is Sendable? Well, Sendable is a protocol, and you state that your type conforms to Sendable the same way you do with other protocols.\n\nSwift will then check to make sure your type makes sense as a Sendable type.\n\nA Book struct can be Sendable if all of its stored properties are of Sendable type.\n\nLet's say Author is actually a class, which means it -- and therefore the array of authors -- are not Sendable.\n\nSwift will produce a compiler error indicating that Book cannot be Sendable.\n\nFor generic types, whether they are Sendable can depend on their generic arguments.\n\nWe can use conditional conformance to propagate Sendable when it's appropriate.\n\nFor example, a pair type will be Sendable only when both of its generic arguments are Sendable.\n\nThe same approach is used to conclude that an array of Sendable types is itself Sendable.\n\nWe encourage you introduce Sendable conformances to the types whose values are safe to share concurrently.\n\nUse those types within your actors.\n\nThen when Swift begins to start enforcing Sendable across actors, your code will be ready.\n\nFunctions themselves can be Sendable, meaning that it is safe to pass the function value across actors.\n\nThis is particularly important for closures where it restricts what the closure can do to help prevent data races.\n\nFor example, a Sendable closure cannot capture a mutable local variable, because that would allow data races on the local variable.\n\nAnything the closure does capture needs to be Sendable, to make sure that the closure cannot be used to move non-Sendable types across actor boundaries.\n\nAnd finally, a synchronous Sendable closure cannot be actor-isolated, because that would allow code to be run on the actor from the outside.\n\nWe've actually be relying on the idea of Sendable closures in this talk.\n\nThe operation that creates detached tasks takes a Sendable function, written here with the @Sendable in the function type.\n\nRemember our counterexample from the beginning of the talk? We were trying to build a value-typed counter.\n\nThen, we tried to go and modify it from two different closures at the same time.\n\nThis would be a data race on the mutable local variable.\n\nHowever, because the closure for a detached task is Sendable, Swift will produce an error here.\n\nSendable function types are used to indicate where concurrent execution can occur, and therefore prevent data races.\n\nHere's another example we saw earlier.\n\nBecause the closure for the detached task is Sendable, we know that it should not be isolated to the actor.\n\nTherefore, interactions with it will have to be asynchronous.\n\nSendable types and closures help maintain actor isolation by checking that mutable state isn't shared across actors, and cannot be modified concurrently.\n\nWe've been talking primarily about actor types, and how they interact with protocols, closures, and Sendable types.\n\nThere is one more actor to discuss -- a special one that we call the main actor.\n\nWhen you are building an app, you need to think about the main thread.\n\nIt is where the core user interface rendering happens, as well as where user interaction events are processed.\n\nOperations that work with the UI generally need to be performed from the main thread.\n\nHowever, you don't want to do all of your work on the main thread.\n\nIf you do too much work on the main thread, say, because you have some slow input/output operation or blocking interaction with a server, your UI will freeze.\n\nSo, you need to be careful to do work on the main thread when it interacts with the UI but get off the main thread quickly for computationally expensive or long-waiting operations.\n\nSo, we do work off the main thread when we can and then call DispatchQueue.main.async in your code whenever you have a particular operation that must be executed on the main thread.\n\nStepping back from the details of the mechanism, the structure of this code looks vaguely familiar.\n\nIn fact, interacting with the main thread is a whole lot like interacting with an actor.\n\nIf you know you're already running on the main thread, you can safely access and update your UI state.\n\nIf you aren't running on the main thread, you need to interact with it asynchronously.\n\nThis is exactly how actors work.\n\nThere's a special actor to describe the main thread, which we call the main actor.\n\nThe main actor is an actor that represents the main thread.\n\nIt differs from a normal actor in two important ways.\n\nFirst, the main actor performs all of its synchronization through the main dispatch queue.\n\nThis means that, from a runtime perspective, the main actor is interchangeable with using DispatchQueue.main.\n\nSecond, the code and data that needs to be on the main thread is scattered everywhere.\n\nIt's in SwiftUI, AppKit, UIKit, and other system frameworks.\n\nIt's spread across your own views, view controllers, and the UI-facing parts of your data model.\n\nWith Swift concurrency, you can mark a declaration with the main actor attribute to say that it must be executed on the main actor.\n\nWe've done that with the checked-out operation here, so it always runs on the main actor.\n\nIf you call it from outside the main actor, you need to await, so that the call will be performed asynchronously on the main thread.\n\nBy marking code that must run on the main thread as being on the main actor, there is no more guesswork about when to use DispatchQueue.main.\n\nSwift ensures that this code is always executed on the main thread.\n\nTypes can be placed on the main actor as well, which makes all of their members and subclasses be on the main actor.\n\nThis is useful for the parts of your code base that must interact with the UI, where most everything needs to run on the main thread.\n\nIndividual methods can opt-out via the nonisolated keyword, with the same rules you're familiar with from normal actors.\n\nBy using the main actor for your UI-facing types and operations, and introducing your own actors for managing other program state, you can architect your app to ensure safe, correct use of concurrency.\n\nIn this session, we've talked about how actors protect their mutable state from concurrent access, using actor isolation and by requiring asynchronous access from outside the actor to serialize execution.\n\nUse actors to build safe, concurrent abstractions in your Swift code.\n\nIn implementing your actors, and in any asynchronous code, always design for reentrancy; an await in your code means the world can move on and invalidate your assumptions.\n\nValue types and actors work together to eliminate data races.\n\nBe aware of classes that don't handle their own synchronization, and other non-Sendable types that reintroduce shared mutable state.\n\nFinally, use the main actor on your code that interacts with the UI to ensure that the code that must be on the main thread always runs on the main thread.\n\nTo learn more about how to use actors within your own application, check out our session on updating an app for Swift concurrency.\n\nAnd to learn more about the implementation of Swift's concurrency model, including actors, check out our \"Behind the scenes\" session.\n\nActors are a core part of the Swift concurrency model.\n\nThey work together with async/await and structured concurrency to make it easier to build correct and efficient concurrent programs.\n\nWe can't wait to see what you build with them.\n\n♪",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "0:42",
+      "title": "Data races make concurrency hard",
+      "language": "swift",
+      "code": "class Counter {\n    var value = 0\n\n    func increment() -> Int {\n        value = value + 1\n        return value\n    }\n}\n\nlet counter = Counter()\n\nTask.detached {\n    print(counter.increment()) // data race\n}\n\nTask.detached {\n    print(counter.increment()) // data race\n}"
+    },
+    {
+      "timestamp": "2:20",
+      "title": "Value semantics help eliminate data races",
+      "language": "swift",
+      "code": "var array1 = [1, 2]\nvar array2 = array1\n\narray1.append(3)\narray2.append(4)\n\nprint(array1)        // [1, 2, 3]\nprint(array2)        // [1, 2, 4]"
+    },
+    {
+      "timestamp": "2:59",
+      "title": "Sometimes shared mutable state is required",
+      "language": "swift",
+      "code": "struct Counter {\n    var value = 0\n\n    mutating func increment() -> Int {\n        value = value + 1\n        return value\n    }\n}\n\nlet counter = Counter()\n\nTask.detached {\n    var counter = counter\n    print(counter.increment()) // always prints 1\n}\n\nTask.detached {\n    var counter = counter\n    print(counter.increment()) // always prints 1\n}"
+    },
+    {
+      "timestamp": "5:23",
+      "title": "Actor isolation prevents unsynchronized access",
+      "language": "swift",
+      "code": "actor Counter {\n    var value = 0\n\n    func increment() -> Int {\n        value = value + 1\n        return value\n    }\n}\n\nlet counter = Counter()\n\nTask.detached {\n    print(await counter.increment())\n}\n\nTask.detached {\n    print(await counter.increment())\n}"
+    },
+    {
+      "timestamp": "7:51",
+      "title": "Synchronous interation within an actor",
+      "language": "swift",
+      "code": "extension Counter {\n    func resetSlowly(to newValue: Int) {\n        value = 0\n        for _ in 0..<newValue {\n            increment()\n        }\n        assert(value == newValue)\n    }\n}"
+    },
+    {
+      "timestamp": "9:02",
+      "title": "Check your assumptions after an await: The sad cat",
+      "language": "swift",
+      "code": "actor ImageDownloader {\n    private var cache: [URL: Image] = [:]\n\n    func image(from url: URL) async throws -> Image? {\n        if let cached = cache[url] {\n            return cached\n        }\n\n        let image = try await downloadImage(from: url)\n\n        // Potential bug: `cache` may have changed.\n        cache[url] = image\n        return image\n    }\n}"
+    },
+    {
+      "timestamp": "11:50",
+      "title": "Check your assumptions after an await: One solution",
+      "language": "swift",
+      "code": "actor ImageDownloader {\n    private var cache: [URL: Image] = [:]\n\n    func image(from url: URL) async throws -> Image? {\n        if let cached = cache[url] {\n            return cached\n        }\n\n        let image = try await downloadImage(from: url)\n\n        // Replace the image only if it is still missing from the cache.\n        cache[url] = cache[url, default: image]\n        return cache[url]\n    }\n}"
+    },
+    {
+      "timestamp": "11:59",
+      "title": "Check your assumptions after an await: A better solution",
+      "language": "swift",
+      "code": "actor ImageDownloader {\n\n    private enum CacheEntry {\n        case inProgress(Task<Image, Error>)\n        case ready(Image)\n    }\n\n    private var cache: [URL: CacheEntry] = [:]\n\n    func image(from url: URL) async throws -> Image? {\n        if let cached = cache[url] {\n            switch cached {\n            case .ready(let image):\n                return image\n            case .inProgress(let task):\n                return try await task.value\n            }\n        }\n\n        let task = Task {\n            try await downloadImage(from: url)\n        }\n\n        cache[url] = .inProgress(task)\n\n        do {\n            let image = try await task.value\n            cache[url] = .ready(image)\n            return image\n        } catch {\n            cache[url] = nil\n            throw error\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "13:30",
+      "title": "Protocol conformance: Static declarations are outside the actor",
+      "language": "swift",
+      "code": "actor LibraryAccount {\n    let idNumber: Int\n    var booksOnLoan: [Book] = []\n}\n\nextension LibraryAccount: Equatable {\n    static func ==(lhs: LibraryAccount, rhs: LibraryAccount) -> Bool {\n        lhs.idNumber == rhs.idNumber\n    }\n}"
+    },
+    {
+      "timestamp": "14:15",
+      "title": "Protocol conformance: Non-isolated declarations are outside the actor",
+      "language": "swift",
+      "code": "actor LibraryAccount {\n    let idNumber: Int\n    var booksOnLoan: [Book] = []\n}\n\nextension LibraryAccount: Hashable {\n    nonisolated func hash(into hasher: inout Hasher) {\n        hasher.combine(idNumber)\n    }\n}"
+    },
+    {
+      "timestamp": "15:32",
+      "title": "Closures can be isolated to the actor",
+      "language": "swift",
+      "code": "extension LibraryAccount {\n    func readSome(_ book: Book) -> Int { ... }\n    \n    func read() -> Int {\n        booksOnLoan.reduce(0) { book in\n            readSome(book)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "16:29",
+      "title": "Closures executed in a detached task are not isolated to the actor",
+      "language": "swift",
+      "code": "extension LibraryAccount {\n    func readSome(_ book: Book) -> Int { ... }\n    func read() -> Int { ... }\n    \n    func readLater() {\n        Task.detached {\n            await read()\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "17:15",
+      "title": "Passing data into and out of actors: structs",
+      "language": "swift",
+      "code": "actor LibraryAccount {\n    let idNumber: Int\n    var booksOnLoan: [Book] = []\n    func selectRandomBook() -> Book? { ... }\n}\n\nstruct Book {\n    var title: String\n    var authors: [Author]\n}\n\nfunc visit(_ account: LibraryAccount) async {\n    guard var book = await account.selectRandomBook() else {\n        return\n    }\n    book.title = \"\\(book.title)!!!\" // OK: modifying a local copy\n}"
+    },
+    {
+      "timestamp": "17:39",
+      "title": "Passing data into and out of actors: classes",
+      "language": "swift",
+      "code": "actor LibraryAccount {\n    let idNumber: Int\n    var booksOnLoan: [Book] = []\n    func selectRandomBook() -> Book? { ... }\n}\n\nclass Book {\n    var title: String\n    var authors: [Author]\n}\n\nfunc visit(_ account: LibraryAccount) async {\n    guard var book = await account.selectRandomBook() else {\n        return\n    }\n    book.title = \"\\(book.title)!!!\" // Not OK: potential data race\n}"
+    },
+    {
+      "timestamp": "20:08",
+      "title": "Check Sendable by adding a conformance",
+      "language": "swift",
+      "code": "struct Book: Sendable {\n    var title: String\n    var authors: [Author]\n}"
+    },
+    {
+      "timestamp": "20:43",
+      "title": "Propagate Sendable by adding a conditional conformance",
+      "language": "swift",
+      "code": "struct Pair<T, U> {\n    var first: T\n    var second: U\n}\n\nextension Pair: Sendable where T: Sendable, U: Sendable {\n}"
+    },
+    {
+      "timestamp": "24:19",
+      "title": "Interacting with the main thread: Using a DispatchQueue",
+      "language": "swift",
+      "code": "func checkedOut(_ booksOnLoan: [Book]) {\n    booksView.checkedOutBooks = booksOnLoan\n}\n\n// Dispatching to the main queue is your responsibility.\nDispatchQueue.main.async {\n    checkedOut(booksOnLoan)\n}"
+    },
+    {
+      "timestamp": "25:01",
+      "title": "Interacting with the main thread: The main actor",
+      "language": "swift",
+      "code": "@MainActor func checkedOut(_ booksOnLoan: [Book]) {\n    booksView.checkedOutBooks = booksOnLoan\n}\n\n// Swift ensures that this code is always run on the main thread.\nawait checkedOut(booksOnLoan)"
+    },
+    {
+      "timestamp": "26:21",
+      "title": "Main actor types",
+      "language": "swift",
+      "code": "@MainActor class MyViewController: UIViewController {\n    func onPress(...) { ... } // implicitly @MainActor\n\n    nonisolated func fetchLatestAndDisplay() async { ... } \n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "The Swift Programming Language: Concurrency",
+        "url": "https://docs.swift.org/swift-book/documentation/the-swift-programming-language/concurrency/"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10133/5/C303A256-7F2C-401E-9986-E877F8C7525E/downloads/wwdc2021-10133_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10133/5/C303A256-7F2C-401E-9986-E877F8C7525E/downloads/wwdc2021-10133_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "110351",
+      "year": "2022",
+      "title": "Eliminate data races using Swift Concurrency",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110351"
+    },
+    {
+      "id": "110356",
+      "year": "2022",
+      "title": "Meet distributed actors in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110356"
+    },
+    {
+      "id": "110360",
+      "year": "2022",
+      "title": "Use Xcode for server-side development",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110360"
+    },
+    {
+      "id": "110350",
+      "year": "2022",
+      "title": "Visualize and optimize Swift concurrency",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/110350"
+    },
+    {
+      "id": "10019",
+      "year": "2021",
+      "title": "Discover concurrency in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10019"
+    },
+    {
+      "id": "10134",
+      "year": "2021",
+      "title": "Explore structured concurrency in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10134"
+    },
+    {
+      "id": "10132",
+      "year": "2021",
+      "title": "Meet async/await in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10132"
+    },
+    {
+      "id": "10254",
+      "year": "2021",
+      "title": "Swift concurrency: Behind the scenes",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10254"
+    },
+    {
+      "id": "10194",
+      "year": "2021",
+      "title": "Swift concurrency: Update a sample app",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10194"
+    },
+    {
+      "id": "10054",
+      "year": "2021",
+      "title": "What's new in AppKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10054"
+    },
+    {
+      "id": "10192",
+      "year": "2021",
+      "title": "What‘s new in Swift",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10192"
+    }
+  ],
+  "extractedAt": "2025-07-18T10:48:44.384Z"
+}

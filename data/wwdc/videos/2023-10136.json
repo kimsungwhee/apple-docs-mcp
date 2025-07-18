@@ -1,0 +1,103 @@
+{
+  "id": "10136",
+  "year": "2023",
+  "url": "https://developer.apple.com/videos/play/wwdc2023/10136/",
+  "title": "What’s new in ScreenCaptureKit",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video",
+    "Graphics & Games"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Christopher: Hello and welcome! My name is Christopher, and I am a software engineer on the ScreenCaptureKit team. I'll be joined by my colleague Natalie Lindsay, and together we'll introduce new features that are going to enhance screen capture capabilities in your applications.\n\nScreenCaptureKit was introduced in macOS 12.3 to help you create your application's screen sharing experience. ScreenCaptureKit provides APIs that will let you customize the content you want to share, with controls that fit your application's needs, all of which can be applied dynamically to your streams. The framework delivers high quality content with a focus on performance that goes up to the native resolution and frame rate of your display, all while having privacy in mind with global safeguards. This year, ScreenCaptureKit provides several developer APIs that integrate with new macOS features. Presenter Overlay is a feature that allows people to make their screen shares and presentations more personal by embedding themselves into the captured content. With the new screen sharing picker, you'll be able to integrate a system-wide experience for what you capture in your screen share. Finally, screen capture isn't just for live streams, and this year, there's a brand-new API that allows you to capture high definition screenshots of any content you choose. People interact with each other every day, all across the world. These interactions are where we share our thoughts and ideas and solve important issues. They are both professional and personal. To this end, your apps can work seamlessly with a new video effect called Presenter Overlay. When sharing content, Presenter Overlay elevates the presenter's presence by including the presenter on top of the shared content, adding a personal touch for more productive remote calls. Small overlay places the presenter in a movable window, thanks to advanced segmentation algorithm, while large overlay separates the presenter's face and body from the background and then layers the screen content between them for a more immersive effect. Presenter Overlay is available with every application that uses ScreenCaptureKit. For every SCStream that is created, ScreenCaptureKit will notify the screen sharing picker, and a live preview with controls for the stream will be displayed in a new Video menu bar item. The Video menu bar will show every application that has an active stream, and will show a live preview of the streams associated with any application. From this menu bar, one will be able to control the stream content by presenting the stream-wide screen sharing picker. This is also where Presenter Overlay is enabled, embedding the camera frame into the content stream. And one can also use this to control the stream, like replacing or ending the screen share. There are other useful features here for customizing camera and microphone effects.\n\nEvery application that uses ScreenCaptureKit and camera together will automatically have these features working. Currently, a stream has content frames sent to its process from ScreenCaptureKit. Now, when an application starts using the camera during an active stream, Presenter Overlay is made available in the video menu item. Once enabled, ScreenCaptureKit will take the camera and apply the rendering to the selected stream that your application is already running. You will get the composited frames automatically from the active stream. So what if I wanted to know explicitly when Presenter Overlay has been applied? Let's start with creating a new stream and adding self as delegate. Then you'll implement the new delegate callback on SCStream, outputEffectDidStart. This is how you'll be notified when Presenter Overlay has been applied. When notified, you want to check if the effect's started or stopped. Presenter Overlay is a new macOS system feature, and there are some considerations your application might want to take when an overlay is applied.\n\nWhen Presenter Overlay is turned on, the AVCaptureSession will not send the typical live camera stream. That is because your camera will be used directly in the overlay. This would be a great time to update the application UI to account for this change. For example, video conferencing applications might want to adjust your audio and video synchronization to account for the shared content being mixed with the camera. You may also want to hide the presenter's camera tile for a more optimized look. Presenter Overlay is a camera and video feature, so your application should optimize for higher frame rates.\n\nIn addition to Presenter Overlay, you can also take advantage of a new systemwide screen sharing picker, that allows your application to fully integrate with several features centered around how people will pick the content they wish to share. These are the general constructs that you use to create a stream. Currently, you call into SCSharableContent to get all of the available screen content that you could share. You'll use that to create an SCContentFilter. The SCContentFilter is what you'll use to determine what you're going to capture. Currently, you build that from SCSharableContent but, new this year, you'll be able to get a content filter through the picker. There are two ways the picker will generate SCContentFilters. First, the desired content can be shared through the system picker. Secondly, the content can be selected right from the window that's open. In both cases, the system shares an SCContentFilter with your application. But how do you get the new content filters into your application? By using the new API, SCContentSharingPicker. SCContentSharingPicker acts as the interface between your application and the OS, providing delegate callbacks to your application with new stream requests, new content filters, and updates to current streams and content filters. SCContentSharingPicker has a built-in system level content picker that enables one to pick content based on windows, apps, or even displays. Whether one initiates the selection of content through a button in your application, the new Video menu bar, or directly from a window, your application can take advantage of SCContentSharingPicker to add, remove, or replace the active selection for any of your ongoing streams. It also has a built-in stream request callback that allows your application to know when a new stream is being requested. And finally, it comes with per-stream customization, where you can define how the system experience is applied to each stream. The constructs for getting the filter for an SCStream now goes from using SCSharableContent to using the system picker interface with the SCContentSharingPicker singleton to pass back SCContentFilter. Let me show you how easy it is for your application to take advantage of this new screen sharing picker. You'll start with the shared instance for SCContentSharingPicker and add self as an observer so you can get all the appropriate class callbacks. In order for the system to recognize my picker instance, set it as active. Once active, the system will know about your picker, and your application will be included in the System UI and people will be able to interact with it. You want to make a stream where people are allowed to choose windows through the picker, so you'll call the singleton method picker.present and pass in nil and a style of picker you want to present. Once people press your UI button, the picker will be presented, allowing them to choose the windows they wish to capture. After that content has been selected, you will be notified via the observer callback of a new filter. And you are now free to either create a new stream or update an existing stream using this filter. The remaining observer callbacks are equally important. Set up the picker again by making it active and presenting it. You'll also want to know if the picker failed when you asked to present it. If it did fail, you'll want to post a notification in your application to notify people. Also, if the picker was presented but canceled, meaning no content was picked, you want to make sure you set the state for your stream accordingly.\n\nSCContentSharingPicker also comes with methods that allow you to customize how the system is going to behave on a per-stream level. The SCContentSharingPickerConfiguration allows for several customizations. AllowedPickingModes tells the system which of the picking modes are allowed between windows, applications, and display selection for content filters. It also allows for the explicit declaration of excludedWindowIDs and bundleIDs that are not allowed to be picked by the system experience. If you have a stream that you don't want people to change, SCContentSharingPickerConfiguration has a property that can enforce that feature. First, you'll get a shared picker instance. Start with adding self as the observer and setting the picker active. Now, set up the appropriate configuration settings. For this stream, perhaps you want to exclude a selection of two specific applications and don't want to allow repicking. Once the configuration is set up, call set configuration on the picker, passing in the configuration and applicative stream.\n\nNow the picker will know exactly how to behave for a given stream. Also note that each stream could have different picker configuration to best suit the application's needs.\n\nTo recap, all ScreenCaptureKit streams are now integrated into the macOS experience, allowing any application to take advantage of new features like Presenter Overlay. And I introduced you to SCContentSharingPicker, the new API for integrating your application into the new system picker UI. But screen capturing in your application isn't just about live streams, so I'd like to pass it off to my colleague, Natalie, to talk more about this new screenshot API. Natalie: Thanks, Christopher. This year, there's a new API in ScreenCaptureKit designed to make it easy for you to grab a still image right off your screen. The new screenshot API brings the benefits of ScreenCaptureKit streaming to screenshots. Features like advanced filtering by app or window, multiple pixel formats and color spaces, and other options like cursor visibility are available to you. Now you'll be able to efficiently grab an image of the exact screen content you want using familiar ScreenCaptureKit constructs.\n\nThe new API is asynchronous. For your output image, you can choose between a CMSampleBuffer or a CGImage format. The CMSampleBuffer option has additional pixel formats available, which is great if you're interested in specific formats. If you already use CGImage in your code, then using this format will be easier to integrate. In either format, your screenshot will use almost all of the same configuration options as ScreenCaptureKit streaming and will follow a similar setup flow. If you're using CGWindowListCreateImage, there are a couple things that will make the transition to ScreenCaptureKit easier. All the window image options that you have available for the CGWindowList API can be found inside the SCStreamConfiguration class in ScreenCaptureKit. The window list options, like getting all windows above a certain window ID, are provided inside SCShareableContent. And if you're used to working with CGImage output, the new screenshot API provides a CGImage output format that's easy to integrate into your existing code. Taking a screenshot follows a similar flow to ScreenCaptureKit streaming, but in place of creating an SCStream, you'll call the screenshot API. To start, just like for creating a stream, use SCShareableContent to get your desired content and create your SCContentFilter. Don't forget to set up your SCStreamConfiguration with all the options you want for your screenshot. Once you have the content filter and stream configuration, call the screenshot API and pass them in. The API is a class method on the SCScreenshotManager class, so you won't need to create an SCScreenshotManager object to take a screenshot. When the screenshot image is ready, it'll be returned to you asynchronously in whichever format you chose. You can also use the new system picker to create your content filter, and then use that to call the screenshot API. This would be a great way to allow people to pick the content they want in an intuitive way. When it's time to take the screenshot, there are two versions of the API to choose from, depending on what you need: one for the CMSampleBuffer output type and one for the CGImage output type. Other than that, the two versions work the same way and will return your screenshot asynchronously. Here's a code example of how you can use the screenshot API. Start by setting up your SCContentFilter and SCStreamConfiguration. Once you have those ready, you can call the screenshot API, wait for it to return, and you'll get your screenshot. And that's everything that's new in ScreenCaptureKit. To recap, there's a new API to create SCContentFilters that uses system level UI to create a fully integrated screen sharing experience with your application. A New Presenter Overlay video effect offers a more dynamic screen sharing experience, and a new screenshot API allows you to grab one-off screen captures with the power of ScreenCaptureKit. For more information about ScreenCaptureKit, be sure to check out the sessions from last year, \"Meet ScreenCaptureKit\" and \"Take ScreenCaptureKit to the next level.\" Thanks for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:32",
+      "title": "Set up delegate for stream",
+      "language": "swift",
+      "code": "// Set up delegate for stream\nlet stream = SCStream(filter: filter, configuration: config, delegate: self)\n\n// delegate method for Presenter Overlay applied\nfunc stream(_ stream: SCStream, outputEffectDidStart didStart: bool) {\n    // if Presenter Overlay is on, present banner in app to notify\n    if didStart == true {\n        presentBanner()\n        turnOffCamera()\n    } else {\n        turnOnCamera()\n    }\n}"
+    },
+    {
+      "timestamp": "6:48",
+      "title": "Set up content sharing picker instance",
+      "language": "swift",
+      "code": "// Set up content sharing picker instance\n    let picker = SCContentSharingPicker.shared()\n    picker.addObserver(self)\n    picker.active = true\n    \n    // show system level picker button\n    func showSystemPicker(sender: UIButton!) {\n        picker.present(for stream: nil, using contentStyle:.window)\n    }\n    \n    // observer call back for picker\n    func contentSharingPicker(_ picker: SCContentSharingPicker, didUpdateWith filter:                                          \n    SCContentFilter, for stream: SCStream?) {\n       if let stream = stream {\n            stream.updateContentFilter(filter)\n        } else {\n            let stream = SCStream(filter: filter, configuration: config, delegate: self)\n        }\n    }"
+    },
+    {
+      "timestamp": "7:41",
+      "title": "Observer call back for picker did fail and did cancel",
+      "language": "swift",
+      "code": "// Set up content sharing picker instance\n    let picker = SCContentSharingPicker.shared()\n    picker.addObserver(self)\n    picker.active = true\n\n    // show system level picker button\n    func showSystemPicker(sender: UIButton!) {\n        picker.present(for stream: nil, using contentStyle:.window)\n    }\n\n    // observer call back for picker did fail\n    func contentSharingPicker(contentSharingPickerStartDidFailWith error:NSError) {\n        if error {\n            presentNotifications(error: error)\n        }\n    }\n\n    // observer call back for picker did cancel\n    func contentSharingPicker(_ picker: SCContentSharingPicker, didCancel for stream: SCStream?) {\n       if stream {\n           resetStateForStream(stream: stream)\n       }\n    }"
+    },
+    {
+      "timestamp": "8:41",
+      "title": "Per-stream configuration",
+      "language": "swift",
+      "code": "// Set up content sharing picker instance\n    let picker = SCContentSharingPicker.shared()\n    picker.addObserver(self)\n    picker.active = true\n    \n    // Create configurations\n    let pickerConfig = SCContentSharingPickerConfiguration()\n    \n    // Set Picker configuration\n    pickerConfig.excludedBundleIDs = [“com.foo.myApp”,”com.foo.myApp2”]\n    pickerConfig.allowsRepicking = true\n    \n    // Create configurations\n    picker.setConfiguration(pickerConfig, for: stream)\n\n    func showSystemPicker(sender: UIButton!) {\n        picker.present(for stream: nil, using contentStyle:.window)\n    }"
+    },
+    {
+      "timestamp": "12:26",
+      "title": "Call the screenshot API",
+      "language": "swift",
+      "code": "// Call the screenshot API\n\nclass SCScreenshotManager : NSObject {\n\nclass func captureSampleBuffer(contentFilter: SCContentFilter, \n                               configuration: SCStreamConfiguration)\n  \t\t\t\t\t\t\t\t\t\t\t\t\t\t\tasync throws -> CMSampleBuffer\n\nclass func captureImage(contentFilter: SCContentFilter,\n                        configuration: SCStreamConfiguration)\n  \t\t\t\t\t\t\t\t\t\t\tasync throws -> GImage\n}"
+    },
+    {
+      "timestamp": "12:44",
+      "title": "Take a screenshot with ScreenCaptureKit",
+      "language": "swift",
+      "code": "// Don't forget to customize the content you want in your screenshot\n// Use SCShareableContent or SCContentSharingPicker to pick your content\nlet display = nil;\n\n// Create your SCContentFilter and SCStreamConfiguration\n// Customize these lines to use the content you want and desired config options\nlet myContentFilter = SCContentFilter(display: display,\n                             excludingApplications: [],\n                             exceptingWindows: []);\nlet myConfiguration = SCStreamConfiguration();\n\n// Call the screenshot API and get your screenshot image\nif let screenshot = try? await SCScreenshotManager.captureSampleBuffer(contentFilter: myContentFilter, configuration:\n                                                       myConfiguration) {\n    print(\"Fetched screenshot.\")\n} else {\n    print(\"Failed to fetch screenshot.\")\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "ScreenCaptureKit",
+        "url": "https://developer.apple.com/documentation/ScreenCaptureKit"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10136/6/998A4D51-FB97-4CB9-959F-65B5827F9926/downloads/wwdc2023-10136_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2023/10136/6/998A4D51-FB97-4CB9-959F-65B5827F9926/downloads/wwdc2023-10136_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10053",
+      "year": "2023",
+      "title": "What’s new in privacy",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10053"
+    },
+    {
+      "id": "10156",
+      "year": "2022",
+      "title": "Meet ScreenCaptureKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10156"
+    },
+    {
+      "id": "10155",
+      "year": "2022",
+      "title": "Take ScreenCaptureKit to the next level",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10155"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:22:36.499Z"
+}

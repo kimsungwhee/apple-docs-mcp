@@ -21,6 +21,12 @@ export function formatSearchResults(
   content += `**Filter:** ${filterType}\n`;
   content += `**Results found:** ${results.length}\n\n`;
 
+  // Check if query might be video-related
+  const videoSuggestion = getVideoSuggestion(query);
+  if (videoSuggestion) {
+    content += videoSuggestion;
+  }
+
   if (results.length === 0) {
     content += formatNoResultsMessage(query, filterType, searchUrl);
     return content;
@@ -50,8 +56,15 @@ function formatNoResultsMessage(query: string, filterType: string, searchUrl: st
   content += '- Try using different keywords\n';
   content += '- Check spelling\n';
   content += '- Use more general terms\n';
-  content += '- Try searching for framework names (e.g., "SwiftUI", "UIKit")\n\n';
-  content += `[View search on Apple Developer](${searchUrl})`;
+  content += '- Try searching for framework names (e.g., "SwiftUI", "UIKit")\n';
+
+  // Add video-specific suggestion if applicable
+  const videoSuggestion = getVideoSuggestion(query);
+  if (videoSuggestion) {
+    content += '- For WWDC videos, use the dedicated WWDC tools\n';
+  }
+
+  content += `\n[View search on Apple Developer](${searchUrl})`;
   return content;
 }
 
@@ -139,6 +152,39 @@ function formatSingleResult(result: SearchResult, index: number): string {
  */
 function formatSearchFooter(searchUrl: string): string {
   return `---\n\n[View all results on Apple Developer](${searchUrl})`;
+}
+
+/**
+ * Check if query might be video-related and provide WWDC tool suggestions
+ */
+function getVideoSuggestion(query: string): string | null {
+  const videoKeywords = [
+    'video', 'wwdc', 'session', 'presentation', 'talk', 'keynote',
+    'demo', 'tutorial', 'walkthrough', 'overview', 'introduction',
+    'deep dive', 'best practices', 'tips', 'tricks',
+  ];
+
+  const queryLower = query.toLowerCase();
+  const hasVideoKeyword = videoKeywords.some(keyword => queryLower.includes(keyword));
+
+  // Also check for year patterns (e.g., "2024", "2025", "wwdc24")
+  const hasYearPattern = /\b(20[2-9][0-9]|wwdc[2-9][0-9])\b/i.test(query);
+
+  if (hasVideoKeyword || hasYearPattern) {
+    return `## 💡 Looking for WWDC Videos?
+
+This search covers documentation and samples, but not WWDC videos. For WWDC content, try these tools:
+
+- **\`list_wwdc_videos\`** - Browse WWDC videos by year, topic, or code availability
+- **\`search_wwdc_content\`** - Search through video transcripts and code examples
+- **\`browse_wwdc_topics\`** - Explore videos organized by topic categories
+
+---
+
+`;
+  }
+
+  return null;
 }
 
 /**

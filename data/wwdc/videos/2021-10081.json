@@ -1,0 +1,108 @@
+{
+  "id": "10081",
+  "year": "2021",
+  "url": "https://developer.apple.com/videos/play/wwdc2021/10081/",
+  "title": "Tap into virtual and physical game controllers",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Design",
+    "Essentials",
+    "Graphics & Games"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "♪ ♪ Hi, my name is Nat. And I work on Game Technologies at Apple. Thanks for joining me again this year to catch up about game input for iOS, tvOS, and macOS. Today, I’m going to start with a quick recap of both the how and the why for anybody new to game input on Apple platforms. Next, I’m going to show you a new type of virtual game controller, and we’ll write a little code together. Finally, I want to talk about more actual physical controllers and work through some of our new features. So let’s start out with our review. The game controller framework’s goal is making it easy to add support for all different kinds of efficient, low-latency input across Apple platforms. By abstracting input hardware through the common API, the game controller framework lets you write your input code once without having to worry about how input may have been remapped or the differences among specific controllers, keyboards, or pointing devices. On iOS, iPadOS, and tvOS, players can create system-wide and per-application game controller input remappings, which help make your games more customizable and more accessible. And on all platforms, you can build your UI to reflect the symbols and capabilities of the specific controllers the player is holding. So whether your player is on team circle-square-triangle-cross or on team A-B-X-Y, your game UI will look right for them. The basics of the game controller framework is reacting to notifications about different kinds of GCDevice objects connecting and disconnecting and either polling active devices for input state or setting up value-changed handlers to be notified about input state changes. When controllers connect or disconnect from the system, GCController objects are created and removed, and you are sent GCControllerDidConnect and GCControllerDidDisconnect notifications. It’s the same pattern with GCKeyboard objects when keyboards connect or disconnect, and with GCMouse objects when pointing devices connect or disconnect. All you need to do is add an observer to find out when, for example, a GCController objects connects or disconnects. Then it’s up to you whether to set up those change handlers to notify you when input state changes, or to poll the state of the controller elsewhere. This is the same pattern you should use whether it’s a controller, a keyboard, or a pointing device. We’ve seen so many great new games supporting game controllers and huge customer interest in games that support controllers well. That’s why we really want to help people find games that support game controllers. When we know a game supports game controllers, we badge it in the App Store with the Controller Supported badge. That looks like a little thing, right? But it’s something players are looking for if they love using their controllers, and I know it’s a badge I look for. And we’re always on the lookout to curate and promote apps that work great with game controllers. There are multiple sections for games when we discover apps that make game controllers really shine. I can’t guarantee that your app will be chosen for promotion, but when you do a great job with controllers, players will definitely notice. So here’s all you have to do to mark your app’s support. In Xcode, just add the Game Controllers capability. This tags your application’s Info.plist with the game controller capability, and that’s all you need to do before submitting it to the App Store. When your game has this capability, we also know to include it in the per-app customization section of the Game Controller preferences panel. Players love the ability to tweak controls to their liking, and it’s a great way to improve your game’s accessibility. You don’t have to do anything to participate in input remapping, but when you tag your game, players can customize it specifically. Another terrific feature you get for free when you adopt the game controller framework is screenshots and video clips. Players can capture a screenshot or start and stop video clip recordings with a quick touch of the controller’s share button. Here I am playing Fox2.\n\nI can capture a screenshot by double-tapping on the Share button.\n\nThe screenshot lands right in my Camera Roll, to my Desktop if I’m on macOS, or it AirDrops to my phone from AppleTV. Now here’s what happens if I want to start and stop a screen recording using a long press of the Share button.  A little bit later, I’ve got some news about a new type of game clip recording we’ve added this year.\n\nMy last bit of advice about what gives a game polished controller support is the proper use of glyphs in your UI. Consider this hint to use a button to display your inventory. On an MFi or Xbox controller, we should show the Y button. On a PlayStation controller, we instead want to show a triangle. It may seem like a small thing, but wow, we really hear feedback about the wrong button names showing in your UI. You might consider another approach shown here of optionally representing positional button locations if it’s more appropriate for your game. Some players, especially new and young players, may more quickly recognize the location you’re showing them and they don’t have to glance down to try to read the button names.\n\nWe made it super easy to always show the right glyph, even if the player has remapped a button in the system remapping UI. So for example, if we have mapped the press of the X button to the A action, as shown here in the remapping preferences, and we want to ask the user to press the A action to continue, we actually want to show the X glyph when a developer asks for the glyph associated with the A action. To do this, we just query the sfSymbolsName of the A button, then use UIImage system image named to get an image to display. Now we’ll show the correct glyph based on the remapping. So that was my very quick recap. If you find you need more details, check out these other talks about game controllers from past WWDC conferences. So over the past few years, we’ve talked with a lot of developers bringing games to iOS and iPadOS. Many are games designed originally around game controller input, so they’re expecting two analog sticks, maybe a d-pad or touchpads, and digital button input. What we heard was that some of you had a hard time building consistent, great-feeling and great-looking touch-based input for these games. We heard that your touch input handling code was different from your keyboard, mouse, and game controller input code paths. To address this, I want to tell you about our new virtual on-screen controller which is compatible with all your existing game controller input code. These new on-screen controls for iPhone and iPad look amazing, and they’re carefully tuned for grip locations across hand sizes and for a great responsiveness and feel. They’re easy to add to your application and act just like a game controller. Instead of writing your own on-screen overlay UI and translating touch inputs into your game input system, these on-screen controls appear to your code just like game controller framework GCController objects, so your input logic can remain much more consistent. They’re customizable with your own symbols, and they integrate with your colors and style while still sharing elements of the design language of iOS and iPadOS. They adjust to a variety of layouts depending on whether you want just one button, three buttons, or a d-pad and multiple buttons. The core principle of the on-screen controller is that the left and the right regions are independently configured and that the layout is determined based on the configuration. Manual placement of elements is not supported. Per side, a configuration can be built with zero to four buttons and one of either a thumbstick, a d-pad, or a touchpad. There are haptics on the buttons and the sticks. And finally, configurations are fixed at the time of creation. You can show and hide elements, but you can’t add or remove them without creating a new virtual controller. So let’s take a look at what you do to choose a layout and show your on-screen virtual game controller. First, you create a GCControllerConfiguration identifying all the possible buttons and joysticks you will want to use. Then, you create a virtual controller from that configuration. Then, you can optionally do some configuration on the elements, such as setting custom shapes or having some elements hidden. Next, you tell the system to connect the controller, and that will trigger the same GCGameControllerDidConnect notification that you’re used to handling, and that gives you a GCController object. So let’s take a look at the code we would write to get a layout like what I’m showing here: a thumbstick on the left, a thumbstick on the right, and an A and B button on the right. It’s super easy. We start by creating a new GCVirtualControllerConfiguration object. Then we establish which elements we want. We want two thumbsticks and two buttons on the right-hand side, just like in our previous picture. Next we’ll create the GCVirtualController object using that configuration. And finally we’ll call connect; our standard GCControllerDidConnectNotification is going to arrive.\n\nSo that was easy. But how do we establish our own visuals for these buttons, like what I have in this picture? This is readily done by adjusting the GCVirtualController element configuration. To create this layout where I’ve changed the A button to indicate the spinning attack and to set the B button to indicate the jump, I just adjust the A button’s configuration to add a BezierPath. Then I set the B button to establish its BezierPath. It’s just as simple to show and hide different button elements using the config.hidden property. So you see, it doesn’t take much to customize these controls to just your liking. Okay, so let’s get back to the non-virtual world of physical controllers. There are so many great controllers for players to choose from. There are lots of Made for iPhone, MFi controllers, and we see new ones and improvements all the time. The standalone SteelSeries Nimbus+, now with L3/R3 thumbstick triggers and more system buttons is really terrific. I’m also a huge fan of the form-fitting Razer Kishi and the Backbone One. These types of form-fitting controllers are my new favorites to keep in my backpack. Of course, besides MFi controllers, we support the Sony DualShock 4 and Xbox One controllers on all Apple platforms, and players love the Xbox Elite V2 and the Xbox Adaptive controller support we added last year. We just added support in iOS 14.5 and macOS 11.3 for the latest generation of console controllers. The Sony DualSense controller and the Xbox Series X controllers are such great-feeling controllers, and they just work when you’re using the game controller framework. The Xbox Series X controller has a new dedicated Share button, and the DualSense has cool adaptive trigger technology. Let’s take a moment to dig into the adaptive triggers and how you can to put them to use. The DualSense adaptive triggers really allow you to improve game immersion through the use of force feedback. By dynamically applying a varying resistance to the trigger based on what the player is doing, you can emulate the feeling of pulling a bow string or a slingshot that’s under tension and many more sensations. I hope you get a chance to feel how great these triggers feel. The way to support adaptive triggers in the game controller framework is really straightforward. First, you need to verify that the physical input profile on the player’s controller is a DualSense. Next, you simply set the adaptive trigger effect you’re after with a method call. If you want to create a really dynamic effect, you can continuously read the state of the adaptive triggers and the game and adjust your effect accordingly. For example, you can apply more resistance as the trigger is pulled harder or as the player pulls a rope into greater tension. Finally, just like I remind my kids to turn out the lights when they leave a room, you need to make sure you turn off the adaptive trigger effect when you’re done. Let’s jump in to a quick code example to see how to achieve this in practice. So let’s say we have a game where a player can fire a slingshot to knock out some targets. The player can start aiming with the left trigger and pull back on the slingshot with the right trigger. We want to add an adaptive trigger effect as the player pulls back on the slingshot. First, we’ll want to make sure that the player’s controller is a DualSense. Since our game is a single-player game, we can just check GCController.current to get the active controller. After that, we can grab the DualSense’s right adaptive trigger. In this example, we’ll only want to apply a resistive force when the player is aiming their slingshot. We’ll dynamically calculate the strength of our applied resistance based on how far the trigger has been pulled. If the trigger has not been pulled all the way back, we’ll apply a feedback effect to the adaptive triggers. The feedback effect provides a constant resistance to your finger as you pull the trigger. Now, otherwise, if the trigger has been pulled all the way back, we’ll apply a vibration effect with a low frequency. This effect causes the triggers to vibrate, emulating the feeling of struggling to keep that slingshot pulled back and in tension. Finally, once the player fires their slingshot, we want to turn the adaptive trigger off. Our final topic of conversation today is about media capture through game controller Share buttons. Last year, we introduced some media capture gestures on a controller’s designated Share button. The Share button is usually mapped to the upper left-most system button on a controller, but some controllers like the Xbox Series X have a button labeled Share elsewhere. As I showed you earlier, the system gestures for media capture are a double press to capture a screenshot to your Camera Roll, and a long press to start and stop a ReplayKit recording. This year, we’re adding a super cool new type of media capture, 15-second highlights. So now instead of having to remember to start and stop your recording, players can just turn on automatic background buffering, which will let them save the last 15 seconds of gameplay any time they long press. ReplayKit clips are an awesome way to let gamers capture a great boss battle, an amazing combo move, or an epic fail. To choose between our automatic form of starting and stopping a longer recording or starting the background recording which you can then save 15-second highlights from, just toggle the global or per-application setting in the Game Controller preferences panel. If you want to trigger your own highlights for important points in your game, there’s an API for that. That will trigger those 15-second snapshots as well. Whew. Okay. So that wraps up our game input news for this year. Before you go, please remember to tag your app with game controller support to get per-app customization and so the App Store can categorize your app properly. We really look forward to seeing how you make use of game controller, keyboard, and mouse input in your games. If you’re ready to watch more presentations about features for game developers and for gamers, check out “Discover rolling clips with ReplayKit” and “What’s new in Game Center” as well. Thanks so much for watching. We hope to see you in person again soon. For now, we’re looking forward to meeting you online and helping answer your questions. [upbeat music]",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "2:06",
+      "title": "GameController Basics",
+      "language": "swift",
+      "code": "func setupGameController() {\n    // Add handler for when controller connects.\n    NotificationCenter.default.addObserver(\n        forName: NSNotification.Name.GCControllerDidConnect,\n        object: nil,\n        queue: nil)\n        { (note) in\n            guard let _controller = note.object? as GCController else {\n              return\n            }\n            // Add controller input change handlers.\n            _controller.physicalInputProfile[GCInputButtonA]?.valueChangedHandler = { ... }\n            _controller.physicalInputProfile[GCInputButtonB]?.valueChangedHandler = { ... }\n        }\n\n    // Add handler for when controller disconnects.\n    NotificationCenter.default.addObserver(\n        forName: NSNotification.Name.GCControllerDidDisconnect,\n        object: nil,\n        queue: nil)\n        { (note) in ... }\n}\n\n// Polling for controller input.\nfunc checkInput() {\n    if controller.physicalInputProfile[GCInputButtonA]?.pressed { ... }\n    if controller.physicalInputProfile[GCInputButtonB]?.pressed { ... }\n}"
+    },
+    {
+      "timestamp": "8:42",
+      "title": "Virtual Controller Initial",
+      "language": "swift",
+      "code": "// Creating an on-screen controller\n\nlet virtualConfiguration = GCVirtualControllerConfiguration()\n\nvirtualConfiguration.elements = [GCInputLeftThumbstick,\n                                 GCInputRightThumbstick,\n                                 GCInputButtonA,\n                                 GCInputButtonB]\n\nlet virtualController = GCVirtualController(configuration: virtualConfiguration)\n\nvirtualController.connect()"
+    },
+    {
+      "timestamp": "9:17",
+      "title": "Customizing Buttons",
+      "language": "swift",
+      "code": "// Creating customized buttons\n\nvc.changeElement(GCInputButtonA) { \n  config in\n    let spinningPath = UIBezierPath()\n    // load or draw the spinning attack path\n    config.path = spinningPath\n    return config\n}\n\nvc.changeElement(GCInputButtonB) {\n  config in\n    let jumpPath = UIBezierPath()\n    // load or draw the jump path\n    config.path = jumpPath\n    return config\n}"
+    },
+    {
+      "timestamp": "12:06",
+      "title": "DualSense Adaptive Triggers",
+      "language": "swift",
+      "code": "func updateControllerAdaptiveTriggers() {\n  guard let dualSense = GCController.current?.physicalInputProfile as? GCDualSenseGamepad\n    else {\n        return\n    }\n  let adaptiveTrigger = dualSense.rightTrigger\n  if playerIsPullingSlingshot {\n    let resistiveStrength = min(1, 0.4 + adaptiveTrigger.value)\n    if adaptiveTrigger.value < 0.9 {\n      adaptiveTrigger.setModeFeedbackWithStartPosition(\n        0,\n        resistiveStrength: resistiveStrength)\n    } else {\n      adaptiveTrigger.setModeVibrationWithStartPosition(\n        0,\n        amplitude: resistiveStrength,\n        frequency: 0.03)\n    }\n  } else if adaptiveTrigger.mode != .off {\n    adaptiveTrigger.setModeOff()\n  }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Design",
+        "url": "https://developer.apple.com/design/"
+      },
+      {
+        "title": "Game Controller",
+        "url": "https://developer.apple.com/documentation/GameController"
+      },
+      {
+        "title": "GCVirtualController",
+        "url": "https://developer.apple.com/documentation/GameController/GCVirtualController"
+      },
+      {
+        "title": "Documentation",
+        "url": "https://developer.apple.com/documentation/"
+      },
+      {
+        "title": "Forums",
+        "url": "https://developer.apple.com/forums/"
+      },
+      {
+        "title": "Apple Design Awards",
+        "url": "https://developer.apple.com/design/awards/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10081/5/113EE58D-480B-4192-A7E1-8088B2A0BC72/downloads/wwdc2021-10081_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2021/10081/5/113EE58D-480B-4192-A7E1-8088B2A0BC72/downloads/wwdc2021-10081_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10123",
+      "year": "2023",
+      "title": "Bring your game to Mac, Part 1: Make a game plan",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10123"
+    },
+    {
+      "id": "10065",
+      "year": "2022",
+      "title": "Plug-in and play: Add Apple frameworks to your Unity game projects",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10065"
+    },
+    {
+      "id": "10101",
+      "year": "2021",
+      "title": "Discover rolling clips with ReplayKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10101"
+    },
+    {
+      "id": "10614",
+      "year": "2020",
+      "title": "Advancements in Game Controllers",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10614"
+    },
+    {
+      "id": "10617",
+      "year": "2020",
+      "title": "Bring keyboard and mouse gaming to iPad",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10617"
+    }
+  ],
+  "extractedAt": "2025-07-18T09:37:03.377Z"
+}
