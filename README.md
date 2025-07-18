@@ -1,27 +1,27 @@
-# Apple Docs MCP
+# Apple Docs MCP - Apple Developer Documentation Model Context Protocol Server
 
 [![npm version](https://badge.fury.io/js/@kimsungwhee%2Fapple-docs-mcp.svg)](https://badge.fury.io/js/@kimsungwhee%2Fapple-docs-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A powerful Model Context Protocol (MCP) server that provides seamless access to Apple Developer Documentation through natural language queries. Search, explore, and get detailed information about Apple frameworks, APIs, sample code, and more directly in your AI-powered development environment.
+Apple Developer Documentation MCP Server - Access Apple's official developer docs, frameworks, APIs, SwiftUI, UIKit, and WWDC videos through Model Context Protocol. Search iOS, macOS, watchOS, tvOS, and visionOS documentation with AI-powered natural language queries. Get instant access to Swift/Objective-C code examples, API references, and technical guides directly in Claude, Cursor, or any MCP-compatible AI assistant.
 
 **English** | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md)
 
 ## ✨ Features
 
-- 🔍 **Smart Search**: Intelligent search across Apple Developer Documentation with enhanced result formatting
-- 📚 **Complete Documentation Access**: Full access to Apple's JSON API for detailed documentation content
-- 🔧 **Framework Index**: Hierarchical API structure browsing for all Apple frameworks
-- 📋 **Technology Catalog**: Organized listing of all Apple technologies and frameworks by category
-- 📰 **Documentation Updates**: Track WWDC announcements, technology updates, and release notes
-- 🎯 **Technology Overviews**: Comprehensive guides for Apple platforms and technologies with hierarchical navigation
-- 💻 **Sample Code Library**: Browse and search complete working example projects demonstrating Apple technologies
-- 🎥 **WWDC Video Library**: Search and explore WWDC sessions with full transcripts, code examples, and resources
-- 🔗 **Related APIs Discovery**: Find related, similar, and alternative APIs with intelligent recommendations
-- 📊 **Platform Compatibility**: Analyze platform support and version compatibility across Apple's ecosystem
-- ⚡ **High Performance**: Memory-based caching system with optimized TTL per content type
-- 🌐 **Multi-Platform**: Support for iOS, macOS, watchOS, tvOS, and visionOS documentation
-- 🏷️ **Beta & Status Tracking**: Identify beta, deprecated, and new APIs with proper status indicators
+- 🔍 **Smart Search**: Intelligent search across Apple Developer Documentation for SwiftUI, UIKit, Foundation, CoreData, ARKit, and more
+- 📚 **Complete Documentation Access**: Full access to Apple's JSON API for Swift, Objective-C, and framework documentation
+- 🔧 **Framework Index**: Browse hierarchical API structures for iOS, macOS, watchOS, tvOS, visionOS frameworks
+- 📋 **Technology Catalog**: Explore Apple technologies including SwiftUI, UIKit, Metal, Core ML, Vision, and ARKit
+- 📰 **Documentation Updates**: Track WWDC 2024/2025 announcements, iOS 18, macOS 15, and latest SDK releases
+- 🎯 **Technology Overviews**: Comprehensive guides for Swift, SwiftUI, UIKit, and all Apple development platforms
+- 💻 **Sample Code Library**: Swift and Objective-C code examples for iOS, macOS, and cross-platform development
+- 🎥 **WWDC Video Library**: Search WWDC 2014-2025 sessions with transcripts, Swift/SwiftUI code examples, and resources
+- 🔗 **Related APIs Discovery**: Find SwiftUI views, UIKit controllers, and framework-specific API relationships
+- 📊 **Platform Compatibility**: iOS 13+, macOS 10.15+, watchOS 6+, tvOS 13+, visionOS compatibility analysis
+- ⚡ **High Performance**: Optimized for Xcode, Swift Playgrounds, and AI-powered development environments
+- 🌐 **Multi-Platform**: Complete iOS, iPadOS, macOS, watchOS, tvOS, and visionOS documentation support
+- 🏷️ **Beta & Status Tracking**: iOS 18 beta APIs, deprecated UIKit methods, new SwiftUI features tracking
 
 ## 🚀 Quick Start
 
@@ -233,7 +233,9 @@ npm install && npm run build
 "Search for SwiftUI animations"
 "Find withAnimation API documentation"
 "Look up async/await patterns in Swift"
-"Show me AlarmKit scheduling examples"
+"Show me UITableView delegate methods"
+"Search Core Data NSPersistentContainer examples"
+"Find AVFoundation video playback APIs"
 ```
 
 ### 📚 Documentation Access
@@ -242,6 +244,8 @@ npm install && npm run build
 "Show me withAnimation API with related APIs"
 "Get platform compatibility for SwiftData"
 "Access UIViewController documentation with similar APIs"
+"Show me NSManagedObjectContext documentation"
+"Get URLSession async/await methods"
 ```
 
 ### 🔧 Framework Exploration
@@ -250,6 +254,8 @@ npm install && npm run build
 "List all UIKit classes and methods"
 "Browse ARKit framework structure"
 "Get WeatherKit API hierarchy"
+"Explore Core ML model loading APIs"
+"Show Vision framework image analysis APIs"
 ```
 
 ### 🔗 API Discovery
@@ -353,7 +359,7 @@ npm install && npm run build
 | `list_wwdc_topics` | List all available WWDC topics | 19 topic categories from Swift to Spatial Computing |
 | `list_wwdc_years` | List all available WWDC years | Conference years with video counts |
 
-## 🏗️ Technical Architecture
+## 🏗️ Technical Architecture for Apple Developer Documentation Access
 
 ```
 apple-docs-mcp/
@@ -457,6 +463,8 @@ This project is not affiliated with or endorsed by Apple Inc. It uses publicly a
 <div align="center">
 
 **Made with ❤️ for the Apple Developer Community**
+
+Search Apple Developer Documentation | iOS Development | macOS Development | Swift Programming | SwiftUI | UIKit | Xcode | WWDC Videos | Model Context Protocol | MCP Server
 
 [Report Issues](https://github.com/kimsungwhee/apple-docs-mcp/issues) • [Request Features](https://github.com/kimsungwhee/apple-docs-mcp/issues/new) • [Documentation](https://github.com/kimsungwhee/apple-docs-mcp)
 

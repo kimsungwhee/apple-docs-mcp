@@ -1,27 +1,27 @@
-# Apple Docs MCP
+# Apple Docs MCP - Apple 开发者文档模型上下文协议服务器
 
 [![npm 版本](https://badge.fury.io/js/@kimsungwhee%2Fapple-docs-mcp.svg)](https://badge.fury.io/js/@kimsungwhee%2Fapple-docs-mcp)
 [![许可证: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-强大的模型上下文协议 (MCP) 服务器，通过自然语言查询提供对 Apple 开发者文档的无缝访问。在您的 AI 开发环境中直接搜索、探索和获取有关 Apple 框架、API、示例代码等的详细信息。
+Apple 开发者文档 MCP 服务器 - 通过模型上下文协议访问 Apple 官方开发文档、框架、API、SwiftUI、UIKit 和 WWDC 视频。使用 AI 自然语言查询搜索 iOS、macOS、watchOS、tvOS 和 visionOS 文档。在 Claude、Cursor 或任何兼容 MCP 的 AI 助手中即时获取 Swift/Objective-C 代码示例、API 参考和技术指南。
 
 [English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | **简体中文**
 
 ## ✨ 功能特性
 
-- 🔍 **智能搜索**: 跨 Apple 开发者文档的智能搜索，具有增强的结果格式化
-- 📚 **完整文档访问**: 完全访问 Apple JSON API 获取详细文档内容
-- 🔧 **框架索引**: 所有 Apple 框架的分层 API 结构浏览
-- 📋 **技术目录**: 按类别组织的所有 Apple 技术和框架列表
-- 📰 **文档更新**: 跟踪 WWDC 公告、技术更新和发布说明
-- 🎯 **技术概览**: Apple 平台和技术的综合指南，具有分层导航
-- 💻 **示例代码库**: 浏览和搜索演示 Apple 技术的完整工作示例项目
-- 🎥 **WWDC 视频库**: 搜索和探索 WWDC 会议，包含完整文字记录、代码示例和资源
-- 🔗 **相关 API 发现**: 通过智能推荐查找相关、类似和替代 API
-- 📊 **平台兼容性**: 分析 Apple 生态系统中的平台支持和版本兼容性
-- ⚡ **高性能**: 基于内存的缓存系统，按内容类型优化 TTL
-- 🌐 **多平台**: 支持 iOS、macOS、watchOS、tvOS 和 visionOS 文档
-- 🏷️ **Beta 和状态跟踪**: 识别 beta、已弃用和新 API，带有适当的状态指示器
+- 🔍 **智能搜索**: 智能搜索 SwiftUI、UIKit、Foundation、CoreData、ARKit 等 Apple 开发者文档
+- 📚 **完整文档访问**: 完全访问 Apple JSON API，获取 Swift、Objective-C 和框架文档
+- 🔧 **框架索引**: 浏览 iOS、macOS、watchOS、tvOS、visionOS 框架的分层 API 结构
+- 📋 **技术目录**: 探索包括 SwiftUI、UIKit、Metal、Core ML、Vision 和 ARKit 在内的 Apple 技术
+- 📰 **文档更新**: 跟踪 WWDC 2024/2025 公告、iOS 18、macOS 15 和最新 SDK 发布
+- 🎯 **技术概览**: Swift、SwiftUI、UIKit 和所有 Apple 开发平台的综合指南
+- 💻 **示例代码库**: iOS、macOS 和跨平台开发的 Swift 和 Objective-C 代码示例
+- 🎥 **WWDC 视频库**: 搜索 WWDC 2014-2025 会议，包含文字记录、Swift/SwiftUI 代码示例和资源
+- 🔗 **相关 API 发现**: 查找 SwiftUI 视图、UIKit 控制器和框架特定的 API 关系
+- 📊 **平台兼容性**: iOS 13+、macOS 10.15+、watchOS 6+、tvOS 13+、visionOS 兼容性分析
+- ⚡ **高性能**: 针对 Xcode、Swift Playgrounds 和 AI 驱动的开发环境进行优化
+- 🌐 **多平台**: 完整的 iOS、iPadOS、macOS、watchOS、tvOS 和 visionOS 文档支持
+- 🏷️ **Beta 和状态跟踪**: iOS 18 beta API、已弃用的 UIKit 方法、新 SwiftUI 功能跟踪
 
 ## 🚀 快速开始
 
@@ -459,6 +459,8 @@ MIT 许可证 - 详见 [LICENSE](LICENSE)。
 <div align="center">
 
 **为 Apple 开发者社区用 ❤️ 制作**
+
+搜索 Apple 开发者文档 | iOS 开发 | macOS 开发 | Swift 编程 | SwiftUI | UIKit | Xcode | WWDC 视频 | 模型上下文协议 | MCP 服务器
 
 [报告问题](https://github.com/kimsungwhee/apple-docs-mcp/issues) • [请求功能](https://github.com/kimsungwhee/apple-docs-mcp/issues/new) • [文档](https://github.com/kimsungwhee/apple-docs-mcp)
 

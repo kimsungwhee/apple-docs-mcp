@@ -1,27 +1,27 @@
-# Apple Docs MCP
+# Apple Docs MCP - Apple 開発者ドキュメント モデルコンテキストプロトコルサーバー
 
 [![npm バージョン](https://badge.fury.io/js/@kimsungwhee%2Fapple-docs-mcp.svg)](https://badge.fury.io/js/@kimsungwhee%2Fapple-docs-mcp)
 [![ライセンス: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-自然言語クエリを通じて Apple 開発者ドキュメントへのシームレスなアクセスを提供する強力なモデルコンテキストプロトコル（MCP）サーバー。AI を活用した開発環境で、Apple フレームワーク、API、サンプルコードなどを直接検索、探索、詳細情報を取得できます。
+Apple 開発者ドキュメント MCP サーバー - モデルコンテキストプロトコルで Apple 公式開発者ドキュメント、フレームワーク、API、SwiftUI、UIKit、WWDC ビデオにアクセス。AI 自然言語クエリで iOS、macOS、watchOS、tvOS、visionOS ドキュメントを検索。Claude、Cursor、または MCP 対応 AI アシスタントで Swift/Objective-C コード例、API リファレンス、技術ガイドを即座に取得。
 
 [English](README.md) | **日本語** | [한국어](README.ko.md) | [简体中文](README.zh-CN.md)
 
 ## ✨ 機能
 
-- 🔍 **スマート検索**: Apple 開発者ドキュメント全体にわたるインテリジェント検索と拡張結果フォーマット
-- 📚 **完全なドキュメントアクセス**: 詳細なドキュメントコンテンツのための Apple JSON API への完全アクセス
-- 🔧 **フレームワークインデックス**: すべての Apple フレームワークの階層 API 構造ブラウジング
-- 📋 **テクノロジーカタログ**: カテゴリ別に整理されたすべての Apple テクノロジーとフレームワークのリスト
-- 📰 **ドキュメント更新**: WWDC 発表、テクノロジー更新、リリースノートの追跡
-- 🎯 **テクノロジー概要**: Apple プラットフォームとテクノロジーの包括的なガイドと階層ナビゲーション
-- 💻 **サンプルコードライブラリ**: Apple テクノロジーを実演する完全な動作サンプルプロジェクトの閲覧と検索
-- 🎥 **WWDC ビデオライブラリ**: フルトランスクリプト、コード例、リソースを含む WWDC セッションの検索と探索
-- 🔗 **関連 API 発見**: インテリジェント推奨による関連、類似、代替 API の検索
-- 📊 **プラットフォーム互換性**: Apple エコシステム全体のプラットフォームサポートとバージョン互換性の分析
-- ⚡ **高性能**: コンテンツタイプごとに最適化された TTL を持つメモリベースキャッシュシステム
-- 🌐 **マルチプラットフォーム**: iOS、macOS、watchOS、tvOS、visionOS ドキュメントをサポート
-- 🏷️ **ベータ & ステータス追跡**: 適切なステータスインジケーターでベータ、非推奨、新しい API を識別
+- 🔍 **スマート検索**: SwiftUI、UIKit、Foundation、CoreData、ARKit などの Apple 開発者ドキュメントのインテリジェント検索
+- 📚 **完全なドキュメントアクセス**: Swift、Objective-C、フレームワークドキュメントのための Apple JSON API への完全アクセス
+- 🔧 **フレームワークインデックス**: iOS、macOS、watchOS、tvOS、visionOS フレームワークの階層 API 構造を閲覧
+- 📋 **テクノロジーカタログ**: SwiftUI、UIKit、Metal、Core ML、Vision、ARKit を含む Apple テクノロジーを探索
+- 📰 **ドキュメント更新**: WWDC 2024/2025 発表、iOS 18、macOS 15、最新 SDK リリースを追跡
+- 🎯 **テクノロジー概要**: Swift、SwiftUI、UIKit、すべての Apple 開発プラットフォームの包括的なガイド
+- 💻 **サンプルコードライブラリ**: iOS、macOS、クロスプラットフォーム開発のための Swift および Objective-C コード例
+- 🎥 **WWDC ビデオライブラリ**: WWDC 2014-2025 セッションを検索、トランスクリプト、Swift/SwiftUI コード例、リソース付き
+- 🔗 **関連 API 発見**: SwiftUI ビュー、UIKit コントローラー、フレームワーク固有の API 関係を検索
+- 📊 **プラットフォーム互換性**: iOS 13+、macOS 10.15+、watchOS 6+、tvOS 13+、visionOS 互換性分析
+- ⚡ **高性能**: Xcode、Swift Playgrounds、AI 駆動開発環境に最適化
+- 🌐 **マルチプラットフォーム**: 完全な iOS、iPadOS、macOS、watchOS、tvOS、visionOS ドキュメントサポート
+- 🏷️ **ベータ & ステータス追跡**: iOS 18 ベータ API、非推奨 UIKit メソッド、新しい SwiftUI 機能を追跡
 
 ## 🚀 クイックスタート
 
@@ -448,6 +448,8 @@ MIT ライセンス - 詳細は [LICENSE](LICENSE) をご覧ください。
 <div align="center">
 
 **Apple 開発者コミュニティのために ❤️ で作成**
+
+Apple 開発者ドキュメント検索 | iOS 開発 | macOS 開発 | Swift プログラミング | SwiftUI | UIKit | Xcode | WWDC ビデオ | モデルコンテキストプロトコル | MCP サーバー
 
 [問題を報告](https://github.com/kimsungwhee/apple-docs-mcp/issues) • [機能リクエスト](https://github.com/kimsungwhee/apple-docs-mcp/issues/new) • [ドキュメント](https://github.com/kimsungwhee/apple-docs-mcp)
 

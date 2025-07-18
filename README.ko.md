@@ -1,27 +1,27 @@
-# Apple Docs MCP
+# Apple Docs MCP - Apple 개발자 문서 모델 컨텍스트 프로토콜 서버
 
 [![npm 버전](https://badge.fury.io/js/@kimsungwhee%2Fapple-docs-mcp.svg)](https://badge.fury.io/js/@kimsungwhee%2Fapple-docs-mcp)
 [![라이선스: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-자연어 쿼리를 통해 Apple 개발자 문서에 원활하게 액세스할 수 있는 강력한 모델 컨텍스트 프로토콜(MCP) 서버입니다. AI 기반 개발 환경에서 직접 Apple 프레임워크, API, 샘플 코드 등을 검색, 탐색하고 상세 정보를 얻을 수 있습니다.
+Apple 개발자 문서 MCP 서버 - 모델 컨텍스트 프로토콜을 통해 Apple 공식 개발자 문서, 프레임워크, API, SwiftUI, UIKit 및 WWDC 비디오에 액세스하세요. AI 기반 자연어 쿼리로 iOS, macOS, watchOS, tvOS, visionOS 문서를 검색합니다. Claude, Cursor 또는 MCP 호환 AI 어시스턴트에서 Swift/Objective-C 코드 예제, API 레퍼런스 및 기술 가이드를 즉시 확인할 수 있습니다.
 
 [English](README.md) | [日本語](README.ja.md) | **한국어** | [简体中文](README.zh-CN.md)
 
 ## ✨ 기능
 
-- 🔍 **스마트 검색**: Apple 개발자 문서 전반에 걸친 지능적 검색과 향상된 결과 포맷팅
-- 📚 **완전한 문서 액세스**: 상세한 문서 내용을 위한 Apple JSON API 완전 액세스
-- 🔧 **프레임워크 인덱스**: 모든 Apple 프레임워크의 계층적 API 구조 탐색
-- 📋 **기술 카탈로그**: 카테고리별로 정리된 모든 Apple 기술 및 프레임워크 목록
-- 📰 **문서 업데이트**: WWDC 발표, 기술 업데이트, 릴리스 노트 추적
-- 🎯 **기술 개요**: Apple 플랫폼 및 기술에 대한 포괄적인 가이드와 계층적 탐색
-- 💻 **샘플 코드 라이브러리**: Apple 기술을 보여주는 완전한 작업 예제 프로젝트를 탐색하고 검색
-- 🎥 **WWDC 비디오 라이브러리**: 전체 트랜스크립트, 코드 예제 및 리소스를 포함한 WWDC 세션 검색 및 탐색
-- 🔗 **관련 API 발견**: 지능적 추천을 통한 관련, 유사 및 대안 API 찾기
-- 📊 **플랫폼 호환성**: Apple 생태계 전반의 플랫폼 지원 및 버전 호환성 분석
-- ⚡ **고성능**: 콘텐츠 타입별 최적화된 TTL을 가진 메모리 기반 캐싱 시스템
-- 🌐 **멀티플랫폼**: iOS, macOS, watchOS, tvOS, visionOS 문서 지원
-- 🏷️ **베타 및 상태 추적**: 적절한 상태 표시기로 베타, 사용 중단 및 새 API 식별
+- 🔍 **스마트 검색**: SwiftUI, UIKit, Foundation, CoreData, ARKit 등 Apple 개발자 문서 지능형 검색
+- 📚 **완전한 문서 액세스**: Swift, Objective-C 및 프레임워크 문서를 위한 Apple JSON API 완전 액세스
+- 🔧 **프레임워크 인덱스**: iOS, macOS, watchOS, tvOS, visionOS 프레임워크의 계층적 API 구조 탐색
+- 📋 **기술 카탈로그**: SwiftUI, UIKit, Metal, Core ML, Vision, ARKit을 포함한 Apple 기술 탐색
+- 📰 **문서 업데이트**: WWDC 2024/2025 발표, iOS 18, macOS 15 및 최신 SDK 릴리스 추적
+- 🎯 **기술 개요**: Swift, SwiftUI, UIKit 및 모든 Apple 개발 플랫폼의 포괄적인 가이드
+- 💻 **샘플 코드 라이브러리**: iOS, macOS 및 크로스 플랫폼 개발을 위한 Swift 및 Objective-C 코드 예제
+- 🎥 **WWDC 비디오 라이브러리**: WWDC 2014-2025 세션 검색, 트랜스크립트, Swift/SwiftUI 코드 예제 및 리소스 포함
+- 🔗 **관련 API 발견**: SwiftUI 뷰, UIKit 컨트롤러 및 프레임워크별 API 관계 찾기
+- 📊 **플랫폼 호환성**: iOS 13+, macOS 10.15+, watchOS 6+, tvOS 13+, visionOS 호환성 분석
+- ⚡ **고성능**: Xcode, Swift Playgrounds 및 AI 기반 개발 환경에 최적화
+- 🌐 **멀티플랫폼**: 완전한 iOS, iPadOS, macOS, watchOS, tvOS, visionOS 문서 지원
+- 🏷️ **베타 및 상태 추적**: iOS 18 베타 API, 사용 중단된 UIKit 메서드, 새로운 SwiftUI 기능 추적
 
 ## 🚀 빠른 시작
 
@@ -449,6 +449,8 @@ MIT 라이선스 - 자세한 내용은 [LICENSE](LICENSE)를 참조하세요.
 <div align="center">
 
 **Apple 개발자 커뮤니티를 위해 ❤️로 제작**
+
+Apple 개발자 문서 검색 | iOS 개발 | macOS 개발 | Swift 프로그래밍 | SwiftUI | UIKit | Xcode | WWDC 비디오 | 모델 컨텍스트 프로토콜 | MCP 서버
 
 [문제 신고](https://github.com/kimsungwhee/apple-docs-mcp/issues) • [기능 요청](https://github.com/kimsungwhee/apple-docs-mcp/issues/new) • [문서](https://github.com/kimsungwhee/apple-docs-mcp)
 
