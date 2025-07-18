@@ -16,12 +16,12 @@ export function convertToJsonApiUrl(webUrl: string): string | null {
 
     // Extract the path from the URL
     const urlObj = new URL(webUrl);
-    
+
     // Check if it's an Apple Developer URL
     if (urlObj.hostname !== 'developer.apple.com') {
       return null;
     }
-    
+
     let path = urlObj.pathname;
 
     // For documentation URLs, format for the JSON API

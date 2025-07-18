@@ -11,7 +11,7 @@ export class MemoryCache {
   private hits = 0;
   private misses = 0;
 
-  constructor(maxSize: number = 1000, defaultTTL: number = 30 * 60 * 1000) { // 30 minutes default
+  constructor(maxSize: number = 1000, defaultTTL: number = 30 * 60 * 1000) {
     this.maxSize = maxSize;
     this.defaultTTL = defaultTTL;
 
@@ -116,16 +116,16 @@ export class MemoryCache {
   /**
    * Get cache statistics
    */
-  getStats(): { 
-    size: number; 
-    maxSize: number; 
+  getStats(): {
+    size: number;
+    maxSize: number;
     hitRate: string;
     hits: number;
     misses: number;
-  } {
+    } {
     const total = this.hits + this.misses;
     const hitRate = total > 0 ? (this.hits / total * 100).toFixed(2) + '%' : '0.00%';
-    
+
     return {
       size: this.cache.size,
       maxSize: this.maxSize,
@@ -239,17 +239,17 @@ export function withCache<T = any>(
     if (!descriptor) {
       throw new Error('withCache decorator requires a method descriptor');
     }
-    
+
     const method = descriptor.value;
     if (!method) {
       throw new Error('withCache decorator can only be applied to methods');
     }
-    
+
     const isAsync = method.constructor.name === 'AsyncFunction';
 
     descriptor.value = function (...args: any[]): any {
       const key = keyGenerator ? keyGenerator(...args) : JSON.stringify(args);
-      
+
       // Try to get from cache first
       const cached = cache.get<T>(key);
       if (cached !== undefined) {
@@ -258,7 +258,7 @@ export function withCache<T = any>(
 
       // Execute the method
       const result = method.apply(this, args);
-      
+
       // Handle both sync and async methods
       if (isAsync || result instanceof Promise) {
         return Promise.resolve(result).then((data) => {
@@ -274,7 +274,7 @@ export function withCache<T = any>(
         return result;
       }
     };
-    
+
     return descriptor;
   };
 }

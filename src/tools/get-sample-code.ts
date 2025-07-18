@@ -1,6 +1,7 @@
 import { APPLE_URLS } from '../utils/constants.js';
 import { httpClient } from '../utils/http-client.js';
 import { sampleCodeCache, generateUrlCacheKey } from '../utils/cache.js';
+import { normalizeFrameworkName } from '../utils/framework-mapper.js';
 
 // Types for sample code responses
 interface SampleCodeMetadata {
@@ -207,7 +208,7 @@ function parseSampleCodes(content: SampleCodeContent, index: SampleCodeIndex): P
  */
 function deduplicateSampleCodes(sampleCodes: ParsedSampleCode[]): ParsedSampleCode[] {
   const uniqueCodes = new Map<string, ParsedSampleCode>();
-  
+
   for (const code of sampleCodes) {
     const existing = uniqueCodes.get(code.path);
     if (!existing) {
@@ -223,7 +224,7 @@ function deduplicateSampleCodes(sampleCodes: ParsedSampleCode[]): ParsedSampleCo
       });
     }
   }
-  
+
   return Array.from(uniqueCodes.values());
 }
 
@@ -248,14 +249,14 @@ function processSampleCodeNodes(
     } else if (node.type === 'sampleCode' && node.path) {
       // Try to extract framework from path first
       const frameworkFromPath = extractFrameworkFromPath(node.path);
-      
+
       // Convert path to doc URL format for matching with framework map
       const docUrl = pathToDocUrl(node.path);
       const frameworkFromMap = frameworkMap.get(docUrl);
-      
+
       // Priority: path > map > groupMarker
       const framework = normalizeFrameworkName(
-        frameworkFromPath || frameworkFromMap || currentFramework
+        frameworkFromPath || frameworkFromMap || currentFramework,
       );
 
       sampleCodes.push({
@@ -294,117 +295,6 @@ function extractFrameworkFromPath(path: string): string | null {
 }
 
 /**
- * Normalizes framework names for consistency
- */
-function normalizeFrameworkName(framework: string): string {
-  if (!framework) return '';
-  
-  // Handle common variations
-  const normalized = framework.trim();
-  
-  // Map variations to canonical names (expanded list)
-  const frameworkMappings: Record<string, string> = {
-    // UI Frameworks
-    'swiftui': 'SwiftUI',
-    'uikit': 'UIKit',
-    'appkit': 'AppKit',
-    'widgetkit': 'WidgetKit',
-    'watchkit': 'WatchKit',
-    
-    // Foundation
-    'foundation': 'Foundation',
-    'combine': 'Combine',
-    'swift': 'Swift',
-    
-    // Data & Storage
-    'coredata': 'Core Data',
-    'cloudkit': 'CloudKit',
-    'userdefaults': 'UserDefaults',
-    
-    // Graphics & Games
-    'arkit': 'ARKit',
-    'realitykit': 'RealityKit',
-    'scenekit': 'SceneKit',
-    'spritekit': 'SpriteKit',
-    'gamekit': 'GameKit',
-    'gameplaykit': 'GameplayKit',
-    'metal': 'Metal',
-    'metalkit': 'MetalKit',
-    'coregraphics': 'Core Graphics',
-    'coreimage': 'Core Image',
-    'coreanimation': 'Core Animation',
-    'vision': 'Vision',
-    'visionkit': 'VisionKit',
-    
-    // Services
-    'storekit': 'StoreKit',
-    'storekit2': 'StoreKit',
-    'healthkit': 'HealthKit',
-    'homekit': 'HomeKit',
-    'mapkit': 'MapKit',
-    'musickit': 'MusicKit',
-    'photokit': 'PhotoKit',
-    'pushkit': 'PushKit',
-    'callkit': 'CallKit',
-    'passkit': 'PassKit',
-    
-    // ML & AI
-    'coreml': 'CoreML',
-    'createml': 'CreateML',
-    'naturallanguage': 'Natural Language',
-    'speech': 'Speech',
-    'soundanalysis': 'Sound Analysis',
-    'foundationmodels': 'Foundation Models',
-    
-    // Media
-    'avfoundation': 'AVFoundation',
-    'avkit': 'AVKit',
-    'coreaudio': 'Core Audio',
-    'coremedia': 'Core Media',
-    'mediaplayer': 'MediaPlayer',
-    
-    // System
-    'network': 'Network',
-    'networkextension': 'Network Extension',
-    'security': 'Security',
-    'coremotion': 'Core Motion',
-    'corelocation': 'Core Location',
-    'corebluetooth': 'Core Bluetooth',
-    'corenfc': 'Core NFC',
-    'eventkit': 'EventKit',
-    'contacts': 'Contacts',
-    'contactsui': 'ContactsUI',
-    
-    // Web & Connectivity
-    'webkit': 'WebKit',
-    'safariservices': 'Safari Services',
-    'authenticationservices': 'Authentication Services',
-    
-    // Development
-    'xctest': 'XCTest',
-    'xcode': 'Xcode',
-    'swiftdata': 'SwiftData',
-    'swiftcharts': 'Swift Charts',
-    
-    // WWDC
-    'wwdc25': 'WWDC25',
-    'wwdc24': 'WWDC24',
-    'wwdc23': 'WWDC23',
-    'wwdc22': 'WWDC22',
-    'wwdc21': 'WWDC21',
-    
-    // Generic categories (not frameworks but used in grouping)
-    'games': 'Games',
-    'graphics': 'Graphics',
-    'audio': 'Audio and music',
-    'app frameworks': 'App frameworks',
-  };
-  
-  const lower = normalized.toLowerCase();
-  return frameworkMappings[lower] || normalized;
-}
-
-/**
  * Converts a path to doc URL format
  */
 function pathToDocUrl(path: string): string {
@@ -421,20 +311,20 @@ function applySampleCodeFilters(sampleCodes: ParsedSampleCode[], filters: Sample
     if (filters.framework) {
       const normalizedFilterFramework = normalizeFrameworkName(filters.framework);
       const normalizedCodeFramework = normalizeFrameworkName(code.framework || '');
-      
+
       // Check for exact match or inclusion
       const frameworkLower = normalizedFilterFramework.toLowerCase();
       const codeFrameworkLower = normalizedCodeFramework.toLowerCase();
-      
+
       // Also check if the filter term appears in the title or path
       const titleLower = code.title.toLowerCase();
       const pathLower = code.path.toLowerCase();
-      
-      const frameworkMatch = frameworkLower === codeFrameworkLower || 
+
+      const frameworkMatch = frameworkLower === codeFrameworkLower ||
                            codeFrameworkLower.includes(frameworkLower) ||
                            titleLower.includes(frameworkLower) ||
                            pathLower.includes(frameworkLower);
-      
+
       if (!frameworkMatch) {
         return false;
       }
@@ -450,10 +340,10 @@ function applySampleCodeFilters(sampleCodes: ParsedSampleCode[], filters: Sample
     // Search query filter - enhanced matching
     if (filters.searchQuery) {
       const query = filters.searchQuery.toLowerCase();
-      
+
       // Score-based matching for better relevance
       let matchScore = 0;
-      
+
       // Title match (highest weight)
       const titleLower = code.title.toLowerCase();
       if (titleLower === query) {
@@ -463,25 +353,25 @@ function applySampleCodeFilters(sampleCodes: ParsedSampleCode[], filters: Sample
       } else if (titleLower.includes(query)) {
         matchScore += 3; // Contains query
       }
-      
+
       // Framework match
       const frameworkLower = (code.framework || '').toLowerCase();
       if (frameworkLower.includes(query)) {
         matchScore += 2;
       }
-      
+
       // Path match (check if query is in the path)
       const pathLower = code.path.toLowerCase();
       if (pathLower.includes(query)) {
         matchScore += 1;
       }
-      
+
       // Description match (if available)
       const descriptionLower = (code.description || '').toLowerCase();
       if (descriptionLower.includes(query)) {
         matchScore += 1;
       }
-      
+
       // Only include if there's at least one match
       if (matchScore === 0) {
         return false;
@@ -560,7 +450,7 @@ function formatSampleCodeResult(
   const sortedCategories = Array.from(byCategory.keys()).sort((a, b) => {
     const aIsWWDC = a.match(/^WWDC(\d+)$/);
     const bIsWWDC = b.match(/^WWDC(\d+)$/);
-    
+
     if (aIsWWDC && bIsWWDC) {
       // Sort WWDC by year descending
       return parseInt(bIsWWDC[1]) - parseInt(aIsWWDC[1]);
@@ -569,7 +459,7 @@ function formatSampleCodeResult(
     } else if (bIsWWDC) {
       return 1;
     }
-    
+
     return a.localeCompare(b); // Alphabetical for non-WWDC
   });
 
@@ -588,7 +478,7 @@ function formatSampleCodeResult(
   for (const category of sortedCategories) {
     const codes = byCategory.get(category)!;
     const nonFeaturedCodes = codes.filter(c => !c.featured);
-    
+
     if (nonFeaturedCodes.length > 0) {
       lines.push(`## ${category}`);
       lines.push('');
@@ -623,10 +513,10 @@ function formatSampleCodeItem(code: ParsedSampleCode, showFramework: boolean = t
   if (code.beta) {
     badges.push('🧪 Beta');
   }
-  
+
   // Don't duplicate the featured badge as it's already in the section header
   const badgeStr = badges.length > 0 ? ` ${badges.join(' ')}` : '';
-  
+
   // Framework info (only if requested and not in a framework-specific section)
   const frameworkStr = showFramework && code.framework ? ` (${code.framework})` : '';
 

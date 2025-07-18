@@ -2,6 +2,7 @@ import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { technologyOverviewsCache, generateUrlCacheKey } from '../utils/cache.js';
 import { APPLE_URLS } from '../utils/constants.js';
 import { httpClient } from '../utils/http-client.js';
+import { logger } from '../utils/logger.js';
 
 
 export const getTechnologyOverviewsTool: Tool = {
@@ -82,7 +83,7 @@ export async function handleGetTechnologyOverviews(
   limit: number = 50,
 ): Promise<string> {
   try {
-    console.error('Fetching technology overviews...');
+    logger.info('Fetching technology overviews...');
 
     // Generate cache key
     const cacheKey = generateUrlCacheKey('technology-overviews', {
@@ -96,7 +97,7 @@ export async function handleGetTechnologyOverviews(
     // Try to get from cache first
     const cachedResult = technologyOverviewsCache.get<string>(cacheKey);
     if (cachedResult) {
-      console.error('Technology overviews cache hit');
+      logger.debug('Technology overviews cache hit');
       return cachedResult;
     }
 
@@ -126,7 +127,7 @@ export async function handleGetTechnologyOverviews(
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
-    console.error('Error fetching technology overviews:', error);
+    logger.error('Error fetching technology overviews:', error);
     return `Error: Failed to fetch technology overviews: ${errorMessage}`;
   }
 }

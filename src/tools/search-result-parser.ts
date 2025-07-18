@@ -2,7 +2,7 @@
  * Search result parsing utilities
  */
 
-import * as cheerio from 'cheerio';
+import type * as cheerio from 'cheerio';
 
 export interface SearchResult {
   title: string;
@@ -32,13 +32,13 @@ const UNSUPPORTED_TYPES = ['general', 'video', 'forums', 'news'];
  */
 export function extractResultType(element: cheerio.Cheerio<any>): string {
   const classes = element.attr('class')?.split(' ') ?? [];
-  
+
   for (const className of classes) {
     if (className !== 'search-result' && className.trim()) {
       return className;
     }
   }
-  
+
   return 'other';
 }
 
@@ -51,12 +51,12 @@ export function isResultTypeSupported(resultType: string, filterType: string): b
   if (!allowedTypes.includes(resultType)) {
     return false;
   }
-  
+
   // Exclude known unsupported types
   if (UNSUPPORTED_TYPES.includes(resultType)) {
     return false;
   }
-  
+
   return true;
 }
 
@@ -66,14 +66,14 @@ export function isResultTypeSupported(resultType: string, filterType: string): b
 export function extractTitleAndUrl(resultItem: cheerio.Cheerio<any>): { title: string; url: string } {
   const titleElement = resultItem.find('.result-title');
   const title = titleElement.text().trim();
-  
+
   const urlElement = titleElement.find('a');
   let url = urlElement.attr('href') ?? '';
-  
+
   if (url && url.startsWith('/')) {
     url = `https://developer.apple.com${url}`;
   }
-  
+
   return { title, url };
 }
 
@@ -81,23 +81,25 @@ export function extractTitleAndUrl(resultItem: cheerio.Cheerio<any>): { title: s
  * Check if URL is supported
  */
 export function isUrlSupported(url: string): boolean {
-  if (!url) return false;
-  
+  if (!url) {
+    return false;
+  }
+
   // Skip non-documentation URLs
   if (!url.includes('/documentation/')) {
     return false;
   }
-  
+
   // Skip download links and zip files
   if (url.includes('download.apple.com') || url.includes('.zip')) {
     return false;
   }
-  
+
   // Skip human interface guidelines
   if (url.includes('/design/human-interface-guidelines/')) {
     return false;
   }
-  
+
   return true;
 }
 
@@ -116,11 +118,11 @@ export function extractFramework(resultItem: cheerio.Cheerio<any>, url: string):
   // Try to extract from link text
   const linkText = resultItem.find('.result-link').text().trim();
   const frameworkMatch = linkText.match(/^([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)\s+[>›]/);
-  
+
   if (frameworkMatch) {
     return frameworkMatch[1];
   }
-  
+
   // Try to extract from URL
   const urlMatch = url.match(/\/documentation\/([^\/]+)/);
   if (urlMatch) {
@@ -130,7 +132,7 @@ export function extractFramework(resultItem: cheerio.Cheerio<any>, url: string):
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
   }
-  
+
   return undefined;
 }
 
@@ -140,7 +142,7 @@ export function extractFramework(resultItem: cheerio.Cheerio<any>, url: string):
 export function extractBetaStatus(resultItem: cheerio.Cheerio<any>): boolean {
   const titleText = resultItem.find('.result-title').text();
   const descriptionText = resultItem.find('.result-description').text();
-  
+
   return titleText.includes('Beta') || descriptionText.includes('Beta');
 }
 
@@ -149,24 +151,24 @@ export function extractBetaStatus(resultItem: cheerio.Cheerio<any>): boolean {
  */
 export function parseSearchResult(
   element: cheerio.Cheerio<any>,
-  filterType: string
+  filterType: string,
 ): SearchResult | null {
   const resultType = extractResultType(element);
-  
+
   if (!isResultTypeSupported(resultType, filterType)) {
     return null;
   }
-  
+
   const { title, url } = extractTitleAndUrl(element);
-  
+
   if (!isUrlSupported(url)) {
     return null;
   }
-  
+
   const description = extractDescription(element);
   const framework = extractFramework(element, url);
   const beta = extractBetaStatus(element);
-  
+
   return {
     title,
     url,

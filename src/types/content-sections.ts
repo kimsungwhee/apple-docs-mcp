@@ -19,9 +19,9 @@ export interface ContentSection {
 export interface ContentItem {
   type: string;
   text?: string;
-  inlineContent?: Array<{ 
+  inlineContent?: Array<{
     type: string;
-    text?: string; 
+    text?: string;
   }>;
   items?: unknown[];
 }

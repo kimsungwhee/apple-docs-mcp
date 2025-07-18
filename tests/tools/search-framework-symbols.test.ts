@@ -29,7 +29,7 @@ describe('searchFrameworkSymbols', () => {
       );
       expect(result).toContain('UIView');
       expect(result).toContain('UIViewController');
-      expect(result).toContain('Found:** 4 classs');
+      expect(result).toContain('Found:** 4 classes');
       expect(indexCache.set).toHaveBeenCalled();
     });
 
@@ -52,7 +52,7 @@ describe('searchFrameworkSymbols', () => {
 
       const result = await searchFrameworkSymbols('uikit', 'all', undefined, 'swift', 10);
 
-      expect(result).toContain('## Classs (4)');
+      expect(result).toContain('## Classes (4)');
       expect(result).toContain('## Structs (1)');
       expect(result).toContain('UIView');
       expect(result).toContain('List');
@@ -97,7 +97,7 @@ describe('searchFrameworkSymbols', () => {
       const result = await searchFrameworkSymbols('uikit', 'class', undefined, 'occ', 10);
 
       expect(result).toContain('UIView');
-      expect(result).toContain('Found:** 1 classs');
+      expect(result).toContain('Found:** 1 classes');
     });
   });
 
@@ -174,7 +174,7 @@ describe('searchFrameworkSymbols', () => {
       const result = await searchFrameworkSymbols('uikit', 'class', 'UI[View]*', 'swift', 10);
 
       // Special characters should be escaped, so no matches
-      expect(result).toContain('No classs found matching pattern "UI[View]*"');
+      expect(result).toContain('No classes found matching pattern "UI[View]*"');
     });
 
     it('should handle deeply nested items', async () => {
@@ -207,7 +207,7 @@ describe('searchFrameworkSymbols', () => {
       const result = await searchFrameworkSymbols('uikit', 'class', undefined, 'swift', 10);
 
       expect(result).toContain('UIView');
-      expect(result).toContain('Found:** 1 classs');
+      expect(result).toContain('Found:** 1 classes');
     });
 
     it('should handle framework name case variations', async () => {

@@ -2,6 +2,7 @@ import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { updatesCache, generateUrlCacheKey } from '../utils/cache.js';
 import { APPLE_URLS } from '../utils/constants.js';
 import { httpClient } from '../utils/http-client.js';
+import { logger } from '../utils/logger.js';
 
 export const getDocumentationUpdatesTool: Tool = {
   name: 'get_documentation_updates',
@@ -88,7 +89,7 @@ export async function handleGetDocumentationUpdates(
   limit: number = 50,
 ): Promise<string> {
   try {
-    console.error('Fetching documentation updates...');
+    logger.info('Fetching documentation updates...');
 
     // Generate cache key
     const cacheKey = generateUrlCacheKey('documentation-updates', {
@@ -103,7 +104,7 @@ export async function handleGetDocumentationUpdates(
     // Try to get from cache first
     const cachedResult = updatesCache.get<string>(cacheKey);
     if (cachedResult) {
-      console.error('Updates cache hit');
+      logger.debug('Updates cache hit');
       return cachedResult;
     }
 
@@ -134,7 +135,7 @@ export async function handleGetDocumentationUpdates(
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
-    console.error('Error fetching documentation updates:', error);
+    logger.error('Error fetching documentation updates:', error);
     return `Error: Failed to fetch documentation updates: ${errorMessage}`;
   }
 }

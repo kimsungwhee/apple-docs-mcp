@@ -1,6 +1,7 @@
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { convertToJsonApiUrl } from '../utils/url-converter.js';
 import { httpClient } from '../utils/http-client.js';
+import { logger } from '../utils/logger.js';
 
 export const resolveReferencesBatchTool: Tool = {
   name: 'resolve_references_batch',
@@ -81,11 +82,11 @@ export async function handleResolveReferencesBatch(
   filterByType: string = 'all',
 ): Promise<string> {
   try {
-    console.error(`Resolving references from: ${sourceUrl}`);
+    logger.info(`Resolving references from: ${sourceUrl}`);
 
     // 将网页URL转换为JSON API URL
     const jsonApiUrl = convertToJsonApiUrl(sourceUrl);
-    
+
     if (!jsonApiUrl) {
       throw new Error('Invalid Apple Developer Documentation URL');
     }
@@ -197,7 +198,7 @@ async function resolveReference(
     return resolved;
 
   } catch (error) {
-    console.error(`Failed to resolve reference ${identifier}:`, error);
+    logger.error(`Failed to resolve reference ${identifier}:`, error);
     return null;
   }
 }

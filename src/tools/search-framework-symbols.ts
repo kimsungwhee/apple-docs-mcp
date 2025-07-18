@@ -1,40 +1,42 @@
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { indexCache, generateUrlCacheKey } from '../utils/cache.js';
-import { APPLE_URLS } from '../utils/constants.js';
+import { APPLE_URLS, API_LIMITS, PROCESSING_LIMITS } from '../utils/constants.js';
 import { httpClient } from '../utils/http-client.js';
+import { logger } from '../utils/logger.js';
+import { normalizeFrameworkName } from '../utils/framework-mapper.js';
 
 /**
  * MCP Tool Definition
  */
 export const searchFrameworkSymbolsTool: Tool = {
   name: 'search_framework_symbols',
-  description: 'Search for symbols (classes, structs, protocols, etc.) in a specific Apple framework using the framework index',
+  description: 'Search for symbols (classes, structs, protocols, etc.) in a specific Apple framework. Provides hierarchical browsing of framework APIs with type filtering and wildcard search support.',
   inputSchema: {
     type: 'object',
     properties: {
       framework: {
         type: 'string',
-        description: 'Framework name (e.g., "uikit", "swiftui", "foundation")',
+        description: 'Framework name in lowercase (e.g., "uikit", "swiftui", "foundation", "combine", "coredata", "metal", "arkit", "gamekit", "cloudkit", "storekit", "healthkit", "mapkit", "avfoundation", "coregraphics", "coreml"). Use list_technologies to find exact framework identifiers.',
       },
       symbolType: {
         type: 'string',
         enum: ['all', 'class', 'struct', 'enum', 'protocol', 'method', 'property', 'init', 'func', 'var', 'let', 'typealias'],
-        description: 'Type of symbol to search for (default: all)',
+        description: 'Type of symbol to search for. "all" returns all types. Types: class (classes), struct (structures), enum (enumerations), protocol (protocols), method/func (functions), property/var (properties), init (initializers), let (constants), typealias (type aliases). Default: all',
       },
       namePattern: {
         type: 'string',
-        description: 'Optional name pattern to filter results (supports * wildcard, e.g., "*View")',
+        description: 'Optional name pattern to filter results. Supports wildcards: * (any characters), ? (single character). Examples: "*View" (ends with View), "UI*Controller" (starts with UI, ends with Controller), "NS?" (NS followed by one character). Case-sensitive.',
       },
       language: {
         type: 'string',
         enum: ['swift', 'occ'],
-        description: 'Programming language (default: swift)',
+        description: 'Programming language (swift = Swift, occ = Objective-C). Some symbols may only be available in one language. Default: swift',
       },
       limit: {
         type: 'number',
-        description: 'Maximum number of results to return (default: 50)',
+        description: `Maximum number of results to return (default: ${API_LIMITS.DEFAULT_FRAMEWORK_SYMBOLS_LIMIT}, max: ${API_LIMITS.MAX_FRAMEWORK_SYMBOLS_LIMIT}). Note: Results include nested symbols, so actual count may vary.`,
         minimum: 1,
-        maximum: 200,
+        maximum: API_LIMITS.MAX_FRAMEWORK_SYMBOLS_LIMIT,
       },
     },
     required: ['framework'],
@@ -109,14 +111,16 @@ export async function searchFrameworkSymbols(
   symbolType: string = 'all',
   namePattern?: string,
   language: string = 'swift',
-  limit: number = 50,
+  limit: number = API_LIMITS.DEFAULT_FRAMEWORK_SYMBOLS_LIMIT,
 ): Promise<string> {
   try {
-    console.error(`Searching ${symbolType} symbols in ${framework} framework`);
+    // Normalize framework name for consistent processing
+    const normalizedFramework = normalizeFrameworkName(framework);
+    logger.info(`Searching ${symbolType} symbols in ${normalizedFramework} framework`);
 
     // 获取框架索引
     const indexUrl = `${APPLE_URLS.TUTORIALS_DATA}index/${framework.toLowerCase()}`;
-    const cacheKey = generateUrlCacheKey(indexUrl, { framework, symbolType, namePattern, language, limit });
+    const cacheKey = generateUrlCacheKey(indexUrl, { framework: normalizedFramework, symbolType, namePattern, language, limit });
 
     // Check cache
     const cachedResult = indexCache.get<string>(cacheKey);
@@ -139,11 +143,11 @@ export async function searchFrameworkSymbols(
     findSymbolsRecursive(indexItems, symbolType, namePattern, limit, symbols);
 
     // Format results
-    const typeLabel = symbolType === 'all' ? 'Symbols' : formatTypeLabel(symbolType) + 's';
+    const typeLabel = symbolType === 'all' ? 'Symbols' : pluralizeType(symbolType);
     let result = `# ${framework} Framework ${typeLabel}\n\n`;
 
     if (symbols.length === 0) {
-      const typeText = symbolType === 'all' ? 'symbols' : formatTypeLabel(symbolType).toLowerCase() + 's';
+      const typeText = symbolType === 'all' ? 'symbols' : pluralizeType(symbolType).toLowerCase();
       result += `No ${typeText} found`;
       if (namePattern) {
         result += ` matching pattern "${namePattern}"`;
@@ -154,12 +158,12 @@ export async function searchFrameworkSymbols(
       const collections = findCollections(indexItems);
       if (collections.length > 0) {
         result += '\n## Try exploring these collections:\n\n';
-        for (const col of collections.slice(0, 5)) {
+        for (const col of collections.slice(0, PROCESSING_LIMITS.MAX_COLLECTIONS_TO_SHOW)) {
           result += `- [${col.title}](https://developer.apple.com${col.path})\n`;
         }
       }
     } else {
-      result += `**Found:** ${symbols.length} ${symbolType === 'all' ? 'symbols' : symbolType + 's'}`;
+      result += `**Found:** ${symbols.length} ${symbolType === 'all' ? 'symbols' : pluralizeType(symbolType).toLowerCase()}`;
       if (namePattern) {
         result += ` matching "${namePattern}"`;
       }
@@ -169,7 +173,7 @@ export async function searchFrameworkSymbols(
       if (symbolType === 'all') {
         const grouped = groupByType(symbols);
         for (const [type, items] of Object.entries(grouped)) {
-          result += `## ${formatTypeLabel(type)}s (${items.length})\n\n`;
+          result += `## ${pluralizeType(type)} (${items.length})\n\n`;
           for (const item of items) {
             result += formatSymbolItem(item);
           }
@@ -255,6 +259,21 @@ function formatTypeLabel(type: string): string {
   };
 
   return typeLabels[type] || type.charAt(0).toUpperCase() + type.slice(1);
+}
+
+function pluralizeType(type: string): string {
+  const typeLabel = formatTypeLabel(type);
+
+  // Special cases for pluralization
+  const pluralRules: Record<string, string> = {
+    'Class': 'Classes',
+    'Property': 'Properties',
+    'Associated Type': 'Associated Types',
+    'Type Alias': 'Type Aliases',
+    'Sample Code': 'Sample Code',
+  };
+
+  return pluralRules[typeLabel] || typeLabel + 's';
 }
 
 function matchesPattern(name: string, pattern: string): boolean {

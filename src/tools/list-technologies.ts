@@ -2,6 +2,7 @@ import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { technologiesCache, generateUrlCacheKey } from '../utils/cache.js';
 import { APPLE_URLS } from '../utils/constants.js';
 import { httpClient } from '../utils/http-client.js';
+import { logger } from '../utils/logger.js';
 
 export const listTechnologiesTool: Tool = {
   name: 'list_technologies',
@@ -62,7 +63,7 @@ export async function handleListTechnologies(
   includeBeta: boolean = true,
 ): Promise<string> {
   try {
-    console.error('Fetching technologies list...');
+    logger.info('Fetching technologies list...');
 
     // Generate cache key
     const cacheKey = generateUrlCacheKey('technologies', { category, language, includeBeta });
@@ -70,7 +71,7 @@ export async function handleListTechnologies(
     // Try to get from cache first
     const cachedResult = technologiesCache.get<string>(cacheKey);
     if (cachedResult) {
-      console.error('Technologies cache hit');
+      logger.debug('Technologies cache hit');
       return cachedResult;
     }
 

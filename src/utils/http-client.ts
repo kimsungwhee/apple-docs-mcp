@@ -2,7 +2,7 @@
  * HTTP client with timeout, retry, and rate limiting
  */
 
-import { REQUEST_CONFIG, ERROR_MESSAGES } from './constants.js';
+import { REQUEST_CONFIG, ERROR_MESSAGES, PROCESSING_LIMITS } from './constants.js';
 import { handleFetchError } from './error-handler.js';
 import { globalRateLimiter } from './rate-limiter.js';
 
@@ -27,7 +27,7 @@ interface PerformanceStats {
 class HttpClient {
   private requestQueue: Array<() => Promise<void>> = [];
   private activeRequests = 0;
-  private readonly maxConcurrentRequests = 5;
+  private readonly maxConcurrentRequests = REQUEST_CONFIG.MAX_CONCURRENT_REQUESTS;
 
   // Performance monitoring
   private stats: PerformanceStats = {
@@ -63,7 +63,7 @@ class HttpClient {
       if (!globalRateLimiter.canMakeRequest()) {
         throw new Error('Rate limit exceeded. Please try again later.');
       }
-      
+
       return this.fetchWithRetry(url, {
         method: 'GET',
         headers: defaultHeaders,
@@ -314,9 +314,9 @@ class HttpClient {
       report += '❌ **Poor reliability** - Success rate below 90%\n';
     }
 
-    if (stats.averageResponseTime < 1000) {
+    if (stats.averageResponseTime < PROCESSING_LIMITS.RESPONSE_TIME_GOOD_THRESHOLD) {
       report += '✅ **Fast response times** - Average under 1 second\n';
-    } else if (stats.averageResponseTime < 3000) {
+    } else if (stats.averageResponseTime < PROCESSING_LIMITS.RESPONSE_TIME_MODERATE_THRESHOLD) {
       report += '⚠️ **Moderate response times** - Average under 3 seconds\n';
     } else {
       report += '❌ **Slow response times** - Average over 3 seconds\n';

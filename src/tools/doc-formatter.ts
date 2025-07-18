@@ -9,7 +9,7 @@ import type { AppleDocJSON } from '../types/apple-docs.js';
  */
 export function formatDocumentHeader(jsonData: AppleDocJSON): string {
   let content = '';
-  
+
   // Add title with status information
   const title = jsonData.metadata?.title ?? jsonData.title ?? 'Documentation';
   const statusInfo = [];
@@ -52,7 +52,7 @@ export function formatDocumentAbstract(jsonData: AppleDocJSON): string {
     .map((item) => (item as { text?: string })?.text ?? '')
     .join(' ')
     .trim();
-    
+
   return abstractText ? `${abstractText}\n\n` : '';
 }
 
@@ -65,11 +65,11 @@ export function formatPlatformAvailability(jsonData: AppleDocJSON): string {
   }
 
   let content = '## Platform Availability\n\n';
-  
+
   jsonData.metadata.platforms.forEach((platform) => {
     content += formatPlatformLine(platform);
   });
-  
+
   return content + '\n';
 }
 
@@ -78,7 +78,7 @@ export function formatPlatformAvailability(jsonData: AppleDocJSON): string {
  */
 function formatPlatformLine(platform: any): string {
   const platformStatus = [];
-  
+
   if (platform.beta) {
     platformStatus.push('Beta');
   }
@@ -113,14 +113,14 @@ export function formatSeeAlsoSection(jsonData: AppleDocJSON): string {
   }
 
   let content = '## See Also\n\n';
-  
+
   jsonData.seeAlsoSections.forEach((seeAlso) => {
     if (seeAlso.title && seeAlso.identifiers) {
       content += `### ${seeAlso.title}\n\n`;
       content += formatSeeAlsoIdentifiers(seeAlso.identifiers);
     }
   });
-  
+
   return content;
 }
 
@@ -129,14 +129,14 @@ export function formatSeeAlsoSection(jsonData: AppleDocJSON): string {
  */
 function formatSeeAlsoIdentifiers(identifiers: string[]): string {
   let content = '';
-  
+
   identifiers.forEach((identifier: string) => {
     const apiName = identifier.split('/').pop() ?? identifier;
     const apiPath = identifier.replace('doc://com.apple.SwiftUI/documentation/', '');
     const apiUrl = `https://developer.apple.com/documentation/${apiPath}`;
     content += `- [\`${apiName}\`](${apiUrl})\n`;
   });
-  
+
   return content + '\n';
 }
 

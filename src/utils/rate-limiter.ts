@@ -2,16 +2,18 @@
  * Rate limiter for API requests
  */
 
+import { RATE_LIMIT } from './constants.js';
+
 export class RateLimiter {
   private requests: number[] = [];
   private readonly maxRequests: number;
   private readonly windowMs: number;
-  
-  constructor(maxRequests = 100, windowMs = 60000) { // 100 requests per minute by default
+
+  constructor(maxRequests = RATE_LIMIT.MAX_REQUESTS_PER_MINUTE, windowMs = RATE_LIMIT.WINDOW_MS) {
     this.maxRequests = maxRequests;
     this.windowMs = windowMs;
   }
-  
+
   /**
    * Check if a request can be made
    */
@@ -19,15 +21,15 @@ export class RateLimiter {
     const now = Date.now();
     // Remove old requests outside the time window
     this.requests = this.requests.filter(time => now - time < this.windowMs);
-    
+
     if (this.requests.length >= this.maxRequests) {
       return false;
     }
-    
+
     this.requests.push(now);
     return true;
   }
-  
+
   /**
    * Get current usage statistics
    */
@@ -36,10 +38,10 @@ export class RateLimiter {
     maxRequests: number;
     windowMs: number;
     utilizationRate: string;
-  } {
+    } {
     const now = Date.now();
     this.requests = this.requests.filter(time => now - time < this.windowMs);
-    
+
     return {
       currentRequests: this.requests.length,
       maxRequests: this.maxRequests,
@@ -47,7 +49,7 @@ export class RateLimiter {
       utilizationRate: ((this.requests.length / this.maxRequests) * 100).toFixed(2) + '%',
     };
   }
-  
+
   /**
    * Reset the rate limiter
    */
@@ -57,4 +59,4 @@ export class RateLimiter {
 }
 
 // Create a global rate limiter instance
-export const globalRateLimiter = new RateLimiter(300, 60000); // 300 requests per minute
+export const globalRateLimiter = new RateLimiter(300, RATE_LIMIT.WINDOW_MS); // 300 requests per minute

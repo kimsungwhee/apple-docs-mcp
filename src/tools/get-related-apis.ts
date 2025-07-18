@@ -1,6 +1,8 @@
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { convertToJsonApiUrl } from '../utils/url-converter.js';
 import { httpClient } from '../utils/http-client.js';
+import { logger } from '../utils/logger.js';
+import { PROCESSING_LIMITS } from '../utils/constants.js';
 
 export const getRelatedApisTool: Tool = {
   name: 'get_related_apis',
@@ -72,11 +74,11 @@ export async function handleGetRelatedApis(
   includeSeeAlso: boolean = true,
 ): Promise<string> {
   try {
-    console.error(`Fetching related APIs for: ${apiUrl}`);
+    logger.info(`Fetching related APIs for: ${apiUrl}`);
 
     // 将网页URL转换为JSON API URL
     const jsonApiUrl = convertToJsonApiUrl(apiUrl);
-    
+
     if (!jsonApiUrl) {
       throw new Error('Invalid Apple Developer Documentation URL');
     }
@@ -123,7 +125,7 @@ export async function handleGetRelatedApis(
       for (const section of data.topicSections) {
         if (section.identifiers && section.identifiers.length > 0) {
           // 只取前3个，避免过多
-          const limitedIdentifiers = section.identifiers.slice(0, 3);
+          const limitedIdentifiers = section.identifiers.slice(0, PROCESSING_LIMITS.MAX_RELATED_APIS_PER_SECTION);
           for (const identifier of limitedIdentifiers) {
             const api = extractApiFromIdentifier(identifier, `Related: ${section.title}`, data.references);
             if (api) {

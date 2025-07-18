@@ -18,13 +18,37 @@ import { handleGetTechnologyOverviews } from './tools/get-technology-overviews.j
 import { handleGetSampleCode } from './tools/get-sample-code.js';
 import { APPLE_URLS } from './utils/constants.js';
 import { isValidAppleDeveloperUrl } from './utils/url-converter.js';
-import { validateInput, createErrorResponse, handleFetchError, ErrorType } from './utils/error-handler.js';
+import { validateInput, createErrorResponse, ErrorType, createStandardErrorResponse } from './utils/error-handler.js';
 import { httpClient } from './utils/http-client.js';
 import { preloadPopularFrameworks } from './utils/preloader.js';
 import { warmUpCaches, schedulePeriodicCacheRefresh } from './utils/cache-warmer.js';
+import { logger } from './utils/logger.js';
+import { API_LIMITS } from './utils/constants.js';
 
 export default class AppleDeveloperDocsMCPServer {
   private server: Server;
+
+  /**
+   * Helper method to handle async operations with consistent error handling
+   */
+  private async handleAsyncOperation<T>(
+    operation: () => Promise<T>,
+    operationName: string,
+  ): Promise<{ content: Array<{ type: 'text'; text: string }>; isError?: boolean }> {
+    try {
+      const result = await operation();
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: result as string,
+          },
+        ],
+      };
+    } catch (error) {
+      return createStandardErrorResponse(error, operationName);
+    }
+  }
 
   constructor() {
     this.server = new Server(
@@ -64,7 +88,7 @@ export default class AppleDeveloperDocsMCPServer {
           ? { type: 'UNKNOWN' as const, message: error.message, originalError: error }
           : { type: 'UNKNOWN' as const, message: 'An unknown error occurred' };
 
-        console.error(`Tool ${name} failed:`, appError);
+        logger.error(`Tool ${name} failed:`, appError);
 
         return {
           content: [
@@ -80,27 +104,27 @@ export default class AppleDeveloperDocsMCPServer {
   }
 
   public async searchAppleDocs(query: string, type: string = 'all') {
-    try {
-      // 输入验证
-      const queryValidation = validateInput(query, 'Search query');
-      if (queryValidation) {
-        return createErrorResponse(queryValidation);
-      }
-
-      // 创建 Apple Developer Documentation 搜索 URL
-      const searchUrl = `${APPLE_URLS.SEARCH}?q=${encodeURIComponent(query)}`;
-
-      console.error(`Searching Apple docs for: ${query}`);
-
-      // 获取搜索结果页面
-      const html = await httpClient.getText(searchUrl);
-
-      // 解析并返回搜索结果，传递type参数进行过滤
-      return parseSearchResults(html, query, searchUrl, type);
-    } catch (error) {
-      const appError = handleFetchError(error, `${APPLE_URLS.SEARCH}?q=${encodeURIComponent(query)}`);
-      return createErrorResponse(appError);
+    // 输入验证
+    const queryValidation = validateInput(query, 'Search query');
+    if (queryValidation) {
+      return createErrorResponse(queryValidation);
     }
+
+    return this.handleAsyncOperation(
+      async () => {
+        // 创建 Apple Developer Documentation 搜索 URL
+        const searchUrl = `${APPLE_URLS.SEARCH}?q=${encodeURIComponent(query)}`;
+
+        logger.info(`Searching Apple docs for: ${query}`);
+
+        // 获取搜索结果页面
+        const html = await httpClient.getText(searchUrl);
+
+        // 解析并返回搜索结果，传递type参数进行过滤
+        return parseSearchResults(html, query, searchUrl, type);
+      },
+      'searchAppleDocs',
+    );
   }
 
   public async getAppleDocContent(
@@ -110,86 +134,50 @@ export default class AppleDeveloperDocsMCPServer {
     includeSimilarApis: boolean = false,
     includePlatformAnalysis: boolean = false,
   ) {
-    try {
-      // 输入验证
-      const urlValidation = validateInput(url, 'URL');
-      if (urlValidation) {
-        return createErrorResponse(urlValidation);
-      }
-
-      // 验证是否为有效的Apple Developer URL
-      if (!isValidAppleDeveloperUrl(url)) {
-        return createErrorResponse({
-          type: ErrorType.INVALID_INPUT,
-          message: 'URL must be from developer.apple.com',
-          suggestions: [
-            'Ensure the URL starts with https://developer.apple.com',
-            'Check that the URL is a valid Apple Developer Documentation link',
-          ],
-        });
-      }
-
-      // 使用增强的 JSON 获取方法来获取文档内容
-      return fetchAppleDocJson(url, {
-        includeRelatedApis,
-        includeReferences,
-        includeSimilarApis,
-        includePlatformAnalysis,
-      });
-    } catch (error) {
-      const appError = handleFetchError(error, url);
-      return createErrorResponse(appError);
+    // 输入验证
+    const urlValidation = validateInput(url, 'URL');
+    if (urlValidation) {
+      return createErrorResponse(urlValidation);
     }
+
+    // 验证是否为有效的Apple Developer URL
+    if (!isValidAppleDeveloperUrl(url)) {
+      return createErrorResponse({
+        type: ErrorType.INVALID_INPUT,
+        message: 'URL must be from developer.apple.com',
+        suggestions: [
+          'Ensure the URL starts with https://developer.apple.com',
+          'Check that the URL is a valid Apple Developer Documentation link',
+        ],
+      });
+    }
+
+    return this.handleAsyncOperation(
+      async () => {
+        // 使用增强的 JSON 获取方法来获取文档内容
+        return fetchAppleDocJson(url, {
+          includeRelatedApis,
+          includeReferences,
+          includeSimilarApis,
+          includePlatformAnalysis,
+        });
+      },
+      'getAppleDocContent',
+    );
   }
 
   public async listTechnologies(category?: string, language?: string, includeBeta: boolean = true) {
-    try {
-      const result = await handleListTechnologies(category, language, includeBeta);
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: result,
-          },
-        ],
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: `Error: Failed to list technologies: ${errorMessage}`,
-          },
-        ],
-        isError: true,
-      };
-    }
+    return this.handleAsyncOperation(
+      () => handleListTechnologies(category, language, includeBeta),
+      'listTechnologies',
+    );
   }
 
-  public async searchFrameworkSymbols(framework: string, symbolType: string = 'all', namePattern?: string, language: string = 'swift', limit: number = 50) {
-    try {
-      const result = await searchFrameworkSymbols(framework, symbolType, namePattern, language, limit);
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: result,
-          },
-        ],
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: `Error: Failed to search framework symbols: ${errorMessage}`,
-          },
-        ],
-        isError: true,
-      };
-    }
+  public async searchFrameworkSymbols(framework: string, symbolType: string = 'all', namePattern?: string, language: string = 'swift', limit: number = API_LIMITS.DEFAULT_FRAMEWORK_SYMBOLS_LIMIT) {
+    return this.handleAsyncOperation(
+      () => searchFrameworkSymbols(framework, symbolType, namePattern, language, limit),
+      'searchFrameworkSymbols',
+    );
   }
 
   public async getRelatedApis(
@@ -198,78 +186,24 @@ export default class AppleDeveloperDocsMCPServer {
     includeConformance: boolean = true,
     includeSeeAlso: boolean = true,
   ) {
-    try {
-      const result = await handleGetRelatedApis(apiUrl, includeInherited, includeConformance, includeSeeAlso);
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: result,
-          },
-        ],
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: `Error: Failed to get related APIs: ${errorMessage}`,
-          },
-        ],
-        isError: true,
-      };
-    }
+    return this.handleAsyncOperation(
+      () => handleGetRelatedApis(apiUrl, includeInherited, includeConformance, includeSeeAlso),
+      'getRelatedApis',
+    );
   }
 
-  public async resolveReferencesBatch(sourceUrl: string, maxReferences: number = 20, filterByType: string = 'all') {
-    try {
-      const result = await handleResolveReferencesBatch(sourceUrl, maxReferences, filterByType);
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: result,
-          },
-        ],
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: `Error: Failed to resolve references: ${errorMessage}`,
-          },
-        ],
-        isError: true,
-      };
-    }
+  public async resolveReferencesBatch(sourceUrl: string, maxReferences: number = API_LIMITS.DEFAULT_REFERENCES_LIMIT, filterByType: string = 'all') {
+    return this.handleAsyncOperation(
+      () => handleResolveReferencesBatch(sourceUrl, maxReferences, filterByType),
+      'resolveReferencesBatch',
+    );
   }
 
   public async getPlatformCompatibility(apiUrl: string, compareMode: string = 'single', includeRelated: boolean = false) {
-    try {
-      const result = await handleGetPlatformCompatibility(apiUrl, compareMode, includeRelated);
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: result,
-          },
-        ],
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: `Error: Failed to analyze platform compatibility: ${errorMessage}`,
-          },
-        ],
-        isError: true,
-      };
-    }
+    return this.handleAsyncOperation(
+      () => handleGetPlatformCompatibility(apiUrl, compareMode, includeRelated),
+      'getPlatformCompatibility',
+    );
   }
 
   public async findSimilarApis(
@@ -278,28 +212,10 @@ export default class AppleDeveloperDocsMCPServer {
     filterByCategory?: string,
     includeAlternatives: boolean = true,
   ) {
-    try {
-      const result = await handleFindSimilarApis(apiUrl, searchDepth, filterByCategory, includeAlternatives);
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: result,
-          },
-        ],
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: `Error: Failed to find similar APIs: ${errorMessage}`,
-          },
-        ],
-        isError: true,
-      };
-    }
+    return this.handleAsyncOperation(
+      () => handleFindSimilarApis(apiUrl, searchDepth, filterByCategory, includeAlternatives),
+      'findSimilarApis',
+    );
   }
 
   public async getDocumentationUpdates(
@@ -308,30 +224,12 @@ export default class AppleDeveloperDocsMCPServer {
     year?: string,
     searchQuery?: string,
     includeBeta: boolean = true,
-    limit: number = 50,
+    limit: number = API_LIMITS.DEFAULT_DOCUMENTATION_UPDATES_LIMIT,
   ) {
-    try {
-      const result = await handleGetDocumentationUpdates(category, technology, year, searchQuery, includeBeta, limit);
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: result,
-          },
-        ],
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: `Error: Failed to get documentation updates: ${errorMessage}`,
-          },
-        ],
-        isError: true,
-      };
-    }
+    return this.handleAsyncOperation(
+      () => handleGetDocumentationUpdates(category, technology, year, searchQuery, includeBeta, limit),
+      'getDocumentationUpdates',
+    );
   }
 
   public async getTechnologyOverviews(
@@ -339,60 +237,24 @@ export default class AppleDeveloperDocsMCPServer {
     platform: string = 'all',
     searchQuery?: string,
     includeSubcategories: boolean = true,
-    limit: number = 50,
+    limit: number = API_LIMITS.DEFAULT_TECHNOLOGY_OVERVIEWS_LIMIT,
   ) {
-    try {
-      const result = await handleGetTechnologyOverviews(category, platform, searchQuery, includeSubcategories, limit);
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: result,
-          },
-        ],
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: `Error: Failed to get technology overviews: ${errorMessage}`,
-          },
-        ],
-        isError: true,
-      };
-    }
+    return this.handleAsyncOperation(
+      () => handleGetTechnologyOverviews(category, platform, searchQuery, includeSubcategories, limit),
+      'getTechnologyOverviews',
+    );
   }
 
   public async getSampleCode(
     framework?: string,
     beta: 'include' | 'exclude' | 'only' = 'include',
     searchQuery?: string,
-    limit: number = 50,
+    limit: number = API_LIMITS.DEFAULT_SAMPLE_CODE_LIMIT,
   ) {
-    try {
-      const result = await handleGetSampleCode(framework, beta, searchQuery, limit);
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: result,
-          },
-        ],
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: `Error: Failed to get sample code: ${errorMessage}`,
-          },
-        ],
-        isError: true,
-      };
-    }
+    return this.handleAsyncOperation(
+      () => handleGetSampleCode(framework, beta, searchQuery, limit),
+      'getSampleCode',
+    );
   }
 
   private setupErrorHandling() {
@@ -406,12 +268,12 @@ export default class AppleDeveloperDocsMCPServer {
     });
 
     process.on('unhandledRejection', (reason) => {
-      console.error('Unhandled Rejection, reason:', reason);
+      logger.error('Unhandled Rejection, reason:', reason);
       process.exit(1);
     });
 
     process.on('uncaughtException', (error) => {
-      console.error('Uncaught Exception:', error);
+      logger.error('Uncaught Exception:', error);
       process.exit(1);
     });
   }
@@ -419,18 +281,18 @@ export default class AppleDeveloperDocsMCPServer {
   async run() {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-    console.error('Apple Developer Docs MCP server running on stdio');
-    console.error('Cache system initialized with TTL: API(30m), Index(1h), Technologies(2h)');
-    console.error('Note: Search results are not cached to ensure real-time accuracy');
-    
+    logger.info('Apple Developer Docs MCP server running on stdio');
+    logger.info('Cache system initialized with TTL: API(30m), Index(1h), Technologies(2h)');
+    logger.info('Note: Search results are not cached to ensure real-time accuracy');
+
     // Start framework preloading and cache warming in background
     Promise.all([
       preloadPopularFrameworks(),
       warmUpCaches(),
     ]).catch(error => {
-      console.error('Background initialization failed:', error);
+      logger.error('Background initialization failed:', error);
     });
-    
+
     // Schedule periodic cache refresh (every 30 minutes)
     schedulePeriodicCacheRefresh();
   }
@@ -440,7 +302,7 @@ export default class AppleDeveloperDocsMCPServer {
 if (process.env.NODE_ENV !== 'test') {
   const server = new AppleDeveloperDocsMCPServer();
   void server.run().catch((error) => {
-    console.error('Fatal error in main():', error);
+    logger.error('Fatal error in main():', error);
     process.exit(1);
   });
 }

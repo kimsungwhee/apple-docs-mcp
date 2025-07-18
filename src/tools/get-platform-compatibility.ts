@@ -1,6 +1,8 @@
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { convertToJsonApiUrl } from '../utils/url-converter.js';
 import { httpClient } from '../utils/http-client.js';
+import { logger } from '../utils/logger.js';
+import { PROCESSING_LIMITS } from '../utils/constants.js';
 
 export const getPlatformCompatibilityTool: Tool = {
   name: 'get_platform_compatibility',
@@ -74,7 +76,7 @@ export async function handleGetPlatformCompatibility(
   includeRelated: boolean = false,
 ): Promise<string> {
   try {
-    console.error(`Analyzing platform compatibility for: ${apiUrl}`);
+    logger.info(`Analyzing platform compatibility for: ${apiUrl}`);
 
     if (compareMode === 'framework') {
       return await analyzeFrameworkCompatibility(apiUrl, includeRelated);
@@ -96,7 +98,7 @@ async function analyzeSingleApiCompatibility(
   includeRelated: boolean,
 ): Promise<string> {
   const jsonApiUrl = convertToJsonApiUrl(apiUrl);
-  
+
   if (!jsonApiUrl) {
     throw new Error('Invalid Apple Developer Documentation URL');
   }
@@ -160,7 +162,7 @@ async function analyzeRelatedCompatibility(
       break;
     }
 
-    for (const identifier of section.identifiers.slice(0, 2)) { // 每个section最多2个
+    for (const identifier of section.identifiers.slice(0, PROCESSING_LIMITS.MAX_PLATFORM_COMPATIBILITY_ITEMS)) { // 每个section最多2个
       if (count >= maxRelated) {
         break;
       }
@@ -170,9 +172,9 @@ async function analyzeRelatedCompatibility(
         try {
           const relatedUrl = `https://developer.apple.com${ref.url}`;
           const relatedJsonUrl = convertToJsonApiUrl(relatedUrl);
-          
+
           if (!relatedJsonUrl) {
-            console.error(`Failed to convert URL: ${relatedUrl}`);
+            logger.warn(`Failed to convert URL: ${relatedUrl}`);
             continue;
           }
 
@@ -188,7 +190,7 @@ async function analyzeRelatedCompatibility(
           }
         } catch (error) {
           // 忽略单个相关API的错误
-          console.error(`Failed to fetch related API ${identifier}:`, error);
+          logger.error(`Failed to fetch related API ${identifier}:`, error);
         }
       }
     }

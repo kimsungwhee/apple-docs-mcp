@@ -3,6 +3,8 @@ import { convertToJsonApiUrl } from '../utils/url-converter.js';
 import { httpClient } from '../utils/http-client.js';
 import type { AppleDocJSON } from '../types/apple-docs.js';
 import type { ContentSection, ContentItem } from '../types/content-sections.js';
+import { logger } from '../utils/logger.js';
+import { PROCESSING_LIMITS } from '../utils/constants.js';
 import {
   formatDocumentHeader,
   formatDocumentAbstract,
@@ -25,7 +27,7 @@ function formatJsonDocumentation(
 
   // Add header with title and status
   content += formatDocumentHeader(jsonData);
-  
+
   // Add abstract
   content += formatDocumentAbstract(jsonData);
 
@@ -38,7 +40,7 @@ function formatJsonDocumentation(
 
   // Add platform availability
   content += formatPlatformAvailability(jsonData);
-  
+
   // Add See Also section
   content += formatSeeAlsoSection(jsonData);
 
@@ -131,9 +133,9 @@ function formatSpecificAPIContent(jsonData: AppleDocJSON): string {
                     if (inline.type === 'text') {
                       return inline.text ?? '';
                     } else if (inline.type === 'codeVoice') {
-                      return `\`${(inline as any).code ?? ''}\``;
-                    } else if (inline.type === 'reference' && (inline as any).identifier) {
-                      const apiName = ((inline as any).identifier as string).split('/').pop() ?? (inline as any).identifier;
+                      return `\`${(inline).code ?? ''}\``;
+                    } else if (inline.type === 'reference' && (inline).identifier) {
+                      const apiName = ((inline).identifier as string).split('/').pop() ?? (inline).identifier;
                       return `\`${apiName}\``;
                     }
                     return '';
@@ -269,7 +271,7 @@ export async function fetchAppleDocJson(
 
     // Convert web URL to JSON API URL if needed
     const jsonApiUrl = url.includes('.json') ? url : convertToJsonApiUrl(url);
-    
+
     if (!jsonApiUrl) {
       throw new Error('Invalid Apple Developer Documentation URL');
     }
@@ -280,11 +282,11 @@ export async function fetchAppleDocJson(
     // Try to get from cache first
     const cachedResult = apiCache.get(cacheKey);
     if (cachedResult) {
-      console.error(`Cache hit for: ${jsonApiUrl}`);
+      logger.debug(`Cache hit for: ${jsonApiUrl}`);
       return cachedResult;
     }
 
-    console.error(`Fetching Apple doc JSON from: ${jsonApiUrl}`);
+    logger.info(`Fetching Apple doc JSON from: ${jsonApiUrl}`);
 
     // Fetch the documentation JSON using HTTP client
     const jsonData = await httpClient.getJson<AppleDocJSON>(jsonApiUrl);
@@ -323,7 +325,7 @@ export async function fetchAppleDocJson(
     return result;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error('Error fetching Apple doc JSON:', errorMessage);
+    logger.error('Error fetching Apple doc JSON:', errorMessage);
 
     return {
       content: [
@@ -347,7 +349,7 @@ function extractRelatedApis(jsonData: AppleDocJSON): Array<{title: string, url: 
   if (jsonData.relationshipsSections) {
     for (const section of jsonData.relationshipsSections) {
       if (section.identifiers) {
-        for (const identifier of section.identifiers.slice(0, 3)) {
+        for (const identifier of section.identifiers.slice(0, PROCESSING_LIMITS.MAX_RELATED_APIS_PER_SECTION)) {
           if (jsonData.references?.[identifier]) {
             const ref = jsonData.references[identifier];
             relatedApis.push({
@@ -365,7 +367,7 @@ function extractRelatedApis(jsonData: AppleDocJSON): Array<{title: string, url: 
   if (jsonData.seeAlsoSections) {
     for (const section of jsonData.seeAlsoSections) {
       if (section.identifiers) {
-        for (const identifier of section.identifiers.slice(0, 3)) {
+        for (const identifier of section.identifiers.slice(0, PROCESSING_LIMITS.MAX_RELATED_APIS_PER_SECTION)) {
           if (jsonData.references?.[identifier]) {
             const ref = jsonData.references[identifier];
             relatedApis.push({
@@ -379,7 +381,7 @@ function extractRelatedApis(jsonData: AppleDocJSON): Array<{title: string, url: 
     }
   }
 
-  return relatedApis.slice(0, 10); // Limit results
+  return relatedApis.slice(0, PROCESSING_LIMITS.MAX_DOC_FETCHER_RELATED_APIS); // Limit results
 }
 
 /**
@@ -389,7 +391,7 @@ function extractReferences(jsonData: AppleDocJSON): Array<{title: string, url: s
   const references: Array<{title: string, url: string, type: string, abstract?: string}> = [];
 
   if (jsonData.references) {
-    const refEntries = Object.entries(jsonData.references).slice(0, 15); // Limit
+    const refEntries = Object.entries(jsonData.references).slice(0, PROCESSING_LIMITS.MAX_DOC_FETCHER_REFERENCES); // Limit
 
     for (const [, ref] of refEntries) {
       references.push({
@@ -416,7 +418,7 @@ function extractSimilarApis(jsonData: AppleDocJSON): Array<{title: string, url: 
   if (jsonData.topicSections) {
     for (const section of jsonData.topicSections) {
       if (section.identifiers) {
-        for (const identifier of section.identifiers.slice(0, 3)) {
+        for (const identifier of section.identifiers.slice(0, PROCESSING_LIMITS.MAX_RELATED_APIS_PER_SECTION)) {
           if (jsonData.references?.[identifier]) {
             const ref = jsonData.references[identifier];
             similarApis.push({
@@ -430,7 +432,7 @@ function extractSimilarApis(jsonData: AppleDocJSON): Array<{title: string, url: 
     }
   }
 
-  return similarApis.slice(0, 8); // Limit results
+  return similarApis.slice(0, PROCESSING_LIMITS.MAX_DOC_FETCHER_SIMILAR_APIS); // Limit results
 }
 
 /**
@@ -438,10 +440,10 @@ function extractSimilarApis(jsonData: AppleDocJSON): Array<{title: string, url: 
  */
 function analyzePlatformCompatibility(
   jsonData: AppleDocJSON,
-): { 
-  supportedPlatforms: string; 
-  betaPlatforms: string[]; 
-  deprecatedPlatforms: string[]; 
+): {
+  supportedPlatforms: string;
+  betaPlatforms: string[];
+  deprecatedPlatforms: string[];
   crossPlatform: boolean;
   platforms: any[];
 } | null {
@@ -493,7 +495,7 @@ function formatReferencesSection(references: Array<{title: string, url: string, 
 
   for (const [type, refs] of Object.entries(groupedRefs)) {
     content += `### ${type.charAt(0).toUpperCase() + type.slice(1)}s\n\n`;
-    for (const ref of refs.slice(0, 5)) {
+    for (const ref of refs.slice(0, PROCESSING_LIMITS.MAX_DOC_FETCHER_REFS_PER_TYPE)) {
       content += `- [**${ref.title}**](${ref.url})`;
       if (ref.abstract) {
         content += ` - ${ref.abstract.substring(0, 100)}${ref.abstract.length > 100 ? '...' : ''}`;
@@ -538,10 +540,10 @@ function formatSimilarApisSection(
  * Format platform analysis section
  */
 function formatPlatformAnalysisSection(
-  analysis: { 
-    supportedPlatforms: string; 
-    betaPlatforms: string[]; 
-    deprecatedPlatforms: string[]; 
+  analysis: {
+    supportedPlatforms: string;
+    betaPlatforms: string[];
+    deprecatedPlatforms: string[];
     crossPlatform?: boolean;
     platforms?: any[];
   },

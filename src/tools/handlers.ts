@@ -33,13 +33,13 @@ export const toolHandlers: Record<string, ToolHandler> = {
     const { getCacheWarmUpStatus } = await import('../utils/cache-warmer.js');
     const { getPreloadStats } = await import('../utils/preloader.js');
     const { globalRateLimiter } = await import('../utils/rate-limiter.js');
-    
+
     let report = '# Performance Report\n\n';
-    
+
     // HTTP Client Performance
     report += httpClient.getPerformanceReport();
     report += '\n\n';
-    
+
     // Cache Warm-up Status
     const warmUpStatus = getCacheWarmUpStatus();
     report += '## Cache Warm-up Status\n\n';
@@ -48,20 +48,20 @@ export const toolHandlers: Record<string, ToolHandler> = {
     report += `- **Technologies Cache:** ${warmUpStatus.technologiesCacheSize} entries\n`;
     report += `- **Updates Cache:** ${warmUpStatus.updatesCacheSize} entries\n`;
     report += `- **Overviews Cache:** ${warmUpStatus.overviewsCacheSize} entries\n\n`;
-    
+
     // Framework Preload Status
     const preloadStats = getPreloadStats();
     report += '## Framework Preload Status\n\n';
     report += `- **Preloaded Frameworks:** ${preloadStats.preloadedFrameworks.join(', ')}\n`;
     report += `- **Index Cache Hit Rate:** ${preloadStats.cacheHitRate}\n\n`;
-    
+
     // Rate Limiter Status
     const rateLimiterStats = globalRateLimiter.getStats();
     report += '## Rate Limiter Status\n\n';
     report += `- **Current Requests:** ${rateLimiterStats.currentRequests}/${rateLimiterStats.maxRequests}\n`;
     report += `- **Utilization:** ${rateLimiterStats.utilizationRate}\n`;
     report += `- **Window:** ${rateLimiterStats.windowMs / 1000}s\n`;
-    
+
     return {
       content: [
         {
@@ -71,10 +71,10 @@ export const toolHandlers: Record<string, ToolHandler> = {
       ],
     };
   },
-  
+
   get_cache_stats: async () => {
     const { apiCache, searchCache, indexCache, technologiesCache, updatesCache, sampleCodeCache, technologyOverviewsCache } = await import('../utils/cache.js');
-    
+
     const stats = {
       apiCache: apiCache.getStats(),
       searchCache: searchCache.getStats(),
@@ -84,9 +84,9 @@ export const toolHandlers: Record<string, ToolHandler> = {
       sampleCodeCache: sampleCodeCache.getStats(),
       technologyOverviewsCache: technologyOverviewsCache.getStats(),
     };
-    
+
     let report = '# Cache Statistics Report\n\n';
-    
+
     Object.entries(stats).forEach(([name, stat]) => {
       report += `## ${name}\n`;
       report += `- Size: ${stat.size}/${stat.maxSize}\n`;
@@ -94,7 +94,7 @@ export const toolHandlers: Record<string, ToolHandler> = {
       report += `- Hits: ${stat.hits}\n`;
       report += `- Misses: ${stat.misses}\n\n`;
     });
-    
+
     return {
       content: [
         {

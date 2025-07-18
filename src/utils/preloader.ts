@@ -4,78 +4,76 @@
 
 import { searchFrameworkSymbols } from '../tools/search-framework-symbols.js';
 import { indexCache } from './cache.js';
+import { logger } from './logger.js';
+import { normalizeFrameworkName, getFrameworksByCategory } from './framework-mapper.js';
 
 /**
- * Popular frameworks to preload
+ * Popular frameworks to preload (using normalized names)
  */
 const POPULAR_FRAMEWORKS = [
-  'swiftui',
-  'uikit', 
-  'foundation',
-  'combine',
-  'coredata',
-  'avfoundation',
-  'metal',
-  'spritekit',
-  'scenekit',
-  'arkit',
-];
+  ...getFrameworksByCategory('UI'), // SwiftUI, UIKit, etc.
+  ...getFrameworksByCategory('Foundation'), // Foundation, Combine, Swift
+  ...getFrameworksByCategory('Data').slice(0, 2), // Core Data, CloudKit
+  ...getFrameworksByCategory('Graphics').slice(0, 2), // Core Graphics, Metal
+  ...getFrameworksByCategory('Games').slice(0, 3), // ARKit, SceneKit, SpriteKit
+].map(f => f.toLowerCase());
 
 /**
  * Preload popular framework indexes
  */
 export async function preloadPopularFrameworks(): Promise<void> {
-  console.error('Starting framework preload...');
-  
+  logger.info('Starting framework preload...');
+
   const preloadPromises = POPULAR_FRAMEWORKS.map(async (framework) => {
     try {
       // Check if already cached
       const cacheKey = `framework-index-${framework}`;
       if (indexCache.has(cacheKey)) {
-        console.error(`Framework ${framework} already cached, skipping...`);
+        logger.debug(`Framework ${framework} already cached, skipping...`);
         return;
       }
-      
+
       // Load framework index with minimal results
-      console.error(`Preloading framework: ${framework}`);
+      logger.info(`Preloading framework: ${framework}`);
       await searchFrameworkSymbols(framework, 'all', undefined, 'swift', 1);
-      
-      console.error(`Successfully preloaded: ${framework}`);
+
+      logger.info(`Successfully preloaded: ${framework}`);
     } catch (error) {
-      console.error(`Failed to preload ${framework}:`, error);
+      logger.error(`Failed to preload ${framework}:`, error);
     }
   });
-  
+
   await Promise.all(preloadPromises);
-  console.error('Framework preload completed');
+  logger.info('Framework preload completed');
 }
 
 /**
  * Preload specific frameworks based on user patterns
  */
 export async function preloadFrameworksByUsage(
-  recentFrameworks: string[]
+  recentFrameworks: string[],
 ): Promise<void> {
-  // Get unique frameworks not in popular list
+  // Normalize framework names and filter out popular ones
   const frameworksToPreload = recentFrameworks
-    .filter(f => !POPULAR_FRAMEWORKS.includes(f.toLowerCase()))
+    .map(f => normalizeFrameworkName(f))
+    .filter(f => f && !POPULAR_FRAMEWORKS.includes(f.toLowerCase()))
     .map(f => f.toLowerCase());
-  
+
   if (frameworksToPreload.length === 0) {
     return;
   }
-  
-  console.error(`Preloading ${frameworksToPreload.length} user-specific frameworks...`);
-  
+
+  logger.info(`Preloading ${frameworksToPreload.length} user-specific frameworks...`);
+
   const preloadPromises = frameworksToPreload.map(async (framework) => {
     try {
       await searchFrameworkSymbols(framework, 'all', undefined, 'swift', 1);
-      console.error(`Preloaded user framework: ${framework}`);
+      logger.info(`Preloaded user framework: ${framework}`);
     } catch (error) {
-      console.error(`Failed to preload user framework ${framework}:`, error);
+      logger.error(`Failed to preload user framework ${framework}:`, error);
     }
   });
-  
+
   await Promise.all(preloadPromises);
 }
 
@@ -86,13 +84,13 @@ export function getPreloadStats(): {
   preloadedFrameworks: string[];
   totalCached: number;
   cacheHitRate: string;
-} {
+  } {
   const stats = indexCache.getStats();
   const preloadedFrameworks = POPULAR_FRAMEWORKS.filter(framework => {
     const cacheKey = `framework-index-${framework}`;
     return indexCache.has(cacheKey);
   });
-  
+
   return {
     preloadedFrameworks,
     totalCached: stats.size,

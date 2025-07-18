@@ -1,7 +1,8 @@
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { convertToJsonApiUrl } from '../utils/url-converter.js';
-import { SEARCH_DEPTH_LIMITS } from '../utils/constants.js';
+import { SEARCH_DEPTH_LIMITS, PROCESSING_LIMITS } from '../utils/constants.js';
 import { httpClient } from '../utils/http-client.js';
+import { logger } from '../utils/logger.js';
 
 export const findSimilarApisTool: Tool = {
   name: 'find_similar_apis',
@@ -80,21 +81,21 @@ export async function handleFindSimilarApis(
   includeAlternatives: boolean = true,
 ): Promise<string> {
   try {
-    console.error(`Finding similar APIs for: ${apiUrl}`);
+    logger.info(`Finding similar APIs for: ${apiUrl}`);
 
     const jsonApiUrl = convertToJsonApiUrl(apiUrl);
-    
+
     // Check if conversion failed
     if (!jsonApiUrl) {
       throw new Error('Invalid Apple Developer Documentation URL');
     }
 
     const response = await httpClient.getJson<any>(jsonApiUrl);
-    
+
     // Handle response structure - check if data is wrapped
     let data: AppleDocData;
     let references: Record<string, any> | undefined;
-    
+
     if (response.data) {
       // Response has a data property, extract it
       data = response.data;
@@ -124,7 +125,7 @@ export async function handleFindSimilarApis(
 
     // 3. 深度搜索相关API（deep 模式）
     if (searchDepth === 'deep') {
-      const deepApis = await extractDeepRelatedApis(similarApis.slice(0, 3)); // 限制前3个
+      const deepApis = await extractDeepRelatedApis(similarApis.slice(0, PROCESSING_LIMITS.MAX_SIMILAR_APIS_FOR_DEEP_SEARCH)); // 限制前3个
       similarApis.push(...deepApis);
     }
 
@@ -202,7 +203,7 @@ function extractTopicApis(
     }
 
     // 限制每个主题的API数量
-    const limitedIdentifiers = section.identifiers.slice(0, 4);
+    const limitedIdentifiers = section.identifiers.slice(0, PROCESSING_LIMITS.MAX_TOPIC_IDENTIFIERS);
 
     for (const identifier of limitedIdentifiers) {
       const api = createSimilarApi(
@@ -230,18 +231,18 @@ async function extractDeepRelatedApis(seedApis: SimilarAPI[]): Promise<SimilarAP
   for (const seedApi of seedApis) {
     try {
       const jsonApiUrl = convertToJsonApiUrl(seedApi.url);
-      
+
       if (!jsonApiUrl) {
-        console.error(`Failed to convert URL: ${seedApi.url}`);
+        logger.warn(`Failed to convert URL: ${seedApi.url}`);
         continue;
       }
 
       const response = await httpClient.getJson<any>(jsonApiUrl);
-      
+
       // Handle response structure
       let data: AppleDocData;
       let references: Record<string, any> | undefined;
-      
+
       if (response.data) {
         data = response.data;
         references = response.references || data.references;
@@ -261,7 +262,7 @@ async function extractDeepRelatedApis(seedApis: SimilarAPI[]): Promise<SimilarAP
         deepApis.push(...relatedApis);
       }
     } catch (error) {
-      console.error(`Failed to fetch deep related API ${seedApi.url}:`, error);
+      logger.error(`Failed to fetch deep related API ${seedApi.url}:`, error);
     }
   }
 
@@ -346,12 +347,12 @@ function formatSimilarApis(
 ): string {
   const apiName = originalApiName || new URL(originalUrl).pathname.split('/').pop() || 'API';
   let content = `# Similar APIs to ${apiName}\n\n`;
-  
+
   if (similarApis.length === 0) {
-    content += `No similar APIs found`;
+    content += 'No similar APIs found';
     return content;
   }
-  
+
   // Add metadata about the original API if available
   if (originalData?.metadata) {
     const roleHeading = originalData.metadata.roleHeading || '';
@@ -360,13 +361,13 @@ function formatSimilarApis(
       content += `${roleHeading}${platforms ? ' · ' + platforms : ''}\n\n`;
     }
   }
-  
+
   content += `**Source:** [${originalUrl}](${originalUrl})\n\n`;
   content += `**Found ${similarApis.length} similar APIs (sorted by relevance):**\n\n`;
 
   // Group by category instead of similarity type for better organization
   const groupedByCategory = new Map<string, SimilarAPI[]>();
-  
+
   for (const api of similarApis) {
     const key = `${api.similarityType}: ${api.category}`;
     if (!groupedByCategory.has(key)) {
@@ -374,10 +375,10 @@ function formatSimilarApis(
     }
     groupedByCategory.get(key)!.push(api);
   }
-  
+
   for (const [categoryKey, apis] of groupedByCategory) {
     content += `## ${categoryKey}\n\n`;
-    
+
     for (const api of apis) {
       content += formatSingleSimilarApi(api);
     }

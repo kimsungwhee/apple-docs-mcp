@@ -1,6 +1,8 @@
 import * as cheerio from 'cheerio';
-import { parseSearchResult, SearchResult } from './search-result-parser.js';
+import type { SearchResult } from './search-result-parser.js';
+import { parseSearchResult } from './search-result-parser.js';
 import { API_LIMITS } from '../utils/constants.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * Formats search results for display
@@ -9,32 +11,32 @@ export function formatSearchResults(
   results: SearchResult[],
   query: string,
   filterType: string,
-  searchUrl: string
+  searchUrl: string,
 ): string {
   let content = '';
-  
+
   // Add header
-  content += `# Apple Documentation Search Results\n\n`;
+  content += '# Apple Documentation Search Results\n\n';
   content += `**Query:** "${query}"\n`;
   content += `**Filter:** ${filterType}\n`;
   content += `**Results found:** ${results.length}\n\n`;
-  
+
   if (results.length === 0) {
     content += formatNoResultsMessage(query, filterType, searchUrl);
     return content;
   }
-  
+
   // Group results by type
   const groupedResults = groupResultsByType(results);
-  
+
   // Format each group
   Object.entries(groupedResults).forEach(([type, typeResults]) => {
     content += formatResultGroup(type, typeResults);
   });
-  
+
   // Add footer
   content += formatSearchFooter(searchUrl);
-  
+
   return content;
 }
 
@@ -58,7 +60,7 @@ function formatNoResultsMessage(query: string, filterType: string, searchUrl: st
  */
 function groupResultsByType(results: SearchResult[]): Record<string, SearchResult[]> {
   const groups: Record<string, SearchResult[]> = {};
-  
+
   results.forEach(result => {
     const displayType = getDisplayType(result.type);
     if (!groups[displayType]) {
@@ -66,7 +68,7 @@ function groupResultsByType(results: SearchResult[]): Record<string, SearchResul
     }
     groups[displayType].push(result);
   });
-  
+
   return groups;
 }
 
@@ -81,7 +83,7 @@ function getDisplayType(type: string): string {
     'sample-code': '💻 Sample Code',
     'guide': '📋 Guides',
   };
-  
+
   return typeDisplayNames[type] || '📝 Other';
 }
 
@@ -90,11 +92,11 @@ function getDisplayType(type: string): string {
  */
 function formatResultGroup(type: string, results: SearchResult[]): string {
   let content = `## ${type}\n\n`;
-  
+
   results.forEach((result, index) => {
     content += formatSingleResult(result, index + 1);
   });
-  
+
   return content;
 }
 
@@ -103,30 +105,32 @@ function formatResultGroup(type: string, results: SearchResult[]): string {
  */
 function formatSingleResult(result: SearchResult, index: number): string {
   let content = `### ${index}. ${result.title}`;
-  
+
   // Add badges
   const badges = [];
-  if (result.beta) badges.push('🧪 Beta');
+  if (result.beta) {
+    badges.push('🧪 Beta');
+  }
   if (badges.length > 0) {
     content += ` ${badges.join(' ')}`;
   }
-  
+
   content += '\n\n';
-  
+
   // Add metadata
   if (result.framework) {
     content += `**Framework:** ${result.framework}\n`;
   }
   content += `**Type:** ${result.type.replace(/-/g, ' ')}\n`;
-  
+
   // Add description
   if (result.description) {
     content += `**Description:** ${result.description}\n`;
   }
-  
+
   // Add URL
   content += `**URL:** ${result.url}\n\n`;
-  
+
   return content;
 }
 
@@ -144,12 +148,12 @@ export function parseSearchResults(
   html: string,
   query: string,
   searchUrl: string,
-  filterType: string = 'all'
+  filterType: string = 'all',
 ): { content: Array<{ type: string; text: string }> } {
   try {
     const $ = cheerio.load(html);
     const results: SearchResult[] = [];
-    
+
     // Parse each search result (with limit)
     $('.search-result').each((_, element) => {
       if (results.length >= API_LIMITS.MAX_SEARCH_RESULTS) {
@@ -161,10 +165,10 @@ export function parseSearchResults(
       }
       return true; // Continue parsing
     });
-    
+
     // Format results
     const formattedContent = formatSearchResults(results, query, filterType, searchUrl);
-    
+
     return {
       content: [{
         type: 'text',
@@ -172,7 +176,7 @@ export function parseSearchResults(
       }],
     };
   } catch (error) {
-    console.error('Error parsing search results:', error);
+    logger.error('Error parsing search results:', error);
     return {
       content: [{
         type: 'text',

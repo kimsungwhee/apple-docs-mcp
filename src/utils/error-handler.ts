@@ -5,6 +5,7 @@
 import { ERROR_MESSAGES } from './constants.js';
 import type { AppError, ErrorResponse } from '../types/error.js';
 import { ErrorType } from '../types/error.js';
+import { logger } from './logger.js';
 
 // Re-export for backward compatibility
 export type { AppError };
@@ -125,10 +126,134 @@ export function validateInput(value: string, fieldName: string, minLength: numbe
  */
 export function logError(error: AppError, context?: string): void {
   if (process.env.NODE_ENV === 'development') {
-    console.error(`[${context ?? 'ERROR'}]`, {
-      type: error.type,
-      message: error.message,
-      originalError: error.originalError,
-    });
+    logger.error(`[${context ?? 'ERROR'}] ${error.message}`, error.originalError);
   }
+}
+
+/**
+ * Handle generic errors and convert them to AppError
+ */
+export function handleGenericError(error: unknown, context: string, fallbackMessage?: string): AppError {
+  logger.error(`Error in ${context}:`, error);
+
+  if (error instanceof Error) {
+    // Check for specific error types
+    if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
+      return {
+        type: ErrorType.TIMEOUT,
+        message: ERROR_MESSAGES.TIMEOUT,
+        originalError: error,
+        suggestions: [
+          'Try again with a simpler query',
+          'Check your network connection',
+          'Verify the service is available',
+        ],
+      };
+    }
+
+    if (error.message.includes('429') || error.message.includes('rate limit')) {
+      return {
+        type: ErrorType.RATE_LIMITED,
+        message: 'Request rate limit exceeded',
+        originalError: error,
+        suggestions: [
+          'Wait a moment before trying again',
+          'Consider reducing the frequency of requests',
+        ],
+      };
+    }
+
+    if (error.message.includes('500') || error.message.includes('502') || error.message.includes('503')) {
+      return {
+        type: ErrorType.SERVICE_UNAVAILABLE,
+        message: 'Apple Developer Documentation service is temporarily unavailable',
+        originalError: error,
+        suggestions: [
+          'Try again in a few minutes',
+          'Check Apple Developer status page',
+          'Verify your internet connection',
+        ],
+      };
+    }
+
+    if (error.message.includes('JSON') || error.message.includes('parse')) {
+      return handleParseError(error);
+    }
+
+    return {
+      type: ErrorType.API_ERROR,
+      message: error.message,
+      originalError: error,
+      suggestions: [
+        'Check the request parameters',
+        'Try again later',
+        'Verify the API endpoint is correct',
+      ],
+    };
+  }
+
+  return {
+    type: ErrorType.UNKNOWN,
+    message: fallbackMessage || `An error occurred in ${context}`,
+    suggestions: [
+      'Try again later',
+      'Check your input parameters',
+      'Contact support if the issue persists',
+    ],
+  };
+}
+
+/**
+ * Create a standardized error response with consistent formatting
+ */
+export function createStandardErrorResponse(error: unknown, operation: string): ErrorResponse {
+  const appError = handleGenericError(error, operation);
+  return createErrorResponse(appError);
+}
+
+/**
+ * Wrap async functions with error handling
+ */
+export async function withErrorHandling<T>(
+  operation: () => Promise<T>,
+  context: string,
+  fallbackMessage?: string,
+): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    const appError = handleGenericError(error, context, fallbackMessage);
+    logError(appError, context);
+    throw appError;
+  }
+}
+
+/**
+ * Validate multiple input parameters
+ */
+export function validateInputs(
+  validations: Array<{ value: string; fieldName: string; minLength?: number }>,
+): AppError | null {
+  for (const validation of validations) {
+    const error = validateInput(validation.value, validation.fieldName, validation.minLength);
+    if (error) {
+      return error;
+    }
+  }
+  return null;
+}
+
+/**
+ * Handle cache-related errors
+ */
+export function handleCacheError(error: unknown, operation: string): AppError {
+  return {
+    type: ErrorType.CACHE_ERROR,
+    message: `Cache operation failed: ${operation}`,
+    originalError: error instanceof Error ? error : undefined,
+    suggestions: [
+      'The operation will continue without cache',
+      'Try clearing the cache if issues persist',
+    ],
+  };
 }
