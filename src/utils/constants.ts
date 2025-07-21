@@ -164,7 +164,7 @@ export const WWDC_DATA_SOURCE_CONFIG = {
     owner: 'kimsungwhee',
     repo: 'apple-docs-mcp',
     branch: 'main',
-    baseUrl: 'https://raw.githubusercontent.com/kimsungwhee/apple-docs-mcp/main/data/wwdc',
+    baseUrl: 'https://cdn.jsdelivr.net/gh/kimsungwhee/apple-docs-mcp@main/data/wwdc',
   },
   local: {
     dataDir: 'data/wwdc', // Relative path from project root
