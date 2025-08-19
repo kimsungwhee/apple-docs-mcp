@@ -45,16 +45,16 @@ export async function extractAllTopics(): Promise<Topic[]> {
 
     topicLinks.forEach((link: Element) => {
       const href = link.getAttribute('href') || '';
-      
+
       // Look for topic links in different formats
-      let match = href.match(/\/videos\/topics\/([a-z-]+)/) || 
+      const match = href.match(/\/videos\/topics\/([a-z-]+)/) ||
                   href.match(/\/videos\/([a-z-]+)\/?$/);
-      
+
       if (match && !href.includes('/play/')) {
         const id = match[1];
-        
+
         // Skip non-topic links
-        if (id === 'all-videos' || id === 'collections' || id === 'about' || 
+        if (id === 'all-videos' || id === 'collections' || id === 'about' ||
             id === 'wwdc' || /^\d+$/.test(id)) {
           return;
         }
@@ -62,9 +62,11 @@ export async function extractAllTopics(): Promise<Topic[]> {
         // Extract name from heading or link text
         const heading = link.querySelector('h3, h4') || link;
         const name = heading.textContent?.trim() || '';
-        
-        if (!name) return;
-        
+
+        if (!name) {
+          return;
+        }
+
         // Extract video count if available
         let videoCount = 0;  // Default to 0
         const countElement = link.querySelector('p');
@@ -88,7 +90,7 @@ export async function extractAllTopics(): Promise<Topic[]> {
     const uniqueTopics = Array.from(
       new Map(topics.map(t => [t.id, t])).values(),
     );
-    
+
     // Sort alphabetically by name
     uniqueTopics.sort((a, b) => a.name.localeCompare(b.name));
 

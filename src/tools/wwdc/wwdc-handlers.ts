@@ -27,7 +27,7 @@ export async function handleListWWDCVideos(
 
     let allVideos: Array<WWDCVideo & { year: string }> = [];
 
-    if (topic && topic.includes('-')) {
+    if (topic?.includes('-')) {
       // If topic looks like a topic ID, try to use topic index
       try {
         const topicIndex = await loadTopicIndex(topic);
@@ -47,7 +47,7 @@ export async function handleListWWDCVideos(
         // Fall through to load by year and filter by keyword
       }
     }
-    
+
     if (allVideos.length === 0 && year && year !== 'all') {
       // If year is specified, use year index
       const yearIndex = await loadYearIndex(year);
@@ -83,7 +83,7 @@ export async function handleListWWDCVideos(
       // If we loaded videos but didn't use topic index, filter by keyword
       const topicLower = topic.toLowerCase();
       const wasFilteredByTopicIndex = topic.includes('-') && allVideos.length > 0;
-      
+
       if (!wasFilteredByTopicIndex) {
         filteredVideos = filteredVideos.filter(v =>
           v.topics.some(t => t.toLowerCase().includes(topicLower)) ||

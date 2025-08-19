@@ -314,16 +314,16 @@ export async function handleToolCall(
     if (!handler) {
       throw new Error(`Unknown tool: ${toolName}`);
     }
-    
+
     return await handler(args, server) as { content: Array<{ type: string; text: string }>; isError?: boolean };
   } catch (error) {
     // Return error response for validation errors and unknown tools
     return {
       content: [{
         type: 'text',
-        text: `Error: ${error instanceof Error ? error.message : String(error)}`
+        text: `Error: ${error instanceof Error ? error.message : String(error)}`,
       }],
-      isError: true
+      isError: true,
     };
   }
 }

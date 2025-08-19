@@ -1,6 +1,6 @@
 /**
  * Tool Selection Guide for Apple Docs MCP
- * 
+ *
  * This guide helps AI assistants choose the right tool for each task
  * and understand tool relationships and best practices.
  */
@@ -190,16 +190,16 @@ export function selectToolForQuery(query: string): string[] {
 export const TOOL_COMBINATIONS = {
   // Search then read pattern
   SEARCH_AND_READ: ['search_apple_docs', 'get_apple_doc_content'],
-  
+
   // Framework exploration pattern
   FRAMEWORK_EXPLORE: ['list_technologies', 'search_framework_symbols'],
-  
+
   // WWDC discovery pattern
   WWDC_EXPLORE: ['list_wwdc_videos', 'get_wwdc_video'],
-  
+
   // API analysis pattern
   API_ANALYSIS: ['get_related_apis', 'get_platform_compatibility', 'find_similar_apis'],
-  
+
   // Code example pattern
   CODE_EXAMPLES: ['search_apple_docs', 'get_sample_code', 'get_wwdc_code_examples'],
 };
