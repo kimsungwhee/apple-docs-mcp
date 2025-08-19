@@ -574,7 +574,7 @@ async function extractRelatedVideos(document: Document, videoUrl: string): Promi
  */
 function cleanCodeIndentation(code: string): string {
   const lines = code.split('\n');
-  
+
   // Remove empty lines at start and end
   while (lines.length > 0 && lines[0].trim() === '') {
     lines.shift();
@@ -582,9 +582,11 @@ function cleanCodeIndentation(code: string): string {
   while (lines.length > 0 && lines[lines.length - 1].trim() === '') {
     lines.pop();
   }
-  
-  if (lines.length === 0) return '';
-  
+
+  if (lines.length === 0) {
+    return '';
+  }
+
   // Find minimum indentation (excluding empty lines)
   const minIndent = lines
     .filter(line => line.trim().length > 0)
@@ -592,7 +594,7 @@ function cleanCodeIndentation(code: string): string {
       const indent = line.match(/^(\s*)/)?.[1].length || 0;
       return Math.min(min, indent);
     }, Infinity);
-  
+
   // Remove common indentation
   if (minIndent > 0 && minIndent !== Infinity) {
     return lines
@@ -600,7 +602,7 @@ function cleanCodeIndentation(code: string): string {
       .join('\n')
       .trim();
   }
-  
+
   return lines.join('\n').trim();
 }
 

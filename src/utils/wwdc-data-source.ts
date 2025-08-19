@@ -11,40 +11,177 @@ import { wwdcDataCache } from './cache.js';
 import { WWDC_DATA_SOURCE_CONFIG, WWDC_CONFIG } from './constants.js';
 import type { WWDCVideo, GlobalMetadata, TopicIndex, YearIndex } from '../types/wwdc.js';
 
-// Data source configuration (using constants)
-export const DATA_SOURCE_CONFIG = {
-  github: WWDC_DATA_SOURCE_CONFIG.github,
-  local: {
-    // Use relative path from project root
-    dataDir: path.join(process.cwd(), WWDC_DATA_SOURCE_CONFIG.local.dataDir),
-  },
-};
-
 /**
  * Data source type
  */
 export type DataSourceType = 'github' | 'local';
 
 /**
- * Get data source type
+ * Global configuration state for data source
+ */
+interface DataSourceConfig {
+  type: DataSourceType;
+  localPath: string;
+  forceSource?: 'local' | 'github';
+  initialized: boolean;
+}
+
+let globalConfig: DataSourceConfig = {
+  type: 'github',
+  localPath: '',
+  forceSource: undefined,
+  initialized: false,
+};
+
+/**
+ * Initialize data source configuration from CLI args and environment
+ */
+export function initializeDataSourceConfig(cliOptions?: {
+  localPath?: string;
+  useLocal?: boolean;
+  forceGithub?: boolean;
+}): void {
+  if (globalConfig.initialized) {
+    return; // Already initialized
+  }
+
+  // Priority order: CLI args > Environment > Defaults
+  const config: DataSourceConfig = {
+    type: 'github',
+    localPath: '',
+    forceSource: undefined,
+    initialized: true,
+  };
+
+  // 1. Check CLI arguments (highest priority)
+  if (cliOptions?.forceGithub) {
+    config.type = 'github';
+    config.forceSource = 'github';
+  } else if (cliOptions?.localPath) {
+    config.localPath = path.resolve(cliOptions.localPath);
+    config.type = 'local';
+    config.forceSource = 'local';
+  } else if (cliOptions?.useLocal) {
+    config.localPath = path.join(process.cwd(), WWDC_DATA_SOURCE_CONFIG.local.dataDir);
+    config.type = 'local';
+    config.forceSource = 'local';
+  } else if (WWDC_DATA_SOURCE_CONFIG.env.forceGithub) {
+    // 2. Check environment variables (medium priority)
+    config.type = 'github';
+    config.forceSource = 'github';
+  } else if (WWDC_DATA_SOURCE_CONFIG.env.localPath) {
+    config.localPath = path.resolve(WWDC_DATA_SOURCE_CONFIG.env.localPath);
+    config.type = 'local';
+  } else {
+    // 3. Auto-detection (lowest priority)
+    // Use existing auto-detection logic
+    config.type = 'github'; // Will be determined by getDataSourceType()
+  }
+
+  globalConfig = config;
+
+  logger.info(`Data source initialized: ${config.type}${config.localPath ? ` (${config.localPath})` : ''}`);
+}
+
+/**
+ * Get current data source configuration
+ */
+export function getDataSourceConfig(): DataSourceConfig {
+  return { ...globalConfig };
+}
+
+// Data source configuration (using constants)
+export const DATA_SOURCE_CONFIG = {
+  github: WWDC_DATA_SOURCE_CONFIG.github,
+  local: {
+    get dataDir(): string {
+      if (globalConfig.localPath) {
+        return path.join(globalConfig.localPath, 'data/wwdc');
+      }
+      return path.join(process.cwd(), WWDC_DATA_SOURCE_CONFIG.local.dataDir);
+    },
+  },
+};
+
+/**
+ * Get data source type with enhanced logic
  */
 export async function getDataSourceType(): Promise<DataSourceType> {
-  // Use local data in development environment
+  // Initialize if not done yet
+  if (!globalConfig.initialized) {
+    initializeDataSourceConfig();
+  }
+
+  // If force source is set, use it
+  if (globalConfig.forceSource) {
+    return globalConfig.forceSource;
+  }
+
+  // If we have a configured local path, validate it
+  if (globalConfig.localPath) {
+    try {
+      const dataDir = path.join(globalConfig.localPath, 'data/wwdc');
+      await fs.access(dataDir);
+      await validateLocalDataStructure(dataDir);
+      logger.info(`Using local data from: ${dataDir}`);
+      return 'local';
+    } catch (error) {
+      logger.error(`Local path ${globalConfig.localPath} is invalid:`, error);
+      logger.warn('Falling back to GitHub');
+      return 'github';
+    }
+  }
+
+  // Use existing auto-detection logic
   if (process.env.NODE_ENV === 'development') {
     return 'local';
   }
 
-  // Check if local data directory exists
+  // Check if default local data directory exists
   try {
     const localDataDir = DATA_SOURCE_CONFIG.local.dataDir;
     await fs.access(localDataDir);
+    await validateLocalDataStructure(localDataDir);
     return 'local';
   } catch (error) {
     logger.debug('Local data directory not accessible, using GitHub');
   }
 
-  // Default to GitHub
   return 'github';
+}
+
+/**
+ * Validate that local data directory has proper structure
+ */
+async function validateLocalDataStructure(dataDir: string): Promise<void> {
+  const requiredFiles = [
+    'index.json',
+    'by-year',
+    'by-topic',
+    'videos',
+  ];
+
+  for (const file of requiredFiles) {
+    const filePath = path.join(dataDir, file);
+    try {
+      await fs.access(filePath);
+    } catch (error) {
+      throw new Error(`Required file/directory missing: ${file}`);
+    }
+  }
+
+  // Validate index.json structure
+  try {
+    const indexPath = path.join(dataDir, 'index.json');
+    const indexData = await fs.readFile(indexPath, 'utf-8');
+    const parsed = JSON.parse(indexData);
+
+    if (!parsed.years || !parsed.topics || !parsed.statistics) {
+      throw new Error('Invalid index.json structure');
+    }
+  } catch (error) {
+    throw new Error(`Invalid index.json: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
 
 /**
@@ -64,14 +201,35 @@ async function fetchFromGitHub(filePath: string): Promise<string> {
 }
 
 /**
- * Fetch file content from local file system
+ * Fetch file content from local file system with enhanced path resolution
  */
 async function fetchFromLocal(filePath: string): Promise<string> {
-  const fullPath = path.join(DATA_SOURCE_CONFIG.local.dataDir, filePath);
+  const baseDir = DATA_SOURCE_CONFIG.local.dataDir;
+  const fullPath = path.join(baseDir, filePath);
+
   logger.debug(`Reading from local: ${fullPath}`);
 
   try {
-    return await fs.readFile(fullPath, 'utf-8');
+    // Additional security check - ensure we're not reading outside the data directory
+    const resolvedPath = path.resolve(fullPath);
+    const resolvedBaseDir = path.resolve(baseDir);
+
+    if (!resolvedPath.startsWith(resolvedBaseDir)) {
+      throw new Error(`Invalid file path: ${filePath}`);
+    }
+
+    const content = await fs.readFile(resolvedPath, 'utf-8');
+
+    // Validate JSON if it's a JSON file
+    if (filePath.endsWith('.json')) {
+      try {
+        JSON.parse(content);
+      } catch (error) {
+        throw new Error(`Invalid JSON in ${filePath}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+
+    return content;
   } catch (error) {
     logger.error(`Failed to read local file: ${fullPath}`, error);
     throw new Error(`Failed to read ${filePath} from local: ${error instanceof Error ? error.message : String(error)}`);
