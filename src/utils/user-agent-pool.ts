@@ -1,13 +1,13 @@
 /**
  * User-Agent Pool Manager for rotating user agents to avoid detection
- * 
+ *
  * Provides robust management of multiple User-Agent strings with:
  * - Multiple rotation strategies (random, sequential, smart)
  * - Automatic error handling and recovery
  * - Performance statistics and monitoring
  * - Thread-safe concurrent access
  * - Browser type detection and header generation support
- * 
+ *
  * @author Apple Docs MCP
  * @version 1.0.0
  */
@@ -100,17 +100,17 @@ const DEFAULT_CONFIG: Required<UserAgentPoolConfig> = {
 
 /**
  * User-Agent Pool Manager
- * 
+ *
  * Manages a pool of User-Agent strings with rotation, error handling,
  * and automatic recovery capabilities.
- * 
+ *
  * @example
  * ```typescript
  * const pool = new UserAgentPool([
  *   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
  *   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
  * ]);
- * 
+ *
  * const userAgent = pool.getNext();
  * // ... make request ...
  * if (response.ok) {
@@ -128,7 +128,7 @@ export class UserAgentPool {
 
   /**
    * Create a new User-Agent pool
-   * 
+   *
    * @param agents - Array of User-Agent strings to manage
    * @param config - Configuration options
    * @throws {Error} When agents array is empty or contains invalid values
@@ -139,8 +139,8 @@ export class UserAgentPool {
     }
 
     // Validate and normalize agents
-    const validAgents = agents.filter(agent => 
-      typeof agent === 'string' && agent.trim().length > 0
+    const validAgents = agents.filter(agent =>
+      typeof agent === 'string' && agent.trim().length > 0,
     );
 
     if (validAgents.length === 0) {
@@ -148,7 +148,7 @@ export class UserAgentPool {
     }
 
     this.config = { ...DEFAULT_CONFIG, ...config };
-    
+
     // Initialize agents
     this.agents = validAgents.map(value => ({
       value: value.trim(),
@@ -157,7 +157,7 @@ export class UserAgentPool {
       failureCount: 0,
       consecutiveFailures: 0,
     }));
-    
+
     // Remove duplicates
     this.removeDuplicates();
 
@@ -173,9 +173,9 @@ export class UserAgentPool {
 
   /**
    * Get the next User-Agent string using the configured strategy
-   * 
+   *
    * This method is thread-safe and handles automatic recovery of disabled agents.
-   * 
+   *
    * @returns The next User-Agent string to use
    * @throws {Error} When no User-Agents are available
    */
@@ -186,7 +186,7 @@ export class UserAgentPool {
 
       // Get available agents
       const enabledAgents = this.agents.filter(agent => agent.isEnabled);
-      
+
       if (enabledAgents.length === 0) {
         // Emergency fallback: re-enable the least bad agent
         const fallbackAgent = this.selectFallbackAgent();
@@ -207,21 +207,23 @@ export class UserAgentPool {
 
   /**
    * Mark a User-Agent as having failed a request
-   * 
+   *
    * @param userAgent - The User-Agent string that failed
    * @param statusCode - HTTP status code of the failure (optional)
    */
   async markFailure(userAgent: string, statusCode?: number): Promise<void> {
     return this.mutex.runExclusive(async () => {
       const agent = this.findAgent(userAgent);
-      if (!agent) return;
+      if (!agent) {
+        return;
+      }
 
       agent.failureCount++;
       agent.consecutiveFailures++;
 
       // Determine if this failure should disable the agent
       const shouldDisable = this.shouldDisableAgent(agent, statusCode);
-      
+
       if (shouldDisable) {
         agent.isEnabled = false;
         agent.disabledUntil = new Date(Date.now() + this.config.disableDuration);
@@ -231,13 +233,15 @@ export class UserAgentPool {
 
   /**
    * Mark a User-Agent as having succeeded a request
-   * 
+   *
    * @param userAgent - The User-Agent string that succeeded
    */
   async markSuccess(userAgent: string): Promise<void> {
     return this.mutex.runExclusive(async () => {
       const agent = this.findAgent(userAgent);
-      if (!agent) return;
+      if (!agent) {
+        return;
+      }
 
       agent.successCount++;
       agent.consecutiveFailures = 0; // Reset consecutive failures
@@ -252,7 +256,7 @@ export class UserAgentPool {
 
   /**
    * Add a new User-Agent to the pool
-   * 
+   *
    * @param userAgent - The User-Agent string to add
    * @throws {Error} When User-Agent is invalid or already exists
    */
@@ -263,7 +267,7 @@ export class UserAgentPool {
       }
 
       const normalizedAgent = userAgent.trim();
-      
+
       if (this.agents.some(agent => agent.value === normalizedAgent)) {
         throw new Error('User-Agent already exists in pool');
       }
@@ -280,7 +284,7 @@ export class UserAgentPool {
 
   /**
    * Remove a User-Agent from the pool
-   * 
+   *
    * @param userAgent - The User-Agent string to remove
    * @throws {Error} When trying to remove the last User-Agent
    */
@@ -296,7 +300,7 @@ export class UserAgentPool {
       }
 
       this.agents.splice(index, 1);
-      
+
       // Adjust current index if needed
       if (this.currentIndex >= this.agents.length) {
         this.currentIndex = 0;
@@ -306,7 +310,7 @@ export class UserAgentPool {
 
   /**
    * Get statistics for all User-Agents in the pool
-   * 
+   *
    * @returns Array of statistics for each User-Agent
    */
   getAgentStats(): AgentStats[] {
@@ -324,16 +328,16 @@ export class UserAgentPool {
 
   /**
    * Get overall pool statistics
-   * 
+   *
    * @returns Pool-wide statistics
    */
   getStats(): PoolStats {
     const enabledCount = this.agents.filter(agent => agent.isEnabled).length;
-    const totalRequests = this.agents.reduce((sum, agent) => 
+    const totalRequests = this.agents.reduce((sum, agent) =>
       sum + agent.successCount + agent.failureCount, 0);
-    const totalSuccesses = this.agents.reduce((sum, agent) => 
+    const totalSuccesses = this.agents.reduce((sum, agent) =>
       sum + agent.successCount, 0);
-    
+
     const successRate = totalRequests > 0 ? (totalSuccesses / totalRequests) * 100 : 0;
     const healthScore = this.calculateHealthScore();
 
@@ -366,7 +370,7 @@ export class UserAgentPool {
 
   /**
    * Get the current configuration
-   * 
+   *
    * @returns Current pool configuration
    */
   getConfig(): Readonly<Required<UserAgentPoolConfig>> {
@@ -375,10 +379,10 @@ export class UserAgentPool {
 
   /**
    * Get the next User-Agent as a structured UserAgent object
-   * 
+   *
    * This method provides enhanced information about the User-Agent including
    * browser type, version, OS details, and architecture information.
-   * 
+   *
    * @returns Promise resolving to a UserAgent object with parsed information
    * @throws {Error} When no User-Agents are available
    */
@@ -389,7 +393,7 @@ export class UserAgentPool {
 
   /**
    * Get a random User-Agent string filtered by browser type
-   * 
+   *
    * @param browserType - Desired browser type
    * @returns Promise resolving to a User-Agent string of the specified type
    * @throws {Error} When no User-Agents of the specified type are available
@@ -401,7 +405,9 @@ export class UserAgentPool {
 
       // Filter agents by browser type
       const matchingAgents = this.agents.filter(agent => {
-        if (!agent.isEnabled) return false;
+        if (!agent.isEnabled) {
+          return false;
+        }
         const parsed = parseUserAgent(agent.value);
         return parsed.browserType === browserType;
       });
@@ -418,7 +424,7 @@ export class UserAgentPool {
 
   /**
    * Get a random User-Agent object filtered by browser type
-   * 
+   *
    * @param browserType - Desired browser type
    * @returns Promise resolving to a UserAgent object of the specified type
    * @throws {Error} When no User-Agents of the specified type are available
@@ -430,7 +436,7 @@ export class UserAgentPool {
 
   /**
    * Get statistics grouped by browser type
-   * 
+   *
    * @returns Statistics organized by browser type
    */
   getStatsByBrowserType(): Record<BrowserType, { count: number; enabled: number; successRate: number }> {
@@ -446,7 +452,7 @@ export class UserAgentPool {
     this.agents.forEach(agent => {
       const parsed = parseUserAgent(agent.value);
       const browserType = parsed.browserType;
-      
+
       stats[browserType].count++;
       if (agent.isEnabled) {
         stats[browserType].enabled++;
@@ -462,8 +468,8 @@ export class UserAgentPool {
       result[type] = {
         count: browserStats.count,
         enabled: browserStats.enabled,
-        successRate: browserStats.totalRequests > 0 
-          ? (browserStats.successCount / browserStats.totalRequests) * 100 
+        successRate: browserStats.totalRequests > 0
+          ? (browserStats.successCount / browserStats.totalRequests) * 100
           : 0,
       };
     });
@@ -473,12 +479,12 @@ export class UserAgentPool {
 
   /**
    * Get all available browser types in the pool
-   * 
+   *
    * @returns Array of browser types present in the pool
    */
   getAvailableBrowserTypes(): BrowserType[] {
     const browserTypes = new Set<BrowserType>();
-    
+
     this.agents.forEach(agent => {
       const parsed = parseUserAgent(agent.value);
       browserTypes.add(parsed.browserType);
@@ -493,10 +499,10 @@ export class UserAgentPool {
     switch (this.config.strategy) {
       case 'sequential':
         return this.selectSequential(enabledAgents);
-      
+
       case 'smart':
         return this.selectSmart(enabledAgents);
-      
+
       case 'random':
       default:
         return this.selectRandom(enabledAgents);
@@ -512,13 +518,13 @@ export class UserAgentPool {
     // Find the next enabled agent in sequence
     const enabledIndices = agents.map(agent => this.agents.indexOf(agent));
     enabledIndices.sort((a, b) => a - b);
-    
+
     // Find current position in enabled agents
     let nextIndex = enabledIndices.find(index => index > this.currentIndex);
     if (nextIndex === undefined) {
       nextIndex = enabledIndices[0]; // Wrap around
     }
-    
+
     this.currentIndex = nextIndex;
     return this.agents[nextIndex];
   }
@@ -528,21 +534,21 @@ export class UserAgentPool {
     // 1. Agents with higher success rates
     // 2. Agents used less recently
     // 3. Agents with fewer total requests (for load balancing)
-    
+
     const now = Date.now();
     const scores = agents.map(agent => {
       const successRate = this.getAgentSuccessRate(agent);
       const totalRequests = agent.successCount + agent.failureCount;
-      
+
       // Time since last use (higher is better)
-      const timeSinceLastUse = agent.lastUsed ? 
+      const timeSinceLastUse = agent.lastUsed ?
         Math.min(now - agent.lastUsed.getTime(), 3600000) : 3600000; // Cap at 1 hour
-      
+
       // Calculate composite score
       const successScore = successRate * 0.4; // 40% weight on success rate
       const recencyScore = (timeSinceLastUse / 3600000) * 0.3; // 30% weight on recency
       const balanceScore = totalRequests > 0 ? (1 / Math.log(totalRequests + 1)) * 0.3 : 0.3; // 30% weight on load balancing
-      
+
       return successScore + recencyScore + balanceScore;
     });
 
@@ -601,34 +607,46 @@ export class UserAgentPool {
   }
 
   private selectFallbackAgent(): UserAgent | null {
-    if (this.agents.length === 0) return null;
+    if (this.agents.length === 0) {
+      return null;
+    }
 
     // Find the agent with the best success rate, or the one disabled most recently
     return this.agents.reduce((best, current) => {
-      if (!best) return current;
-      
+      if (!best) {
+        return current;
+      }
+
       const bestRate = this.getAgentSuccessRate(best);
       const currentRate = this.getAgentSuccessRate(current);
-      
-      if (currentRate > bestRate) return current;
+
+      if (currentRate > bestRate) {
+        return current;
+      }
       if (currentRate === bestRate) {
         // If rates are equal, prefer the one disabled more recently (likely to recover sooner)
-        if (!current.disabledUntil) return current;
-        if (!best.disabledUntil) return best;
+        if (!current.disabledUntil) {
+          return current;
+        }
+        if (!best.disabledUntil) {
+          return best;
+        }
         return current.disabledUntil > best.disabledUntil ? current : best;
       }
-      
+
       return best;
     });
   }
 
   private calculateHealthScore(): number {
-    if (this.agents.length === 0) return 0;
+    if (this.agents.length === 0) {
+      return 0;
+    }
 
     const enabledRatio = this.agents.filter(agent => agent.isEnabled).length / this.agents.length;
-    const avgSuccessRate = this.agents.reduce((sum, agent) => 
+    const avgSuccessRate = this.agents.reduce((sum, agent) =>
       sum + this.getAgentSuccessRate(agent), 0) / this.agents.length;
-    
+
     // Health score combines enabled ratio and average success rate
     return Math.round((enabledRatio * 0.4 + avgSuccessRate * 0.6) * 100);
   }
@@ -654,7 +672,7 @@ export class UserAgentPool {
 
 /**
  * Simple async mutex for thread-safe operations
- * 
+ *
  * Ensures that only one async operation can modify the pool state at a time.
  */
 class AsyncMutex {
@@ -677,19 +695,19 @@ export const COMMON_USER_AGENTS = {
   CHROME_MAC_APPLE: 'Mozilla/5.0 (Macintosh; arm64 Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
   CHROME_WINDOWS: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
   CHROME_LINUX: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-  
+
   // Firefox User-Agents
   FIREFOX_MAC_INTEL: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:122.0) Gecko/20100101 Firefox/122.0',
   FIREFOX_MAC_APPLE: 'Mozilla/5.0 (Macintosh; arm64 Mac OS X 10.15; rv:122.0) Gecko/20100101 Firefox/122.0',
   FIREFOX_WINDOWS: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0',
   FIREFOX_LINUX: 'Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0',
-  
+
   // Safari User-Agents (using constants from constants.ts)
   SAFARI_MAC_INTEL_15_1: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 15_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15',
   SAFARI_MAC_APPLE_15_1: 'Mozilla/5.0 (Macintosh; arm64 Mac OS X 15_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15',
   SAFARI_MAC_INTEL_14_7: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6.1 Safari/605.1.15',
   SAFARI_MAC_APPLE_14_7: 'Mozilla/5.0 (Macintosh; arm64 Mac OS X 14_7_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6.1 Safari/605.1.15',
-  
+
   // Edge User-Agents
   EDGE_WINDOWS: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0',
   EDGE_MAC_INTEL: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0',
@@ -698,7 +716,7 @@ export const COMMON_USER_AGENTS = {
 
 /**
  * Create a default User-Agent pool with common browser agents
- * 
+ *
  * @param config - Configuration options for the pool
  * @returns A new UserAgentPool instance with common User-Agents
  */

@@ -22,11 +22,11 @@ describe('Safari User-Agent Constants', () => {
     });
 
     test('should contain both Intel and Apple Silicon architectures', () => {
-      const intelUAs = SAFARI_USER_AGENTS.filter((ua: string) => 
-        SAFARI_USER_AGENT_UTILS.getArchitecture(ua) === 'Intel'
+      const intelUAs = SAFARI_USER_AGENTS.filter((ua: string) =>
+        SAFARI_USER_AGENT_UTILS.getArchitecture(ua) === 'Intel',
       );
-      const appleSiliconUAs = SAFARI_USER_AGENTS.filter((ua: string) => 
-        SAFARI_USER_AGENT_UTILS.getArchitecture(ua) === 'Apple Silicon'
+      const appleSiliconUAs = SAFARI_USER_AGENTS.filter((ua: string) =>
+        SAFARI_USER_AGENT_UTILS.getArchitecture(ua) === 'Apple Silicon',
       );
 
       expect(intelUAs.length).toBeGreaterThan(0);
@@ -35,8 +35,8 @@ describe('Safari User-Agent Constants', () => {
     });
 
     test('should contain proper macOS version coverage', () => {
-      const macOSVersions = SAFARI_USER_AGENTS.map((ua: string) => 
-        SAFARI_USER_AGENT_UTILS.getMacOSVersion(ua)
+      const macOSVersions = SAFARI_USER_AGENTS.map((ua: string) =>
+        SAFARI_USER_AGENT_UTILS.getMacOSVersion(ua),
       );
 
       // Check for presence of different major macOS versions
@@ -54,8 +54,8 @@ describe('Safari User-Agent Constants', () => {
     });
 
     test('should contain proper Safari version coverage', () => {
-      const safariVersions = SAFARI_USER_AGENTS.map((ua: string) => 
-        SAFARI_USER_AGENT_UTILS.getSafariVersion(ua)
+      const safariVersions = SAFARI_USER_AGENTS.map((ua: string) =>
+        SAFARI_USER_AGENT_UTILS.getSafariVersion(ua),
       );
 
       // Check for presence of different Safari major versions
@@ -83,7 +83,7 @@ describe('Safari User-Agent Constants', () => {
     });
 
     test('all categories should sum to total User-Agent count', () => {
-      const totalCategorized = 
+      const totalCategorized =
         SAFARI_USER_AGENT_CATEGORIES.monterey.length +
         SAFARI_USER_AGENT_CATEGORIES.ventura.length +
         SAFARI_USER_AGENT_CATEGORIES.sonoma.length +
@@ -185,16 +185,16 @@ describe('Safari User-Agent Constants', () => {
         const testCases = [
           {
             ua: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6.1 Safari/605.1.15',
-            expected: '14.7.1'
+            expected: '14.7.1',
           },
           {
             ua: 'Mozilla/5.0 (Macintosh; arm64 Mac OS X 15_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15',
-            expected: '15.0'
+            expected: '15.0',
           },
           {
             ua: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 12_7_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6.1 Safari/605.1.15',
-            expected: '12.7.6'
-          }
+            expected: '12.7.6',
+          },
         ];
 
         testCases.forEach(({ ua, expected }) => {
@@ -212,16 +212,16 @@ describe('Safari User-Agent Constants', () => {
         const testCases = [
           {
             ua: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6.1 Safari/605.1.15',
-            expected: '17.6.1'
+            expected: '17.6.1',
           },
           {
             ua: 'Mozilla/5.0 (Macintosh; arm64 Mac OS X 15_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15',
-            expected: '18.0'
+            expected: '18.0',
           },
           {
             ua: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 26_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/19.0 Safari/605.1.15',
-            expected: '19.0'
-          }
+            expected: '19.0',
+          },
         ];
 
         testCases.forEach(({ ua, expected }) => {
@@ -254,7 +254,7 @@ describe('Safari User-Agent Constants', () => {
     describe('getRandomUserAgentFromCategory', () => {
       test('should return User-Agent from specified category', () => {
         const categories = ['monterey', 'ventura', 'sonoma', 'sequoia', 'beta'] as const;
-        
+
         categories.forEach(category => {
           const randomUA = SAFARI_USER_AGENT_UTILS.getRandomUserAgentFromCategory(category);
           expect((SAFARI_USER_AGENT_CATEGORIES[category] as readonly string[]).includes(randomUA)).toBe(true);

@@ -1,9 +1,9 @@
 /**
  * HTTP Headers Generator for browser compatibility and anti-detection
- * 
+ *
  * Generates browser-specific HTTP headers to make requests appear more authentic
  * and reduce the likelihood of being detected as automated requests.
- * 
+ *
  * Features:
  * - Browser-specific header templates (Chrome, Firefox, Safari, Edge)
  * - Accept-Language rotation for geographic diversity
@@ -18,7 +18,6 @@ import type {
   HeaderTemplate,
   HeaderGeneratorConfig,
   UserAgent,
-  LanguagePreference,
   SecFetchConfig,
 } from '../types/headers.js';
 
@@ -46,14 +45,14 @@ const DEFAULT_CONFIG: Required<HeaderGeneratorConfig> = {
 
 /**
  * HTTP Headers Generator
- * 
+ *
  * Generates authentic browser headers based on User-Agent strings and configuration.
  * Uses singleton pattern for optimal performance and memory usage.
- * 
+ *
  * @example
  * ```typescript
  * const generator = HttpHeadersGenerator.getInstance();
- * 
+ *
  * const userAgent = {
  *   userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)...',
  *   browserType: 'chrome',
@@ -61,7 +60,7 @@ const DEFAULT_CONFIG: Required<HeaderGeneratorConfig> = {
  *   os: 'macOS',
  *   osVersion: '10.15.7'
  * };
- * 
+ *
  * const headers = generator.generateHeaders(userAgent);
  * console.log(headers['Accept-Language']); // "en-US,en;q=0.9"
  * ```
@@ -70,14 +69,14 @@ export class HttpHeadersGenerator {
   private static instance: HttpHeadersGenerator;
   private config: Required<HeaderGeneratorConfig>;
   private languageRotationIndex = 0;
-  
+
   private constructor(config: HeaderGeneratorConfig = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
   }
 
   /**
    * Get singleton instance of HttpHeadersGenerator
-   * 
+   *
    * @param config - Optional configuration to override defaults
    * @returns Singleton instance of HttpHeadersGenerator
    */
@@ -86,33 +85,33 @@ export class HttpHeadersGenerator {
       HttpHeadersGenerator.instance = new HttpHeadersGenerator(config);
     } else if (Object.keys(config).length > 0) {
       // Update configuration if provided
-      HttpHeadersGenerator.instance.config = { 
-        ...HttpHeadersGenerator.instance.config, 
-        ...config 
+      HttpHeadersGenerator.instance.config = {
+        ...HttpHeadersGenerator.instance.config,
+        ...config,
       };
     }
-    
+
     return HttpHeadersGenerator.instance;
   }
 
   /**
    * Generate complete HTTP headers for a given User-Agent
-   * 
+   *
    * Creates a complete set of HTTP headers that match the browser type
    * and configuration. Headers are generated to appear authentic and
    * reduce detection risk.
-   * 
+   *
    * @param userAgent - UserAgent object containing browser information
    * @param customHeaders - Optional custom headers to override generated ones
    * @returns Complete set of HTTP headers
    */
   generateHeaders(
     userAgent: UserAgent,
-    customHeaders: Record<string, string> = {}
+    customHeaders: Record<string, string> = {},
   ): Record<string, string> {
     // Get base template for browser type
     const baseTemplate = this.getHeaderTemplate(userAgent.browserType);
-    
+
     // Generate dynamic headers
     const generatedHeaders: Record<string, string> = {
       ...baseTemplate,
@@ -122,7 +121,7 @@ export class HttpHeadersGenerator {
     // Apply language rotation if enabled, otherwise use default or browser-specific
     if (this.config.languageRotation) {
       generatedHeaders['Accept-Language'] = this.generateLanguageHeader();
-    } else if (this.config.defaultAcceptLanguage && 
+    } else if (this.config.defaultAcceptLanguage &&
                this.config.defaultAcceptLanguage !== 'en-US,en;q=0.9') {
       generatedHeaders['Accept-Language'] = this.config.defaultAcceptLanguage;
     }
@@ -156,7 +155,7 @@ export class HttpHeadersGenerator {
 
   /**
    * Get header template for browser type
-   * 
+   *
    * @param browserType - Type of browser
    * @returns Header template for the browser
    */
@@ -167,7 +166,7 @@ export class HttpHeadersGenerator {
 
   /**
    * Generate Accept-Language header with rotation
-   * 
+   *
    * @returns Accept-Language header value
    */
   private generateLanguageHeader(): string {
@@ -179,7 +178,7 @@ export class HttpHeadersGenerator {
     this.languageRotationIndex = (this.languageRotationIndex + 1) % LANGUAGE_PREFERENCES.length;
 
     return preferences
-      .map(pref => pref.quality && pref.quality < 1.0 
+      .map(pref => pref.quality && pref.quality < 1.0
         ? `${pref.language};q=${pref.quality.toFixed(1)}`
         : pref.language)
       .join(',');
@@ -187,14 +186,14 @@ export class HttpHeadersGenerator {
 
   /**
    * Generate Sec-Fetch-* headers for modern browsers
-   * 
+   *
    * @param browserType - Type of browser
    * @param config - Optional Sec-Fetch configuration
    * @returns Sec-Fetch headers object
    */
   private generateSecFetchHeaders(
-    browserType: BrowserType,
-    config: Partial<SecFetchConfig> = {}
+    _browserType: BrowserType,
+    config: Partial<SecFetchConfig> = {},
   ): Record<string, string> {
     const defaultConfig: SecFetchConfig = {
       dest: 'document',
@@ -219,7 +218,7 @@ export class HttpHeadersGenerator {
 
   /**
    * Generate Do Not Track header
-   * 
+   *
    * @returns DNT header value
    */
   private generateDNTHeader(): string {
@@ -228,7 +227,7 @@ export class HttpHeadersGenerator {
 
   /**
    * Generate dynamic headers based on User-Agent details
-   * 
+   *
    * @param userAgent - UserAgent object
    * @returns Dynamic headers object
    */
@@ -268,7 +267,7 @@ export class HttpHeadersGenerator {
 
   /**
    * Get custom template headers for browser type
-   * 
+   *
    * @param browserType - Type of browser
    * @returns Custom headers from configuration
    */
@@ -291,7 +290,7 @@ export class HttpHeadersGenerator {
 
   /**
    * Check if browser supports Sec-Fetch headers
-   * 
+   *
    * @param browserType - Type of browser
    * @returns Whether browser supports Sec-Fetch headers
    */
@@ -302,7 +301,7 @@ export class HttpHeadersGenerator {
 
   /**
    * Update configuration
-   * 
+   *
    * @param config - New configuration to merge
    */
   updateConfig(config: Partial<HeaderGeneratorConfig>): void {
@@ -311,7 +310,7 @@ export class HttpHeadersGenerator {
 
   /**
    * Get current configuration
-   * 
+   *
    * @returns Current configuration (read-only)
    */
   getConfig(): Readonly<Required<HeaderGeneratorConfig>> {
@@ -327,7 +326,7 @@ export class HttpHeadersGenerator {
 
   /**
    * Get current language rotation index
-   * 
+   *
    * @returns Current rotation index
    */
   getLanguageRotationIndex(): number {
@@ -336,14 +335,14 @@ export class HttpHeadersGenerator {
 
   /**
    * Validate generated headers for consistency
-   * 
+   *
    * @param headers - Headers to validate
    * @param userAgent - Original UserAgent object
    * @returns Validation result with any warnings
    */
   validateHeaders(
     headers: Record<string, string>,
-    userAgent: UserAgent
+    userAgent: UserAgent,
   ): { valid: boolean; warnings: string[] } {
     const warnings: string[] = [];
 
@@ -373,7 +372,7 @@ export class HttpHeadersGenerator {
 
 /**
  * Convenience function to create a UserAgent object from a User-Agent string
- * 
+ *
  * @param userAgentString - Raw User-Agent string
  * @returns UserAgent object with parsed information
  */
@@ -391,39 +390,33 @@ export function parseUserAgent(userAgentString: string): UserAgent {
     if (versionMatch) {
       version = versionMatch[1];
     }
-    
+
     // Extract macOS architecture
     if (userAgentString.includes('Intel Mac OS X')) {
       architecture = 'Intel';
     } else if (userAgentString.includes('arm64 Mac OS X')) {
       architecture = 'Apple Silicon';
     }
-    
+
     // Extract macOS version
     const macOSMatch = userAgentString.match(/Mac OS X (\d+)_(\d+)(?:_(\d+))?/);
     if (macOSMatch) {
       os = 'macOS';
       osVersion = macOSMatch[3] ? `${macOSMatch[1]}.${macOSMatch[2]}.${macOSMatch[3]}` : `${macOSMatch[1]}.${macOSMatch[2]}`;
     }
-  }
-  // Chrome detection
-  else if (userAgentString.includes('Chrome/') && !userAgentString.includes('Edg/')) {
+  } else if (userAgentString.includes('Chrome/') && !userAgentString.includes('Edg/')) {
     browserType = 'chrome';
     const chromeMatch = userAgentString.match(/Chrome\/([\d.]+)/);
     if (chromeMatch) {
       version = chromeMatch[1];
     }
-  }
-  // Edge detection
-  else if (userAgentString.includes('Edg/')) {
+  } else if (userAgentString.includes('Edg/')) {
     browserType = 'edge';
     const edgeMatch = userAgentString.match(/Edg\/([\d.]+)/);
     if (edgeMatch) {
       version = edgeMatch[1];
     }
-  }
-  // Firefox detection
-  else if (userAgentString.includes('Firefox/')) {
+  } else if (userAgentString.includes('Firefox/')) {
     browserType = 'firefox';
     const firefoxMatch = userAgentString.match(/Firefox\/([\d.]+)/);
     if (firefoxMatch) {

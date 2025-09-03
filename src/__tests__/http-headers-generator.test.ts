@@ -6,7 +6,7 @@ import {
   HttpHeadersGenerator,
   parseUserAgent,
 } from '../utils/http-headers-generator.js';
-import type { BrowserType, UserAgent, HeaderGeneratorConfig } from '../types/headers.js';
+import type { UserAgent, HeaderGeneratorConfig } from '../types/headers.js';
 
 describe('HttpHeadersGenerator', () => {
   let generator: HttpHeadersGenerator;
@@ -26,7 +26,7 @@ describe('HttpHeadersGenerator', () => {
     test('should return singleton instance', () => {
       const instance1 = HttpHeadersGenerator.getInstance();
       const instance2 = HttpHeadersGenerator.getInstance();
-      
+
       expect(instance1).toBe(instance2);
     });
 
@@ -35,10 +35,10 @@ describe('HttpHeadersGenerator', () => {
         simpleMode: true,
         enableDNT: false,
       };
-      
+
       const instance = HttpHeadersGenerator.getInstance(config);
       const currentConfig = instance.getConfig();
-      
+
       expect(currentConfig.simpleMode).toBe(true);
       expect(currentConfig.enableDNT).toBe(false);
     });
@@ -105,7 +105,7 @@ describe('HttpHeadersGenerator', () => {
         expect(headers['Accept-Language']).toBe('en-US,en;q=0.5');
         expect(headers['Accept-Encoding']).toBe('gzip, deflate, br');
         expect(headers['Upgrade-Insecure-Requests']).toBe('1');
-        
+
         // Firefox should not have Sec-CH-UA headers
         expect(headers['Sec-CH-UA']).toBeUndefined();
         expect(headers['Sec-Fetch-Dest']).toBeUndefined();
@@ -129,7 +129,7 @@ describe('HttpHeadersGenerator', () => {
         expect(headers['Accept']).toBe('text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8');
         expect(headers['Accept-Language']).toBe('en-us');
         expect(headers['Accept-Encoding']).toBe('gzip, deflate, br');
-        
+
         // Safari should not have Sec-CH-UA headers
         expect(headers['Sec-CH-UA']).toBeUndefined();
         expect(headers['Sec-Fetch-Dest']).toBeUndefined();
@@ -236,11 +236,11 @@ describe('HttpHeadersGenerator', () => {
     test('should use default language when rotation disabled', () => {
       // Create fresh instance for this test
       (HttpHeadersGenerator as any).instance = null;
-      const generator = HttpHeadersGenerator.getInstance({ 
+      const generator = HttpHeadersGenerator.getInstance({
         languageRotation: false,
         defaultAcceptLanguage: 'fr-FR,fr;q=0.9',
       });
-      
+
       const userAgent: UserAgent = {
         userAgent: 'test',
         browserType: 'chrome',
@@ -250,15 +250,15 @@ describe('HttpHeadersGenerator', () => {
       };
 
       const headers = generator.generateHeaders(userAgent);
-      
+
       expect(headers['Accept-Language']).toBe('fr-FR,fr;q=0.9');
     });
 
     test('should rotate languages when enabled', () => {
-      const generator = HttpHeadersGenerator.getInstance({ 
+      const generator = HttpHeadersGenerator.getInstance({
         languageRotation: true,
       });
-      
+
       const userAgent: UserAgent = {
         userAgent: 'test',
         browserType: 'chrome',
@@ -269,7 +269,7 @@ describe('HttpHeadersGenerator', () => {
 
       const headers1 = generator.generateHeaders(userAgent);
       const headers2 = generator.generateHeaders(userAgent);
-      
+
       // At least one should be different (with high probability)
       // Note: This test might occasionally fail due to randomness
       expect(headers1['Accept-Language']).toBeDefined();
@@ -323,7 +323,7 @@ describe('HttpHeadersGenerator', () => {
         'User-Agent': 'firefox-agent',
         'Sec-Fetch-Dest': 'document',
       };
-      
+
       const validation = generator.validateHeaders(headers, userAgent);
 
       expect(validation.valid).toBe(false);

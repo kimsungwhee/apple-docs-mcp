@@ -113,7 +113,7 @@ export const SAFARI_USER_AGENT_CATEGORIES = {
 export const SAFARI_USER_AGENT_UTILS = {
   // Regular expression to validate Safari User-Agent format
   SAFARI_UA_REGEX: /^Mozilla\/5\.0 \(Macintosh; (Intel|arm64) Mac OS X (\d+)_(\d+)(?:_(\d+))?\) AppleWebKit\/([\d.]+) \(KHTML, like Gecko\) Version\/([\d.]+) Safari\/([\d.]+)$/,
-  
+
   /**
    * Validates if a User-Agent string is a valid Safari format
    * @param userAgent - The User-Agent string to validate
@@ -130,7 +130,9 @@ export const SAFARI_USER_AGENT_UTILS = {
    */
   getArchitecture: (userAgent: string): 'Intel' | 'Apple Silicon' | null => {
     const match = userAgent.match(SAFARI_USER_AGENT_UTILS.SAFARI_UA_REGEX);
-    if (!match) return null;
+    if (!match) {
+      return null;
+    }
     return match[1] === 'Intel' ? 'Intel' : 'Apple Silicon';
   },
 
@@ -141,7 +143,9 @@ export const SAFARI_USER_AGENT_UTILS = {
    */
   getMacOSVersion: (userAgent: string): string | null => {
     const match = userAgent.match(SAFARI_USER_AGENT_UTILS.SAFARI_UA_REGEX);
-    if (!match) return null;
+    if (!match) {
+      return null;
+    }
     const [, , major, minor, patch] = match;
     return patch ? `${major}.${minor}.${patch}` : `${major}.${minor}`;
   },
@@ -153,7 +157,9 @@ export const SAFARI_USER_AGENT_UTILS = {
    */
   getSafariVersion: (userAgent: string): string | null => {
     const match = userAgent.match(SAFARI_USER_AGENT_UTILS.SAFARI_UA_REGEX);
-    if (!match) return null;
+    if (!match) {
+      return null;
+    }
     return match[6];
   },
 
@@ -185,7 +191,7 @@ export const REQUEST_CONFIG = {
   RETRY_DELAY: 1000, // 1 second
   MAX_CONCURRENT_REQUESTS: 5,
   USER_AGENT: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-  
+
   // Default Safari User-Agent (latest stable)
   DEFAULT_SAFARI_USER_AGENT: SAFARI_USER_AGENTS[19], // macOS 15.1, Safari 18.1, Apple Silicon
 } as const;

@@ -1,6 +1,6 @@
 /**
  * Browser-specific HTTP header templates for authentic browser simulation
- * 
+ *
  * Based on real browser behavior analysis for different browser types.
  * These templates ensure requests look authentic and reduce detection risk.
  */
@@ -9,7 +9,7 @@ import type { BrowserType, HeaderTemplate, LanguagePreference } from '../types/h
 
 /**
  * Browser-specific header templates
- * 
+ *
  * Each template is crafted to match real browser behavior:
  * - Accept headers reflect browser's format support
  * - Sec-Fetch-* headers match browser security policies
@@ -31,7 +31,7 @@ export const BROWSER_HEADERS: Record<BrowserType, HeaderTemplate> = {
     'Upgrade-Insecure-Requests': '1',
     'Cache-Control': 'max-age=0',
   },
-  
+
   firefox: {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
     'Accept-Encoding': 'gzip, deflate, br',
@@ -40,7 +40,7 @@ export const BROWSER_HEADERS: Record<BrowserType, HeaderTemplate> = {
     'Upgrade-Insecure-Requests': '1',
     'Cache-Control': 'max-age=0',
   },
-  
+
   safari: {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     'Accept-Encoding': 'gzip, deflate, br',
@@ -48,7 +48,7 @@ export const BROWSER_HEADERS: Record<BrowserType, HeaderTemplate> = {
     'DNT': '1',
     'Cache-Control': 'max-age=0',
   },
-  
+
   edge: {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
     'Accept-Encoding': 'gzip, deflate, br',
@@ -75,19 +75,19 @@ export const SIMPLE_BROWSER_HEADERS: Record<BrowserType, HeaderTemplate> = {
     'Accept-Encoding': 'gzip, deflate',
     'Accept-Language': 'en-US,en;q=0.9',
   },
-  
+
   firefox: {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     'Accept-Encoding': 'gzip, deflate',
     'Accept-Language': 'en-US,en;q=0.5',
   },
-  
+
   safari: {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     'Accept-Encoding': 'gzip, deflate',
     'Accept-Language': 'en-us',
   },
-  
+
   edge: {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     'Accept-Encoding': 'gzip, deflate',
@@ -116,7 +116,7 @@ export const LANGUAGE_PREFERENCES: LanguagePreference[][] = [
     { language: 'en-AU', quality: 1.0 },
     { language: 'en', quality: 0.9 },
   ],
-  
+
   // English + other languages
   [
     { language: 'en-US', quality: 1.0 },
@@ -159,7 +159,7 @@ export const BROWSER_VERSIONS = {
     '"Not A(Brand";v="99", "Google Chrome";v="120", "Chromium";v="120"',
     '"Not A(Brand";v="99", "Google Chrome";v="119", "Chromium";v="119"',
   ],
-  
+
   edge: [
     '"Not A(Brand";v="99", "Microsoft Edge";v="121", "Chromium";v="121"',
     '"Not A(Brand";v="99", "Microsoft Edge";v="120", "Chromium";v="120"',

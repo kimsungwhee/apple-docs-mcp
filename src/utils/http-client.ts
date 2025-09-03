@@ -1,5 +1,19 @@
 /**
- * HTTP client with timeout, retry, rate limiting, User-Agent rotation, and browser-compatible headers
+ * Enhanced HTTP client with intelligent User-Agent rotation and browser-compatible headers
+ *
+ * Features:
+ * - Smart User-Agent pool rotation with automatic failure recovery
+ * - Dynamic browser headers generation (Accept, Accept-Language, etc.)
+ * - Comprehensive retry logic with exponential backoff
+ * - Performance tracking and statistics collection
+ * - Rate limiting integration
+ * - Request timeout and error handling
+ *
+ * The client automatically rotates through a pool of Safari User-Agents and generates
+ * realistic browser headers to avoid detection and improve API reliability.
+ *
+ * @author Apple Docs MCP
+ * @version 1.0.0
  */
 
 import { REQUEST_CONFIG, ERROR_MESSAGES, PROCESSING_LIMITS, SAFARI_USER_AGENTS } from './constants.js';
@@ -7,23 +21,41 @@ import { handleFetchError } from './error-handler.js';
 import { globalRateLimiter } from './rate-limiter.js';
 import { UserAgentPool } from './user-agent-pool.js';
 import { HttpHeadersGenerator } from './http-headers-generator.js';
-import type { BrowserType, HeaderGeneratorConfig } from '../types/headers.js';
+import type { HeaderGeneratorConfig } from '../types/headers.js';
 
+/**
+ * Configuration options for HTTP requests
+ */
 interface RequestOptions {
+  /** Request timeout in milliseconds */
   timeout?: number;
+  /** Maximum number of retry attempts */
   retries?: number;
+  /** Delay between retries in milliseconds */
   retryDelay?: number;
+  /** Additional headers to include in the request */
   headers?: Record<string, string>;
 }
 
+/**
+ * Performance statistics for HTTP client monitoring
+ */
 interface PerformanceStats {
+  /** Total number of requests made */
   totalRequests: number;
+  /** Number of successful requests (2xx status) */
   successfulRequests: number;
+  /** Number of failed requests */
   failedRequests: number;
+  /** Total response time across all requests */
   totalResponseTime: number;
+  /** Average response time per request */
   averageResponseTime: number;
+  /** Success rate as a percentage (0-100) */
   successRate: number;
+  /** Request count by HTTP status code */
   requestsByStatus: Record<number, number>;
+  /** Request count by domain */
   requestsByDomain: Record<string, number>;
 }
 
@@ -278,8 +310,8 @@ class HttpClient {
    * Generate request headers with User-Agent rotation and browser compatibility
    */
   private async generateRequestHeaders(
-    customHeaders: Record<string, string> = {}, 
-    acceptOverride?: string
+    customHeaders: Record<string, string> = {},
+    acceptOverride?: string,
   ): Promise<Record<string, string>> {
     let requestHeaders: Record<string, string> = {};
 
@@ -291,7 +323,7 @@ class HttpClient {
       if (pool && generator) {
         // Get next User-Agent with enhanced info
         const userAgent = await pool.getNextUserAgent();
-        
+
         // Generate matching headers
         const generatedHeaders = generator.generateHeaders(userAgent);
         requestHeaders = { ...generatedHeaders };
@@ -326,25 +358,6 @@ class HttpClient {
 
     // Apply custom headers (highest priority)
     return { ...requestHeaders, ...customHeaders };
-  }
-
-  /**
-   * Handle User-Agent pool success/failure tracking
-   */
-  private async trackUserAgentResult(userAgent: string, success: boolean, statusCode?: number): Promise<void> {
-    try {
-      const pool = initializeUserAgentPool();
-      if (pool) {
-        if (success) {
-          await pool.markSuccess(userAgent);
-        } else {
-          await pool.markFailure(userAgent, statusCode);
-        }
-      }
-    } catch (error) {
-      // Don't throw on tracking errors
-      console.warn('Failed to track User-Agent result:', error);
-    }
   }
 
   /**
@@ -388,7 +401,7 @@ class HttpClient {
         // Generate headers with HTML Accept type
         const requestHeaders = await this.generateRequestHeaders(
           headers,
-          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         );
 
         const response = await this.fetchWithRetry(url, {
@@ -435,7 +448,7 @@ class HttpClient {
         fallbackAgent: REQUEST_CONFIG.USER_AGENT,
       } as const;
     }
-    
+
     return {
       enabled: true,
       poolStats: pool.getStats(),
@@ -502,11 +515,11 @@ class HttpClient {
     // User-Agent Pool Status
     const uaPoolStats = this.getUserAgentPoolStats();
     report += '## User-Agent Pool Status\n\n';
-    
+
     if (uaPoolStats.enabled) {
-      const poolStats = uaPoolStats.poolStats!;
-      const agentStats = uaPoolStats.agentStats!;
-      
+      const poolStats = uaPoolStats.poolStats;
+      const agentStats = uaPoolStats.agentStats;
+
       report += `✅ **Pool Active** - ${poolStats.enabled}/${poolStats.total} agents enabled\n`;
       report += `- **Total Requests:** ${poolStats.totalRequests}\n`;
       report += `- **Success Rate:** ${poolStats.successRate.toFixed(2)}%\n`;
