@@ -145,7 +145,7 @@ export const LANGUAGE_PREFERENCES: LanguagePreference[][] = [
  * Platform-specific Sec-CH-UA-Platform values
  */
 export const PLATFORM_VALUES = {
-  macOS: ['"macOS"', '"Mac OS X"'],
+  macOS: ['"macOS"'],
   windows: ['"Windows"'],
   linux: ['"Linux"'],
 } as const;

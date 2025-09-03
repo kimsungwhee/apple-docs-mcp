@@ -114,9 +114,21 @@ export class HttpHeadersGenerator {
 
     // Generate dynamic headers
     const generatedHeaders: Record<string, string> = {
-      ...baseTemplate,
       'User-Agent': userAgent.userAgent,
     };
+
+    // Apply base template only if not disabled
+    Object.entries(baseTemplate).forEach(([key, value]) => {
+      // Skip Sec-Fetch headers if disabled
+      if (!this.config.enableSecFetch && key.startsWith('Sec-Fetch-')) {
+        return;
+      }
+      // Skip DNT if disabled
+      if (!this.config.enableDNT && key === 'DNT') {
+        return;
+      }
+      generatedHeaders[key] = value;
+    });
 
     // Apply language rotation if enabled, otherwise use default or browser-specific
     if (this.config.languageRotation) {
@@ -126,8 +138,8 @@ export class HttpHeadersGenerator {
       generatedHeaders['Accept-Language'] = this.config.defaultAcceptLanguage;
     }
 
-    // Apply Sec-Fetch headers if enabled and supported
-    if (this.config.enableSecFetch && this.supportsBrowserSecFetch(userAgent.browserType)) {
+    // Apply Sec-Fetch headers if enabled and supported and not in simple mode
+    if (this.config.enableSecFetch && !this.config.simpleMode && this.supportsBrowserSecFetch(userAgent.browserType)) {
       const secFetchHeaders = this.generateSecFetchHeaders(userAgent.browserType);
       Object.assign(generatedHeaders, secFetchHeaders);
     }
@@ -434,7 +446,7 @@ export function parseUserAgent(userAgentString: string): UserAgent {
       }
     } else if (userAgentString.includes('Mac OS X')) {
       os = 'macOS';
-      const macMatch = userAgentString.match(/Mac OS X ([\d_]+)/);
+      const macMatch = userAgentString.match(/Mac OS X ([\d_.]+)/);
       if (macMatch) {
         osVersion = macMatch[1].replace(/_/g, '.');
       }
