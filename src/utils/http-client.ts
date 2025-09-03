@@ -1,10 +1,11 @@
 /**
- * HTTP client with timeout, retry, and rate limiting
+ * HTTP client with timeout, retry, rate limiting, and User-Agent rotation
  */
 
-import { REQUEST_CONFIG, ERROR_MESSAGES, PROCESSING_LIMITS } from './constants.js';
+import { REQUEST_CONFIG, ERROR_MESSAGES, PROCESSING_LIMITS, SAFARI_USER_AGENTS } from './constants.js';
 import { handleFetchError } from './error-handler.js';
 import { globalRateLimiter } from './rate-limiter.js';
+import { UserAgentPool } from './user-agent-pool.js';
 
 interface RequestOptions {
   timeout?: number;
@@ -22,6 +23,33 @@ interface PerformanceStats {
   successRate: number;
   requestsByStatus: Record<number, number>;
   requestsByDomain: Record<string, number>;
+}
+
+// Global User-Agent pool instance
+let userAgentPool: UserAgentPool | null = null;
+
+/**
+ * Initialize the User-Agent pool with Safari User-Agents
+ * Falls back to static User-Agent if initialization fails
+ */
+function initializeUserAgentPool(): UserAgentPool | null {
+  if (userAgentPool) {
+    return userAgentPool;
+  }
+
+  try {
+    userAgentPool = new UserAgentPool([...SAFARI_USER_AGENTS], {
+      strategy: 'random',
+      disableDuration: 5 * 60 * 1000, // 5 minutes
+      failureThreshold: 3,
+      minSuccessRate: 0.5,
+    });
+    return userAgentPool;
+  } catch (error) {
+    // Fallback: Pool initialization failed, will use static User-Agent
+    console.warn('UserAgentPool initialization failed, falling back to static User-Agent:', error);
+    return null;
+  }
 }
 
 class HttpClient {
@@ -43,6 +71,7 @@ class HttpClient {
 
   /**
    * Make a GET request with timeout and retry logic
+   * Uses rotating User-Agent for better request distribution
    */
   async get(url: string, options: RequestOptions = {}): Promise<Response> {
     const {
@@ -52,12 +81,6 @@ class HttpClient {
       headers = {},
     } = options;
 
-    const defaultHeaders = {
-      'User-Agent': REQUEST_CONFIG.USER_AGENT,
-      'Accept': 'application/json',
-      ...headers,
-    };
-
     return this.executeWithQueue(async () => {
       // Check rate limit
       if (!globalRateLimiter.canMakeRequest()) {
@@ -66,7 +89,10 @@ class HttpClient {
 
       return this.fetchWithRetry(url, {
         method: 'GET',
-        headers: defaultHeaders,
+        headers: {
+          'Accept': 'application/json',
+          ...headers, // Custom headers can override User-Agent for debugging
+        },
         signal: AbortSignal.timeout(timeout),
       }, retries, retryDelay);
     });
@@ -105,7 +131,8 @@ class HttpClient {
   }
 
   /**
-   * Fetch with retry logic and performance monitoring
+   * Fetch with retry logic, performance monitoring, and User-Agent rotation
+   * Each retry attempt uses a fresh User-Agent from the pool
    */
   private async fetchWithRetry(
     url: string,
@@ -116,19 +143,51 @@ class HttpClient {
     const startTime = Date.now();
     const domain = new URL(url).hostname;
     let lastError: Error | null = null;
+    let currentUserAgent: string | null = null;
 
     // Update domain stats
     this.stats.requestsByDomain[domain] = (this.stats.requestsByDomain[domain] || 0) + 1;
     this.stats.totalRequests++;
 
+    // Initialize User-Agent pool
+    const pool = initializeUserAgentPool();
+
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
-        const response = await fetch(url, options);
+        // Get a new User-Agent for each attempt (unless already provided in headers)
+        if (!options.headers || !('User-Agent' in options.headers)) {
+          if (pool) {
+            currentUserAgent = await pool.getNext();
+          } else {
+            currentUserAgent = REQUEST_CONFIG.USER_AGENT; // Fallback to static
+          }
+        }
+
+        // Merge headers with User-Agent
+        const requestHeaders = {
+          'User-Agent': currentUserAgent || REQUEST_CONFIG.USER_AGENT,
+          ...(options.headers || {}),
+        };
+
+        const response = await fetch(url, {
+          ...options,
+          headers: requestHeaders,
+        });
+
         const responseTime = Date.now() - startTime;
 
         // Update performance stats only if response is valid
         if (response) {
           this.updateStats(response.status, responseTime, true);
+        }
+
+        // Mark User-Agent success/failure in pool
+        if (pool && currentUserAgent) {
+          if (response?.ok) {
+            await pool.markSuccess(currentUserAgent);
+          } else {
+            await pool.markFailure(currentUserAgent, response?.status);
+          }
         }
 
         if (!response?.ok) {
@@ -147,6 +206,14 @@ class HttpClient {
         return response;
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
+
+        // Mark User-Agent failure in pool
+        if (pool && currentUserAgent) {
+          // Extract status code from error if available
+          const statusMatch = lastError.message.match(/HTTP (\d+):/);
+          const statusCode = statusMatch ? parseInt(statusMatch[1], 10) : undefined;
+          await pool.markFailure(currentUserAgent, statusCode);
+        }
 
         // Don't retry on certain errors
         if (error instanceof Error) {
@@ -249,6 +316,26 @@ class HttpClient {
   }
 
   /**
+   * Get User-Agent pool statistics
+   */
+  getUserAgentPoolStats() {
+    const pool = initializeUserAgentPool();
+    if (!pool) {
+      return {
+        enabled: false,
+        reason: 'User-Agent pool initialization failed',
+        fallbackAgent: REQUEST_CONFIG.USER_AGENT,
+      } as const;
+    }
+    
+    return {
+      enabled: true,
+      poolStats: pool.getStats(),
+      agentStats: pool.getAgentStats(),
+    } as const;
+  }
+
+  /**
    * Reset performance statistics
    */
   resetStats(): void {
@@ -302,6 +389,39 @@ class HttpClient {
           report += `- **${domain}:** ${count} requests (${percentage}%)\n`;
         });
       report += '\n';
+    }
+
+    // User-Agent Pool Status
+    const uaPoolStats = this.getUserAgentPoolStats();
+    report += '## User-Agent Pool Status\n\n';
+    
+    if (uaPoolStats.enabled) {
+      const poolStats = uaPoolStats.poolStats!;
+      const agentStats = uaPoolStats.agentStats!;
+      
+      report += `✅ **Pool Active** - ${poolStats.enabled}/${poolStats.total} agents enabled\n`;
+      report += `- **Total Requests:** ${poolStats.totalRequests}\n`;
+      report += `- **Success Rate:** ${poolStats.successRate.toFixed(2)}%\n`;
+      report += `- **Health Score:** ${poolStats.healthScore}/100\n`;
+      report += `- **Strategy:** ${poolStats.strategy}\n\n`;
+
+      // Top performing agents
+      const topAgents = agentStats
+        .filter(agent => agent.totalRequests > 0)
+        .sort((a, b) => b.successRate - a.successRate)
+        .slice(0, 3);
+
+      if (topAgents.length > 0) {
+        report += '### Top Performing User-Agents\n\n';
+        topAgents.forEach((agent, index) => {
+          const shortAgent = agent.value.split(' ').slice(0, 4).join(' ') + '...';
+          report += `${index + 1}. ${shortAgent} - ${agent.successRate.toFixed(1)}% (${agent.totalRequests} requests)\n`;
+        });
+        report += '\n';
+      }
+    } else {
+      report += `❌ **Pool Disabled** - ${uaPoolStats.reason}\n`;
+      report += `- **Fallback Agent:** ${uaPoolStats.fallbackAgent}\n\n`;
     }
 
     // Performance Insights

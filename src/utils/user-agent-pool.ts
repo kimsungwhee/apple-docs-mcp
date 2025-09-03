@@ -6,10 +6,14 @@
  * - Automatic error handling and recovery
  * - Performance statistics and monitoring
  * - Thread-safe concurrent access
+ * - Browser type detection and header generation support
  * 
  * @author Apple Docs MCP
  * @version 1.0.0
  */
+
+import type { UserAgent as UserAgentType, BrowserType } from '../types/headers.js';
+import { parseUserAgent } from './http-headers-generator.js';
 
 /**
  * Configuration options for the User-Agent pool
@@ -369,6 +373,120 @@ export class UserAgentPool {
     return { ...this.config };
   }
 
+  /**
+   * Get the next User-Agent as a structured UserAgent object
+   * 
+   * This method provides enhanced information about the User-Agent including
+   * browser type, version, OS details, and architecture information.
+   * 
+   * @returns Promise resolving to a UserAgent object with parsed information
+   * @throws {Error} When no User-Agents are available
+   */
+  async getNextUserAgent(): Promise<UserAgentType> {
+    const userAgentString = await this.getNext();
+    return parseUserAgent(userAgentString);
+  }
+
+  /**
+   * Get a random User-Agent string filtered by browser type
+   * 
+   * @param browserType - Desired browser type
+   * @returns Promise resolving to a User-Agent string of the specified type
+   * @throws {Error} When no User-Agents of the specified type are available
+   */
+  async getByBrowserType(browserType: BrowserType): Promise<string> {
+    return this.mutex.runExclusive(async () => {
+      // First, try to recover any disabled agents
+      this.recoverDisabledAgents();
+
+      // Filter agents by browser type
+      const matchingAgents = this.agents.filter(agent => {
+        if (!agent.isEnabled) return false;
+        const parsed = parseUserAgent(agent.value);
+        return parsed.browserType === browserType;
+      });
+
+      if (matchingAgents.length === 0) {
+        throw new Error(`No enabled User-Agents available for browser type: ${browserType}`);
+      }
+
+      // Select using configured strategy
+      const selectedAgent = this.selectByStrategy(matchingAgents);
+      return this.selectAndUseAgent(selectedAgent);
+    });
+  }
+
+  /**
+   * Get a random User-Agent object filtered by browser type
+   * 
+   * @param browserType - Desired browser type
+   * @returns Promise resolving to a UserAgent object of the specified type
+   * @throws {Error} When no User-Agents of the specified type are available
+   */
+  async getUserAgentByBrowserType(browserType: BrowserType): Promise<UserAgentType> {
+    const userAgentString = await this.getByBrowserType(browserType);
+    return parseUserAgent(userAgentString);
+  }
+
+  /**
+   * Get statistics grouped by browser type
+   * 
+   * @returns Statistics organized by browser type
+   */
+  getStatsByBrowserType(): Record<BrowserType, { count: number; enabled: number; successRate: number }> {
+    const stats: Record<string, { count: number; enabled: number; totalRequests: number; successCount: number }> = {};
+
+    // Initialize all browser types
+    const browserTypes: BrowserType[] = ['chrome', 'firefox', 'safari', 'edge'];
+    browserTypes.forEach(type => {
+      stats[type] = { count: 0, enabled: 0, totalRequests: 0, successCount: 0 };
+    });
+
+    // Aggregate stats by browser type
+    this.agents.forEach(agent => {
+      const parsed = parseUserAgent(agent.value);
+      const browserType = parsed.browserType;
+      
+      stats[browserType].count++;
+      if (agent.isEnabled) {
+        stats[browserType].enabled++;
+      }
+      stats[browserType].totalRequests += agent.successCount + agent.failureCount;
+      stats[browserType].successCount += agent.successCount;
+    });
+
+    // Calculate success rates and return
+    const result: Record<BrowserType, { count: number; enabled: number; successRate: number }> = {} as any;
+    browserTypes.forEach(type => {
+      const browserStats = stats[type];
+      result[type] = {
+        count: browserStats.count,
+        enabled: browserStats.enabled,
+        successRate: browserStats.totalRequests > 0 
+          ? (browserStats.successCount / browserStats.totalRequests) * 100 
+          : 0,
+      };
+    });
+
+    return result;
+  }
+
+  /**
+   * Get all available browser types in the pool
+   * 
+   * @returns Array of browser types present in the pool
+   */
+  getAvailableBrowserTypes(): BrowserType[] {
+    const browserTypes = new Set<BrowserType>();
+    
+    this.agents.forEach(agent => {
+      const parsed = parseUserAgent(agent.value);
+      browserTypes.add(parsed.browserType);
+    });
+
+    return Array.from(browserTypes);
+  }
+
   // Private helper methods
 
   private selectByStrategy(enabledAgents: UserAgent[]): UserAgent {
@@ -551,14 +669,31 @@ class AsyncMutex {
 
 /**
  * Pre-defined User-Agent strings for common browsers
+ * Covers Chrome, Firefox, Safari, and Edge across different platforms
  */
 export const COMMON_USER_AGENTS = {
-  CHROME_MAC: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-  CHROME_WINDOWS: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-  FIREFOX_MAC: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:89.0) Gecko/20100101 Firefox/89.0',
-  FIREFOX_WINDOWS: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0',
-  SAFARI_MAC: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Safari/605.1.15',
-  EDGE_WINDOWS: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.59',
+  // Chrome User-Agents
+  CHROME_MAC_INTEL: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+  CHROME_MAC_APPLE: 'Mozilla/5.0 (Macintosh; arm64 Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+  CHROME_WINDOWS: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+  CHROME_LINUX: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+  
+  // Firefox User-Agents
+  FIREFOX_MAC_INTEL: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:122.0) Gecko/20100101 Firefox/122.0',
+  FIREFOX_MAC_APPLE: 'Mozilla/5.0 (Macintosh; arm64 Mac OS X 10.15; rv:122.0) Gecko/20100101 Firefox/122.0',
+  FIREFOX_WINDOWS: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0',
+  FIREFOX_LINUX: 'Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0',
+  
+  // Safari User-Agents (using constants from constants.ts)
+  SAFARI_MAC_INTEL_15_1: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 15_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15',
+  SAFARI_MAC_APPLE_15_1: 'Mozilla/5.0 (Macintosh; arm64 Mac OS X 15_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15',
+  SAFARI_MAC_INTEL_14_7: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6.1 Safari/605.1.15',
+  SAFARI_MAC_APPLE_14_7: 'Mozilla/5.0 (Macintosh; arm64 Mac OS X 14_7_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6.1 Safari/605.1.15',
+  
+  // Edge User-Agents
+  EDGE_WINDOWS: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0',
+  EDGE_MAC_INTEL: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0',
+  EDGE_MAC_APPLE: 'Mozilla/5.0 (Macintosh; arm64 Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0',
 } as const;
 
 /**
