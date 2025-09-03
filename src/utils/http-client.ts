@@ -1,11 +1,13 @@
 /**
- * HTTP client with timeout, retry, rate limiting, and User-Agent rotation
+ * HTTP client with timeout, retry, rate limiting, User-Agent rotation, and browser-compatible headers
  */
 
 import { REQUEST_CONFIG, ERROR_MESSAGES, PROCESSING_LIMITS, SAFARI_USER_AGENTS } from './constants.js';
 import { handleFetchError } from './error-handler.js';
 import { globalRateLimiter } from './rate-limiter.js';
 import { UserAgentPool } from './user-agent-pool.js';
+import { HttpHeadersGenerator } from './http-headers-generator.js';
+import type { BrowserType, HeaderGeneratorConfig } from '../types/headers.js';
 
 interface RequestOptions {
   timeout?: number;
@@ -27,6 +29,8 @@ interface PerformanceStats {
 
 // Global User-Agent pool instance
 let userAgentPool: UserAgentPool | null = null;
+// Global HTTP headers generator instance
+let headersGenerator: HttpHeadersGenerator | null = null;
 
 /**
  * Initialize the User-Agent pool with Safari User-Agents
@@ -52,6 +56,33 @@ function initializeUserAgentPool(): UserAgentPool | null {
   }
 }
 
+/**
+ * Initialize the HTTP headers generator
+ * Falls back to basic headers if initialization fails
+ */
+function initializeHeadersGenerator(): HttpHeadersGenerator | null {
+  if (headersGenerator) {
+    return headersGenerator;
+  }
+
+  try {
+    // Check environment variables for configuration
+    const config: HeaderGeneratorConfig = {
+      enableSecFetch: process.env.DISABLE_SEC_FETCH !== 'true',
+      enableDNT: process.env.DISABLE_DNT !== 'true',
+      languageRotation: process.env.DISABLE_LANGUAGE_ROTATION !== 'true',
+      simpleMode: process.env.SIMPLE_HEADERS_MODE === 'true',
+      defaultAcceptLanguage: process.env.DEFAULT_ACCEPT_LANGUAGE || 'en-US,en;q=0.9',
+    };
+
+    headersGenerator = HttpHeadersGenerator.getInstance(config);
+    return headersGenerator;
+  } catch (error) {
+    console.warn('HttpHeadersGenerator initialization failed, falling back to basic headers:', error);
+    return null;
+  }
+}
+
 class HttpClient {
   private requestQueue: Array<() => Promise<void>> = [];
   private activeRequests = 0;
@@ -70,8 +101,8 @@ class HttpClient {
   };
 
   /**
-   * Make a GET request with timeout and retry logic
-   * Uses rotating User-Agent for better request distribution
+   * Make a GET request with timeout, retry logic, and browser-compatible headers
+   * Uses rotating User-Agent and matching headers for better request distribution
    */
   async get(url: string, options: RequestOptions = {}): Promise<Response> {
     const {
@@ -87,12 +118,12 @@ class HttpClient {
         throw new Error('Rate limit exceeded. Please try again later.');
       }
 
+      // Generate headers with User-Agent rotation
+      const requestHeaders = await this.generateRequestHeaders(headers, 'application/json');
+
       return this.fetchWithRetry(url, {
         method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          ...headers, // Custom headers can override User-Agent for debugging
-        },
+        headers: requestHeaders,
         signal: AbortSignal.timeout(timeout),
       }, retries, retryDelay);
     });
@@ -154,25 +185,10 @@ class HttpClient {
 
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
-        // Get a new User-Agent for each attempt (unless already provided in headers)
-        if (!options.headers || !('User-Agent' in options.headers)) {
-          if (pool) {
-            currentUserAgent = await pool.getNext();
-          } else {
-            currentUserAgent = REQUEST_CONFIG.USER_AGENT; // Fallback to static
-          }
-        }
+        // Extract current User-Agent from pre-generated headers
+        currentUserAgent = (options.headers as any)?.['User-Agent'] || null;
 
-        // Merge headers with User-Agent
-        const requestHeaders = {
-          'User-Agent': currentUserAgent || REQUEST_CONFIG.USER_AGENT,
-          ...(options.headers || {}),
-        };
-
-        const response = await fetch(url, {
-          ...options,
-          headers: requestHeaders,
-        });
+        const response = await fetch(url, options);
 
         const responseTime = Date.now() - startTime;
 
@@ -259,6 +275,79 @@ class HttpClient {
   }
 
   /**
+   * Generate request headers with User-Agent rotation and browser compatibility
+   */
+  private async generateRequestHeaders(
+    customHeaders: Record<string, string> = {}, 
+    acceptOverride?: string
+  ): Promise<Record<string, string>> {
+    let requestHeaders: Record<string, string> = {};
+
+    try {
+      // Initialize User-Agent pool and headers generator
+      const pool = initializeUserAgentPool();
+      const generator = initializeHeadersGenerator();
+
+      if (pool && generator) {
+        // Get next User-Agent with enhanced info
+        const userAgent = await pool.getNextUserAgent();
+        
+        // Generate matching headers
+        const generatedHeaders = generator.generateHeaders(userAgent);
+        requestHeaders = { ...generatedHeaders };
+
+        // Update pool statistics on response
+        // Note: This is handled in fetchWithRetry error handling
+      } else {
+        // Fallback to basic headers
+        requestHeaders = {
+          'User-Agent': REQUEST_CONFIG.DEFAULT_SAFARI_USER_AGENT || REQUEST_CONFIG.USER_AGENT,
+          'Accept': acceptOverride || 'application/json',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'DNT': '1',
+        };
+      }
+    } catch (error) {
+      // Fallback to basic headers on any error
+      console.warn('Failed to generate enhanced headers, falling back to basic:', error);
+      requestHeaders = {
+        'User-Agent': REQUEST_CONFIG.DEFAULT_SAFARI_USER_AGENT || REQUEST_CONFIG.USER_AGENT,
+        'Accept': acceptOverride || 'application/json',
+        'Accept-Encoding': 'gzip, deflate',
+        'Accept-Language': 'en-US,en;q=0.9',
+      };
+    }
+
+    // Override Accept header if specified
+    if (acceptOverride) {
+      requestHeaders['Accept'] = acceptOverride;
+    }
+
+    // Apply custom headers (highest priority)
+    return { ...requestHeaders, ...customHeaders };
+  }
+
+  /**
+   * Handle User-Agent pool success/failure tracking
+   */
+  private async trackUserAgentResult(userAgent: string, success: boolean, statusCode?: number): Promise<void> {
+    try {
+      const pool = initializeUserAgentPool();
+      if (pool) {
+        if (success) {
+          await pool.markSuccess(userAgent);
+        } else {
+          await pool.markFailure(userAgent, statusCode);
+        }
+      }
+    } catch (error) {
+      // Don't throw on tracking errors
+      console.warn('Failed to track User-Agent result:', error);
+    }
+  }
+
+  /**
    * Delay utility
    */
   private delay(ms: number): Promise<void> {
@@ -282,15 +371,34 @@ class HttpClient {
    * Get text response with error handling
    */
   async getText(url: string, options: RequestOptions = {}): Promise<string> {
+    const {
+      timeout = REQUEST_CONFIG.TIMEOUT,
+      retries = REQUEST_CONFIG.MAX_RETRIES,
+      retryDelay = REQUEST_CONFIG.RETRY_DELAY,
+      headers = {},
+    } = options;
+
     try {
-      const response = await this.get(url, {
-        ...options,
-        headers: {
-          ...options.headers,
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        },
+      return this.executeWithQueue(async () => {
+        // Check rate limit
+        if (!globalRateLimiter.canMakeRequest()) {
+          throw new Error('Rate limit exceeded. Please try again later.');
+        }
+
+        // Generate headers with HTML Accept type
+        const requestHeaders = await this.generateRequestHeaders(
+          headers,
+          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+        );
+
+        const response = await this.fetchWithRetry(url, {
+          method: 'GET',
+          headers: requestHeaders,
+          signal: AbortSignal.timeout(timeout),
+        }, retries, retryDelay);
+
+        return await response.text();
       });
-      return await response.text();
     } catch (error) {
       const appError = handleFetchError(error, url);
       throw appError;

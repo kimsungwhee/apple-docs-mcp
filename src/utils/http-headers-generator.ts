@@ -119,9 +119,12 @@ export class HttpHeadersGenerator {
       'User-Agent': userAgent.userAgent,
     };
 
-    // Apply language rotation if enabled
+    // Apply language rotation if enabled, otherwise use default or browser-specific
     if (this.config.languageRotation) {
       generatedHeaders['Accept-Language'] = this.generateLanguageHeader();
+    } else if (this.config.defaultAcceptLanguage && 
+               this.config.defaultAcceptLanguage !== 'en-US,en;q=0.9') {
+      generatedHeaders['Accept-Language'] = this.config.defaultAcceptLanguage;
     }
 
     // Apply Sec-Fetch headers if enabled and supported
@@ -135,9 +138,11 @@ export class HttpHeadersGenerator {
       generatedHeaders['DNT'] = this.generateDNTHeader();
     }
 
-    // Apply browser-specific dynamic headers
-    const dynamicHeaders = this.generateDynamicHeaders(userAgent);
-    Object.assign(generatedHeaders, dynamicHeaders);
+    // Apply browser-specific dynamic headers (not in simple mode)
+    if (!this.config.simpleMode) {
+      const dynamicHeaders = this.generateDynamicHeaders(userAgent);
+      Object.assign(generatedHeaders, dynamicHeaders);
+    }
 
     // Apply custom templates from configuration
     const customTemplateHeaders = this.getCustomTemplateHeaders(userAgent.browserType);
@@ -439,6 +444,12 @@ export function parseUserAgent(userAgentString: string): UserAgent {
       const macMatch = userAgentString.match(/Mac OS X ([\d_]+)/);
       if (macMatch) {
         osVersion = macMatch[1].replace(/_/g, '.');
+      }
+    } else if (userAgentString.includes('Intel Mac OS X')) {
+      os = 'macOS';
+      const macMatch = userAgentString.match(/Intel Mac OS X ([\d.]+)/);
+      if (macMatch) {
+        osVersion = macMatch[1];
       }
     } else if (userAgentString.includes('Linux')) {
       os = 'Linux';
