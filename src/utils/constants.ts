@@ -293,7 +293,19 @@ export const WWDC_DATA_SOURCE_CONFIG = {
     baseUrl: 'https://cdn.jsdelivr.net/gh/kimsungwhee/apple-docs-mcp@main/data/wwdc',
   },
   local: {
-    dataDir: 'data/wwdc', // Relative path from project root
+    dataDir: process.env.APPLE_DOCS_LOCAL_PATH || 'data/wwdc',
+  },
+  // CLI configuration
+  cli: {
+    localPath: undefined as string | undefined,
+    forceSource: undefined as 'local' | 'github' | undefined,
+  },
+
+  // Environment variables
+  env: {
+    localPath: process.env.APPLE_DOCS_LOCAL_PATH,
+    forceGithub: process.env.APPLE_DOCS_FORCE_GITHUB === 'true',
+    debug: process.env.APPLE_DOCS_DEBUG === 'true',
   },
 
   // File paths
