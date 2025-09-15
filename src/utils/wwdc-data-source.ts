@@ -13,21 +13,21 @@ import { wwdcDataCache } from './cache.js';
 import { WWDC_CONFIG } from './constants.js';
 import type { WWDCVideo, GlobalMetadata, TopicIndex, YearIndex } from '../types/wwdc.js';
 
-// Get the data directory
-// After build, data is copied to dist/data
-// The compiled JS is in dist/utils/, so data is at ../data
-let WWDC_DATA_DIR: string;
+// Get the data directory dynamically
+function getDataDirectory(): string {
+  // In test environment, use current working directory
+  if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID) {
+    return path.resolve(process.cwd(), 'data/wwdc');
+  }
 
-// Handle both runtime and test environments
-if (process.env.NODE_ENV === 'test') {
-  // In test environment, use a fixed path
-  WWDC_DATA_DIR = path.resolve(process.cwd(), 'data/wwdc');
-} else {
   // In production, use import.meta.url
+  // This will be compiled correctly by TypeScript
   const currentFilePath = fileURLToPath(import.meta.url);
   const currentDirPath = path.dirname(currentFilePath);
-  WWDC_DATA_DIR = path.resolve(currentDirPath, '../data/wwdc');
+  return path.resolve(currentDirPath, '../data/wwdc');
 }
+
+const WWDC_DATA_DIR = getDataDirectory();
 
 /**
  * Read file from bundled data directory
