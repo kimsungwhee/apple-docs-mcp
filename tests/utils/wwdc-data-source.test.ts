@@ -4,8 +4,11 @@
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 
-// Import mocked functions
-const {
+// Mock the module before importing
+jest.mock('../../src/utils/wwdc-data-source.js');
+
+// Import after mocking
+import {
   loadGlobalMetadata,
   loadTopicIndex,
   loadYearIndex,
@@ -13,7 +16,7 @@ const {
   loadAllVideos,
   clearDataCache,
   isDataAvailable,
-} = jest.createMockFromModule('../../src/utils/wwdc-data-source.js') as any;
+} from '../../src/utils/wwdc-data-source.js';
 
 describe('WWDC Data Source', () => {
   beforeEach(() => {

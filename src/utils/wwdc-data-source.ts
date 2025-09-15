@@ -16,9 +16,18 @@ import type { WWDCVideo, GlobalMetadata, TopicIndex, YearIndex } from '../types/
 // Get the data directory
 // After build, data is copied to dist/data
 // The compiled JS is in dist/utils/, so data is at ../data
-const currentFilePath = fileURLToPath(import.meta.url);
-const currentDirPath = path.dirname(currentFilePath);
-const WWDC_DATA_DIR = path.resolve(currentDirPath, '../data/wwdc');
+let WWDC_DATA_DIR: string;
+
+// Handle both runtime and test environments
+if (process.env.NODE_ENV === 'test') {
+  // In test environment, use a fixed path
+  WWDC_DATA_DIR = path.resolve(process.cwd(), 'data/wwdc');
+} else {
+  // In production, use import.meta.url
+  const currentFilePath = fileURLToPath(import.meta.url);
+  const currentDirPath = path.dirname(currentFilePath);
+  WWDC_DATA_DIR = path.resolve(currentDirPath, '../data/wwdc');
+}
 
 /**
  * Read file from bundled data directory
