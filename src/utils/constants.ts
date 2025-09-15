@@ -281,41 +281,7 @@ export const WWDC_CONFIG = {
   MAX_TOPIC_VIDEOS_FOR_SCORING: 10, // Maximum videos to load for similarity scoring
 
   // Cache TTL for WWDC data (in milliseconds)
-  CACHE_TTL: 30 * 60 * 1000, // 30 minutes
-} as const;
-
-// WWDC Data Source Configuration
-export const WWDC_DATA_SOURCE_CONFIG = {
-  github: {
-    owner: 'kimsungwhee',
-    repo: 'apple-docs-mcp',
-    branch: 'main',
-    baseUrl: 'https://cdn.jsdelivr.net/gh/kimsungwhee/apple-docs-mcp@main/data/wwdc',
-  },
-  local: {
-    dataDir: process.env.APPLE_DOCS_LOCAL_PATH || 'data/wwdc',
-  },
-  // CLI configuration
-  cli: {
-    localPath: undefined as string | undefined,
-    forceSource: undefined as 'local' | 'github' | undefined,
-  },
-
-  // Environment variables
-  env: {
-    localPath: process.env.APPLE_DOCS_LOCAL_PATH,
-    forceGithub: process.env.APPLE_DOCS_FORCE_GITHUB === 'true',
-    debug: process.env.APPLE_DOCS_DEBUG === 'true',
-  },
-
-  // File paths
-  filePaths: {
-    globalMetadata: 'index.json',
-    topicIndex: (topicId: string) => `by-topic/${topicId}/index.json`,
-    yearIndex: (year: string) => `by-year/${year}/index.json`,
-    videoData: (year: string, videoId: string) => `videos/${year}-${videoId}.json`,
-    allVideos: 'all-videos.json',
-  },
+  CACHE_TTL: 60 * 60 * 1000, // 1 hour - increased since data is now bundled
 } as const;
 
 // Error Messages

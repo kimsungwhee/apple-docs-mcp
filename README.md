@@ -417,6 +417,23 @@ apple-docs-mcp/
 | Technologies List | 2 hours | 50 entries | Rarely changes, large content |
 | Documentation Updates | 30 minutes | 100 entries | Regular updates, WWDC announcements |
 
+## 📦 WWDC Data
+
+All WWDC video data (2014-2025) is **bundled directly in the npm package**, providing:
+
+- ✅ **Zero network latency** - No API calls needed for WWDC content
+- ✅ **100% offline access** - Works without internet connection
+- ✅ **No rate limits** - Unlimited WWDC searches and browsing
+- ✅ **Instant responses** - All data is locally available
+
+The package includes:
+- 📹 **1,260+ WWDC session videos** with full transcripts
+- 🏷️ **20 topic categories** for organized browsing
+- 📅 **13 years of content** (2012-2025)
+- 💾 **35MB of optimized JSON data**
+
+> **Note**: Keep your package updated to get the latest WWDC content additions.
+
 ## ⚙️ Configuration
 
 ### 🔄 UserAgent Pool Configuration

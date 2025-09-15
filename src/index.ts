@@ -25,104 +25,6 @@ import { warmUpCaches, schedulePeriodicCacheRefresh } from './utils/cache-warmer
 import { logger } from './utils/logger.js';
 import { API_LIMITS } from './utils/constants.js';
 
-// CLI Options interface
-interface CLIOptions {
-  localPath?: string;
-  useLocal?: boolean;
-  forceGithub?: boolean;
-  help?: boolean;
-}
-
-function checkConflicting(options: CLIOptions): void {
-  // Check for conflicting options
-  if (options.useLocal && options.forceGithub) {
-    throw new Error('Cannot use --use-local and --force-github together');
-  }
-  if (options.useLocal) {
-    if (options.localPath === undefined) {
-      throw new Error('--local-path is required when using --use-local');
-    }
-    if (options.localPath === '') {
-      throw new Error('--local-path cannot be empty when using --use-local');
-    }
-  }
-}
-
-/**
- * Parse command line arguments
- */
-function parseCliArguments(): CLIOptions {
-  const args = process.argv.slice(2);
-  const options: CLIOptions = {};
-  const validOptions = ['--local-path', '-l', '--use-local', '-L', '--force-github', '-G', '--help', '-h'];  
-
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-
-    // Validate known options
-    if (arg.startsWith('-') && !validOptions.includes(arg.split('=')[0])) {
-      throw new Error(`Unknown option: ${arg}`);
-    }
-
-    switch (arg) {
-      case '--local-path':
-      case '-l':
-        if (i === (args.length - 1)) {
-          throw new Error('--local-path requires a path argument');
-        }
-        i++;
-        options.localPath = args[i];
-        break;
-      case '--use-local':
-      case '-L':
-        options.useLocal = true;
-        break;
-      case '--force-github':
-      case '-G':
-        options.forceGithub = true;
-        break;
-      case '--help':
-      case '-h':
-        options.help = true;
-        break;
-      default:
-        if (arg.startsWith('--local-path=')) {
-          options.localPath = arg.split('=')[1];
-        }
-    }
-  }
-  checkConflicting(options);
-
-  return options;
-}
-
-/**
- * Show help message
- */
-function showHelp(): void {
-  console.log(`
-Apple Docs MCP Server
-
-Usage: apple-docs-mcp [options]
-
-Options:
-  --local-path, -l <path>     Use local clone at specified path
-  --use-local, -L             Use local data from default ./data/wwdc
-  --force-github, -G          Force GitHub source even if local exists
-  --help, -h                  Show this help message
-
-Examples:
-  apple-docs-mcp --local-path /Users/you/apple-docs-mcp
-  apple-docs-mcp -l ~/code/apple-docs-mcp
-  apple-docs-mcp --use-local
-  apple-docs-mcp --force-github
-
-Environment Variables:
-  APPLE_DOCS_LOCAL_PATH       Path to local clone
-  APPLE_DOCS_FORCE_GITHUB     Set to 'true' to force GitHub
-`);
-}
-
 export default class AppleDeveloperDocsMCPServer {
   private server: Server;
 
@@ -389,16 +291,8 @@ export default class AppleDeveloperDocsMCPServer {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
 
-    // Report data source configuration
-    const { getDataSourceConfig, getDataSourceType } = await import('./utils/wwdc-data-source.js');
-    const sourceType = await getDataSourceType();
-    const config = getDataSourceConfig();
-
     logger.info('Apple Developer Docs MCP server running on stdio');
-    logger.info(`WWDC Data Source: ${sourceType}`);
-    if (sourceType === 'local' && config.localPath) {
-      logger.info(`Local data path: ${config.localPath}`);
-    }
+    logger.info('WWDC Data: Using bundled data from npm package');
     logger.info('Cache system initialized with TTL: API(30m), Index(1h), Technologies(2h)');
     logger.info('Note: Search results are not cached to ensure real-time accuracy');
 
@@ -415,19 +309,8 @@ export default class AppleDeveloperDocsMCPServer {
   }
 }
 
-// 运行服务器 (仅在非测试环境中)
+// Run server (only in non-test environment)
 if (process.env.NODE_ENV !== 'test') {
-  const cliOptions = parseCliArguments();
-
-  if (cliOptions.help) {
-    showHelp();
-    process.exit(0);
-  }
-
-  // Initialize data source configuration before creating server
-  const { initializeDataSourceConfig } = await import('./utils/wwdc-data-source.js');
-  initializeDataSourceConfig(cliOptions);
-
   const server = new AppleDeveloperDocsMCPServer();
   void server.run().catch((error) => {
     logger.error('Fatal error in main():', error);

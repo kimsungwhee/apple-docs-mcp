@@ -9,8 +9,29 @@ import {
   loadTopicIndex,
   loadYearIndex,
   loadVideoData,
-  loadVideosData,
 } from '../../utils/wwdc-data-source.js';
+
+/**
+ * Helper function to load multiple video data files
+ */
+async function loadVideosData(videoFiles: string[]): Promise<WWDCVideo[]> {
+  const videos: WWDCVideo[] = [];
+  for (const file of videoFiles) {
+    // Extract year and video ID from filename (e.g., "videos/2024-10015.json")
+    const match = file.match(/(\d{4})-(\d+)\.json$/);
+    if (match) {
+      const [, year, videoId] = match;
+      try {
+        const video = await loadVideoData(year, videoId);
+        videos.push(video);
+      } catch (error) {
+        // Skip videos that can't be loaded
+        logger.debug(`Failed to load video ${file}:`, error);
+      }
+    }
+  }
+  return videos;
+}
 
 /**
  * List WWDC videos
@@ -38,10 +59,10 @@ export async function handleListWWDCVideos(
           : topicIndex.videos;
 
         // Load video data
-        const videoFiles = videosToLoad.map(v => v.dataFile);
+        const videoFiles = videosToLoad.map((v: any) => v.dataFile);
         const videos = await loadVideosData(videoFiles);
 
-        allVideos = videos.map(v => ({ ...v, year: v.year }));
+        allVideos = videos.map((v: WWDCVideo) => ({ ...v, year: v.year }));
       } catch (error) {
         logger.warn(`Failed to load topic index for ${topic}, will search by keyword instead`);
         // Fall through to load by year and filter by keyword
@@ -53,10 +74,10 @@ export async function handleListWWDCVideos(
       const yearIndex = await loadYearIndex(year);
 
       // 加载视频数据
-      const videoFiles = yearIndex.videos.map(v => v.dataFile);
+      const videoFiles = yearIndex.videos.map((v: any) => v.dataFile);
       const videos = await loadVideosData(videoFiles);
 
-      allVideos = videos.map(v => ({ ...v, year: v.year }));
+      allVideos = videos.map((v: WWDCVideo) => ({ ...v, year: v.year }));
     } else if (allVideos.length === 0) {
       // Load all videos - through year indices
       const yearsToLoad = metadata.years;
@@ -64,10 +85,10 @@ export async function handleListWWDCVideos(
       for (const y of yearsToLoad) {
         try {
           const yearIndex = await loadYearIndex(y);
-          const videoFiles = yearIndex.videos.map(v => v.dataFile);
+          const videoFiles = yearIndex.videos.map((v: any) => v.dataFile);
           const videos = await loadVideosData(videoFiles);
 
-          const videosWithYear = videos.map(v => ({ ...v, year: y }));
+          const videosWithYear = videos.map((v: WWDCVideo) => ({ ...v, year: y }));
           allVideos.push(...videosWithYear);
         } catch (error) {
           logger.warn(`Failed to load year ${y}:`, error);
@@ -151,7 +172,7 @@ export async function handleSearchWWDCContent(
         }
 
         // 加载视频数据
-        const videoFiles = potentialVideos.map(v => v.dataFile);
+        const videoFiles = potentialVideos.map((v: any) => v.dataFile);
         const videos = await loadVideosData(videoFiles);
 
         // Search each video
@@ -216,8 +237,7 @@ export async function handleGetWWDCVideo(
 ): Promise<string> {
   try {
     // Load video data directly
-    const videoFile = `videos/${year}-${videoId}.json`;
-    const video = await loadVideoData(videoFile);
+    const video = await loadVideoData(year, videoId);
 
     return formatVideoDetail(video, includeTranscript, includeCode);
 
@@ -267,7 +287,7 @@ export async function handleGetWWDCCodeExamples(
             // If it's a standard topic ID, use topic index directly
             try {
               const topicIndex = await loadTopicIndex(topic);
-              const topicVideoIds = new Set(topicIndex.videos.map(v => v.id));
+              const topicVideoIds = new Set(topicIndex.videos.map((v: any) => v.id));
               filteredVideos = videosWithCode.filter(v => topicVideoIds.has(v.id));
             } catch (error) {
               // If topic index doesn't exist, fallback to string matching
@@ -292,7 +312,7 @@ export async function handleGetWWDCCodeExamples(
         }
 
         // 加载视频数据
-        const videoFiles = filteredVideos.map(v => v.dataFile);
+        const videoFiles = filteredVideos.map((v: any) => v.dataFile);
         const videos = await loadVideosData(videoFiles);
 
         // Extract code examples
@@ -809,8 +829,7 @@ export async function handleFindRelatedWWDCVideos(
 ): Promise<string> {
   try {
     // Load the source video
-    const videoFile = `videos/${year}-${videoId}.json`;
-    const sourceVideo = await loadVideoData(videoFile);
+    const sourceVideo = await loadVideoData(year, videoId);
 
     let content = `# Related Videos for "${sourceVideo.title}"\n\n`;
     content += `**Source:** [${sourceVideo.title}](${sourceVideo.url}) (WWDC${year})\n\n`;
@@ -825,8 +844,7 @@ export async function handleFindRelatedWWDCVideos(
     if (includeExplicitRelated && sourceVideo.relatedVideos) {
       for (const related of sourceVideo.relatedVideos) {
         try {
-          const relatedVideoFile = `videos/${related.year}-${related.id}.json`;
-          const relatedVideo = await loadVideoData(relatedVideoFile);
+          const relatedVideo = await loadVideoData(related.year, related.id);
 
           relatedVideos.push({
             video: { ...relatedVideo, year: related.year },
@@ -857,7 +875,7 @@ export async function handleFindRelatedWWDCVideos(
             const topicVideos = topicIndex.videos.filter(v => v.id !== videoId);
 
             // Load video data for scoring
-            const videoFiles = topicVideos.slice(0, 10).map(v => v.dataFile); // Limit to avoid too many requests
+            const videoFiles = topicVideos.slice(0, 10).map((v: any) => v.dataFile); // Limit to avoid too many requests
             const videos = await loadVideosData(videoFiles);
 
             for (const video of videos) {
@@ -897,7 +915,7 @@ export async function handleFindRelatedWWDCVideos(
         );
 
         // Load a sample of videos
-        const videoFiles = yearVideos.slice(0, 10).map(v => v.dataFile);
+        const videoFiles = yearVideos.slice(0, 10).map((v: any) => v.dataFile);
         const videos = await loadVideosData(videoFiles);
 
         for (const video of videos) {

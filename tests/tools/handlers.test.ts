@@ -15,6 +15,20 @@ jest.mock('../../src/tools/get-documentation-updates.js');
 jest.mock('../../src/tools/get-technology-overviews.js');
 jest.mock('../../src/tools/get-sample-code.js');
 
+// Mock wwdc-data-source to avoid import.meta.url issues
+jest.mock('../../src/utils/wwdc-data-source.js');
+
+// Mock WWDC handlers
+jest.mock('../../src/tools/wwdc/wwdc-handlers.js', () => ({
+  handleListWWDCVideos: jest.fn().mockResolvedValue('WWDC Videos'),
+  handleSearchWWDCContent: jest.fn().mockResolvedValue('WWDC Search Results'),
+  handleGetWWDCVideo: jest.fn().mockResolvedValue('WWDC Video Details'),
+  handleGetWWDCCodeExamples: jest.fn().mockResolvedValue('WWDC Code Examples'),
+  handleBrowseWWDCTopics: jest.fn().mockResolvedValue('WWDC Topics'),
+  handleFindRelatedWWDCVideos: jest.fn().mockResolvedValue('Related WWDC Videos'),
+  handleListWWDCYears: jest.fn().mockResolvedValue('WWDC Years'),
+}));
+
 describe('Tool Handlers', () => {
   let mockServer: any;
 

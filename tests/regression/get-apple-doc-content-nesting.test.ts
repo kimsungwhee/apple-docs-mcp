@@ -1,10 +1,10 @@
 /**
  * Regression tests for getAppleDocContent nested response structure issue
- * 
+ *
  * This test suite specifically prevents the regression of the bug where
  * getAppleDocContent returned nested response structures like:
  * { content: [{ type: 'text', text: { content: [...] } }] }
- * 
+ *
  * The issue occurred because:
  * 1. fetchAppleDocJson returns correct MCP format: { content: [{ type: 'text', text: string }] }
  * 2. getAppleDocContent used handleAsyncOperation wrapper which expected string returns
@@ -15,6 +15,17 @@ import { jest } from '@jest/globals';
 
 // Create a mock function first
 const mockFetchAppleDocJson = jest.fn();
+
+// Mock wwdc-data-source before importing anything that uses it
+jest.mock('../../src/utils/wwdc-data-source.js', () => ({
+  loadGlobalMetadata: jest.fn(),
+  loadTopicIndex: jest.fn(),
+  loadYearIndex: jest.fn(),
+  loadVideoData: jest.fn(),
+  loadAllVideos: jest.fn(),
+  clearDataCache: jest.fn(),
+  isDataAvailable: jest.fn().mockResolvedValue(true),
+}));
 
 // Mock the doc-fetcher module
 jest.mock('../../src/tools/doc-fetcher.js', () => ({

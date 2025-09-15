@@ -1,11 +1,23 @@
 /**
  * Response format validation tests
- * 
+ *
  * These tests ensure that all MCP tool responses follow the correct format
  * and prevent nested response structure issues.
  */
 
 import { jest } from '@jest/globals';
+
+// Mock wwdc-data-source before importing anything that uses it
+jest.mock('../src/utils/wwdc-data-source.js', () => ({
+  loadGlobalMetadata: jest.fn(),
+  loadTopicIndex: jest.fn(),
+  loadYearIndex: jest.fn(),
+  loadVideoData: jest.fn(),
+  loadAllVideos: jest.fn(),
+  clearDataCache: jest.fn(),
+  isDataAvailable: jest.fn().mockResolvedValue(true),
+}));
+
 import AppleDeveloperDocsMCPServer from '../src/index.js';
 
 // Mock external dependencies

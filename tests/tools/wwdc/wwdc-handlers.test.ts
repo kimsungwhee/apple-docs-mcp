@@ -17,7 +17,9 @@ jest.mock('../../../src/utils/wwdc-data-source', () => ({
   loadTopicIndex: jest.fn(),
   loadYearIndex: jest.fn(),
   loadVideoData: jest.fn(),
-  loadVideosData: jest.fn(),
+  loadAllVideos: jest.fn(),
+  clearDataCache: jest.fn(),
+  isDataAvailable: jest.fn(),
 }));
 
 import {
@@ -25,14 +27,14 @@ import {
   loadTopicIndex,
   loadYearIndex,
   loadVideoData,
-  loadVideosData,
+  loadAllVideos,
 } from '../../../src/utils/wwdc-data-source';
 
 const mockLoadGlobalMetadata = loadGlobalMetadata as jest.MockedFunction<typeof loadGlobalMetadata>;
 const mockLoadTopicIndex = loadTopicIndex as jest.MockedFunction<typeof loadTopicIndex>;
 const mockLoadYearIndex = loadYearIndex as jest.MockedFunction<typeof loadYearIndex>;
 const mockLoadVideoData = loadVideoData as jest.MockedFunction<typeof loadVideoData>;
-const mockLoadVideosData = loadVideosData as jest.MockedFunction<typeof loadVideosData>;
+const mockLoadAllVideos = loadAllVideos as jest.MockedFunction<typeof loadAllVideos>;
 
 // Helper to convert video ID to file path
 const videoIdToPath = (id: string, year: string = '2025') => `videos/${year}-${id}.json`;
@@ -76,7 +78,12 @@ describe('WWDC Handlers', () => {
 
     beforeEach(() => {
       mockLoadGlobalMetadata.mockResolvedValue(mockMetadata);
-      mockLoadVideosData.mockResolvedValue([mockVideo]);
+      mockLoadVideoData.mockImplementation((year: string, videoId: string) => {
+        if (year === '2025' && videoId === '10188') {
+          return Promise.resolve(mockVideo);
+        }
+        return Promise.reject(new Error('Video not found'));
+      });
     });
 
     test('should list all videos when no filters provided', async () => {
@@ -154,7 +161,11 @@ describe('WWDC Handlers', () => {
       const mockVideoWithoutCode = { ...mockVideo, id: '10189', title: 'No Code Video', hasCode: false };
 
       mockLoadYearIndex.mockResolvedValue(mockYearIndex);
-      mockLoadVideosData.mockResolvedValue([mockVideoWithCode, mockVideoWithoutCode]);
+      mockLoadVideoData.mockImplementation((year: string, videoId: string) => {
+        if (videoId === '10188') return Promise.resolve(mockVideoWithCode);
+        if (videoId === '10189') return Promise.resolve(mockVideoWithoutCode);
+        return Promise.reject(new Error('Video not found'));
+      });
 
       const result = await handleListWWDCVideos('2025', undefined, true);
 
@@ -239,7 +250,10 @@ describe('WWDC Handlers', () => {
       });
 
       mockLoadVideoData.mockResolvedValue(mockSearchVideo);
-      mockLoadVideosData.mockResolvedValue([mockSearchVideo]);
+      mockLoadVideoData.mockImplementation((year: string, videoId: string) => {
+        if (videoId === '10188') return Promise.resolve(mockSearchVideo);
+        return Promise.reject(new Error('Video not found'));
+      });
     });
 
     test('should search in transcripts', async () => {
@@ -248,7 +262,7 @@ describe('WWDC Handlers', () => {
       expect(result).toContain('WWDC Content Search Results');
       expect(result).toContain('Meet the Translation API');
       expect(result).toContain('async await patterns');
-      expect(mockLoadVideosData).toHaveBeenCalled();
+      expect(mockLoadVideoData).toHaveBeenCalled();
     });
 
     test('should search in code examples', async () => {
@@ -345,7 +359,7 @@ describe('WWDC Handlers', () => {
       expect(result).toContain('Welcome to the session');
       expect(result).toContain('Example Code');
       expect(result).toContain('Download Sample');
-      expect(mockLoadVideoData).toHaveBeenCalledWith('videos/2025-10188.json');
+      expect(mockLoadVideoData).toHaveBeenCalledWith('2025', '10188');
     });
 
     test('should exclude transcript when requested', async () => {
@@ -445,13 +459,13 @@ describe('WWDC Handlers', () => {
         ],
       });
 
-      mockLoadVideoData.mockImplementation((path) => {
-        const match = path.match(/videos\/\d+-(\d+)\.json/);
-        const id = match ? match[1] : null;
-        return Promise.resolve(mockVideosWithCode.find(v => v.id === id) as any);
+      mockLoadVideoData.mockImplementation((year: string, videoId: string) => {
+        const video = mockVideosWithCode.find(v => v.id === videoId);
+        if (video) {
+          return Promise.resolve(video as any);
+        }
+        return Promise.reject(new Error('Video not found'));
       });
-      
-      mockLoadVideosData.mockResolvedValue(mockVideosWithCode);
     });
 
     test('should get all code examples', async () => {
@@ -482,7 +496,13 @@ describe('WWDC Handlers', () => {
         codeExamples: [],
       }));
       
-      mockLoadVideosData.mockResolvedValue(videosWithoutCode);
+      mockLoadVideoData.mockImplementation((year: string, videoId: string) => {
+        const video = videosWithoutCode.find(v => v.id === videoId);
+        if (video) {
+          return Promise.resolve(video as any);
+        }
+        return Promise.reject(new Error('Video not found'));
+      });
 
       const result = await handleGetWWDCCodeExamples();
 
@@ -546,7 +566,7 @@ describe('WWDC Handlers', () => {
         return Promise.resolve(topic as any);
       });
 
-      mockLoadVideosData.mockResolvedValue([{
+      const mockTranscriptVideo = {
         id: '10188',
         url: 'https://developer.apple.com/videos/play/wwdc2025/10188/',
         title: 'SwiftUI Animations',
@@ -556,7 +576,12 @@ describe('WWDC Handlers', () => {
         hasTranscript: true,
         hasCode: true,
         resources: {},
-      }]);
+      };
+
+      mockLoadVideoData.mockImplementation((year: string, videoId: string) => {
+        if (videoId === '10188') return Promise.resolve(mockTranscriptVideo);
+        return Promise.reject(new Error('Video not found'));
+      });
     });
 
     test('should list all topics when no topicId provided', async () => {
@@ -637,14 +662,12 @@ describe('WWDC Handlers', () => {
     ];
 
     beforeEach(() => {
-      mockLoadVideoData.mockImplementation((path) => {
-        if (path.includes('10188')) return Promise.resolve(mockSourceVideo as any);
-        const id = path.match(/(\d+)\.json/)?.[1];
-        const video = mockRelatedVideos.find(v => v.id === id);
-        return Promise.resolve(video as any);
+      mockLoadVideoData.mockImplementation((year: string, videoId: string) => {
+        if (videoId === '10188') return Promise.resolve(mockSourceVideo as any);
+        const video = mockRelatedVideos.find(v => v.id === videoId);
+        if (video) return Promise.resolve(video as any);
+        return Promise.reject(new Error('Video not found'));
       });
-
-      mockLoadVideosData.mockResolvedValue(mockRelatedVideos as any);
     });
 
     test('should find explicitly related videos', async () => {

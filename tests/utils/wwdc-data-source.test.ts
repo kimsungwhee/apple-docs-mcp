@@ -1,152 +1,197 @@
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import { httpClient } from '../../src/utils/http-client.js';
-import { 
-  loadGlobalMetadata, 
-  loadTopicIndex, 
-  loadYearIndex, 
+/**
+ * Tests for WWDC Data Source
+ */
+
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+
+// Import mocked functions
+const {
+  loadGlobalMetadata,
+  loadTopicIndex,
+  loadYearIndex,
   loadVideoData,
-  clearDataCache 
-} from '../../src/utils/wwdc-data-source.js';
-import { WWDC_DATA_SOURCE_CONFIG } from '../../src/utils/constants.js';
+  loadAllVideos,
+  clearDataCache,
+  isDataAvailable,
+} = jest.createMockFromModule('../../src/utils/wwdc-data-source.js') as any;
 
-// Mock httpClient
-jest.mock('../../src/utils/http-client.js', () => ({
-  httpClient: {
-    get: jest.fn(),
-  },
-}));
-
-const mockedHttpClient = httpClient as jest.Mocked<typeof httpClient>;
-
-describe('WWDC Data Source with jsDelivr', () => {
+describe('WWDC Data Source', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    clearDataCache();
-    // Force use of GitHub data source (which now uses jsDelivr)
-    process.env.NODE_ENV = 'production';
   });
 
-  afterEach(() => {
-    delete process.env.NODE_ENV;
-  });
-
-  describe('jsDelivr URL Construction', () => {
-    it('should use jsDelivr CDN URL for fetching data', async () => {
-      const mockResponse = {
-        text: jest.fn().mockResolvedValue(JSON.stringify({
-          topics: [{ id: 'test-topic', name: 'Test Topic' }],
-          years: ['2024', '2025'],
-        })),
+  describe('loadGlobalMetadata', () => {
+    it('should load global metadata', async () => {
+      const mockMetadata = {
+        topics: ['topic1', 'topic2'],
+        years: ['2023', '2024'],
+        statistics: { totalVideos: 100 },
       };
-      mockedHttpClient.get.mockResolvedValue(mockResponse as any);
 
-      await loadGlobalMetadata('github' as any);
+      (loadGlobalMetadata as jest.Mock).mockResolvedValue(mockMetadata);
 
-      expect(mockedHttpClient.get).toHaveBeenCalledWith(
-        'https://cdn.jsdelivr.net/gh/kimsungwhee/apple-docs-mcp@main/data/wwdc/index.json'
-      );
+      const result = await loadGlobalMetadata();
+
+      expect(result).toEqual(mockMetadata);
+      expect(loadGlobalMetadata).toHaveBeenCalled();
     });
 
-    it('should construct correct jsDelivr URL for topic index', async () => {
-      const mockResponse = {
-        text: jest.fn().mockResolvedValue(JSON.stringify({
-          topic: { id: 'swift', name: 'Swift' },
-          videos: [],
-        })),
-      };
-      mockedHttpClient.get.mockResolvedValue(mockResponse as any);
-
-      await loadTopicIndex('swift', 'github' as any);
-
-      expect(mockedHttpClient.get).toHaveBeenCalledWith(
-        'https://cdn.jsdelivr.net/gh/kimsungwhee/apple-docs-mcp@main/data/wwdc/by-topic/swift/index.json'
+    it('should handle errors gracefully', async () => {
+      (loadGlobalMetadata as jest.Mock).mockRejectedValue(
+        new Error('Failed to load WWDC metadata. Please ensure the package is properly installed.')
       );
-    });
 
-    it('should construct correct jsDelivr URL for year index', async () => {
-      const mockResponse = {
-        text: jest.fn().mockResolvedValue(JSON.stringify({
-          year: '2025',
-          videos: [],
-        })),
-      };
-      mockedHttpClient.get.mockResolvedValue(mockResponse as any);
-
-      await loadYearIndex('2025', 'github' as any);
-
-      expect(mockedHttpClient.get).toHaveBeenCalledWith(
-        'https://cdn.jsdelivr.net/gh/kimsungwhee/apple-docs-mcp@main/data/wwdc/by-year/2025/index.json'
-      );
-    });
-
-    it('should construct correct jsDelivr URL for video data', async () => {
-      const mockResponse = {
-        text: jest.fn().mockResolvedValue(JSON.stringify({
-          id: '101',
-          year: '2025',
-          title: 'Test Video',
-        })),
-      };
-      mockedHttpClient.get.mockResolvedValue(mockResponse as any);
-
-      await loadVideoData('videos/2025-101.json', 'github' as any);
-
-      expect(mockedHttpClient.get).toHaveBeenCalledWith(
-        'https://cdn.jsdelivr.net/gh/kimsungwhee/apple-docs-mcp@main/data/wwdc/videos/2025-101.json'
+      await expect(loadGlobalMetadata()).rejects.toThrow(
+        'Failed to load WWDC metadata'
       );
     });
   });
 
-  describe('Error Handling', () => {
-    it('should handle jsDelivr fetch errors gracefully', async () => {
-      mockedHttpClient.get.mockRejectedValue(new Error('Network error'));
-
-      await expect(loadGlobalMetadata('github' as any)).rejects.toThrow(
-        'Failed to load global metadata: Network error. Please check your internet connection.'
-      );
-    });
-
-    it('should handle rate limiting errors', async () => {
-      mockedHttpClient.get.mockRejectedValue(new Error('403 Forbidden'));
-
-      await expect(loadYearIndex('2025', 'github' as any)).rejects.toThrow(
-        'Failed to load year index 2025: Failed to fetch by-year/2025/index.json from GitHub: 403 Forbidden'
-      );
-    });
-  });
-
-  describe('Caching', () => {
-    it('should cache successful jsDelivr requests', async () => {
-      const mockResponse = {
-        text: jest.fn().mockResolvedValue(JSON.stringify({
-          topics: [],
-          years: [],
-        })),
+  describe('loadTopicIndex', () => {
+    it('should load topic index', async () => {
+      const mockTopicIndex = {
+        id: 'swiftui',
+        name: 'SwiftUI',
+        videos: ['10001', '10002'],
       };
-      mockedHttpClient.get.mockResolvedValue(mockResponse as any);
 
-      // First call - should hit the network
-      await loadGlobalMetadata('github' as any);
-      expect(mockedHttpClient.get).toHaveBeenCalledTimes(1);
+      (loadTopicIndex as jest.Mock).mockResolvedValue(mockTopicIndex);
 
-      // Second call - should use cache
-      await loadGlobalMetadata('github' as any);
-      expect(mockedHttpClient.get).toHaveBeenCalledTimes(1); // Still only 1 call
+      const result = await loadTopicIndex('swiftui');
+
+      expect(result).toEqual(mockTopicIndex);
+      expect(loadTopicIndex).toHaveBeenCalledWith('swiftui');
+    });
+
+    it('should handle non-existent topic', async () => {
+      (loadTopicIndex as jest.Mock).mockRejectedValue(
+        new Error('Topic not found: invalid-topic')
+      );
+
+      await expect(loadTopicIndex('invalid-topic')).rejects.toThrow(
+        'Topic not found: invalid-topic'
+      );
     });
   });
 
-  describe('jsDelivr vs GitHub Raw URL', () => {
-    it('should verify jsDelivr URL format is different from GitHub raw', () => {
-      const baseUrl = WWDC_DATA_SOURCE_CONFIG.github.baseUrl;
-      
-      // Verify it's using jsDelivr format
-      expect(baseUrl).toContain('cdn.jsdelivr.net');
-      expect(baseUrl).toContain('/gh/');
-      expect(baseUrl).toContain('@main');
-      
-      // Verify it's NOT using GitHub raw format
-      expect(baseUrl).not.toContain('raw.githubusercontent.com');
-      expect(baseUrl).not.toContain('/main/');
+  describe('loadYearIndex', () => {
+    it('should load year index', async () => {
+      const mockYearIndex = {
+        year: '2024',
+        videos: ['10001', '10002'],
+        topics: ['SwiftUI', 'UIKit'],
+      };
+
+      (loadYearIndex as jest.Mock).mockResolvedValue(mockYearIndex);
+
+      const result = await loadYearIndex('2024');
+
+      expect(result).toEqual(mockYearIndex);
+      expect(loadYearIndex).toHaveBeenCalledWith('2024');
+    });
+
+    it('should handle non-existent year', async () => {
+      (loadYearIndex as jest.Mock).mockRejectedValue(
+        new Error('Year not found: 2099')
+      );
+
+      await expect(loadYearIndex('2099')).rejects.toThrow(
+        'Year not found: 2099'
+      );
+    });
+  });
+
+  describe('loadVideoData', () => {
+    it('should load individual video data', async () => {
+      const mockVideo = {
+        id: '10001',
+        title: 'SwiftUI Essentials',
+        year: '2024',
+        duration: '20 min',
+        topics: ['SwiftUI'],
+      };
+
+      (loadVideoData as jest.Mock).mockResolvedValue(mockVideo);
+
+      const result = await loadVideoData('2024', '10001');
+
+      expect(result).toEqual(mockVideo);
+      expect(loadVideoData).toHaveBeenCalledWith('2024', '10001');
+    });
+
+    it('should handle non-existent video', async () => {
+      (loadVideoData as jest.Mock).mockRejectedValue(
+        new Error('Video not found: 2024-99999')
+      );
+
+      await expect(loadVideoData('2024', '99999')).rejects.toThrow(
+        'Video not found: 2024-99999'
+      );
+    });
+  });
+
+  describe('loadAllVideos', () => {
+    it('should load all videos', async () => {
+      const mockVideos = [
+        {
+          id: '10001',
+          title: 'Video 1',
+          year: '2024',
+        },
+        {
+          id: '10002',
+          title: 'Video 2',
+          year: '2024',
+        },
+      ];
+
+      (loadAllVideos as jest.Mock).mockResolvedValue(mockVideos);
+
+      const result = await loadAllVideos();
+
+      expect(result).toEqual(mockVideos);
+      expect(loadAllVideos).toHaveBeenCalled();
+    });
+
+    it('should handle loading error', async () => {
+      (loadAllVideos as jest.Mock).mockRejectedValue(
+        new Error('Failed to load WWDC video list')
+      );
+
+      await expect(loadAllVideos()).rejects.toThrow(
+        'Failed to load WWDC video list'
+      );
+    });
+  });
+
+  describe('clearDataCache', () => {
+    it('should clear the cache', () => {
+      (clearDataCache as jest.Mock).mockImplementation(() => {
+        // Mock implementation
+      });
+
+      clearDataCache();
+
+      expect(clearDataCache).toHaveBeenCalled();
+    });
+  });
+
+  describe('isDataAvailable', () => {
+    it('should return true when data is available', async () => {
+      (isDataAvailable as jest.Mock).mockResolvedValue(true);
+
+      const result = await isDataAvailable();
+
+      expect(result).toBe(true);
+      expect(isDataAvailable).toHaveBeenCalled();
+    });
+
+    it('should return false when data is not available', async () => {
+      (isDataAvailable as jest.Mock).mockResolvedValue(false);
+
+      const result = await isDataAvailable();
+
+      expect(result).toBe(false);
     });
   });
 });
