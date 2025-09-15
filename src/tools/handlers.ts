@@ -22,7 +22,6 @@ import {
   getWWDCCodeExamplesSchema,
   browseWWDCTopicsSchema,
   findRelatedWWDCVideosSchema,
-  listWWDCYearsSchema,
 } from '../schemas/wwdc.schemas.js';
 import {
   handleListWWDCVideos,
