@@ -54,20 +54,27 @@ class DataSourceConfigManager {
     if (cliOptions?.forceGithub) {
       config.type = 'github';
       config.forceSource = 'github';
+      logger.warn('⚠ Force GitHub mode enabled - ignoring any local data paths');
     } else if (cliOptions?.localPath) {
       config.localPath = path.resolve(cliOptions.localPath);
       config.type = 'local';
-      config.forceSource = 'local';
+      // Don't force - allow validation and fallback
+      logger.info(`▫ Local path configured: ${config.localPath}`);
+      logger.info('   Path will be validated with automatic fallback to GitHub if invalid');
     } else if (cliOptions?.useLocal) {
       config.localPath = path.join(process.cwd(), WWDC_DATA_SOURCE_CONFIG.local.dataDir);
       config.type = 'local';
-      config.forceSource = 'local';
+      // Don't force - allow validation and fallback
+      logger.info(`▫ Using local data directory: ${config.localPath}`);
+      logger.info('   Path will be validated with automatic fallback to GitHub if invalid');
     } else if (WWDC_DATA_SOURCE_CONFIG.env.forceGithub) {
       config.type = 'github';
       config.forceSource = 'github';
+      logger.warn('⚠ Force GitHub mode enabled via environment - ignoring any local data paths');
     } else if (WWDC_DATA_SOURCE_CONFIG.env.localPath) {
       config.localPath = path.resolve(WWDC_DATA_SOURCE_CONFIG.env.localPath);
       config.type = 'local';
+      logger.info('▫ Local path configured with validation enabled (will fallback to GitHub if invalid)');
     }
 
     this.config = Object.freeze(config);
@@ -137,38 +144,40 @@ export const DATA_SOURCE_CONFIG = {
 export async function getDataSourceType(): Promise<DataSourceType> {
   const config = DataSourceConfigManager.getConfig();
 
-  // If force source is set, use it
+  // If force source is set, use it without validation
   if (config.forceSource) {
+    // Currently only forceGithub is supported as a force option
     return config.forceSource;
   }
 
   // If we have a configured local path, validate it
   if (config.localPath) {
+    logger.debug('Validating local path (fallback to GitHub enabled)...');
     try {
       const dataDir = path.join(config.localPath, 'data/wwdc');
       await fs.access(dataDir);
       await validateLocalDataStructure(dataDir);
-      logger.info(`Using local data from: ${dataDir}`);
+      logger.info(`✓ Using validated local data from: ${dataDir}`);
       return 'local';
     } catch (error) {
       // More specific error handling
       if (error instanceof Error) {
         const nodeError = error as NodeJS.ErrnoException;
         if (nodeError.code === 'ENOENT') {
-          logger.warn(`Local data directory not found at ${config.localPath}`);
+          logger.warn(`⚠ Local data directory not found at ${config.localPath}`);
         } else if (nodeError.code === 'EACCES') {
-          logger.error(`Permission denied accessing local data at ${config.localPath}`);
+          logger.error(`✗ Permission denied accessing local data at ${config.localPath}`);
         } else if (error.message.includes('Required file')) {
-          logger.error(`Incomplete local data structure: ${error.message}`);
+          logger.error(`✗ Incomplete local data structure: ${error.message}`);
         } else if (error.message.includes('Invalid index.json')) {
-          logger.error(`Corrupted local data: ${error.message}`);
+          logger.error(`✗ Corrupted local data: ${error.message}`);
         } else {
-          logger.error(`Failed to access local data: ${error.message}`);
+          logger.error(`✗ Failed to access local data: ${error.message}`);
         }
       } else {
-        logger.error(`Unknown error accessing local data at ${config.localPath}:`, error);
+        logger.error(`✗ Unknown error accessing local data at ${config.localPath}:`, error);
       }
-      logger.warn('Falling back to GitHub');
+      logger.warn('→ Falling back to GitHub data source');
       return 'github';
     }
   }
@@ -257,6 +266,7 @@ async function fetchFromGitHub(filePath: string): Promise<string> {
   const url = `${DATA_SOURCE_CONFIG.github.baseUrl}/${filePath}`;
   logger.debug(`Fetching from GitHub: ${url}`);
 
+
   try {
     const response = await httpClient.get(url);
     return await response.text();
@@ -294,6 +304,7 @@ async function fetchFromLocal(filePath: string): Promise<string> {
   const fullPath = path.join(baseDir, filePath);
 
   logger.debug(`Reading from local: ${fullPath}`);
+
 
   try {
     // Enhanced security check for cross-platform compatibility
