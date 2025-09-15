@@ -81,7 +81,8 @@ class DataSourceConfigManager {
     if (!this.config) {
       this.initialize();
     }
-    return this.config!;
+    // Type assertion is safe here since initialize() ensures config is set
+    return this.config as DataSourceConfig;
   }
 
   /**
@@ -150,7 +151,23 @@ export async function getDataSourceType(): Promise<DataSourceType> {
       logger.info(`Using local data from: ${dataDir}`);
       return 'local';
     } catch (error) {
-      logger.error(`Local path ${config.localPath} is invalid:`, error);
+      // More specific error handling
+      if (error instanceof Error) {
+        const nodeError = error as NodeJS.ErrnoException;
+        if (nodeError.code === 'ENOENT') {
+          logger.warn(`Local data directory not found at ${config.localPath}`);
+        } else if (nodeError.code === 'EACCES') {
+          logger.error(`Permission denied accessing local data at ${config.localPath}`);
+        } else if (error.message.includes('Required file')) {
+          logger.error(`Incomplete local data structure: ${error.message}`);
+        } else if (error.message.includes('Invalid index.json')) {
+          logger.error(`Corrupted local data: ${error.message}`);
+        } else {
+          logger.error(`Failed to access local data: ${error.message}`);
+        }
+      } else {
+        logger.error(`Unknown error accessing local data at ${config.localPath}:`, error);
+      }
       logger.warn('Falling back to GitHub');
       return 'github';
     }
@@ -168,7 +185,19 @@ export async function getDataSourceType(): Promise<DataSourceType> {
     await validateLocalDataStructure(localDataDir);
     return 'local';
   } catch (error) {
-    logger.debug('Local data directory not accessible, using GitHub');
+    // Provide more context for auto-detection failures
+    if (error instanceof Error) {
+      const nodeError = error as NodeJS.ErrnoException;
+      if (nodeError.code === 'ENOENT') {
+        logger.debug('Default local data directory not found, using GitHub');
+      } else if (nodeError.code === 'EACCES') {
+        logger.debug('Permission denied for default local data directory, using GitHub');
+      } else {
+        logger.debug(`Local data directory not accessible (${error.message}), using GitHub`);
+      }
+    } else {
+      logger.debug('Local data directory not accessible, using GitHub');
+    }
   }
 
   return 'github';
@@ -198,10 +227,23 @@ async function validateLocalDataStructure(dataDir: string): Promise<void> {
   try {
     const indexPath = path.join(dataDir, 'index.json');
     const indexData = await fs.readFile(indexPath, 'utf-8');
-    const parsed = JSON.parse(indexData);
+    let parsed;
+
+    try {
+      parsed = JSON.parse(indexData);
+    } catch (jsonError) {
+      if (jsonError instanceof SyntaxError) {
+        throw new Error(`Malformed JSON: ${jsonError.message}`);
+      }
+      throw jsonError;
+    }
 
     if (!parsed.years || !parsed.topics || !parsed.statistics) {
-      throw new Error('Invalid index.json structure');
+      const missing = [];
+      if (!parsed.years) missing.push('years');
+      if (!parsed.topics) missing.push('topics');
+      if (!parsed.statistics) missing.push('statistics');
+      throw new Error(`Invalid index.json structure: missing ${missing.join(', ')}`);
     }
   } catch (error) {
     throw new Error(`Invalid index.json: ${error instanceof Error ? error.message : String(error)}`);
@@ -219,6 +261,26 @@ async function fetchFromGitHub(filePath: string): Promise<string> {
     const response = await httpClient.get(url);
     return await response.text();
   } catch (error) {
+    // More specific error handling for network issues
+    if (error instanceof Error) {
+      if (error.message.includes('Rate limit')) {
+        logger.error(`GitHub rate limit exceeded for: ${filePath}`);
+        throw new Error(`GitHub rate limit exceeded. Please try again later.`);
+      } else if (error.message.includes('404') || error.message.includes('Not found')) {
+        logger.error(`File not found on GitHub: ${filePath}`);
+        throw new Error(`File not found on GitHub: ${filePath}`);
+      } else if (error.message.includes('timeout')) {
+        logger.error(`Request timeout while fetching: ${filePath}`);
+        throw new Error(`Request timeout. The GitHub server is taking too long to respond.`);
+      } else if (error.message.includes('Network') || error.name === 'TypeError') {
+        logger.error(`Network error while fetching: ${filePath}`, error);
+        throw new Error(`Network error. Please check your internet connection.`);
+      } else if (error.message.includes('HTTP 5')) {
+        logger.error(`GitHub server error for: ${filePath}`);
+        throw new Error(`GitHub server error. Please try again later.`);
+      }
+    }
+
     logger.error(`Failed to fetch from GitHub: ${url}`, error);
     throw new Error(`Failed to fetch ${filePath} from GitHub: ${error instanceof Error ? error.message : String(error)}`);
   }
@@ -234,11 +296,18 @@ async function fetchFromLocal(filePath: string): Promise<string> {
   logger.debug(`Reading from local: ${fullPath}`);
 
   try {
-    // Additional security check - ensure we're not reading outside the data directory
+    // Enhanced security check for cross-platform compatibility
     const resolvedPath = path.resolve(fullPath);
     const resolvedBaseDir = path.resolve(baseDir);
 
-    if (!resolvedPath.startsWith(resolvedBaseDir)) {
+    // Use path.relative for better cross-platform support
+    const relativePath = path.relative(resolvedBaseDir, resolvedPath);
+    if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+      throw new Error(`Invalid file path: ${filePath}`);
+    }
+
+    // Additional check for Windows drive letters
+    if (process.platform === 'win32' && relativePath.includes(':')) {
       throw new Error(`Invalid file path: ${filePath}`);
     }
 
@@ -248,13 +317,50 @@ async function fetchFromLocal(filePath: string): Promise<string> {
     if (filePath.endsWith('.json')) {
       try {
         JSON.parse(content);
-      } catch (error) {
-        throw new Error(`Invalid JSON in ${filePath}: ${error instanceof Error ? error.message : String(error)}`);
+      } catch (jsonError) {
+        // More specific JSON error messages
+        if (jsonError instanceof SyntaxError) {
+          const match = jsonError.message.match(/position (\d+)/);
+          const position = match ? ` at position ${match[1]}` : '';
+          throw new Error(`Malformed JSON in ${filePath}${position}: ${jsonError.message}`);
+        }
+        throw new Error(`Invalid JSON in ${filePath}: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}`);
       }
     }
 
     return content;
   } catch (error) {
+    // Re-throw if it's already a handled error
+    if (error instanceof Error && (
+      error.message.includes('Invalid file path') ||
+      error.message.includes('Malformed JSON') ||
+      error.message.includes('Invalid JSON')
+    )) {
+      throw error;
+    }
+
+    // More specific file system error handling
+    if (error instanceof Error) {
+      const nodeError = error as NodeJS.ErrnoException;
+
+      if (nodeError.code === 'EISDIR') {
+        logger.error(`Attempted to read directory as file: ${fullPath}`);
+        throw new Error(`Cannot read directory as file: ${filePath}`);
+      } else if (nodeError.code === 'EMFILE') {
+        logger.error(`Too many open files in system`);
+        throw new Error(`System resource limit: too many open files`);
+      } else if (nodeError.code === 'ENOMEM') {
+        logger.error(`Out of memory while reading: ${fullPath}`);
+        throw new Error(`Out of memory: file may be too large`);
+      } else if (nodeError.code === 'ENOTDIR') {
+        logger.error(`Path component is not a directory: ${fullPath}`);
+        throw new Error(`Invalid path: component is not a directory`);
+      } else if (nodeError.code === 'ENAMETOOLONG') {
+        logger.error(`Path name too long: ${fullPath}`);
+        throw new Error(`Path name too long for the system`);
+      }
+    }
+
     logger.error(`Failed to read local file: ${fullPath}`, error);
     throw new Error(`Failed to read ${filePath} from local: ${error instanceof Error ? error.message : String(error)}`);
   }
@@ -274,7 +380,7 @@ async function fetchData(filePath: string, dataSource?: DataSourceType): Promise
   }
 
   // Determine data source
-  const source = dataSource || await getDataSourceType();
+  const source = dataSource ?? await getDataSourceType();
 
   // Fetch data
   let data: string;

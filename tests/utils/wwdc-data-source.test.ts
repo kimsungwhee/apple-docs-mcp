@@ -102,7 +102,7 @@ describe('WWDC Data Source with jsDelivr', () => {
       mockedHttpClient.get.mockRejectedValue(new Error('Network error'));
 
       await expect(loadGlobalMetadata('github' as any)).rejects.toThrow(
-        'Failed to load global metadata: Failed to fetch index.json from GitHub: Network error'
+        'Failed to load global metadata: Network error. Please check your internet connection.'
       );
     });
 
