@@ -453,4 +453,13 @@ export const toolDefinitions: Tool[] = [
       required: ['videoId', 'year'],
     },
   },
+  {
+    name: 'list_wwdc_years',
+    description: 'List all available WWDC years with video counts and statistics. Shows which years have content available and how many videos each year contains.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+      required: [],
+    },
+  },
 ];

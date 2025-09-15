@@ -22,6 +22,7 @@ import {
   getWWDCCodeExamplesSchema,
   browseWWDCTopicsSchema,
   findRelatedWWDCVideosSchema,
+  listWWDCYearsSchema,
 } from '../schemas/wwdc.schemas.js';
 import {
   handleListWWDCVideos,
@@ -30,6 +31,7 @@ import {
   handleGetWWDCCodeExamples,
   handleBrowseWWDCTopics,
   handleFindRelatedWWDCVideos,
+  handleListWWDCYears,
 } from './wwdc/wwdc-handlers.js';
 
 /**
@@ -297,6 +299,11 @@ export const toolHandlers: Record<string, ToolHandler> = {
       validatedArgs.includeYearRelated,
       validatedArgs.limit,
     );
+    return { content: [{ type: 'text', text: result }] };
+  },
+
+  list_wwdc_years: async (_args, _server) => {
+    const result = await handleListWWDCYears();
     return { content: [{ type: 'text', text: result }] };
   },
 };

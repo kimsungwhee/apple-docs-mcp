@@ -90,7 +90,10 @@ describe('WWDC Tools Integration', () => {
       topics: ['SwiftUI'],
       hasTranscript: true,
       hasCode: true,
-      transcript: 'Test transcript content',
+      transcript: {
+        fullText: 'Test transcript content',
+        segments: [],
+      },
       codeExamples: [
         {
           language: 'swift',
@@ -104,13 +107,15 @@ describe('WWDC Tools Integration', () => {
       },
       relatedVideos: [],
       url: 'https://example.com/10001',
+      description: 'Test video description',
+      speakers: [],
     } as any);
 
     mockLoadTopicIndex.mockResolvedValue({
-      topicId: 'swiftui',
-      topicName: 'SwiftUI',
+      topicId: 'swiftui-ui-frameworks',
+      topicName: 'SwiftUI & UI Frameworks',
       videoCount: 10,
-      videos: ['10001'],
+      videos: ['videos/2025-10001.json'],
     } as any);
 
     mockLoadAllVideos.mockResolvedValue([
@@ -146,11 +151,11 @@ describe('WWDC Tools Integration', () => {
     it('should filter videos by topic', async () => {
       const result = await handleToolCall(
         'list_wwdc_videos',
-        { topic: 'swiftui' },
+        { topic: 'swiftui-ui-frameworks' },
         mockServer
       );
 
-      expect(mockLoadTopicIndex).toHaveBeenCalledWith('swiftui');
+      expect(mockLoadTopicIndex).toHaveBeenCalledWith('swiftui-ui-frameworks');
     });
   });
 

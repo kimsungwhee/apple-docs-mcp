@@ -67,3 +67,8 @@ export const findRelatedWWDCVideosSchema = z.object({
   includeYearRelated: z.boolean().default(false).describe('Include videos from same year'),
   limit: z.number().min(1).max(50).default(15).describe('Maximum number of related videos'),
 });
+
+/**
+ * Schema for list_wwdc_years
+ */
+export const listWWDCYearsSchema = z.object({});
