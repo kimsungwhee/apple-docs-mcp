@@ -5,6 +5,11 @@
 // Set test environment
 process.env.NODE_ENV = 'test';
 
+// Mock the path module to avoid import.meta.url issues
+jest.mock('../src/utils/wwdc-data-source-path.js', () => ({
+  getWWDCDataDirectory: jest.fn(() => '/mock/data/wwdc')
+}));
+
 // Mock console.error to avoid noise in tests
 const originalConsoleError = console.error;
 beforeEach(() => {

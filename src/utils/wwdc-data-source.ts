@@ -7,27 +7,14 @@
 
 import { promises as fs } from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { logger } from './logger.js';
 import { wwdcDataCache } from './cache.js';
 import { WWDC_CONFIG } from './constants.js';
+import { getWWDCDataDirectory } from './wwdc-data-source-path.js';
 import type { WWDCVideo, GlobalMetadata, TopicIndex, YearIndex } from '../types/wwdc.js';
 
-// Get the data directory dynamically
-function getDataDirectory(): string {
-  // In test environment, use current working directory
-  if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID) {
-    return path.resolve(process.cwd(), 'data/wwdc');
-  }
-
-  // In production, use import.meta.url
-  // This will be compiled correctly by TypeScript
-  const currentFilePath = fileURLToPath(import.meta.url);
-  const currentDirPath = path.dirname(currentFilePath);
-  return path.resolve(currentDirPath, '../data/wwdc');
-}
-
-const WWDC_DATA_DIR = getDataDirectory();
+// Get the data directory from the separate module
+const WWDC_DATA_DIR = getWWDCDataDirectory();
 
 /**
  * Read file from bundled data directory
