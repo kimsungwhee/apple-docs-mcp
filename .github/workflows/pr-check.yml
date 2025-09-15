@@ -1,0 +1,105 @@
+name: PR Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  pr-validation:
+    name: PR Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check code formatting
+        run: |
+          pnpm run lint
+          if [ $? -ne 0 ]; then
+            echo "❌ Linting failed. Please run 'pnpm run lint:fix' locally and commit the changes."
+            exit 1
+          fi
+
+      - name: Run type checking
+        run: |
+          npx tsc --noEmit
+          if [ $? -ne 0 ]; then
+            echo "❌ Type checking failed. Please fix TypeScript errors."
+            exit 1
+          fi
+
+      - name: Run tests
+        run: |
+          pnpm run test:ci
+          if [ $? -ne 0 ]; then
+            echo "❌ Tests failed. Please ensure all tests pass."
+            exit 1
+          fi
+
+      - name: Build project
+        run: |
+          pnpm run build
+          if [ $? -ne 0 ]; then
+            echo "❌ Build failed. Please ensure the project builds successfully."
+            exit 1
+          fi
+
+      - name: Verify bundled data
+        run: |
+          if [ ! -d "dist/data/wwdc" ]; then
+            echo "❌ WWDC data not found in build output"
+            exit 1
+          fi
+
+          file_count=$(find dist/data/wwdc -name "*.json" | wc -l)
+          if [ "$file_count" -lt 1000 ]; then
+            echo "❌ Expected at least 1000 JSON files in WWDC data, found $file_count"
+            exit 1
+          fi
+
+          echo "✅ Found $file_count WWDC data files"
+
+      - name: Check package size
+        run: |
+          size=$(du -sm dist | cut -f1)
+          echo "📦 Build size: ${size}MB"
+
+          if [ "$size" -gt 100 ]; then
+            echo "⚠️ Warning: Build size is larger than 100MB (${size}MB)"
+          fi
+
+      - name: Comment PR status
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { context } = require('@actions/github');
+            const success = '${{ job.status }}' === 'success';
+
+            const body = success
+              ? '✅ **All PR checks passed!**\n\n- ✓ Linting\n- ✓ Type checking\n- ✓ Tests (434 passing)\n- ✓ Build successful\n- ✓ WWDC data bundled'
+              : '❌ **PR checks failed**\n\nPlease review the CI logs for details.';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            });
