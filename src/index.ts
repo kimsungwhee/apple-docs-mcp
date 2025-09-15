@@ -33,20 +33,45 @@ interface CLIOptions {
   help?: boolean;
 }
 
+function checkConflicting(options: CLIOptions): void {
+  // Check for conflicting options
+  if (options.useLocal && options.forceGithub) {
+    throw new Error('Cannot use --use-local and --force-github together');
+  }
+  if (options.useLocal) {
+    if (options.localPath === undefined) {
+      throw new Error('--local-path is required when using --use-local');
+    }
+    if (options.localPath === '') {
+      throw new Error('--local-path cannot be empty when using --use-local');
+    }
+  }
+}
+
 /**
  * Parse command line arguments
  */
 function parseCliArguments(): CLIOptions {
   const args = process.argv.slice(2);
   const options: CLIOptions = {};
+  const validOptions = ['--local-path', '-l', '--use-local', '-L', '--force-github', '-G', '--help', '-h'];  
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
 
+    // Validate known options
+    if (arg.startsWith('-') && !validOptions.includes(arg.split('=')[0])) {
+      throw new Error(`Unknown option: ${arg}`);
+    }
+
     switch (arg) {
       case '--local-path':
       case '-l':
-        options.localPath = args[++i];
+        if (i === (args.length - 1)) {
+          throw new Error('--local-path requires a path argument');
+        }
+        i++;
+        options.localPath = args[i];
         break;
       case '--use-local':
       case '-L':
@@ -66,6 +91,7 @@ function parseCliArguments(): CLIOptions {
         }
     }
   }
+  checkConflicting(options);
 
   return options;
 }

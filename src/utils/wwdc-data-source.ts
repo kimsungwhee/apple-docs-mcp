@@ -17,77 +17,103 @@ import type { WWDCVideo, GlobalMetadata, TopicIndex, YearIndex } from '../types/
 export type DataSourceType = 'github' | 'local';
 
 /**
- * Global configuration state for data source
+ * Configuration for data source
  */
 interface DataSourceConfig {
   type: DataSourceType;
   localPath: string;
   forceSource?: 'local' | 'github';
-  initialized: boolean;
 }
 
-let globalConfig: DataSourceConfig = {
-  type: 'github',
-  localPath: '',
-  forceSource: undefined,
-  initialized: false,
-};
+/**
+ * Singleton manager for data source configuration
+ */
+class DataSourceConfigManager {
+  private static config: DataSourceConfig | null = null;
+
+  /**
+   * Initialize the configuration manager
+   */
+  static initialize(cliOptions?: {
+    localPath?: string;
+    useLocal?: boolean;
+    forceGithub?: boolean;
+  }): void {
+    if (this.config) {
+      logger.debug('DataSourceConfigManager already initialized');
+      return;
+    }
+
+    // Build configuration with priority order: CLI args > Environment > Defaults
+    const config: DataSourceConfig = {
+      type: 'github',
+      localPath: '',
+      forceSource: undefined,
+    };
+
+    if (cliOptions?.forceGithub) {
+      config.type = 'github';
+      config.forceSource = 'github';
+    } else if (cliOptions?.localPath) {
+      config.localPath = path.resolve(cliOptions.localPath);
+      config.type = 'local';
+      config.forceSource = 'local';
+    } else if (cliOptions?.useLocal) {
+      config.localPath = path.join(process.cwd(), WWDC_DATA_SOURCE_CONFIG.local.dataDir);
+      config.type = 'local';
+      config.forceSource = 'local';
+    } else if (WWDC_DATA_SOURCE_CONFIG.env.forceGithub) {
+      config.type = 'github';
+      config.forceSource = 'github';
+    } else if (WWDC_DATA_SOURCE_CONFIG.env.localPath) {
+      config.localPath = path.resolve(WWDC_DATA_SOURCE_CONFIG.env.localPath);
+      config.type = 'local';
+    }
+
+    this.config = Object.freeze(config);
+    logger.info(`Data source initialized: ${config.type}${config.localPath ? ` (${config.localPath})` : ''}`);
+  }
+
+  /**
+   * Get the current configuration
+   */
+  static getConfig(): DataSourceConfig {
+    if (!this.config) {
+      this.initialize();
+    }
+    return this.config!;
+  }
+
+  /**
+   * Reset the singleton (mainly for testing)
+   */
+  static reset(): void {
+    this.config = null;
+  }
+}
 
 /**
  * Initialize data source configuration from CLI args and environment
+ * @deprecated Use DataSourceConfigManager.initialize() instead
  */
 export function initializeDataSourceConfig(cliOptions?: {
   localPath?: string;
   useLocal?: boolean;
   forceGithub?: boolean;
 }): void {
-  if (globalConfig.initialized) {
-    return; // Already initialized
-  }
-
-  // Priority order: CLI args > Environment > Defaults
-  const config: DataSourceConfig = {
-    type: 'github',
-    localPath: '',
-    forceSource: undefined,
-    initialized: true,
-  };
-
-  // 1. Check CLI arguments (highest priority)
-  if (cliOptions?.forceGithub) {
-    config.type = 'github';
-    config.forceSource = 'github';
-  } else if (cliOptions?.localPath) {
-    config.localPath = path.resolve(cliOptions.localPath);
-    config.type = 'local';
-    config.forceSource = 'local';
-  } else if (cliOptions?.useLocal) {
-    config.localPath = path.join(process.cwd(), WWDC_DATA_SOURCE_CONFIG.local.dataDir);
-    config.type = 'local';
-    config.forceSource = 'local';
-  } else if (WWDC_DATA_SOURCE_CONFIG.env.forceGithub) {
-    // 2. Check environment variables (medium priority)
-    config.type = 'github';
-    config.forceSource = 'github';
-  } else if (WWDC_DATA_SOURCE_CONFIG.env.localPath) {
-    config.localPath = path.resolve(WWDC_DATA_SOURCE_CONFIG.env.localPath);
-    config.type = 'local';
-  } else {
-    // 3. Auto-detection (lowest priority)
-    // Use existing auto-detection logic
-    config.type = 'github'; // Will be determined by getDataSourceType()
-  }
-
-  globalConfig = config;
-
-  logger.info(`Data source initialized: ${config.type}${config.localPath ? ` (${config.localPath})` : ''}`);
+  DataSourceConfigManager.initialize(cliOptions);
 }
 
 /**
  * Get current data source configuration
+ * @deprecated Use DataSourceConfigManager.getConfig() instead
  */
-export function getDataSourceConfig(): DataSourceConfig {
-  return { ...globalConfig };
+export function getDataSourceConfig(): DataSourceConfig & { initialized: boolean } {
+  const config = DataSourceConfigManager.getConfig();
+  return {
+    ...config,
+    initialized: true, // Always true since getConfig() auto-initializes
+  };
 }
 
 // Data source configuration (using constants)
@@ -95,8 +121,9 @@ export const DATA_SOURCE_CONFIG = {
   github: WWDC_DATA_SOURCE_CONFIG.github,
   local: {
     get dataDir(): string {
-      if (globalConfig.localPath) {
-        return path.join(globalConfig.localPath, 'data/wwdc');
+      const config = DataSourceConfigManager.getConfig();
+      if (config.localPath) {
+        return path.join(config.localPath, 'data/wwdc');
       }
       return path.join(process.cwd(), WWDC_DATA_SOURCE_CONFIG.local.dataDir);
     },
@@ -107,26 +134,23 @@ export const DATA_SOURCE_CONFIG = {
  * Get data source type with enhanced logic
  */
 export async function getDataSourceType(): Promise<DataSourceType> {
-  // Initialize if not done yet
-  if (!globalConfig.initialized) {
-    initializeDataSourceConfig();
-  }
+  const config = DataSourceConfigManager.getConfig();
 
   // If force source is set, use it
-  if (globalConfig.forceSource) {
-    return globalConfig.forceSource;
+  if (config.forceSource) {
+    return config.forceSource;
   }
 
   // If we have a configured local path, validate it
-  if (globalConfig.localPath) {
+  if (config.localPath) {
     try {
-      const dataDir = path.join(globalConfig.localPath, 'data/wwdc');
+      const dataDir = path.join(config.localPath, 'data/wwdc');
       await fs.access(dataDir);
       await validateLocalDataStructure(dataDir);
       logger.info(`Using local data from: ${dataDir}`);
       return 'local';
     } catch (error) {
-      logger.error(`Local path ${globalConfig.localPath} is invalid:`, error);
+      logger.error(`Local path ${config.localPath} is invalid:`, error);
       logger.warn('Falling back to GitHub');
       return 'github';
     }
@@ -380,3 +404,8 @@ export function clearDataCache(): void {
 export function getDataCacheStats() {
   return wwdcDataCache.getStats();
 }
+
+/**
+ * Export the DataSourceConfigManager for advanced use cases and testing
+ */
+export { DataSourceConfigManager };
