@@ -177,6 +177,26 @@ Add to your Zed `settings.json`:
 </details>
 
 <details>
+<summary><strong> Amazon A Developer CLI</strong></summary>
+
+**Via Config File**: Add to `~/.aws/amazonq/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "apple-docs": {
+      "command": "npx",
+      "args": ["-y", "@kimsungwhee/apple-docs-mcp"]
+    }
+  }
+}
+```
+
+[📖 Amazon A Developer CLI MCP docs](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/qdev-mcp.html)
+
+</details>
+
+<details>
 <summary><strong>🪟 Windows</strong></summary>
 
 For Windows systems, use:
