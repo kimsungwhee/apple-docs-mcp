@@ -89,20 +89,36 @@ claude mcp add apple-docs -- npx -y @kimsungwhee/apple-docs-mcp@latest
 <details>
 <summary><strong>🔷 VS Code</strong></summary>
 
+[![Install in VS Code](https://img.shields.io/badge/Install_in-VS_Code-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=apple-docs&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40kimsungwhee%2Fapple-docs-mcp%22%5D%2C%22env%22%3A%7B%7D%7D)
+[![Install in VS Code Insiders](https://img.shields.io/badge/Install_in-VS_Code_Insiders-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=apple-docs&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40kimsungwhee%2Fapple-docs-mcp%22%5D%2C%22env%22%3A%7B%7D%7D&quality=insiders)
+
 Add to your VS Code MCP config:
 
 ```json
 {
-  "mcp": {
-    "servers": {
-      "apple-docs": {
-        "type": "stdio",
-        "command": "npx",
-        "args": ["-y", "@kimsungwhee/apple-docs-mcp"]
-      }
+  "servers": {
+    "apple-docs": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@kimsungwhee/apple-docs-mcp"
+      ],
+      "env": {}
     }
   }
 }
+```
+
+**CLI**
+
+VS Code:
+```bash
+code --add-mcp '{\"name\":\"apple-docs\",\"command\":\"npx\",\"args\":[\"-y\",\"@kimsungwhee/apple-docs-mcp\"],\"env\":{}}'
+```
+
+VS Code Insiders
+```bash
+code-insiders --add-mcp '{\"name\":\"apple-docs\",\"command\":\"npx\",\"args\":[\"-y\",\"@kimsungwhee/apple-docs-mcp\"],\"env\":{}}'
 ```
 
 [📖 VS Code MCP docs](https://code.visualstudio.com/docs/editor/mcp)
