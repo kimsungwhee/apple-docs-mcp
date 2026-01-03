@@ -27,6 +27,10 @@ export const toolDefinitions: Tool[] = [
       },
       required: ['query'],
     },
+    annotations: {
+      title: 'Search Apple Docs',
+      readOnlyHint: true,
+    },
   },
   {
     name: 'get_apple_doc_content',
@@ -57,6 +61,10 @@ export const toolDefinitions: Tool[] = [
       },
       required: ['url'],
     },
+    annotations: {
+      title: 'Get Apple Doc Content',
+      readOnlyHint: true,
+    },
   },
   {
     name: 'list_technologies',
@@ -83,6 +91,10 @@ export const toolDefinitions: Tool[] = [
         },
       },
       required: [],
+    },
+    annotations: {
+      title: 'List Technologies',
+      readOnlyHint: true,
     },
   },
   searchFrameworkSymbolsTool,
@@ -111,6 +123,10 @@ export const toolDefinitions: Tool[] = [
       },
       required: ['apiUrl'],
     },
+    annotations: {
+      title: 'Get Related APIs',
+      readOnlyHint: true,
+    },
   },
   {
     name: 'resolve_references_batch',
@@ -136,6 +152,10 @@ export const toolDefinitions: Tool[] = [
       },
       required: ['sourceUrl'],
     },
+    annotations: {
+      title: 'Resolve References Batch',
+      readOnlyHint: true,
+    },
   },
   {
     name: 'get_platform_compatibility',
@@ -158,6 +178,10 @@ export const toolDefinitions: Tool[] = [
         },
       },
       required: ['apiUrl'],
+    },
+    annotations: {
+      title: 'Get Platform Compatibility',
+      readOnlyHint: true,
     },
   },
   {
@@ -185,6 +209,10 @@ export const toolDefinitions: Tool[] = [
         },
       },
       required: ['apiUrl'],
+    },
+    annotations: {
+      title: 'Find Similar APIs',
+      readOnlyHint: true,
     },
   },
   {
@@ -221,6 +249,10 @@ export const toolDefinitions: Tool[] = [
       },
       required: [],
     },
+    annotations: {
+      title: 'Get Documentation Updates',
+      readOnlyHint: true,
+    },
   },
   {
     name: 'get_technology_overviews',
@@ -252,6 +284,10 @@ export const toolDefinitions: Tool[] = [
       },
       required: [],
     },
+    annotations: {
+      title: 'Get Technology Overviews',
+      readOnlyHint: true,
+    },
   },
   {
     name: 'get_sample_code',
@@ -279,6 +315,10 @@ export const toolDefinitions: Tool[] = [
       },
       required: [],
     },
+    annotations: {
+      title: 'Get Sample Code',
+      readOnlyHint: true,
+    },
   },
   {
     name: 'list_wwdc_videos',
@@ -304,6 +344,10 @@ export const toolDefinitions: Tool[] = [
         },
       },
       required: [],
+    },
+    annotations: {
+      title: 'List WWDC Videos',
+      readOnlyHint: true,
     },
   },
   {
@@ -336,6 +380,10 @@ export const toolDefinitions: Tool[] = [
       },
       required: ['query'],
     },
+    annotations: {
+      title: 'Search WWDC Content',
+      readOnlyHint: true,
+    },
   },
   {
     name: 'get_wwdc_video',
@@ -361,6 +409,10 @@ export const toolDefinitions: Tool[] = [
         },
       },
       required: ['year', 'videoId'],
+    },
+    annotations: {
+      title: 'Get WWDC Video',
+      readOnlyHint: true,
     },
   },
   {
@@ -392,6 +444,10 @@ export const toolDefinitions: Tool[] = [
       },
       required: [],
     },
+    annotations: {
+      title: 'Get WWDC Code Examples',
+      readOnlyHint: true,
+    },
   },
   {
     name: 'browse_wwdc_topics',
@@ -417,6 +473,10 @@ export const toolDefinitions: Tool[] = [
         },
       },
       required: [],
+    },
+    annotations: {
+      title: 'Browse WWDC Topics',
+      readOnlyHint: true,
     },
   },
   {
@@ -452,6 +512,10 @@ export const toolDefinitions: Tool[] = [
       },
       required: ['videoId', 'year'],
     },
+    annotations: {
+      title: 'Find Related WWDC Videos',
+      readOnlyHint: true,
+    },
   },
   {
     name: 'list_wwdc_years',
@@ -460,6 +524,10 @@ export const toolDefinitions: Tool[] = [
       type: 'object',
       properties: {},
       required: [],
+    },
+    annotations: {
+      title: 'List WWDC Years',
+      readOnlyHint: true,
     },
   },
 ];

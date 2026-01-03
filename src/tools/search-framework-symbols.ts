@@ -41,6 +41,10 @@ export const searchFrameworkSymbolsTool: Tool = {
     },
     required: ['framework'],
   },
+  annotations: {
+    title: 'Search Framework Symbols',
+    readOnlyHint: true,
+  },
 };
 
 interface IndexItem {
