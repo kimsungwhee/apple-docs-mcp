@@ -20,6 +20,7 @@ Apple 개발자 문서 MCP 서버 - 모델 컨텍스트 프로토콜을 통해 A
 - 🔗 **관련 API 발견**: SwiftUI 뷰, UIKit 컨트롤러 및 프레임워크별 API 관계 찾기
 - 📊 **플랫폼 호환성**: iOS 13+, macOS 10.15+, watchOS 6+, tvOS 13+, visionOS 호환성 분석
 - ⚡ **고성능**: Xcode, Swift Playgrounds 및 AI 기반 개발 환경에 최적화
+- 🔄 **스마트 UserAgent 풀**: 자동 장애 복구 및 성능 모니터링을 갖춘 지능형 UserAgent 로테이션 시스템
 - 🌐 **멀티플랫폼**: 완전한 iOS, iPadOS, macOS, watchOS, tvOS, visionOS 문서 지원
 - 🏷️ **베타 및 상태 추적**: iOS 26 베타 API, 사용 중단된 UIKit 메서드, 새로운 SwiftUI 기능 추적
 
@@ -172,6 +173,26 @@ Zed `settings.json`에 추가:
   }
 }
 ```
+
+</details>
+
+<details>
+<summary><strong> Amazon Q Developer CLI</strong></summary>
+
+**구성 파일을 통해**: `~/.aws/amazonq/mcp.json`에 추가:
+
+```json
+{
+  "mcpServers": {
+    "apple-docs": {
+      "command": "npx",
+      "args": ["-y", "@kimsungwhee/apple-docs-mcp"]
+    }
+  }
+}
+```
+
+[📖 Amazon Q Developer CLI MCP 문서](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/qdev-mcp.html)
 
 </details>
 
@@ -329,21 +350,21 @@ npm install && npm run build
 
 | 도구 | 설명 | 주요 기능 |
 |------|------|----------|
-| `search_apple_docs` | Apple 개발자 문서 검색 | 공식 검색 API, 향상된 포맷팅, 플랫폼 필터링 |
+| `search_apple_docs` | Apple 개발자 문서 검색 | 공식 검색 API, 특정 API/클래스/메서드 검색 |
 | `get_apple_doc_content` | 상세한 문서 내용 가져오기 | JSON API 액세스, 선택적 향상 분석 (관련/유사 API, 플랫폼 호환성) |
 | `list_technologies` | 모든 Apple 기술 탐색 | 카테고리 필터링, 언어 지원, 베타 상태 |
-| `get_documentation_updates` | Apple 문서 업데이트 추적 | WWDC 발표, 기술 업데이트, 릴리스 노트, 베타 필터링 |
-| `get_technology_overviews` | 기술 개요 및 가이드 가져오기 | 포괄적인 가이드, 계층적 탐색, 플랫폼 필터링 |
-| `get_sample_code` | Apple 샘플 코드 프로젝트 탐색 | 프레임워크 필터링, 베타 상태, 검색, 추천 샘플 |
-| `get_framework_index` | 프레임워크 API 구조 트리 | 계층적 탐색, 깊이 제어, 타입 필터링 |
+| `search_framework_symbols` | 특정 프레임워크 내 심볼 검색 | 클래스, 구조체, 프로토콜, 와일드카드 패턴, 타입 필터링 |
 | `get_related_apis` | 관련 API 찾기 | 상속, 준수, "참고" 관계 |
 | `resolve_references_batch` | API 참조 일괄 해결 | 문서에서 모든 참조 추출 및 해결 |
 | `get_platform_compatibility` | 플랫폼 호환성 분석 | 버전 지원, 베타 상태, 사용 중단 정보 |
 | `find_similar_apis` | 유사한 API 발견 | Apple 공식 권장사항, 주제 그룹화 |
+| `get_documentation_updates` | Apple 문서 업데이트 추적 | WWDC 발표, 기술 업데이트, 릴리스 노트 |
+| `get_technology_overviews` | 기술 개요 및 가이드 가져오기 | 포괄적인 가이드, 계층적 탐색, 플랫폼 필터링 |
+| `get_sample_code` | Apple 샘플 코드 프로젝트 탐색 | 프레임워크 필터링 (제한 있음), 키워드 검색, 베타 상태 |
 | `search_wwdc_videos` | WWDC 비디오 세션 검색 | 키워드 검색, 주제/연도 필터링, 세션 메타데이터 |
 | `get_wwdc_video_details` | WWDC 비디오 상세 정보 및 대본 | 전체 대본, 코드 예제, 리소스, 플랫폼 정보 |
 | `list_wwdc_topics` | 사용 가능한 모든 WWDC 주제 나열 | Swift부터 공간 컴퓨팅까지 19개 주제 카테고리 |
-| `list_wwdc_years` | 사용 가능한 모든 WWDC 연도 나열 | 비디오 개수와 함께 학년 정보 |
+| `list_wwdc_years` | 사용 가능한 모든 WWDC 연도 나열 | 비디오 개수와 함께 연도 정보 |
 
 ## 🏗️ 기술 아키텍처
 
@@ -373,6 +394,8 @@ apple-docs-mcp/
 │       ├── constants.ts              # 애플리케이션 상수 및 URL
 │       ├── error-handler.ts          # 오류 처리 및 검증
 │       ├── http-client.ts            # 성능 추적 HTTP 클라이언트
+│       ├── user-agent-pool.ts        # 스마트 UserAgent 로테이션 시스템
+│       ├── http-headers-generator.ts # 동적 브라우저 헤더 생성
 │       └── url-converter.ts          # URL 변환 유틸리티
 ├── 📦 dist/                          # 컴파일된 JavaScript
 ├── 🧪 tests/                         # 테스트 스위트
@@ -382,10 +405,14 @@ apple-docs-mcp/
 
 ### 🚀 성능 기능
 
-- **지능형 캐싱**: 콘텐츠 타입별로 최적화된 TTL을 가진 LRU 캐시
-- **스마트 검색**: 결과 순위를 가진 우선순위 프레임워크 검색
-- **오류 복원력**: 재시도 로직을 가진 우아한 성능 저하
-- **타입 안전성**: Zod를 사용한 런타임 검증과 완전한 TypeScript
+- **메모리 기반 캐싱**: 자동 정리 및 TTL 지원을 갖춘 커스텀 캐시 구현
+- **스마트 UserAgent 풀**: 자동 장애 복구 및 성능 모니터링을 갖춘 지능형 로테이션 시스템
+- **동적 헤더**: 사실적인 브라우저 헤더 생성 (Accept, Accept-Language, User-Agent)
+- **스마트 검색**: 향상된 결과 포맷팅을 갖춘 공식 Apple 검색 API
+- **향상된 분석**: 선택적 관련 API, 플랫폼 호환성 및 유사성 분석
+- **오류 복원력**: 포괄적인 오류 처리를 통한 우아한 성능 저하
+- **타입 안전성**: Zod v4.0.5 런타임 검증을 갖춘 완전한 TypeScript
+- **최신 의존성**: MCP SDK v1.15.1, 최적화된 패키지 크기
 
 ### 💾 캐싱 전략
 
@@ -397,6 +424,68 @@ apple-docs-mcp/
 | 기술 목록 | 2시간 | 50 항목 | 거의 변경되지 않음, 대용량 콘텐츠 |
 | 문서 업데이트 | 30분 | 100 항목 | 정기 업데이트, WWDC 발표 |
 | WWDC 비디오 데이터 | 2시간 | 무제한 | 안정적인 콘텐츠, 로컬 JSON 파일 |
+
+## 📦 WWDC 데이터
+
+모든 WWDC 비디오 데이터 (2014-2025)는 **npm 패키지에 직접 번들링**되어 다음을 제공합니다:
+
+- ✅ **네트워크 지연 없음** - WWDC 콘텐츠에 API 호출 불필요
+- ✅ **100% 오프라인 액세스** - 인터넷 연결 없이 작동
+- ✅ **속도 제한 없음** - 무제한 WWDC 검색 및 탐색
+- ✅ **즉각적인 응답** - 모든 데이터가 로컬에서 사용 가능
+
+포함된 데이터:
+- 📹 **1,260개 이상의 WWDC 세션 비디오** 및 전체 대본
+- 🏷️ **20개 주제 카테고리**로 체계적인 탐색
+- 📅 **13년간의 콘텐츠** (2012-2025)
+- 💾 **35MB의 최적화된 JSON 데이터**
+
+> **참고**: 최신 WWDC 콘텐츠를 받으려면 패키지를 업데이트하세요.
+
+## ⚙️ 설정
+
+### 🔄 UserAgent 풀 설정
+
+MCP 서버는 API 안정성을 향상시키기 위한 지능형 UserAgent 로테이션 시스템을 포함합니다:
+
+#### 환경 변수
+
+| 변수 | 설명 | 기본값 | 예시 |
+|------|------|--------|------|
+| `USER_AGENT_ROTATION_ENABLED` | 로테이션 활성화/비활성화 | `true` | `true` |
+| `USER_AGENT_POOL_STRATEGY` | 로테이션 전략 | `random` | `smart` |
+| `USER_AGENT_MAX_RETRIES` | 최대 재시도 횟수 | `3` | `5` |
+| `USER_AGENT_POOL_CONFIG` | 커스텀 풀 설정 (JSON) | 내장 에이전트 | 아래 참조 |
+
+#### 커스텀 풀 설정
+
+```bash
+# 커스텀 UserAgent 풀 설정
+export USER_AGENT_POOL_CONFIG='[
+  {"userAgent": "MyApp/1.0 (compatible)", "weight": 3, "maxUsageCount": 1000},
+  {"userAgent": "MyApp/2.0 (advanced)", "weight": 2, "maxUsageCount": 800}
+]'
+
+# 로테이션 전략 설정 (random/sequential/smart)
+export USER_AGENT_POOL_STRATEGY=smart
+
+# 디버깅 활성화
+export NODE_ENV=development
+```
+
+#### 사용 가능한 전략
+
+- **`random`**: 빠른 무작위 선택 (최고 성능)
+- **`sequential`**: 라운드 로빈 로테이션 (예측 가능한 순서)
+- **`smart`**: 성공률 최적화 (최고 안정성)
+
+#### 내장 UserAgent
+
+서버에는 다음을 포함하는 12개 이상의 사전 구성된 UserAgent 문자열이 포함됩니다:
+- Chrome (Mac Intel/Apple Silicon, Windows, Linux)
+- Firefox (Mac Intel/Apple Silicon, Windows, Linux)
+- Safari (Mac Intel/Apple Silicon, 최신 버전)
+- Edge (Windows, Mac Intel/Apple Silicon)
 
 ## 🧪 개발
 
