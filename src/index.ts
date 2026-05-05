@@ -27,6 +27,19 @@ import { API_LIMITS } from './utils/constants.js';
 
 export default class AppleDeveloperDocsMCPServer {
   private server: Server;
+  private isShuttingDown = false;
+
+  private shutdown(exitCode: number = 0, reason?: string) {
+    if (this.isShuttingDown) {
+      return;
+    }
+
+    this.isShuttingDown = true;
+    if (reason) {
+      logger.info(`Shutting down MCP server: ${reason}`);
+    }
+    process.exit(exitCode);
+  }
 
   /**
    * Helper method to handle async operations with consistent error handling
@@ -269,26 +282,38 @@ export default class AppleDeveloperDocsMCPServer {
   private setupErrorHandling() {
     // 处理 SIGINT 以优雅关闭服务器
     process.on('SIGINT', () => {
-      process.exit(0);
+      this.shutdown(0, 'SIGINT');
     });
 
     process.on('SIGTERM', () => {
-      process.exit(0);
+      this.shutdown(0, 'SIGTERM');
+    });
+
+    process.stdin.on('end', () => {
+      this.shutdown(0, 'stdin end');
+    });
+
+    process.stdin.on('close', () => {
+      this.shutdown(0, 'stdin close');
     });
 
     process.on('unhandledRejection', (reason) => {
       logger.error('Unhandled Rejection, reason:', reason);
-      process.exit(1);
+      this.shutdown(1, 'unhandledRejection');
     });
 
     process.on('uncaughtException', (error) => {
       logger.error('Uncaught Exception:', error);
-      process.exit(1);
+      this.shutdown(1, 'uncaughtException');
     });
   }
 
   async run() {
     const transport = new StdioServerTransport();
+    transport.onclose = () => {
+      this.shutdown(0, 'transport close');
+    };
+
     await this.server.connect(transport);
 
     logger.info('Apple Developer Docs MCP server running on stdio');
