@@ -1,0 +1,139 @@
+{
+  "id": "289",
+  "year": "2026",
+  "url": "https://developer.apple.com/videos/play/wwdc2026/289/",
+  "title": "Modernize your AppKit app",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Machine Learning & AI",
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi! I'm Ujjaini, a Mac UI frameworks engineer, and this is \"Modernize Your AppKit App\".\n\nA modern app takes advantage of how AppKit interfaces with Mac, so that its form and function feel in harmony with the rest of the system. That harmony shows up in three places: in how people drive your app, in how the system manages it, and in how it looks and feels on the screen. Today I'll share tips for all three.\n\nI'll begin with modern precision input methods that your app should adapt to. Then, I'll discuss the importance of preserving continuity across launches. That is, how your app can terminate gracefully when the system needs it to, and come back to where it was left off.\n\nAnd finally, I'll go through updates to the look and feel in macOS 27, many of which you'll notice without having to rebuild your app.\n\nI'll start where the Mac started: at the input device.\n\nPrecision input devices have been at the heart of the mac since the very beginning. The first Mac shipped with a keyboard and mouse! Over time, the APIs for handling these various kinds of input have evolved and become far more convenient. mouseDown and tracking loops have been the go-to pattern, for implementing interactive behaviors in AppKit apps. However, AppKit isn't the only framework on Mac. SwiftUI, UIKit through Mac Catalyst, and AppKit work together to create the Mac experience. They rely on Gesture Recognizers, to provide a common event handling language across all three frameworks. Gesture recognizers empower AppKit to provide advanced behaviors, without having to build that yourself. The modern way of dealing with events is gesture recognizers. I'll explore three solutions that interface well with them: view-based APIs, control events, and custom gesture recognizers themselves. These offer the same customizability as tracking loops and mouseDown overrides, and support cross-framework compatibility. I'll tell you when to reach for each.\n\nCommon mouseDown overrides enable tracking selection, showing context menus, drag-and-drop, and text selection. If you're currently overriding mouseDown, AppKit has dedicated APIs that handle these behaviors more reliably, and take full advantage of the modern Mac platform.\n\nmouseDown is often overridden to track selection. Instead, observe the selected property on types like NSCollectionViewItem and NSTableRowView. Or, use the delegate callbacks that are notified when selection changes, like NSTableViewDelegate, and NSOutlineViewDelegate.\n\nTo show context menus from a view, you have a few options.\n\nUse the class property .defaultMenu on NSView where all instances of the view will show the same menu. Use the instance property .menu on NSResponder, to provide a different menu for every responder.\n\nOr, use the instance method .menuForEvent on NSView, to dynamically create the menu based on the event. If your app uses collection container views, use modern dragging delegate methods, like tableView pasteboardWriterForRow.\n\nCreate a pasteboardItem, set the data on it, and return it. Similar methods exist on NSCollectionView, NSOutlineView and NSBrowser.\n\nIf you need text selection behavior outside of NSTextView, use NSTextSelectionManager. It's a new API in macOS 27, that takes advantage of gesture recognizers and brings classic macOS text selection behaviors to any view. Attach it to a view and set up a text selection data source. You'll then have support for bidirectional selection, drag and drop with text, toggling, and much more.\n\nThe next solution might seem a little familiar, if you know control events from UIKit. Control events are now in AppKit! Control events can be added to standard Mac controls, like buttons or sliders. They enable your code to react to user-driven tracking state changes, rather than having to implement complex mouseDown tracking logic. AppKit calls the registered target and action when the control event is triggered. Most of these control events have been made available from OS 10.11! Here is an example of NSControlEvents. Instantiate the button and register a target and action for a control event. Note that you don't even have to subclass NSButton to get this to work! For more control over interactions in your views, add standard gesture recognizers. For even more flexibility, create your own custom gesture recognizer subclasses. Learn more in the \"Gestures\" documentation.\n\nBecause gesture recognizers operate on a view and its sub-views, overlapping sibling views can silently block mouse events. If a control doesn't seem to be responding to a click, make sure you don't have some sibling view that overlaps that button. To address this issue, re-size the view so it doesn't overlap.\n\nIf the view should not be re-sized because it is an overlay, override hitTest and return nil, so hit testing can fall through to content underneath.\n\nNow, I'll focus on keyboard navigation. Your app needs to respond to keyboard input seamlessly, to enable speed and accessibility.\n\nKeyboard navigation for controls can be turned on in system settings. When it's on, focus moves between controls using tab or shift-tab. The key view loop is the order in which controls are cycled through, when the Tab key is pressed. To automatically recalculate the loop, every time a view is added or removed in the hierarchy, enable .autorecalculatesKeyViewLoop on the window. If you do not set this value, you are in charge of creating and maintaining the key view loop.\n\nKeyboard navigation also reaches beyond your app's windows, into the menu bar and status items. Navigating across status items is a little different from main menu items. Status items that show a menu when clicked, already behave like menus on the menu bar. But status items can also be triggers, for actions or display some kind of transient UI.\n\nTo trigger an action, modify NSStatusItem's button property to include a target and action, and optionally an image. This behaves like a regular button and the action fires automatically when Return is pressed during keyboard navigation. To use a custom view for your status menu item, use status items view property to set the view. Then add a target and action to the status item, to enable performing that action.\n\nStatus items can also be triggers to show custom windows, for example! When a status item shows its window, AppKit needs to know when that UI is active, so that keyboard focus can behave correctly. Track the life cycle of your custom UI, using the expanded interface session API. First set a delegate, when the item is created, that will receive begin and end calls to display or dismiss your window.\n\nIn the delegate, implement statusItem didBegin ExpandedInterfaceSession and statusItemDidEnd_ ExpandedInterfaceSession. These methods are called by AppKit, to manage the life cycle of an expanded interface session. In the didBegin call, show the window. In the didEnd call, order the window out.\n\nWhen it is time to dismiss the session, for example, because an action has been selected, call .cancel on the .expandedInterfaceSession?. Note that the session might be canceled for you, if focus naturally moves somewhere else.\n\nSwiftUI menu bar extras do a lot of this work for you! Check out the WWDC26 video \"Use SwifUI with AppKit and UIKit\" to learn how an AppKit app can use a SwiftUI menu bar extra. Making sure your app works just as well with the keyboard as with a mouse, is especially important for the many power users who choose the Mac. Providing a seamless transition, within and outside of your app, is one more way to enable them.\n\nSpeaking of seamless transitions, a great Mac app seamlessly quits and quickly restores. It quits without pushback, and comes back as if it was never quit in the first place! People should be able to quit their apps at any time. Sometimes because they want to, sometimes because the system needs to reboot, which might happen during an overnight software update. So your app should only block quit when it genuinely needs to. When your app is presenting a sheet, the window might not be able to close. And when a window can't close, the app can't quit. The NSWindow property preventsApplicationTerminationWhenModal defaults to true, and for good reason! It's important to make sure your app doesn't lose data, when a document needs to be saved, for example.\n\nSet this property to false, for all modals or sheets that don't strictly require intervention, to allow more graceful application termination.\n\nWith graceful termination handled, the next step is restoration. Use NSWindowRestoration to customize how your app comes back. State restoration requires 3 steps: opting into state restoration, encoding the UI state, and decoding the state to restore windows and UI. I'll go through some code that uses NSWindowRestoration. First, set an identifier for the window in the window controller. For common windows, like your main window or a preferences window, set an autosave name. This helps restore your window to an active space with the same frame. There is no need to set an autosave name for document windows.\n\nThen ensure window.isRestorable is set to true, so AppKit can call encodeRestorableState and restoreState on your windows.\n\nThis also lets Appkit automatically restore window state, like which window was minimized, which was frontmost, and which was full screen.\n\nAlso, set a window.restorationClass, which will be invoked when the app is re-launched, to restore the window itself.\n\nUse encodeRestorableState to preserve everything you need to recreate your window's state.\n\nCall super's implementation as well, so your state is restored correctly.\n\nIn this example, the selected item's identifier is encoded with the productIdentifier key.\n\nAvoid encoding data that lives in your document or database. The goal of state restoration is to be able to reconstruct the state of the UI, not to re-serialize the whole app. All NSResponders have an encodeRestorable_ State method that you can override, so manage state for your views as well.\n\n.encodeRestorableState is only called when state for the object has been invalidated. Every time there is a change to your view hierarchy that should alter the saved state, call .invalidateRestorableState( ). In this example, this method is called when a different product is selected in the sidebar. At a later time, encodeRestorableState will be called on everything that was invalidated.\n\nThat's what your app needs to save the state of its UI before it has quit. When the app is re-launched, you'll need to decode all that information to restore the UI. First restore your windows, and then restore the state on those windows! In the window restoration class, implement the method restoreWindow withIdentifier, to recreate the windows in your app. This method is called for every window that's being restored. Its parameters include the window's identifier, and the completionHandler that needs to be called with the corresponding window.\n\nUsing the identifier, recreate the window controller and windows. The .mainWindow is already available on the app delegates .mainWindowController. Call the completionHandler with the existing .window.\n\nFor other windows, instantiate the window controller, and pass in its .window to the completionHandler.\n\nIf window creation fails, still call the completionHandler with the error. AppKit waits on every restorable window, so always call the completionHandler. If you can't call it from within this method, save the handler and call it later. Bu be absolutely sure to call it! Once the windows have been restored, the last step is to restore the UI for each window. In the window controller's restoreState method, AppKit will hand you the same coder object containing the keys you encoded before. This is the place to fetch any data required to reconstruct your app's state.\n\nDecode the identifiers and hand them to the corresponding view controllers. When you're done, your windows should be in the same state as before.\n\nEnhancing quit and relaunch to feel uninterrupted, helps people pick up right where they left off, whether they quit the app or restarted their Mac.\n\nTo learn state restoration in practice, check out the code sample \"Restoring your app's state with AppKit\".\n\nWith input and restoration in hand, there's one more area where your app and the Mac meet: the UI. The Liquid Glass material, introduced in macOS 26, continues to evolve. Your app will benefit from many of the updates automatically. If you adopted Liquid Glass in macOS 26, your app will pick up a few changes when you run it on macOS 27. The automatic NSScrollEdgeEffectStyle resolves to a hard-edge effect, when there is free-floating text, like the window title in the title bar.\n\nSidebars extend to the window's edges, selection in the sidebar uses a semi-bold text style for emphasis.\n\nAnd content still flows behind them.\n\nBordered toolbar items over the sidebar adopt Liquid Glass as well.\n\nNew in macOS 27, there is an effect that can be added to glass. Where the glass subtly bounces when clicked, giving a sense that the control is responding to interaction. Maps uses this for a few of their custom controls.\n\nThis would not apply to all uses of glass in your app: use this effect with controls and buttons, or glass containers of interactive controls. A little goes a long way! Rounded rectangles have been a signature of the Apple ecosystem for decades, from hardware bezels to controls and containers across macOS. AppKit has new API for concentricity. Content meant for a corner can adapt to the shape of its container, instead of feeling at odds with the rest of the window.\n\nFor example, the local weather view in Maps is concentric with the window.\n\nWhen a view sits near the corner of its container, its own rounded corners should follow the curve of that container. The closer the view is to the container's corner, the more its radius should match.\n\nTo make your button or view concentric, use the cornerConfiguration API.\n\nFirst, create a custom view subclass.\n\nOn the custom view, override cornerConfiguration, to return an NSViewCornerConfiguration?.\n\nFor the radius, use .containerConcentric on NSViewCornerRadius. This calculates a radius based on the container view.\n\nSet a minimum value as well, so that every corner is always rounded.\n\nYou can choose from many different kinds of factory methods for the configuration. To maintain a roundedRect with the same radii across all 4 corners, use .uniformCorners.\n\nThese are a few pointers that can help make your app harmonious on modern macOS. I'll leave you with a quick recap of where to start.\n\nIdentify places in which you are overriding mouseDown in your app, and instead use view APIs, control events, or gesture recognizers. Prioritize user intent over tracking loops.\n\nMake sure your app works just as well from the keyboard as from the mouse.\n\nMake quit and relaunch feel seamless, so your app picks up exactly where people left off. And evaluate your view hierarchies to adopt concentricity in views and buttons.\n\nThank you so much for watching. Whether your app is for the students at school learning how to use a computer or the power users who build some of the world's most important tools and art, your apps have played a central role in this experience. Keep on creating!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:35",
+      "title": "Modern dragging delegate",
+      "language": "swift",
+      "code": "// Modern dragging delegate methods\nfunc tableView(_ tableView: NSTableView,\n        pasteboardWriterForRow row: Int) -> (any NSPasteboardWriting)? {\n    let pasteboardItem = NSPasteboardItem()\n    pasteboardItem.setString(..., forType: .string)\n    return pasteboardItem\n}"
+    },
+    {
+      "timestamp": "4:55",
+      "title": "Control events",
+      "language": "swift",
+      "code": "// Use control events\nlet button = NSButton()\nbutton.addTarget(\n    self,\n    action: #selector(trackingEndedOutsideHandler),\n    for: .trackingEndedOutside\n)"
+    },
+    {
+      "timestamp": "5:44",
+      "title": "hitTest override",
+      "language": "swift",
+      "code": "override func hitTest(_ point: NSPoint) -> NSView? {\n    return nil\n}"
+    },
+    {
+      "timestamp": "6:24",
+      "title": "autorecalculatesKeyViewLoop",
+      "language": "swift",
+      "code": "window.autorecalculatesKeyViewLoop = true"
+    },
+    {
+      "timestamp": "7:37",
+      "title": "Expanded interface delegate — setup",
+      "language": "swift",
+      "code": "// Set the expanded interface delegate\n@main class LightAppDelegate: NSObject, NSApplicationDelegate {\n    lazy var lightStatusItem: NSStatusItem = { ... }()\n\n    func applicationDidFinishLaunching(_ notification: Notification) {\n        // ...\n        lightStatusItem.expandedInterfaceDelegate = self\n    }\n}"
+    },
+    {
+      "timestamp": "7:52",
+      "title": "Expanded interface delegate — methods",
+      "language": "swift",
+      "code": "// Implement the delegate methods\nextension LightAppDelegate: NSStatusItemExpandedInterfaceDelegate {\n    // ...\n    func statusItem(_ statusItem: NSStatusItem, didBegin session:\n                    NSStatusItemExpandedInterfaceSession) {\n        // Show window\n    }\n    func statusItemDidEndExpandedInterfaceSession(\n        _ statusItem: NSStatusItem, animated: Bool) {\n        // Hide window\n    }\n    func selectedAction() {\n        // Take the action\n        // Cancel session to request window dismissal\n        lightStatusItem.expandedInterfaceSession?.cancel()\n    }\n}"
+    },
+    {
+      "timestamp": "8:16",
+      "title": "Expanded interface delegate — cancel",
+      "language": "swift",
+      "code": "// Cancel the session when dismissing\nextension LightAppDelegate: NSStatusItemExpandedInterfaceDelegate {\n    // ...\n    func statusItem(_ statusItem: NSStatusItem, didBegin session:\n                    NSStatusItemExpandedInterfaceSession) {\n        // Show window\n    }\n    func statusItemDidEndExpandedInterfaceSession(\n        _ statusItem: NSStatusItem, animated: Bool) {\n        // Hide window\n    }\n    func selectedAction() {\n        // Take the action\n        // Cancel session to request window dismissal\n        lightStatusItem.expandedInterfaceSession?.cancel()\n    }\n}"
+    },
+    {
+      "timestamp": "9:45",
+      "title": "preventsApplicationTerminationWhenModal",
+      "language": "swift",
+      "code": "window.preventsApplicationTerminationWhenModal = false"
+    },
+    {
+      "timestamp": "10:18",
+      "title": "Set window identifiers for state restoration",
+      "language": "swift",
+      "code": "// Set window identifiers for state restoration\n@MainActor class MainWindowController: NSWindowController, NSWindowDelegate {\n    // ...\n    convenience init() {\n        let window = NSWindow( ... )\n        // ...\n        window.identifier = NSUserInterfaceItemIdentifier(WindowIdentifiers.mainWindow)\n        window.setFrameAutosaveName(WindowIdentifiers.mainWindow)\n        window.isRestorable = true\n        window.restorationClass = WindowRestorationHandler.self\n        // ...\n    }\n}"
+    },
+    {
+      "timestamp": "11:04",
+      "title": "encodeRestorableState",
+      "language": "swift",
+      "code": "// Preserve state to recreate the UI\n@MainActor class MainWindowController: NSWindowController, NSWindowDelegate {\n    // ...\n    override func encodeRestorableState(with coder: NSCoder) {\n        super.encodeRestorableState(with: coder)\n        // ...\n        coder.encode(selectedProduct?.identifier.uuid,\n                    forKey: RestorationKeys.productIdentifier)\n        // ...\n    }\n    // ...\n}"
+    },
+    {
+      "timestamp": "11:50",
+      "title": "invalidateRestorableState",
+      "language": "swift",
+      "code": "// Invalidate restorable state when the view hierarchy changes\n@MainActor class MainWindowController: NSWindowController, NSWindowDelegate {\n    // ...\n    convenience init() {\n        // ...\n        splitViewController.onProductSelected = { [weak self] product in\n            self?.invalidateRestorableState()\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "12:26",
+      "title": "restoreWindow(withIdentifier:)",
+      "language": "swift",
+      "code": "// Restore windows\nclass WindowRestorationHandler: NSObject, NSWindowRestoration {\n    static func restoreWindow(\n        withIdentifier identifier: NSUserInterfaceItemIdentifier,\n        state: NSCoder,\n        completionHandler: @escaping (NSWindow?, Error?) -> Void\n    ) {\n        //...\n        if identifier == .mainWindow, let window = appDelegate.mainWindowController?.window {\n            completionHandler(window, nil)\n        } else if identifier == .imageWindow {\n            let controller = ImageWindowController()\n            appDelegate.imageWindowControllers.append(controller)\n            completionHandler(controller.window, nil)\n        } else {\n            completionHandler(nil, error)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "13:29",
+      "title": "restoreState",
+      "language": "swift",
+      "code": "// Restore window UI\n@MainActor class MainWindowController: NSWindowController, NSWindowDelegate {\n    //...\n    override func restoreState(with coder: NSCoder) {\n        super.restoreState(with: coder)\n        if let productId = coder.decodeObject(\n            of: [NSString.self],\n            forKey: RestorationKeys.productIdentifier) as? String {\n            splitViewController?.selectedProductId = productId\n        }\n        //...\n    }\n}"
+    },
+    {
+      "timestamp": "16:11",
+      "title": "cornerConfiguration",
+      "language": "swift",
+      "code": "// Subclass NSView to override cornerConfiguration\nclass LocalWeatherView: NSView {\n    // ...\n    override var cornerConfiguration: NSViewCornerConfiguration? {\n        let radius: NSViewCornerRadius = .containerConcentric(minimumCornerRadius)\n        return .uniformCorners(radius: radius)\n    }\n    // ...\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Use SwiftUI with AppKit",
+        "url": "https://developer.apple.com/videos/play/wwdc2022/10075/"
+      },
+      {
+        "title": "Restoring your app’s state with AppKit",
+        "url": "https://developer.apple.com/documentation/AppKit/restoring-your-app-s-state-with-appkit"
+      },
+      {
+        "title": "Gestures",
+        "url": "https://developer.apple.com/documentation/AppKit/gestures"
+      },
+      {
+        "title": "TN3212: Adopting gesture recognizers for Sidecar touch support",
+        "url": "https://developer.apple.com/documentation/Technotes/tn3212-adopting-gesture-recognizers-for-sidecar-touch-support"
+      },
+      {
+        "title": "NSControl.Events",
+        "url": "https://developer.apple.com/documentation/AppKit/NSControl/Events"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2026/289/5/6a2a7cfa-56a1-4cbb-ae54-1f229e1708ae/downloads/wwdc2026-289_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2026/289/5/6a2a7cfa-56a1-4cbb-ae54-1f229e1708ae/downloads/wwdc2026-289_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "272",
+      "year": "2026",
+      "title": "Use SwiftUI with AppKit and UIKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2026/272"
+    }
+  ],
+  "extractedAt": "2026-06-12T10:24:19.546Z"
+}

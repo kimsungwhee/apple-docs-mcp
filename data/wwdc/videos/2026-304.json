@@ -1,0 +1,96 @@
+{
+  "id": "304",
+  "year": "2026",
+  "url": "https://developer.apple.com/videos/play/wwdc2026/304/",
+  "title": "Implement high resolution photo capture",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Photos & Camera"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, I am Mohit Setia - I'm an engineer on the Camera Software team. Welcome to: \"Implement high resolution photo capture.\" Advancements in camera hardware and computational photography make high-resolution captures possible. But taking full advantage of that quality means managing tradeoffs particularly between processing time and final image quality. I'll go over high-quality photo processing and how to manage those tradeoffs for your app. First, I will cover different types of high-resolution photos.\n\nThen, how to configure and capture them.\n\nAnd finally, I'll discuss how to keep your app responsive throughout the process.\n\nFirst up: high-resolution photos. The preview stream gives you a screen-resolution image, suitable for showing the camera's view. But in photography use cases higher level of detail and low noise is expected.\n\nAlso, high resolution image is required for photo cropping, zooming in on details, or image analysis.\n\nHigh resolution captures address this. Let me define what they are. A high-resolution photo — typically 12 megapixels captures the scene at a higher resolution than the preview stream.\n\n24 megapixels and 48 megapixels takes it a step further. The camera captures it at an even larger resolution. That means significantly more detail and clarity.\n\nStarting with iPhone 14 Pro and iPhone 14 Pro Max, the camera system features of 48 megapixel Quad sensor.\n\nA quad-pixel sensor design allows capturing photos at full resolution with the highest level of details or group pixels in two by two clusters of the same color to capture more light.\n\nThis is a 48 megapixel photo captured on an iPhone! It shows a sweeping coastal landscape cliffs, beach, and ocean stretching to the horizon.\n\nIt is four times the resolution of a standard photo, and it is captured using a single frame from the sensor.\n\nNotice the fine rocks on 100% crop of the coast.\n\nClearly visible in incredible detail. And the intricate patterns on the side of the mountain.\n\nThis is the power of 48 megapixels: more detail, more clarity, more to explore.\n\nStarting with iPhone 15, the camera supports 24 megapixel photos. A 24 megapixel photo capture consists of multiple steps. First, the camera uses combined pixels on the Quad sensor to generate a 12 megapixel, multi-frame fused, high dynamic range image.\n\nThen, the computational image processing pipeline, called photonic engine, combines that with a high resolution 48MP image captured at a full sensor resolution for rich details.\n\nResulting in a 24MP image with incredible quality double the resolution of a 12MP image with only about 50% increase in the file size.\n\nIt balances light and detail while keeping file size manageable for storing and sharing.\n\nStarting with iPhone 15, the Camera app defaults to this capture mode. 24MP and 48MP capture support has been extended to the telephoto camera on iPhone 16 Pro, and the ultra wide camera on iPhone 17. So these are the types of high resolution photos available across iPhone cameras. Now that I've defined the high-resolution photos available on iPhone, here are the types of high resolution captures that you can request in your app. First, the most common case — the fully processed photo.\n\nThis is a multi-frame fused image. It goes through Photonic Engine, that extends dynamic range and improves fine details.\n\nSecond, Exposure brackets multiple exposure frames of the same scene. This is useful for creating high dynamic range photo capture and scenarios where a selection from multiple exposures is required.\n\nThird, Bayer RAW photos. RAW gives you minimally processed data straight from the sensor. This is ideal for post-processing and editing use cases. And fourth, Apple's ProRAW. ProRAW combines the flexibility of RAW with iPhone's image processing.\n\nIt gives more flexibility when editing exposure, color, and detail. To learn more about RAW format, watch \"Capture and process ProRAW images\" from WWDC 2021. Next, let me share how to configure the capture session for high-resolution photo. I'll start by creating an AVCaptureSession and then configure the session.\n\nNote - only the photo preset supports 24 and 48 megapixel photos. Other presets do not support it.\n\nNext, I will pick the right prioritization for my app.\n\nA speed capture delivers fastest, with the least processing. A balanced capture gives medium delivery speed and good quality. A quality capture takes the longest, but delivers the best quality.\n\nThis is covered in more detail in \"Capture High-Quality Photos Using Video Formats.\" from WWDC 2021. So while configuring the AVCapturePhotoOutput. I'll set maxPhotoQualityPrioritization to quality for demonstration of a high res capture.\n\nThis tells the session to prepare resources for all three prioritization levels speed, balanced, and quality.\n\nThe availability of some high resolution depends on this setting and I'll cover that little later in this video. Next, I will select the largest dimensions that I would request in this session.\n\nStarting from iOS 16, you can check the supported max photo dimensions on the active format of the device.\n\nsupportedMaxPhotoDimensions lists all possible photo dimensions on the current format. Here, I'm selecting the largest available dimensions for demonstration but you should pick the dimensions that fit your use case.\n\nComplete photo output configuration before committing the session configuration.\n\nChanging these settings after commit triggers a lengthy pipeline reconfiguration.\n\nWhen ready to capture, set maxPhotoDimensions and photoQualityPrioritization on AVCapturePhotoSettings for the current capture.\n\nAnd then set up the delegate to capture the photo.\n\nSetting maxPhotoDimensions is a request, not a guarantee.\n\nThe system looks at light level, scene, and available processing, and picks the best path it can. The actual dimensions come back to your delegate inside AVCaptureResolvedSettings, which also notifies the delegate when the capture is complete. You can customize quality prioritization and maxPhotoDimensions on each capture. That means you can support multiple quality levels and dimensions in the same session no lengthy reconfiguration between captures.\n\nHigh resolution captures require specific resource allocations based on photoQualityPrioritization and maxPhotoDimensions.\n\nIf the system has not preallocated these resources, the allocation happens at capture time - which can slow things down.\n\nTo avoid this slow down, use the method setPreparedPhotoSettingsArray on AVCapturePhotoOutput to signal how you plan to capture future photos.\n\nFor example, if the app features of 48 megapixel mode, call setPreparedPhotoSettingsArray as soon as that mode is activated so resources are ready before the capture happens. Here is how you can implement this. As early as possible, create a prepareSettings object.\n\nSet the appropriate maxPhotoDimensions and photoQualityPrioritization.\n\nThen call setPreparedPhotoSettingsArray.\n\nLater, when ready to capture, create a new captureSettings object that matches the prepareSettings configuration.\n\nKeep in mind, you cannot reuse the prepareSettings object for the actual capture.\n\nCreate a new settings object, but make sure its configuration matches, so the capture aligns with the preallocated resources. Capturing high resolution photos requires processing of a large number of pixels.\n\nThis processing can take several seconds.\n\nI'll now provide some best practices to ensure that the app remains fast and responsive during this process. When a photo is requested, it first goes through a capture stage then moves to a processing stage. AVCapturePhotoCaptureDelegate receives notifications throughout this process. For example, didCapturePhotoFor resolvedSettings and didFinishCaptureFor resolvedSettings keep the app up to date as processing continues. Processing can take a different amount of time based on selected photo quality prioritization. A photo with quality prioritization is delivered with the best image by utilizing longer processing time. A photo with Balance prioritization delivers optimal quality with appropriate processing time for common cases. A photo with Speed prioritization is the fastest way to get a photo capture but without the improved quality that comes with longer processing.\n\nYou can capture 12 megapixel across all three prioritization levels.\n\n48 megapixel images, because they're only a single frame as covered earlier, are available with either balanced, or quality prioritization.\n\n18 megapixel and 24 megapixel are multi-frame fused images and take longer to process that only quality prioritization allows. The 18 megapixel in this table, is only available on the Center stage front camera on iPhone 17. To learn more about the Center stage front camera Check out the \"Support Center Stage front camera in your iOS app\" from WWDC 2026. AVCaptureResolvedSettings has a photoProcessingTimeRange property. It tells you how long to expect before the photo is delivered to your delegate.\n\nThe next photo can only be captured once the previous photo finishes processing. This delay between the two captures is referred to as shot to shot delay.\n\nEnabling responsive capture on AVCapturePhotoOutput allows overlapping captures.\n\nA new capture can begin once the capture stage of the previous photo finishes, no need to wait for processing. Observe the captureReadiness property on AVCapturePhotoOutput to know when the next photo can be captured. This reduces the shot to shot delay for the second photo. It helps you avoid missing the moment.\n\nBut keep in mind, each photo still takes the same processing time as before. To reduce shot-to-shot delay even further on high-quality captures, adopt deferred photo processing. When you enable deferred processing, the system delivers a lightly processed proxy photo immediately after capture. You receive it via the didFinishCapturingDeferredPhotoProxy delegate callback. Final photo processing happens in one of two ways. On demand, when you request the final photo through the photo library, or in the background, when the system decides that the conditions are favorable, such as the device being idle.\n\nWatch \"Create a More Responsive Camera Experience\" from WWDC23 for deep dive into deferred photo processing. Enabling deferred photo processing significantly improves responsiveness by reducing the processing time blocking the next capture.\n\nThis further reduces the shot to shot delay for all the subsequent photos.\n\nYou can now capture more high quality photos in less time.\n\nWith this approach, time spent on the processing stage shrinks significantly while the capture stage remains the same.\n\nDeferred processing lets the system take longer to finish processing a photo without blocking the next capture.\n\nAnd because that work happens in the background, it doesn't share memory with the capture session.\n\nThat's what makes multi-frame fusion captures possible, like 18 and 24 megapixel.\n\nTo prioritize responsiveness even further, turn on the fast capture prioritization property on AVCapturePhotoOutput. When you turn on fast capture prioritization on photoOutput, the system detects when someone takes multiple captures in quick succession.\n\nIt then adapts the photo quality from the highest quality setting to a balanced quality setting.\n\nSo in the photo capture timeline, as someone requests rapid captures, the system dynamically adjusts photo quality prioritization to balanced. Balanced captures require less time for both capture and processing.\n\nThe result is a speed boost when rapid captures are happening.\n\nStarting with iOS 27 on iPhone 16 and iPhone 17, the system also processes balanced fast captures later using deferred processing.\n\nThis further minimizes processing time, giving a faster capture experience for much longer. To illustrate this, I am out covering a very intense ball game between camera team members. On screen, a basketball court where the action unfolds. At first I start, without Deferred Processing, Responsive shutter or Fast capture prioritization.\n\nNotice the capture button as I try to take photos of the basketball shot.\n\nIt keeps spinning while processing the photo, preventing me from taking another shot. I end up with a single photo of the shot. But I can do better to capture the moment I want, using the APIs, to manage responsiveness.\n\nI enable Deferred Processing, Responsive Shutter and Fast capture for the next shot.\n\nThis time the capture button stays responsive while I capture the best moment.\n\nAs I press the capture button, AVCaptureSession starts capturing Quality photos. But as I continue, it detects fast captures and intelligently transitions into Balanced captures.\n\nThe difference is noticeable: one blocked capture versus five responsive shots of the same moment.\n\nThis made for a much more responsive capture experience. In this video, I shared best practices for building a responsive photo capture app that captures photos with highest quality and resolution.\n\nIf you are building a photo capture app, identify the resolution you want. Higher resolutions like 24 and 48 megapixels give people more detail to crop, zoom, and explore but they need more memory and processing time.\n\nPick the quality prioritization that fits your needs. Speed, balanced, and quality each trade off delivery time against image fidelity. Match the level to what your app demands. And if you need the highest quality captures, turn on deferred processing and responsive captures. Without them, each photo blocks the next and people using your app might miss moments they can't get back. To further optimize your camera app, watch \"Build a responsive camera app that launches quickly\" from WWDC 2026.\n\nBuild a camera experience that's fast when it needs to be. And uncompromising on quality when it matters. Thanks for watching.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "5:26",
+      "title": "Configure the AVCaptureSession",
+      "language": "swift",
+      "code": "import AVFoundation\n\nprivate let session = AVCaptureSession()\nprivate func configureSession() {\n    session.beginConfiguration()\n    session.sessionPreset = .photo\n}"
+    },
+    {
+      "timestamp": "6:11",
+      "title": "Configure AVCapturePhotoOutput",
+      "language": "swift",
+      "code": "import AVFoundation\n\nprivate let photoOutput = AVCapturePhotoOutput()\nprivate let configurePhotoOutput: () -> Void = {\n    photoOutput.maxPhotoQualityPrioritization = .quality // or .balanced\n}"
+    },
+    {
+      "timestamp": "6:38",
+      "title": "Add maxPhotoDimensions to AVCapturePhotoOutput",
+      "language": "swift",
+      "code": "import AVFoundation\n\nlet supportedMaxPhotoDimensions = device?.activeFormat.supportedMaxPhotoDimensions ?? []\nif let largestDimension = supportedMaxPhotoDimensions.max(by: { lhs, rhs in\n    Int(lhs.width) * Int(lhs.height) < Int(rhs.width) * Int(rhs.height)\n} ) {\n    photoOutput?.maxPhotoDimensions = largestDimension\n}\n\nsession?.commitConfiguration()\nsession?.startRunning()"
+    },
+    {
+      "timestamp": "7:21",
+      "title": "Update AVCapturePhotoSettings",
+      "language": "swift",
+      "code": "import AVFoundation\n\nlet settings = AVCapturePhotoSettings()\nsettings.maxPhotoDimensions = dimension.cmVideoDimensionsValue\nsettings.photoQualityPrioritization = .quality\n\nvar delegate: AVCapturePhotoCaptureDelegate?\n\n// Configure photo request delegate\n\nif let delegate {\n photoOutput?.capturePhoto(with: settings, delegate: delegate)\n}"
+    },
+    {
+      "timestamp": "8:59",
+      "title": "Prepare resources for the capture",
+      "language": "swift",
+      "code": "import AVFoundation\n\nlet prepareSettings = AVCapturePhotoSettings()\nprepareSettings.maxPhotoDimensions = photoOutput.maxPhotoDimensions\nprepareSettings.photoQualityPrioritization = .quality\n\nphotoOutput.setPreparedPhotoSettingsArray([prepareSettings]) { prepared, error in\n  if let error = error {\n    print(\"Failed to prepare: \\(error)\")\n      return\n  }\n  print(\"Pipeline prepared: \\(prepared)\")\n}\n\n// Later, when ready to capture — create NEW settings\nlet captureSettings = AVCapturePhotoSettings()\ncaptureSettings.maxPhotoDimensions = photoOutput.maxPhotoDimensions\ncaptureSettings.photoQualityPrioritization = quality\nphotoOutput.capturePhoto(with: captureSettings, delegate: self)"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Capturing photos in RAW and Apple ProRAW formats",
+        "url": "https://developer.apple.com/documentation/AVFoundation/capturing-photos-in-raw-and-apple-proraw-formats"
+      },
+      {
+        "title": "AVCam: Building a camera app",
+        "url": "https://developer.apple.com/documentation/AVFoundation/avcam-building-a-camera-app"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2026/304/4/7a18d6ee-a63d-4402-bfb6-85a21dfac7dd/downloads/wwdc2026-304_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2026/304/4/7a18d6ee-a63d-4402-bfb6-85a21dfac7dd/downloads/wwdc2026-304_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "303",
+      "year": "2026",
+      "title": "Build a responsive camera app that launches quickly",
+      "url": "https://developer.apple.com/videos/play/wwdc2026/303"
+    },
+    {
+      "id": "341",
+      "year": "2026",
+      "title": "Support the Center Stage front camera in your iOS app",
+      "url": "https://developer.apple.com/videos/play/wwdc2026/341"
+    },
+    {
+      "id": "10105",
+      "year": "2023",
+      "title": "Create a more responsive camera experience",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10105"
+    },
+    {
+      "id": "10160",
+      "year": "2021",
+      "title": "Capture and process ProRAW images",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10160"
+    },
+    {
+      "id": "10247",
+      "year": "2021",
+      "title": "Capture high-quality photos using video formats",
+      "url": "https://developer.apple.com/videos/play/wwdc2021/10247"
+    }
+  ],
+  "extractedAt": "2026-06-12T10:24:19.963Z"
+}

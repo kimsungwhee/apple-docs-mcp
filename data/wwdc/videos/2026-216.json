@@ -1,0 +1,271 @@
+{
+  "id": "216",
+  "year": "2026",
+  "url": "https://developer.apple.com/videos/play/wwdc2026/216/",
+  "title": "Create web extensions for Safari",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Store, Distribution & Marketing",
+    "Safari & Web"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi! I'm Kiara, an engineer on the Safari team. If you've ever had an idea for a feature you wanted to see in Safari, and wanted to turn your idea into a reality, this session is for you.\n\nI'll be breaking down everything you need to know to build and distribute a web extension for Safari.\n\nThere's a lot to cover, so feel free to take breaks or skip to sections that are most useful for you.\n\nSafari web extensions are packaged within an app. And honestly, they're some of my favorite things to get from the App Store. Whether it's blocking ads, building a custom new tab page, or enhancing the playback experience on your favorite streaming site.\n\nThey're small but they can meaningfully improve how you experience the web.\n\nApple is working with other browsers in the W3C Web Extensions Working Group to standardize the APIs used to build web extensions across browsers.\n\nSo if you have an extension that you've built for another browser, you can bring your extension to Safari.\n\nJump to the Packaging and Distribution section, where I'll show you how you can use App Store Connect to distribute your extension.\n\nToday, I'm covering all the bases by building a web extension from the ground up. I'll take you through the process of developing an extension and highlight the key APIs and features you can use to bring customizable experiences to Safari. I'll also show you how to test web extensions in Safari and how you can use TestFlight to share beta versions of your extension with users. And once I'm ready to share my creation with the world, I'll submit my extension to the App Store.\n\nTo get started, download the sample code project for this session. In it, you'll find all of the resources for the extension that I'll be building today. So you can follow along. In this session, I'll guide you through building a real extension — one that blocks content and modifies web pages. Then, I'll cover a couple of different options for how you can package and distribute your extension to the App Store. And to take the capabilities of your extension even further, I'll show you how your extension can work in tandem with its containing app.\n\nAnd at the end, the extension will work in Safari on iOS, iPadOS, macOS, and visionOS simultaneously. Because the beauty of web extensions is that they're all made up of HTML, CSS, and JavaScript.\n\nSo if you've done any web development before, you already know most of what you need. In today's session, I'll be building an extension that allows people to block distracting sites while they browse the web.\n\nAnd as you know, there are many rabbit holes you can go down while browsing.\n\nTake webkit.org for example. There are hundreds of articles on there and I can easily lose hours just reading about what's new in WebKit. So, I need an extension like this. Today, I'm going to build it, and it has two different blocking modes: a Light mode that allows up to 10 minutes of browsing on a site, perfect for reading a few WebKit articles, and a Full mode that redirects users the moment they try to navigate there. To get started, I'll open up my favorite code editor. You can also use Xcode, but any editor works to build an extension. In my code editor, I'll create a folder to add all of the files for this extension.\n\nTo lay the ground work, the first file every extension needs is a manifest. The manifest is a JSON formatted file that tells the browser what your extension is and what it can do.\n\nThink of the manifest as an ID card for you extension.\n\nIt'll contain information, like the extension's name, description, and version number. Next, I'm going to add the images folder that will hold my extension's icon. The icon can appear in a variety of places. Like the toolbar... or Extensions Settings. Depending on where it appears, different sizes will be needed. So, I'll add the icon as an svg. Safari handles scaling the icon perfectly so I can focus on what's important like hopping into my code editor to show what this looks like in practice.\n\nIn the manifest file, I've added the extension's icon. And the icon is located in my images folder. To see what this looks like, I'll save my changes and I'll head over to Safari to load the extension. And it's so easy to load an extension in Safari. All I have to do is open Safari Settings using Command Comma, and click on the Advanced Settings pane and check \"Show features for web developers\". This will enable the developer pane and from there I can add a temporary extension. Since it's an extension that hasn't had its code signature verified, I'll need to allow unsigned extensions. After allowing, I'll select the folder containing my extension's resources. And just like that, I've got my extension loaded in Safari! Most extensions will have some sort of UI for people to interact with. For my extension, I want to have a way for people to add distracting sites to a block list. So I'll need to add some custom UI.\n\nThere are a couple of ways I can do this. One way is with the extension's action button. This is the button that's added for the extension in Safari's toolbar. When clicked, Safari will display a popup with the UI that you've defined for it. The file name for the popup, or any resource that you define in the manifest, can have any name you'd like, as long as it's associated with the right manifest key so that Safari knows what it is and how it should be used.\n\nIn this example, the file used to load the default popup is set to \"popup.html\".\n\nFor my extension, displaying a blocklist in a popup might make the UI look a bit cramped, so instead, I'll display it using the extension's options page. This will be a full page where users can set settings for my extension. Now, I'm going to jump back into the code editor to add this change.\n\nIn the manifest, I have the options page defined. And I'll add a file for it in my extension's folder. Before adding the full UI for this page, I'll start off with something simple, like Hello World. In Safari, I can test my changes by reloading the extension. Nice! My new changes worked since my extension now has this Settings button. And clicking on the button opens my extension's options page! Now that I've got that set up, my extension will need to do more than just show \"Hello World\" for it to be of much use.\n\nSo I've designed a page that allows users to switch between a Light mode and a Full mode. I've already written the interface for this using HTML, CSS, and JavaScript. It's pretty and interactive, but I need to wire it up. So now I'll take a look at how to upgrade my extension to start blocking content. I'll do this using the declarative net request API, which will give my extension the ability to block, modify or redirect network requests. This API is what powers my favorite type of web extensions. With this capability, extensions can filter web content such as ads and trackers that can target users while they browse the web.\n\nBut in order for my extension to access these features, I'll need to add a permission for it. Permissions are how extensions tell Safari what they need access to. It can be things like accessing cookies, saving data to storage or writing to the clipboard. For content blocking I'll need to add the declarative net request permission and I can do this in my extension's manifest.\n\nWith this in place, I can start defining rules.\n\nA rule has an ID, a priority, and the type of action that should occur when the conditions are met. This rule, for example, will block all navigations to webkit.org. There are two ways I can define rules. One option is to define them in the manifest. These are called static rules. They're great when you already know what rules you want to use. But, if you need a little flexibility, you can add rules dynamically at runtime using JavaScript. I'm going the go with the dynamic approach because I won't know which sites to block until the user adds them to the list.\n\nI'll put this logic in a file named rules.js, inside the utilities folder. Then I'll use my host.js file to create the rule when a user adds a site to the blocklist. I'm going to jump back into my code and wire this up.\n\nIn my extension's manifest, I've added the declarative net request permission. And I've replaced the previous options page with the HTML, CSS, and JavaScript files that I already created for my extension. I also added the utilities folder with my two new files. To add a rule, I head over to my rules.js file. And since these rules specify an ID, I've added a helper method to map the host for the site to a unique integer ID. Now, I create a rule specifying the ID, the type as \"block\", and the urlFilter to match the host for the site. And then use the declarative net request updateDynamicRules API to add the rule to my extension. In my host file, when a site is added to the list, I can add the rule if the extension is in the full blocking mode. Going back to Safari, I reload to update my extension.\n\nIn the options page, I'll add webkit.org to the list.\n\nAnd when I go to the site, it's been blocked! My extension can now block navigations to sites added to the list. But, I don't really love that error page that shows up. I'd rather send users somewhere more intentional, like a custom page that I've designed for my extension.\n\nThat's where redirect rules come into play. This rule is similar to the previous block rule, except the type is redirect, and I can specify an extensionPath for the page the user will land on.\n\nBut before making this change, I need to add host permissions for my extension. To block a network request, extensions don't need access to the page. But for redirecting network requests, the extension does need access. So, in my extension's manifest I'll use the declarativeNetRequestWithHostAccess permission instead. And since my extension doesn't need to request access to any site upfront, I can use optional host permissions and request access to the site at runtime. Host permissions tell Safari which sites your extension wants access to. You can set them up as an array of match patterns, with each pattern consisting of a scheme, a host, and a path. Since any site can be added to the list, I'll use a pattern that can match against all URLs. If your extension needs explicit access to a site to work, you can use host permissions instead. But the extension doesn't automatically get access to the site. We designed the permissions model for extensions to respect user privacy.\n\nSince a user's browsing experience can expose personal data, we put the user in control and they decide which sites the extension can access.\n\nIf you explicitly request access, Safari will show a badge on the extension's action button. Clicking on the button brings up an alert, asking the user if they want to grant the extension access to the page. If the user chooses to allow access, the icon will become tinted, notifying them that the extension is active on that page.\n\nMy extension doesn't need access to any site upfront, which is why I've gone with optional host permissions. This way, I can request access for any site when my extension needs it. In the manifest, I've changed the permission to declarativeNetRequestWithHostAccess. And my extension can now request access to any site at runtime. Now, in my rules file, I'll create the redirect rule. It's very similar to the previous block rule, but now the type is redirect. And it has the path to my custom extension page. And I've added the resources for the page in my extension's folder.\n\nNow instead of blocking the navigation, I'll redirect users to a page that I've designed for my extension. And since my extension will need access to the site, I'll request access to the domain and subdomains using the permissions.request API.\n\nTo see what this experience looks like, in Safari, I'll update my extension.\n\nIn the options page, I'll add webkit.org.\n\nAnd now, before the site is added, I'm prompted to grant the extension access.\n\nGreat! That's exactly what I was expecting.\n\nI'll allow access and refresh the page.\n\nAmazing! The navigation was redirected to my custom extension page. My extension is really coming along! It can now redirect navigations to distracting sites. But let's be real.\n\nGoing no-contact with some of your favorite sites can be hard. So I'm going to add a mode that allows up 10 minutes of browsing — with a countdown timer right on the page. To make that happen, I'll need a way to inject content directly onto the page. This is where content scripts come into play.\n\nContent scripts give extensions the ability to read and modify the contents of a web page.\n\nScripts can be static — declared right in the manifest with the files and match patterns for the sites they'll run on. This works well if you already know which sites to target. But in my case, I won't know the sites until it's added to the list. So I'll add them on the fly, using the registered content scripts API. These work just like static scripts but they have two additional fields: an ID and a persistence flag. Setting this to true means that the scripts will remain after Safari relaunches.\n\nTo use this API, I'll add the scripting permission in the manifest and new scripting.js file in my utilities folder.\n\nHere, I'll define the content script. I'll give it an ID, the javascript file for the timer, the CSS for styling, and match patterns that cover the domain and any subdomains of the site. And I'll set this flag to true. Then, I'll add the script using the register content scripts API. Going back to my addHost method, now, when the user adds a site to the block list, I'll add a content script to show a timer for that site. When the extension is in the full blocking mode, the redirect will trigger before the page loads so I can always register the scripts.\n\nNow with the light blocking mode selected, I'll add webkit.org to the list.\n\nAnd when I go to the site, a 10-minute timer is shown on the page.\n\nMy extension is so close to being something I want to get out into the world, but there's something I want to fix first. As you may have noticed, every time I reload the extension, I keep having to add the same site back to the list. This is happening because I'm storing all of this information in memory, so when the extension reloads, that state is gone.\n\nI can keep this data around using the storage API.\n\nSafari supports two kinds of storage areas. Session storage is great for quick, in-memory stuff that doesn't need to survive a restart.\n\nBut I want my blocklist to stick around so local storage, which writes data to disk, is the right call here.\n\nTo use the storage API, I'll add the permission in the manifest.\n\nThen, I'll add a new file in my utilities folder. In this file, I'll define a few helper methods to update and get the hosts in storage. And a couple more to save and get the block mode.\n\nGoing back to my addHost method, now when the user adds a new site, I can update the list of hosts in storage.\n\nAnd I can use the stored list to display the block list. With this change, the blocklist will always render with the full list of sites that were added! Similarly, when the user switches between the two modes, I'll save the change to storage and if the extension is in the full blocking mode, I can create the redirect rules for all of the sites.\n\nTo see the benefits of using the storage API, in Safari, I'll change the blocking mode to \"Full\" and add a site to the list.\n\nNow, when I reload the extension, the changes that I just made are still there! Great! Using the storage API has tackled one persistence problem with my extension, but there's another one I need to fix. Registered content scripts persist across Safari restarts, but not across extension updates. So if a user updates my extension, they'll lose the content scripts. To fix that, I need a way for my extension to know it's been updated so that it can read the hosts from storage and recreate the scripts.\n\nThe perfect place for that is in a background page or a service worker.\n\nBoth can do the same things: like manage your extension's lifecycle, listen for browser events and pass messages between parts of your extension. Safari supports both, so it's really your preference! I like background pages since they have access to the DOM, so I'll go with that.\n\nTo add the background page, I'll specify it in the manifest.\n\nThen, I'll add the file to my extension's folder. Here, I'll register for the onInstalled event. This will let my extension know that it's been updated to a newer version. When this happens, I'll read the hosts from storage and re-register the content scripts.\n\nGetting my extension hooked up to read and write from storage has made such a huge improvement. I think it's time to take a look at how I can get my extension on the App Store.\n\nOne way for me to do this is with App Store Connect. App Store Connect is where you can upload, submit, and manage your extensions, whether you've just built yours or your looking to bring an existing one to Safari.\n\nAnd the best part? You can do this from any browser, without using a Mac.\n\nTo get started, I'll head over to developer.apple.com and enroll in the Apple Developer Program. After enrolling, I'll go to appstoreconnect.apple.com. Since Safari web extensions need to be packaged within a containing app, I can use App Store Connect to create this app for me.\n\nWhen creating the app, I'll need to specify a few things, such as the platforms I want my extension available on. I'll choose iOS and macOS, which will make my extension available on iPhone, iPad, Mac, and as a compatible app on Apple Vision Pro. I'll also set the bundle identifier which is a unique ID for my app. After adding all the details, I'll switch over to the tab for Xcode Cloud and scroll down to the Safari Web Extension Packager to upload my extension's resources. Once it's uploaded, the Safari Web Extension Packager will handle packaging my extension in a matter of minutes! Once it's finished, I can view any issues or take next steps to test my extension using TestFlight.\n\nTestFlight allows me distribute beta builds so I can continuously make improvements and implement user feedback before submitting my extension to the App Store. Once I'm ready to submit, I'll head over to the Distribution tab to add my finishing touches.\n\nLike a screenshot of my extension in action. And a description to help users understand the features and capabilities of my extension.\n\nAfter adding all the details, I'll select the build, and submit it for review.\n\nAnd that's how you can distribute your extension using App Store Connect! Throughout this session, I've shown how standard WebExtension APIs and features come together to build a customizable browsing experience. But what if I told you that your extension can go beyond just the web platform.\n\nI'm going to guide you on how you can use native messaging to access features that the platform offers. From here, I'll need to use Xcode. The simplest way for me to do this is with the Safari Web Extension Packager tool.\n\nRunning this command in Terminal will create and launch an Xcode project for me. It'll contain my app and web extension. From there, I can hook them up to send and receive messages. We call this native messaging. Think of it as three people passing notes.\n\nThe JavaScript in my extension kicks things off. The App Extension in the middle catches that message and hands it to the native app. Then the app does its thing and sends the result back the same way.\n\nFor my app, I'm going to have it help the extension protect its settings by requiring bio authentication before a change is made to the block list.\n\nTo get started, I'll add the nativeMessaging permission in my extension's manifest.\n\nThen, in my extension's background page, I'll add a method to send a message from my extension to its native app. The message I get back will let me know if the authentication succeeded. In order for my app to receive the message, I'll need to modify the SafariWebExtensionHandler, a class contained in a file the packager tool created for me. And the great thing is, it comes with a template that already allows my app to receive messages from my extension. All I need to do is make a few tweaks, like parsing the message for the requestBioAuth key. Then, I'll use a System API to request user authentication with biometrics and once the user has authenticated, the app sends the message back to the web extension with the result.\n\nI'm going to hop into Xcode to build the extension and test my changes in Safari.\n\nIn Xcode, I have the changes made to send and receive messages to my extension. And in the Project Navigator, my project has all of the resources for my web extension.\n\nI'll use the Command+B shortcut to build the extension. And in Safari, I'll enable the extension, open the options page, and add webkit.org to the list.\n\nAnd before it gets added, I'm prompted to authenticate with touch ID.\n\nAnd after authenticating, the site is added to the list.\n\nAnd that's how you can use native messaging to have your app and web extension work together. And with that, I can proudly say my extension is ready for distribution. I'll do this using Xcode.\n\nI'll start by building an archive. And since I previously used App Store Connect to create a build, I'll want to make sure this build number is one step higher than my last build. And in the Organizer window I'll distribute my extension.\n\nAnd that's how you can create and distribute a Safari web extension from the ground up.\n\nWe covered a lot today.\n\nWhether you're just starting out or looking to take an extension further, I hope you feel ready to take your idea and turn it into something real. I can't wait to see what you build.\n\nIf you haven't already, download the sample code project to play around with some of the APIs we featured today. You can learn more about them by checking out the cross-browser documentation for web extensions on MDN.\n\nAnd finally, provide feedback through Feedback Assistant. Or file a bug on bugs.webkit.org as you test your web extensions on Safari 27.\n\nThanks for joining me on this journey and have a great WWDC!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:44",
+      "title": "Manifest file",
+      "language": "swift",
+      "code": "{\n    \"manifest_version\": 3,\n    \"name\": \"Shiny OnTrack\",\n    \"description\": \"Stay on track while you browse the web\",\n    \"version\": 1.0\n}"
+    },
+    {
+      "timestamp": "4:29",
+      "title": "Adding an extension icon",
+      "language": "swift",
+      "code": "{\n    \"manifest_version\": 3,\n    \"name\": \"Shiny OnTrack\",\n    \"description\": \"Stay on track while you browse the web\",\n    \"version\": 1.0,\n\n    \"icons\": {\n        \"512\": \"images/icon.svg\"\n    }\n}"
+    },
+    {
+      "timestamp": "5:30",
+      "title": "Adding an action button",
+      "language": "swift",
+      "code": "{\n    \"manifest_version\": 3,\n    \"name\": \"Shiny OnTrack\",\n    \"description\": \"Stay on track while you browse the web\",\n    \"version\": 1.0,\n\n    \"action\": {\n        \"default_popup\": \"popup.html\"\n    }\n}"
+    },
+    {
+      "timestamp": "6:17",
+      "title": "Adding custom UI to your extension",
+      "language": "swift",
+      "code": "{\n    \"manifest_version\": 3,\n    \"name\": \"Shiny OnTrack\",\n    \"description\": \"Stay on track while you browse the web\",\n    \"version\": 1.0,\n  \n    \"options_ui\": {\n        \"page\": \"options.html\"\n    }\n}"
+    },
+    {
+      "timestamp": "6:30",
+      "title": "Including the UI in the extension manifest",
+      "language": "swift",
+      "code": "{\n    \"manifest_version\": 3,\n    \"name\": \"Shiny OnTrack\",\n    \"description\": \"Stay on track while you browse the web\",\n    \"version\": 1.0,\n\n    \"icons\": {\n        \"512\": \"images/icon.svg\"\n    },\n\n    \"options_ui\": {\n        \"page\": \"options.html\"\n    }\n}"
+    },
+    {
+      "timestamp": "6:40",
+      "title": "Hello World",
+      "language": "swift",
+      "code": "<!DOCTYPE html>\n<html>\n    <body>\n    <p>Hello World</p>\n    </body>\n</html>"
+    },
+    {
+      "timestamp": "8:18",
+      "title": "Adding declarativeNetRequest permission",
+      "language": "swift",
+      "code": "{\n    \"manifest_version\": 3,\n    \"name\": \"Shiny OnTrack\",\n    \"description\": \"Stay on track while you browse the web\",\n    \"version\": 1.0,\n\n    \"icons\": {\n        \"512\": \"images/icon.svg\"\n    },\n\n    \"options_ui\": {\n        \"page\": \"options.html\"\n    },\n  \n    \"permissions\": [ \"declarativeNetRequest\" ]\n}"
+    },
+    {
+      "timestamp": "8:22",
+      "title": "Blocking network requests",
+      "language": "swift",
+      "code": "// block rule\n{\n    id: 1,\n    priority: 1,\n    action: {\n        type: \"block\"\n    },\n    condition: {\n        urlFilter: \"||webkit.org\",\n        resourceTypes: [ \"main_frame\" ]\n    }\n}"
+    },
+    {
+      "timestamp": "8:41",
+      "title": "Modifying network requests",
+      "language": "swift",
+      "code": "{\n    \"manifest_version\": 3,\n    \"name\": \"Shiny OnTrack\",\n    \"description\": \"Stay on track while you browse the web\",\n    \"version\": 1.0,\n\n    \"icons\": {\n        \"512\": \"images/icon.svg\"\n    },\n\n    \"options_ui\": {\n        \"page\": \"options.html\"\n    },\n  \n    \"permissions\": [ \"declarativeNetRequest\" ],\n\n    \"declarativeNetRequest\": {\n        \"rule_resources\": [\n            {\n                \"id\": \"ruleset_id\",\n                \"enabled\": true,\n                \"path\": \"rules.json\"\n            }\n        ]\n    }\n}"
+    },
+    {
+      "timestamp": "8:50",
+      "title": "Updating dynamic rules",
+      "language": "swift",
+      "code": "await browser.declarativeNetRequest.updateDynamicRules({\n    addRules: [ rule ]\n})"
+    },
+    {
+      "timestamp": "9:19",
+      "title": "Wiring up the static declarativeNetRequest rules",
+      "language": "swift",
+      "code": "{\n    \"manifest_version\": 3,\n    \"name\": \"Shiny OnTrack\",\n    \"description\": \"Stay on track while you browse the web\",\n    \"version\": 1.0,\n\n    \"icons\": {\n        \"512\": \"images/icon.svg\"\n    },\n\n    \"options_ui\": {\n        \"page\": \"options.html\"\n    },\n  \n    \"permissions\": [ \n      \"declarativeNetRequest\" \n    ]\n}"
+    },
+    {
+      "timestamp": "9:40",
+      "title": "Adding block rules dynamically",
+      "language": "swift",
+      "code": "// A helper function to map the host to the declarative net request rule ID.\nexport function hostToRuleID(host) {\n\tlet hash = 0;\n\tfor (let i = 0; i < host.length; i++) {\n\t\thash = ((hash << 5) + hash) + host.charCodeAt(i);\n\t\thash |= 0;\n\t}\n\treturn Math.abs(hash) || 1;\n}\n\nfunction createBlockRule(host) {\n\treturn {\n\t\tid: hostToRuleID(host),\n\t\tpriority: 1,\n\t\taction: {\n\t\t\ttype: \"block\"\n\t\t},\n\t\tcondition: {\n\t\t\turlFilter: `||${host}`,\n\t\t\tresourceTypes: [\"main_frame\"]\n\t\t}\n\t}\n}\n\nexport async function createRules(hosts) {\n\ttry {\n\t\tawait browser.declarativeNetRequest.updateDynamicRules({\n\t\t\taddRules: hosts.map(createBlockRule)\n\t\t})\n\t} catch {\n\t\tconsole.log(\"Failed to create declarative net request rules\")\n\t}\n}"
+    },
+    {
+      "timestamp": "10:10",
+      "title": "Handling adding hosts to the settings",
+      "language": "swift",
+      "code": "import { createRules, removeAllRules, removeRule } from './rules.js'\n\nexport async function addHost(host, blockingMode) {\n  if (!host)\n    return\n  \n  if (blockingMode === \"full\")\n    await createRules([host])\n}"
+    },
+    {
+      "timestamp": "10:48",
+      "title": "Redirecting network requests",
+      "language": "swift",
+      "code": "{\n    id: 1,\n    priority: 1,\n    action: {\n        type: \"redirect\",\n        redirect: {\n            extensionPath: \"/blocked.html\"\n        }\n    },\n    condition: {\n        urlFilter: \"||webkit.org\",\n        resourceTypes: [ \"main_frame\" ]\n    }\n}"
+    },
+    {
+      "timestamp": "11:17",
+      "title": "Declaring optional host permissions",
+      "language": "swift",
+      "code": "{\n    \"manifest_version\": 3,\n    \"name\": \"Shiny OnTrack\",\n    \"description\": \"Stay on track while you browse the web\",\n    \"version\": 1.0,\n\n    \"icons\": {\n        \"512\": \"images/icon.svg\"\n    },\n\n    \"options_ui\": {\n        \"page\": \"options.html\"\n    },\n  \n    \"permissions\": [ \"declarativeNetRequestWithHostAccess\" ],\n    \"optional_host_permissions\": [ \"https://webkit.org/*\" ]\n\n}"
+    },
+    {
+      "timestamp": "11:54",
+      "title": "Declaring optional host permissions for all sites",
+      "language": "swift",
+      "code": "{\n    \"manifest_version\": 3,\n    \"name\": \"Shiny OnTrack\",\n    \"description\": \"Stay on track while you browse the web\",\n    \"version\": 1.0,\n\n    \"icons\": {\n        \"512\": \"images/icon.svg\"\n    },\n\n    \"options_ui\": {\n        \"page\": \"options.html\"\n    },\n  \n    \"permissions\": [ \"declarativeNetRequestWithHostAccess\" ],\n    \"optional_host_permissions\": [ \"*://*/*\" ]\n\n}"
+    },
+    {
+      "timestamp": "13:12",
+      "title": "Add the redirect rule",
+      "language": "swift",
+      "code": "// A helper function to map the host to the declarative net request rule ID.\nexport function hostToRuleID(host) {\n\tlet hash = 0;\n\tfor (let i = 0; i < host.length; i++) {\n\t\thash = ((hash << 5) + hash) + host.charCodeAt(i);\n\t\thash |= 0;\n\t}\n\treturn Math.abs(hash) || 1;\n}\n\nfunction createBlockRule(host) {\n\treturn {\n\t\tid: hostToRuleID(host),\n\t\tpriority: 1,\n\t\taction: {\n\t\t\ttype: \"block\"\n\t\t},\n\t\tcondition: {\n\t\t\turlFilter: `||${host}`,\n\t\t\tresourceTypes: [\"main_frame\"]\n\t\t}\n\t}\n}\n\nfunction createRedirectRule(host) {\n\treturn {\n\t\tid: hostToRuleID(host),\n\t\tpriority: 1,\n\t\taction: {\n\t\t\ttype: \"redirect\",\n\t\t\tredirect: { extensionPath: \"/blocked.html\" }\n\t\t},\n\t\tcondition: {\n\t\t\turlFilter: `||${host}`,\n\t\t\tresourceTypes: [\"main_frame\"]\n\t\t}\n\t}\n}\n\nexport async function createRules(hosts) {\n\ttry {\n\t\tawait browser.declarativeNetRequest.updateDynamicRules({\n\t\t\taddRules: hosts.map(createRedirectRule)\n\t\t})\n\t} catch {\n\t\tconsole.log(\"Failed to create declarative net request rules\")\n\t}\n}"
+    },
+    {
+      "timestamp": "13:42",
+      "title": "Dynamically ask for host permissions",
+      "language": "swift",
+      "code": "import { createRules, removeAllRules, removeRule } from './rules.js'\n\nexport async function addHost(host, blockingMode) {\n  if (!host)\n    return\n  \n  const granted = await browser.permissions.request({\n    origins: [`*://${host}/*`, `*://*.${host}/*`]\n  })\n  if (!granted)\n    return\n  \n  if (blockingMode === \"full\")\n    await createRules([host])\n}"
+    },
+    {
+      "timestamp": "14:55",
+      "title": "Defining content scripts",
+      "language": "swift",
+      "code": "{\n    \"manifest_version\": 3,\n    \"name\": \"Shiny OnTrack\",\n    \"description\": \"Stay on track while you browse the web\",\n    \"version\": 1.0,\n\n    \"icons\": {\n        \"512\": \"images/icon.svg\"\n    },\n\n    \"options_ui\": {\n        \"page\": \"options.html\"\n    },\n  \n    \"permissions\": [ \"declarativeNetRequestWithHostAccess\" ],\n    \"optional_host_permissions\": [ \"*://*/*\" ],\n  \n    \"content_scripts\": [\n        {\n            \"js\": [ \"content.js\" ],\n            \"css\": [ \"content.css\" ],\n            \"matches\": [ \"*://*.webkit.org/*\" ]\n        }\n    ]\n}"
+    },
+    {
+      "timestamp": "15:13",
+      "title": "Dynamically registering content scripts",
+      "language": "swift",
+      "code": "let script = {\n    id: \"id\",\n    js: [ \"content.js\" ],\n    css: [ \"content.css\" ],\n    matches: [ \"*://*.webkit.org/*\" ],\n    persistAcrossSessions: true\n}\n\nawait browser.scripting.registerContentScripts([ script ])"
+    },
+    {
+      "timestamp": "15:31",
+      "title": "Adding the scripting permission",
+      "language": "swift",
+      "code": "{\n    \"manifest_version\": 3,\n    \"name\": \"Shiny OnTrack\",\n    \"description\": \"Stay on track while you browse the web\",\n    \"version\": 1.0,\n  \n    \"icons\": {\n        \"512\": \"images/icon.svg\"\n    },\n  \n    \"options_page\": \"options.html\",\n  \n    \"permissions\": [\n        \"declarativeNetRequestWithHostAccess\",\n        \"scripting\"\n    ],\n  \n    \"optional_host_permissions\": [ \"*://*/*\" ]\n}"
+    },
+    {
+      "timestamp": "15:41",
+      "title": "Registering content scripts",
+      "language": "swift",
+      "code": "// scripting.js\n\nfunction contentScript(host) {\n    return {\n        id: `cs-${host}`,\n        js: [ \"content.js\" ],\n        css: [ \"content.css\" ],\n        matches: [ `*://${host}/*`, `*://*.${host}/*` ],\n        persistAcrossSessions: true\n    }\n}\n\nexport function registerScripts(hosts) {\n    const scripts = hosts.map(contentScript)\n    try {\n        await browser.scripting.registerContentScripts(scripts)\n    } catch {\n        console.log(\"Failed to register content scripts\")\n    }\n}"
+    },
+    {
+      "timestamp": "16:02",
+      "title": "Adding a host",
+      "language": "swift",
+      "code": "// host.js\n\nexport async function addHost(host, blockMode) {\n    if (!host)\n        return\n\n    const granted = await browser.permissions.request({\n        origins: [`*://${host}/*`, `*://*.${host}/*`]\n    })\n\n    if (!granted)\n        return\n\n    if (blockingMode === \"full\")\n        await createRules([ host ])\n\n    await registerScripts([ host ])\n}"
+    },
+    {
+      "timestamp": "17:06",
+      "title": "Web extensions storage APIs",
+      "language": "swift",
+      "code": "await browser.session.storage.set({\n  key: value\n})\n\nawait browser.local.storage.set({\n  key: value\n})"
+    },
+    {
+      "timestamp": "17:21",
+      "title": "Adding storage permission to the web extension manifest.json",
+      "language": "swift",
+      "code": "{\n    \"manifest_version\": 3,\n    \"name\": \"Shiny OnTrack\",\n    \"description\": \"Stay on track while you browse the web\",\n    \"version\": 1.0,\n  \n    \"icons\": {\n        \"512\": \"images/icon.svg\"\n    },\n  \n    \"options_page\": \"options.html\",\n  \n    \"permissions\": [\n        \"declarativeNetRequestWithHostAccess\",\n        \"scripting\",\n        \"storage\"\n    ],\n  \n    \"optional_host_permissions\": [ \"*://*/*\" ]\n}"
+    },
+    {
+      "timestamp": "17:30",
+      "title": "Saving data with storage",
+      "language": "swift",
+      "code": "// storage.js\n\nexport async function updateHosts(hosts) {\n    await browser.storage.local.set({ hosts: hosts })\n}\n\nexport async function getHosts() {\n    const { hosts = [] } = await browser.storage.local.get(\"hosts\")\n    return hosts\n}\n\nexport async function saveBlockMode(mode) {\n    await browser.storage.local.set({ blockMode: mode })\n}\n\nexport async function getBlockMode() {\n    const { blockMode = \"full\" } = await browser.storage.local.get(\"blockMode\")\n    return blockMode\n}"
+    },
+    {
+      "timestamp": "17:41",
+      "title": "Persisting hosts to storage",
+      "language": "swift",
+      "code": "// host.js\n\nexport async function addHost(host, blockMode) {\n    if (!host)\n        return\n\n    const granted = await browser.permissions.request({\n        origins: [`*://${host}/*`, `*://*.${host}/*`]\n    })\n\n    if (!granted)\n        return\n\n    if (blockingMode === \"full\")\n        await createRules([ host ])\n\n    await registerScripts([ host ])\n\n    let existingHosts = await getHosts()\n    let updatedHosts = [ ...existingHosts, host ]\n    await updateHosts(updatedHosts)\n}"
+    },
+    {
+      "timestamp": "17:51",
+      "title": "Reading from storage",
+      "language": "swift",
+      "code": "// options.js\n\nlet existingHosts = await getHosts()\nlet blockMode = await getBlockMode()\n\ndisplayBlocklist(existingHosts)"
+    },
+    {
+      "timestamp": "18:00",
+      "title": "Switching block modes",
+      "language": "swift",
+      "code": "// host.js\n\nexport async function userDidSwitchMode(blockMode) {\n    await saveBlockMode(blockMode)\n\n    if (blockMode === \"full\") {\n        let hosts = await getHosts()\n        await createRules(hosts)\n    } else\n        await removeAllRules()\n}"
+    },
+    {
+      "timestamp": "19:01",
+      "title": "Adding a background script",
+      "language": "swift",
+      "code": "{\n    \"manifest_version\": 3,\n    \"name\": \"Shiny OnTrack\",\n    \"description\": \"Stay on track while you browse the web\",\n    \"version\": 1.0,\n  \n    \"icons\": {\n        \"512\": \"images/icon.svg\"\n    },\n  \n    \"options_page\": \"options.html\",\n  \n    \"permissions\": [\n        \"declarativeNetRequestWithHostAccess\",\n        \"scripting\",\n        \"storage\"\n    ],\n  \n    \"optional_host_permissions\": [ \"*://*/*\" ],\n  \n    \"background\": {\n        \"scripts\": [ \"background.js\" ],\n        \"type\": \"module\"\n    }\n}"
+    },
+    {
+      "timestamp": "19:39",
+      "title": "Background script",
+      "language": "swift",
+      "code": "// background.js\n\nimport { registerScripts } from \"./utilities/scripting.js\"\nimport { getHosts } from \"./utilities/storage.js\"\n\nbrowser.runtime.onInstalled.addListener(async (details) => {\n    if (details.reason !== \"update\")\n        return\n\n    const hosts = await getHosts()\n    await registerScripts(hosts)\n})"
+    },
+    {
+      "timestamp": "22:49",
+      "title": "Package your web extension into an app for Xcode",
+      "language": "swift",
+      "code": "xcrun safari-web-extension-packager --copy-resources /path/to/ShinyOnTrack"
+    },
+    {
+      "timestamp": "23:32",
+      "title": "Adding the nativeMessaging permission",
+      "language": "swift",
+      "code": "{\n    \"manifest_version\": 3,\n    \"name\": \"Shiny OnTrack\",\n    \"description\": \"Stay on track while you browse the web\",\n    \"version\": 1.0,\n  \n    \"icons\": {\n        \"512\": \"images/icon.svg\"\n    },\n  \n    \"options_page\": \"options.html\",\n  \n    \"permissions\": [\n        \"declarativeNetRequestWithHostAccess\",\n        \"scripting\",\n        \"storage\",\n        \"nativeMessaging\"\n    ],\n  \n    \"optional_host_permissions\": [ \"*://*/*\" ],\n  \n    \"background\": {\n        \"scripts\": [ \"background.js\" ],\n        \"type\": \"module\"\n    }\n}"
+    },
+    {
+      "timestamp": "23:40",
+      "title": "Sending a native message",
+      "language": "swift",
+      "code": "// background.js\n\nimport { registerScripts } from \"./utilities/scripting.js\"\nimport { getHosts } from \"./utilities/storage.js\"\n\nbrowser.runtime.onInstalled.addListener(async (details) => {\n    if (details.reason !== \"update\")\n        return\n\n    const hosts = await getHosts()\n    await registerScripts(hosts)\n})\n\nexport async function requestBioAuth() {\n    const message = { message: \"requestBioAuth\" }\n    const response = await browser.runtime.sendNativeMessage(message)\n    return response?.success\n}"
+    },
+    {
+      "timestamp": "23:55",
+      "title": "Handling native messages",
+      "language": "swift",
+      "code": "// SafariWebExtensionHandler.swift\n\nimport LocalAuthentication\n\nclass SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {\n    func beginRequest(with context: NSExtensionContext) {\n        let request = context.inputItems.first as? NSExtensionItem\n        let message = request?.userInfo?[SFExtensionMessageKey] as? [String: Any]\n\n        if message?[\"message\"] as? String == \"requestBioAuth\" {\n            let lAContext = LAContext()\n            Task {\n                do {\n                    let success = try await lAContext.evaluatePolicy(\n                        .deviceOwnerAuthenticationWithBiometrics,\n                        localizedReason: \"Authenticate to change blocked sites\"\n                    )\n                    self.reply(context: context, success: success)\n                } catch {\n                    self.reply(context: context, success: false)\n                }\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "24:25",
+      "title": "Replying to a native message",
+      "language": "swift",
+      "code": "// SafariWebExtensionHandler.swift\n\nimport LocalAuthentication\n\nclass SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {\n    func beginRequest(with context: NSExtensionContext) {\n        let request = context.inputItems.first as? NSExtensionItem\n        let message = request?.userInfo?[SFExtensionMessageKey] as? [String: Any]\n\n        if message?[\"message\"] as? String == \"requestBioAuth\" {\n            let lAContext = LAContext()\n            Task {\n                do {\n                    let success = try await lAContext.evaluatePolicy(\n                        .deviceOwnerAuthenticationWithBiometrics,\n                        localizedReason: \"Authenticate to change blocked sites\"\n                    )\n                    self.reply(context: context, success: success)\n                } catch {\n                    self.reply(context: context, success: false)\n                }\n            }\n        }\n    }\n\n    private func reply(context: NSExtensionContext, success: Bool) {\n        let response = NSExtensionItem()\n        response.userInfo = [SFExtensionMessageKey: [\"success\": success]]\n        context.completeRequest(returningItems: [response], completionHandler: nil)\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "w3.org — W3C WebExtensions Community Group",
+        "url": "https://www.w3.org/community/webextensions/"
+      },
+      {
+        "title": "Packaging and distributing Safari Web Extensions with App Store Connect",
+        "url": "https://developer.apple.com/documentation/SafariServices/packaging-and-distributing-safari-web-extensions-with-app-store-connect"
+      },
+      {
+        "title": "WebKit.org – Report issues to the WebKit open-source project",
+        "url": "https://bugs.webkit.org"
+      },
+      {
+        "title": "Submit feedback",
+        "url": "http://feedbackassistant.apple.com"
+      },
+      {
+        "title": "MDN Web Docs - Web Extensions API",
+        "url": "https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2026/216/5/4fceecc8-1e28-465c-b894-fd0d03067c18/downloads/wwdc2026-216_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2026/216/5/4fceecc8-1e28-465c-b894-fd0d03067c18/downloads/wwdc2026-216_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "204",
+      "year": "2026",
+      "title": "What’s new in WebKit for Safari 27",
+      "url": "https://developer.apple.com/videos/play/wwdc2026/204"
+    }
+  ],
+  "extractedAt": "2026-06-12T10:24:13.560Z"
+}

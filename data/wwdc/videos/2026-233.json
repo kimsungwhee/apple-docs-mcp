@@ -1,0 +1,138 @@
+{
+  "id": "233",
+  "year": "2026",
+  "url": "https://developer.apple.com/videos/play/wwdc2026/233/",
+  "title": "Explore distributed inference and training with MLX",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Machine Learning & AI"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, I'm Tatiana, research scientist at MLX team. It's been a remarkable time for local LLMs: models keep getting larger and gaining new amazing capabilities -- becoming smarter and handling harder problems. And as they improve, we use them for more: longer contexts, harder tasks, more complex workflows. Eventually, memory, compute, or bandwidth on a single machine becomes a limitation. In our WWDC 26 video \"Run local agentic AI on the Mac using MLX\" it is shown how to run AI agents locally. But when you have multiple devices, you can take local AI even further, running larger LLMs or accelerating them through distributed inference and training. Today, we'll take a deep dive into scaling across multiple Macs with MLX, using the hardware right on your desk. We'll start with the command line interface to get models running on your machines, move to the Python API for experimentation, and finish with Swift for embedding these workflows directly into your apps.\n\nLet's start! First, we'll look at the full hardware and software stacks to make distributed workloads on Apple Silicon possible. Then we'll put everything together: turn four M3 Ultras into a cluster. We'll walk through every step: choosing the right topology to connect machines, enabling fast communication, and launching distributed jobs.\n\nOnce the cluster is ready, we'll get to the exciting part: fast and local distributed LLM inference and finetuning. We'll run it with MLX, compare it side by side against a single Mac, and look at how MLX distributes the model across the cluster.\n\nHaving most examples in command line interface, in the end we'll show how distributed communication is also exposed to you via Python, Swift and C++ APIs. Let's start by looking at distributed communication for Apple Silicon. To send and receive data fast, machines need to be connected with a physical link — an interconnect. On top of that, we also need a transport protocol — a mechanism that pushes bytes from one machine's memory to another's. Starting in macOS 26.2, Remote Direct Memory Access protocol, shortly RDMA, is supported over Thunderbolt 5. RDMA moves data directly from one machine's memory to another's, avoiding most CPU and operating system overhead.\n\nRDMA over Thunderbolt gives us the high-bandwidth — low-latency communication we need for distributed workloads. However, alone, it gives us raw data movement between two machines only. Thus, distributed programs need something higher-level — a communication backend which provides communication primitives for sending data between individual machines or coordinating across the entire group. These two operations are building blocks of distributed training and inference. And this is where JACCL comes in.\n\nJACCL is an open-source collective communication library built by Apple. It leverages RDMA over Thunderbolt and gives you collective communication primitives for sending data between machines and combining results across the group — without managing any of the low-level transport yourself. And it's not limited to machine learning — any distributed workload on Apple Silicon can be built on top of it.\n\nAnd the final piece of the stack is a machine learning framework that uses the communication backend for distributed inference and training — that's MLX.\n\nMLX is an open-source machine learning library built by Apple for Apple Silicon. It leverages JACCL for low-latency distributed communication and provides tools for orchestrating distributed jobs across the cluster. If you're new to MLX, check out our video \"Getting Started with MLX on Apple Silicon\" from WWDC25.\n\nSo now we understand the full stack. Let's put it all together and build a cluster — a group of machines that work together on the same task. We will use 4 M3 Ultras.\n\nTo setup the cluster, we need to connect the machines with Thunderbolt 5 cables. There are different ways to wire them together, and the topology directly affects the communication time.\n\nSo to begin with, we'll look at what defines that time. Next, we'll look at how to actually connect the machines — which topologies JACCL supports, and the trade-offs between them.\n\nAfter that, we'll show how to enable RDMA on the machines for fast communication. And finally, we'll launch distributed jobs on the cluster using MLX.\n\nSo, communication time has two components: latency and transfer time. Latency is the fixed cost paid for each communication operation, independent of the amount of data being sent.\n\nTransfer time is the cost of moving the data though the link; it grows with message size and depends on the bandwidth of the link.\n\nFor small messages, the data movement cost is tiny, so latency dominates.\n\nFor large messages, the trade off is opposite. Depending on whether communication is latency-bound or bandwidth-bound, we may prefer different topologies.\n\nJACCL supports two of them: a mesh and a ring.\n\nIn a full mesh, every machine connects directly to every other, thus any group communication has the lowest possible latency. In a ring, each node connects only to its two neighbors. Communication between nonadjacent nodes must travel through intermediate machines which increases latency. However, the ring requires fewer cables and ports per machine, making it easier to scale to more nodes. And because each node has only two connections, we can use the extra Thunderbolt ports to run two or tree cables per neighbor (depending on the Mac) — thus increasing the bandwidth per link and reducing transfer time.\n\nWhen machines are connected into a mesh, we have the flexibility to route each communication through either a mesh topology or a ring topology.\n\nWhat's nice about JACCL, it automatically picks the best topology depending on the message size and communication operation — mesh when latency matters, ring when bandwidth matters. For this flexibility, let's connect all M3 Ultras into a mesh.\n\nAs we connected all M3 Ultras together, now we need to enable RDMA on all machines. Open settings on the machine, search for \"RDMA\", click on \"Enable RDMA over Thunderbolt\", enable RDMA, and reboot.\n\nGreat! Macs are connected with Thunderbolt 5 cables, and RDMA is enabled. Now we need a way to launch distributed programs.\n\nOne way to do it, is over the local network, for example, through wifi or ethernet. From any machine with SSH access to the cluster, for example MacBook in my case, we connect to each Mac, start the program, and from that point on, all machines communicate directly over the Thunderbolt links.\n\nMLX provides a launch helper, which exactly does all of this for you! You run mlx.launch on your MacBook and it orchestrates the cluster. You give it the executable you want to run and a JSON hostfile describing your cluster. From there, it SSHes into each node using hostnames from provided hostfile and starts the executable on every machine.\n\nLet's see how the hostfile that describes the cluster should look like.\n\nIt is a JSON array — one entry per node. \"ssh\" is the hostname used by mlx.launch to reach the machine. \"ips\" is the machine's IP on your local network used by JACCL for initial coordination between nodes. And \"rdma\" is a list of the RDMA device names for each Thunderbolt peer connection.\n\nYou can write it manually, but MLX also provides a helper script `mlx.distributed_config` that generates it for you.\n\nYou pass the list of hostnames, and an output path. You can also embed environment variables in the config. They will be set automatically on every node at launch time. Here we set MLX_METAL_FAST_SYNCH=1, which enables faster GPU-to-CPU synchronization. It is critical for distributed tasks because computation runs on the GPU while communication runs on the CPU. You can also pass the --auto-setup flag to configure the Thunderbolt network automatically. Communication --backend argument defines whether it is a mesh or ring: for a mesh, --backend is set to jaccl, as in this example; for a ring, we would change it to jaccl-ring.\n\nLet's run this command and generate the hostfile for our cluster.\n\nFirst, it checks that all hosts are reachable over SSH. Then it probes each machine's Thunderbolt ports to discover which machines are physically connected to which — building a map of the topology. Since we passed --auto-setup, it disables the Thunderbolt Bridge on all machines and configures each Thunderbolt link for RDMA. Finally, it writes a JSON hostfile with everything mlx.launch needs. Note, that without --auto-setup flag, script prints the configuration commands, so you can review them and run yourself.\n\nNow, the cluster is ready. Let's move to the exciting part — distributed language model inference and finetuning. And the easiest way to start is via command line interface and MLX LM. MLX LM is an open-source Python package built on top of MLX that provides command-line tools and a Python API for running language models locally on Apple Silicon. Check out our video, \"Explore large language models on Apple Silicon with MLX\" from WWDC25 to get started on a single device.\n\nAs we showed last year, chatting with a model on a single Mac can be done via command line interface with mlx_lm.chat. We run it in the terminal, specifying the model we want to use, for example, Qwen 3.6, and the maximum number of tokens for the response. Under the hood, MLX LM loads and runs the model on a single machine.\n\nTo chat with the same model on the cluster via command line interface, we wrap the command with mlx.launch. On our MacBook, in the terminal we run mlx.launch with the --hostfile pointing to our cluster configuration. After the double dash, we pass the exact same mlx_lm.chat command — but using the remote path to the executable on each node. The command is almost identical, MLX LM shards the model and coordinates the distributed inference for you. Keep in mind that all necessary libraries like MLX must be installed on each Mac and the executable must be accessible on all machines.\n\nOne line via command line interface, and we're running a model spread across the entire cluster! Let's try both side by side and chat with Qwen 3.6 — a 27-billion-parameter model — on a single M3 Ultra and on 4 of them.\n\nI've already started mlx_lm.chat on both sides — on the left, the model is loaded on a single M3 Ultra; on the right, it's sharded across four machines.\n\nLet's prompt both with \"Implement a transformer model in MLX.\" It is a quite impressive speed up! The cluster generates tokens at nearly three times the rate of a single machine for Qwen 3.6 model.\n\nAs we see, running a model across multiple Macs can significantly boost inference speed. The exact speedup depends on the model size and architecture. But time improvement is not the only reason to go distributed, sometimes a model is simply too large for one machine. Kimi 2.6, for example, has 1 trillion total parameters. Even with 8-bit quantization, the weights alone require about one terabyte of memory. That does not fit on a single M3 Ultra, but it can fit across four. So how do we actually split the weights and computation across machines? MLX and MLX LM support two approaches: pipeline and tensor parallelism.\n\nPipeline parallelism splits the model by depth. In this case, each machine holds a group of layers, and data moves through the machines sequentially. It does not speed up the inference, because each token still has to pass through the layer groups one after another. But the benefit is simple communication: machines only exchange activations at the boundaries between layer groups.\n\nTensor parallelism splits the model by width. In this case, each machine holds part of every layer, so all machines process the same token at the same time. It improves inference speed due to parallelized per-layer computation. However the trade-off is much more frequent communication, that happens at every layer and for every token. This makes low latency important, and that is why the mesh topology is crucial for this case — every machine can reach every other machine in a single hop.\n\nTensor paralelism is the default sharding strategy in MLX LM. To shard the model with pipeline parallelism, we can simply append a flag --pipeline to the command. Note, that not all models support pipeline parallelism.\n\nNow, let's chat with a one-trillion-parameter Kimi 2.6 on our cluster.\n\nFor this we use mlx.launch from our MacBook as before, pointing to the hostfile. I'm not passing the --pipeline flag, so we're using tensor parallelism. We need to wait a moment — mlx.launch is connecting to every machine, MLX LM loads and shards the model, and starts the chat.\n\nGreat, the model is loaded! Let's prompt model with: \"Implement machine learning architecture for GPT in Python with MLX\".\n\nAnd there we go — with one command, a massive trillion-parameter model is running locally across your Macs, answering your questions.\n\nWith MLX and MLX LM, you can not only run language model inference, you can also fine-tune models on your hardware. Fast, efficient, and fully private — your data never leaves your machines. Let's start with a single Mac, and then scale to our cluster.\n\nWhen fine-tuning or training on a single machine, we split the training data into batches — a set of multiple examples.\n\nFor each batch, the Mac computes gradients and updates the model weights. We repeat this process for one or more passes over the training dataset, until the model reaches the desired quality.\n\nThe faster we process the training data, the sooner fine-tuning finishes. So how can we use multiple machines to speed this up? The idea is straightforward. We replicate the model on every Mac.\n\nEach machine receives a different batch of data and computes gradients locally. Then we average the gradients, so the model's update uses information from all batches. This is called data-parallel training because the model is replicated, while the data is processed in parallel across machines — this is what gives us the speedup.\n\nSo with N machines we can process data up to N times faster. Sounds amazing! Lets see how we can use data parallelism with MLX LM.\n\nAs before, the only difference from a single device is launching the job with mlx.launch from your MacBook, specifying a path to mlx_lm.lora on remote machines. Data sharding is handled by MLX LM and the command is almost identical — we scale --batch-size by the number of devices so each machine still processes the same number of samples per step as before.\n\nLet's fine-tune Qwen 3.5 with 9 billion parameters on a single machine and on the cluster, and compare the number of tokens the model processes per second.\n\nWe are launching fine-tuning on a single device on the left and on the cluster on the right using mlx.launch and hostfile, specifying path to mlx_lm.lora on the remote machine.\n\nFirst, it loads data and model; and then training starts. Single M3 Ultra is processing around 180 tokens per second, while on the cluster we process around 600 tokens per second, which gives us more than 3 times speed up for fine-tuning. Now, with MLX, you can turn your devices into a local training cluster for efficient fine-tuning without moving to a cloud.\n\nSo far, we used command line interface for distributed inference and fine-tuning within MLX LM. However, MLX provides a fine-grained control over sharding and distributed operations, via flexible Python, Swift, and C++ APIs.\n\nThis allows you to experiment with models in Python and C++ or embed models into your App with Swift. Let's look at the examples.\n\nTo run distributed inference with Python API and MLX LM, we first initialize the distributed group for communication. Then, define the type of parallelism we want, for example, tensor parallelism. Finally, we shard the model using the sharded_load function. After that, we use the model exactly as we would on a single device — MLX LM handles all distributed communications under the hood.\n\nTo have more control over the model and its sharding, we can use low-level primitives from MLX itself. For example, after defining a simple Linear layer, we can shard it with tensor parallelism using shard_linear function.\n\nYou can even control basic distributed operations like all reduce. In Python, Swift or C++ after initializing the distributed group via JACCL, we perform a collective distributed sum across all Macs for our tensor using corresponding MLX primitives.\n\nAs we pointed out at the beginning of the session, JACCL is available on its own and you can leverage it for any applications requiring distributed communication, even non-ML applications. JACCL can be built without MLX and it provides a C++ API with communication primitives: after initializing a JACCL group, we again perform a collective distributed sum across all Macs for our tensor but via JACCL directly, not MLX.\n\nNow you know both high-level and low-level APIs, for distributed inference and training with MLX and JACCL, and you are ready to build advanced distributed workflows with MLX.\n\nThroughout this session, we looked at the full stack that makes distributed training and inference possible on Apple Silicon — from RDMA over Thunderbolt, all the way up to MLX and MLX LM. We showed you how easy it is to scale from a single device to multiple devices, and the benefits it brings: faster inference, the ability to run trillion-parameter models, and faster fine-tuning; all with minimal changes to your single device code, supporting command line interface, Python, Swift and C++ APIs.\n\nWith distributed cluster, now you can run local AI agents powered entirely by MLX — fast, private, and on the hardware you own. To know more, check out our WWDC 2026 video \"Run local agentic AI on the Mac using MLX\".\n\nTo further dive into advanced distributed features — including custom parallelism strategies and training loops, check out our documentation. You can also use MLX LM to serve models distributedly with the built-in server.\n\nWe can't wait to see what you build with MLX on Apple Silicon!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "8:31",
+      "title": "Hostfile format for a 4-node MLX cluster",
+      "language": "swift",
+      "code": "[\n  {\n    \"ssh\": \"m3-ultra-0\",\n    \"ips\": [\"192.168.1.10\"],\n    \"rdma\": [null, \"rdma_en5\", \"rdma_en4\", \"rdma_en3\"]\n  },\n  {\n    \"ssh\": \"m3-ultra-1\",\n    \"ips\": [\"192.168.1.11\"],\n    \"rdma\": [\"rdma_en5\", null, \"rdma_en4\", \"rdma_en3\"]\n  },\n  {\n    \"ssh\": \"m3-ultra-2\",\n    \"ips\": [\"192.168.1.12\"],\n    \"rdma\": [\"rdma_en5\", \"rdma_en4\", null, \"rdma_en3\"]\n  },\n  {\n    \"ssh\": \"m3-ultra-3\",\n    \"ips\": [\"192.168.1.13\"],\n    \"rdma\": [\"rdma_en5\", \"rdma_en4\", \"rdma_en3\", null]\n  }\n]"
+    },
+    {
+      "timestamp": "8:56",
+      "title": "Generate the cluster hostfile with mlx.distributed_config",
+      "language": "swift",
+      "code": "mlx.distributed_config \\\n    --hosts m3-ultra-0,m3-ultra-1,m3-ultra-2,m3-ultra-3 \\\n    --output \"m3-ultra-jaccl.json\" \\\n    --env MLX_METAL_FAST_SYNCH=1 \\\n    --auto-setup \\\n    --backend jaccl"
+    },
+    {
+      "timestamp": "11:04",
+      "title": "Run distributed LLM inference with mlx_lm.chat",
+      "language": "swift",
+      "code": "# Single-device LLM inference\nmlx_lm.chat --model \"Qwen/Qwen3.6-27B\" --max-tokens 2048\n\n# Distributed LLM inference across the cluster\nmlx.launch --hostfile \"m3-ultra-jaccl.json\" -- \\\n    /remote/path/to/mlx_lm.chat --model \"Qwen/Qwen3.6-27B\" --max-tokens 2048"
+    },
+    {
+      "timestamp": "15:03",
+      "title": "Run distributed inference with pipeline parallelism",
+      "language": "swift",
+      "code": "# Tensor parallelism (default)\nmlx.launch --hostfile \"m3-ultra-jaccl.json\" -- \\\n    /remote/path/to/mlx_lm.chat --model \"moonshotai/Kimi-K2.6\" \\\n                                 --max-tokens 2048\n\n# Pipeline parallelism — append --pipeline flag\nmlx.launch --hostfile \"m3-ultra-jaccl.json\" -- \\\n    /remote/path/to/mlx_lm.chat --model \"moonshotai/Kimi-K2.6\" \\\n                                 --max-tokens 2048 \\\n                                 --pipeline"
+    },
+    {
+      "timestamp": "17:18",
+      "title": "Run distributed fine-tuning with mlx_lm.lora",
+      "language": "swift",
+      "code": "# Single-device fine-tuning\nmlx_lm.lora --model \"Qwen/Qwen3.5-9B\" \\\n             --data \"mlx-community/wikisql\" \\\n             --train --batch-size 4\n\n# Distributed fine-tuning (scale --batch-size by number of devices)\nmlx.launch --hostfile \"hostfile.json\" -- \\\n    /remote/path/to/mlx_lm.lora --model \"Qwen/Qwen3.5-9B\" \\\n                                  --data \"mlx-community/wikisql\" \\\n                                  --train --batch-size 16"
+    },
+    {
+      "timestamp": "19:01",
+      "title": "Distributed inference with the MLX LM Python API",
+      "language": "swift",
+      "code": "import mlx.core as mx\nfrom mlx_lm import stream_generate\nfrom mlx_lm.utils import sharded_load\n\n# Initialise distributed backend\ngroup = mx.distributed.init(strict=True, backend=\"jaccl\")\n# Define parallelism\ntensor_group, pipeline_group = group, None\n\n# Shard the model\nmodel, tokenizer = sharded_load(\"moonshotai/Kimi-K2.6\", pipeline_group, tensor_group)\nfor response in stream_generate(model, tokenizer, prompt, max_tokens=1024):\n    if group.rank() == 0:\n        print(response.text, end=\"\", flush=True)"
+    },
+    {
+      "timestamp": "19:31",
+      "title": "Shard a layer with the MLX Python API",
+      "language": "swift",
+      "code": "import mlx.core as mx\nimport mlx.nn as nn\n\n# Initialise distributed backend\ngroup = mx.distributed.init(strict=True, backend=\"jaccl\")\n\n# Define layer and shard it column-wise\nlayer = nn.Linear(1024, 1024)\nsharded_layer = nn.layers.distributed.shard_linear(\n    layer, strategy=\"all-to-sharded\", group=group\n)\ndata = mx.random.normal((1, 1, 1024))\noutput = sharded_layer(data)\nmx.eval(output)"
+    },
+    {
+      "timestamp": "19:47",
+      "title": "All-reduce across devices in Python, Swift, and C++",
+      "language": "swift",
+      "code": "# Python\nimport mlx.core as mx\nworld = mx.distributed.init(strict=True, backend=\"jaccl\")\ndata = mx.full((4,), float(world.rank()), dtype=mx.float32)\nresult = mx.distributed.all_sum(data, group=world)\nmx.eval(result)\n\n# Swift\nlet group = try DistributedGroup(strict: .ring)\nlet data = rank == 0\n    ? MLXArray(converting: [1.0, 2.0, 3.0])\n    : MLXArray(converting: [5.0, 6.0, 7.0])\nlet result = try group.allSum(data)\n\n// C++\nnamespace mx = mlx::core;\nauto world = mx::distributed::init(/* strict */ true, \"jaccl\");\nmx::array data = mx::full({4}, static_cast<float>(world.rank()), mx::float32);\nmx::array result = mx::distributed::all_sum(data, world);\nmx::eval(result);"
+    },
+    {
+      "timestamp": "20:06",
+      "title": "Standalone distributed sum with the JACCL C++ API",
+      "language": "swift",
+      "code": "#include <jaccl/jaccl.h>\n#include <iostream>\n\nint main() {\n    // Initialize JACCL group\n    auto group = jaccl::init();\n    std::cout << \"Rank \" << group->rank() << \" of \" << group->size() << std::endl;\n    // Perform all-reduce sum\n    float data[10] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f};\n    float output[10];\n    group->all_sum(data, output, sizeof(data), jaccl::Float32);\n    std::cout << \"Result: \" << output[0] << std::endl;\n    return 0;\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "MLX Swift LM on GitHub",
+        "url": "https://github.com/ml-explore/mlx-swift-lm"
+      },
+      {
+        "title": "MLX Swift Examples",
+        "url": "https://github.com/ml-explore/mlx-swift-examples"
+      },
+      {
+        "title": "MLX Examples",
+        "url": "https://github.com/ml-explore/mlx-examples"
+      },
+      {
+        "title": "MLX Swift",
+        "url": "https://github.com/ml-explore/mlx-swift"
+      },
+      {
+        "title": "MLX  LM - Python API",
+        "url": "https://github.com/ml-explore/mlx-lm"
+      },
+      {
+        "title": "MLX Explore - Python API",
+        "url": "https://github.com/ml-explore/mlx"
+      },
+      {
+        "title": "MLX Framework",
+        "url": "https://mlx-framework.org"
+      },
+      {
+        "title": "MLX",
+        "url": "https://ml-explore.github.io/mlx/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2026/233/4/379c319a-5718-4fd2-aac6-2f97180c5892/downloads/wwdc2026-233_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2026/233/4/379c319a-5718-4fd2-aac6-2f97180c5892/downloads/wwdc2026-233_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "328",
+      "year": "2026",
+      "title": "Explore numerical computing in Swift with MLX",
+      "url": "https://developer.apple.com/videos/play/wwdc2026/328"
+    },
+    {
+      "id": "232",
+      "year": "2026",
+      "title": "Run local agentic AI on the Mac using MLX",
+      "url": "https://developer.apple.com/videos/play/wwdc2026/232"
+    },
+    {
+      "id": "298",
+      "year": "2025",
+      "title": "Explore large language models on Apple silicon with MLX",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/298"
+    },
+    {
+      "id": "315",
+      "year": "2025",
+      "title": "Get started with MLX for Apple silicon",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/315"
+    }
+  ],
+  "extractedAt": "2026-06-12T10:24:14.385Z"
+}

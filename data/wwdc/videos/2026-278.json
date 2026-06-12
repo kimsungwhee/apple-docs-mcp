@@ -1,0 +1,146 @@
+{
+  "id": "278",
+  "year": "2026",
+  "url": "https://developer.apple.com/videos/play/wwdc2026/278/",
+  "title": "Modernize your UIKit app",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, I'm Michael Ochs, an engineering manager on the UI Frameworks team.\n\nAnd today I'll tell you how to modernize your UIKit app. In this video I'll tell you about some big changes to app adaptivity requirements, and how iPhone apps are fully resizable.\n\nNext, I'll present some new APIs in tab bars, navigation bars and menus.\n\nThen, I'll talk about how to support Apple Intelligence and some changes you should be aware of.\n\nAnd finally I'll cover a new skill that helps an agent to handle most of this modernization work automatically.\n\nLet's get started with app adaptivity.\n\nYour app can already appear in many different environments. There are different screen sizes, and apps can run side by side - with other apps and even themselves. On iPad, people expect apps to resize and move to external displays seamlessly. On iPhone, people expect apps to work in both portrait and landscape orientations. They also expect to mirror their iPhone to the Mac. In iOS and macOS 27 this experience has been improved and apps running in these environments are now exposed to many of the dynamic changes any app native to the platform needs to support.\n\nWhen people use iPhone Mirroring on the Mac, they can fully resize the iPhone window, allowing your apps to resize and adapt. Likewise, an iPhone-only app running on iPad will be fully resizable like any other iPad app. Because of this, it is important that your app dynamically adjusts to any available scene size at runtime. If your app is a universal binary, you are off to a great start. But there is more to do to make your app fully adaptive and have it dynamically adjust to the environment it is running in. I will cover the most important steps and common issues you might encounter when making your app more adaptive: verifying your app is no longer using app lifecycle, and instead has adopted scene lifecycle, the basis for any adaptive app, making sure your app is not using main screen references, and how to handle user interface idiom and interface orientation checks.\n\nThe first step is to move from app lifecycle to scene lifecycle.\n\nMost apps are already using scene lifecycle. It is the basis for an adaptive app and for many of the other tasks I'm going to show you in this video. UIScene lifecycle is now required when building with the latest SDKs. Without it, your application will no longer launch. Verify that your app is using a UISceneDelegate which is the basis for scene lifecycle.\n\nIf you have not yet migrated to scene lifecycle, check out the video \"Make your UIKit app more flexible\" from WWDC25 and read \"Transitioning to the UIKit scene-based lifecycle\" in the documentation. Next, when your iPhone app is mirrored on a Mac, or when a person moves your app to an external display on the iPad, the screen associated with your scene changes. That means that any reference to the main screen in your code will provide incorrect information for the environment your app is running in.\n\nIt is important that you do not reference the main screen in your app. Instead, access the screen dynamically from a window's window scene.\n\nWhen a view or view controller is not available in the immediate context, pass in a screen reference to any method that needs it.\n\nEven better than fetching the correct screen is to remove screen references all together. There are a lot of other APIs that are better suited for an adaptive app. I'll take you through two common patterns.\n\nAccessing the scale of the screen should be replaced with the trait collection's displayScale.\n\nViews and view controllers automatically update their trait collections and provide reasonable fallbacks even when they are not part of the visible hierarchy. A lot of common override points are also tracked, meaning that you do not need to explicitly monitor for changes. Instead, the system tracks which trait collection properties are being used inside common layout and drawing methods, like layoutSubviews, updateProperties, drawRect, and many others.\n\nIf a change to a tracked trait is detected, the system will ensure these methods are called again so your UI automatically updates accordingly. Check out \"Automatic trait tracking\" in the documentation to learn more. In places where automatic trait tracking is not available, registerForTraitChanges can be used to observe changes.\n\nThis method allows you to set up a closure that is called when a specific trait in the receiving view changes.\n\nUse this to invalidate caches or update other data related to that view.\n\nCheck out \"Adapting your app when traits change\" in the documentation to learn more. Another common use of the screen is to check its bounds to get the amount of space available to your app.\n\nHowever, in an adaptive environment, the space your scene has available is not always the full screen. So if you still have any references to screen bounds in your app, now is the time to remove these.\n\nThe window scene's effective geometry provides information on how much space your app has available. If you need to monitor the effective geometry for changes, implement windowScene:didUpdateEffectiveGeometry: in your scene delegate.\n\nIn your views and view controllers, instead of referencing the scene bounds, use the available size of your view controller's view or your view's superview to determine how much space is available to it.\n\nThis makes your UI less dependent on how it is presented. It will adjust better when your view controller appears in other contexts, for example inside of a split view controller.\n\nFor games, resizing can be challenging. Due to this, UIRequiresFullscreen is honored on iPhone in resizable environments starting in iOS 27. Its behavior has also been updated and no longer opts your app fully out of resizing. Instead, it enables discrete resizing that honors your supported interface orientations.\n\nIn discrete resizing, every time a person changes the scene size, the system transitions the scene to a new screen configuration matching that size, so your game always renders at full quality in the available space. If your app is using the User Interface idiom trait, be aware that this trait is no longer meaningful for any kind of layout decision.\n\nYour app is expected to use the additional space in a meaningful way, regardless of whether it is running in the phone or pad user interface idiom.\n\nWhen your iPhone app is running on an iPad or in iPhone Mirroring on the Mac, it will be fully resizable, but it will still run under the phone user interface idiom. Stop checking the user interface idiom for any layout decisions in your code.\n\nUse size classes instead to handle sizing constraints, such as collapsing menus and updating your app's layout for the available space. If you need finer control, use the surrounding view's size like I mentioned earlier.\n\nInterface orientation also is no longer useful for layout decisions.\n\nIn iOS 27, an app's supported interface orientation is a preference provided to the system. It will be ignored when your app is running in a resizable environment. You should not consider interface orientation for any layout calculations. In iPhone Mirroring on the Mac, your apps will always be running in the portrait interface orientation, regardless of the aspect ratio of your app's scene. Any interface orientation checks in your app should also be updated to use size classes. This conceptual shift was introduced in iOS 8.\n\nAt WWDC2014, Bruce Nilo said: \"A device rotation is only an animated bounds change.\" With an array of device sizes, resizable windows on iPad, and resizable iPhone apps on Mac, today this insight is more relevant than ever. And speaking of interface orientation: in iOS 27 UIView also conforms to the new Body protocols from CoreMotion and CoreLocation.\n\nThis makes it much easier to configure your motion and location managers. Connect them to the view that visualizes the motion data, such as a compass or a map view. This ensures the data is always in the right coordinate space, regardless of interface orientation.\n\nThat covers the main adaptivity changes. Now here is how to test these changes in your app.\n\nXcode 27 brings new ways to iterate on your app's behavior across different screen sizes, without having to install your app on multiple separate simulators or devices.\n\nIn the new Device Hub app as well as in Xcode Previews, click the \"enter resize mode\" icon. Then, drag the edges of the device to resize it freely. This allows you to iterate on your changes quicker. Once you are satisfied with the results, make sure to test iPhone Mirroring and iPad with real devices.\n\nTo learn more about the Device Hub app and its tools, watch \"Get the most out of Device Hub\".\n\nAnd that's adaptivity. Before I show you a new agentic coding skill that can help you with the work necessary to make your app fully adaptive, there are two more topics to cover. First up: bars and menus.\n\nOn iPad, tab bars can expand into a full sidebar representation to surface more sections of the app hierarchy when the current environment supports a sidebar. On iPhone, the bottom tab bar is shown across all sizes by default.\n\nNew in iOS 27, iPhone apps can also opt into sidebars by setting the tab bar controller's sidebar.preferredPlacement to .sidebar. Note that in contrast to the iPad, this is an app choice. If your app opts into the sidebar representation, there is no way to toggle between a sidebar and tab bar layout in the UI.\n\nInstead, the system determines if there is enough space to show a sidebar, for example when the horizontal size class is regular.\n\nTo determine if the tab bar's sidebar representation can be shown, use the sidebar's isAvailable property.\n\nIf a sidebar is not currently available, surface the UI behind nested tabs in other parts of your app. To learn more about managing tab groups, watch \"Make your UIKit app more flexible\" from WWDC25, and to learn more about tab bars and its integration with sidebars, watch \"Elevate your tab and sidebar experience in iPadOS\" from WWDC24.\n\nUITabBarController also lets you customize the prominent tab. The prominent tab is always visible, even when the tab bar collapses during scrolling. In iOS 27, you have the option to make any tab prominent by setting the prominentTabIdentifier.\n\nOkay, that's tab bars. Now let's talk about navigation bars.\n\nNavigation bars can interactively slide away as people scroll. This provides more room on the screen for your app's content. By default, navigation bars minimize in certain conditions defined by the system.\n\nYou can force this behavior, one way or the other, by setting the barMinimizationBehavior property on your navigation item to .always or .never. If you handle safe area avoidance yourself, set barMinimizationSafeAreaAdjustment to .never so bar minimization doesn't update insets automatically.\n\nAnother change during scroll interactions is an updated appearance for the scroll edge effects. As such, you should review your design, especially where you have previously overridden the defaults provided by the OS.\n\nIn particular, the .automatic style no longer switches between the existing soft and hard styles but provides its own visuals for additional clarity. If you have overridden the style from .automatic previously, that decision should be re-evaluated, especially when set to .soft, as that no longer matches the default system appearance.\n\nWith the refined look of Liquid Glass, images you set on menu elements may not be shown by default in some contexts, such as in the menu bars on iPadOS and macOS.\n\nIf you still need an image to be visible, set the preferredImageVisibility property to override the default system behavior.\n\nReview the updated Human Interface Guidelines for when to include visible images in a menu element.\n\nAnd that's bars and menus. Now, how to support Apple Intelligence in your app.\n\nMenus in iOS 27 feature an Ask Siri button, to allow people to start a conversation with Siri right from your app. This is a powerful entry point that allows people to interact with the context they care about.\n\nMenus will automatically display this item when there's content relevant for Siri. To provide more relevant information specific to your app, use the new View Annotations API. With it you can annotate specific views with AppEntities. Check out \"Explore advanced App Intents features for Siri and Apple Intelligence\" to learn more.\n\nIf your app supports drag and drop, Siri can load resources from your application's drag handlers.\n\nWhen Apple Intelligence is invoked from context menus, the system will call available drag delegate methods to load the content. Avoid performing animations or presenting modal UI from sessionWillBegin. Drag sessions can be initiated without a user gesture. If your app has a stateful UI that shows up when a user initiates a drag, put that code in sessionDidMove instead.\n\nIf the adaptivity changes I outlined sound like a lot of work, I've got you covered. Let's talk about what's on everyone's mind: agentic coding! New in Xcode 27 is an app modernization skill. It has a deep understanding of the adaptivity tasks I outlined. And with the context of your project, it can make a lot of these changes automatically. Use Xcode's intelligence features and ask an agent to make your app more adaptable.\n\nIt will automatically convert main screen calls to traitCollection or scene bounds checks, adding invalidation logic if necessary.\n\nIt will also replace interface orientation checks with size class checks. It will even convert your app to use scene lifecycle. For more complex tasks, it will ask clarifying questions. And for tasks too large to handle in a single session, it will add comments to help you keep track of the remaining work.\n\nAnd to use skills in other tools, you can export the ones Xcode uses with \"xcrun agent skills export\". This will create markdown files that you can then import in your workflows.\n\nSkills like this one are a powerful way to prepare your app for resizable environments.\n\nAnd… that's it! These are the most important things to modernize your app.\n\nBuild your app with the iOS 27 SDK, and try out the resizable simulator in the new Device Hub app and test your app in iPhone Mirroring on macOS 27. Identify areas in your app that need to be a little more flexible. And if you like agentic coding, give the new skill a try and discover how much it can do automatically.\n\nThanks for joining. I cannot wait to resize your apps.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:24",
+      "title": "Use local screen references",
+      "language": "swift",
+      "code": "// Use local screen references\n// Access the correct screen through a windowScene\nlet screen = window?.windowScene?.screen\n\n// Pass in local screen references\nfunc generateThumbnail(_ image: UIImage, screen: UIScreen) -> UIImage {\n    // existing code, replacing main screen with local screen reference\n    // ...\n}"
+    },
+    {
+      "timestamp": "3:49",
+      "title": "Replace screen scale with displayScale",
+      "language": "swift",
+      "code": "// Replace the screen's scale with trait collection's displayScale\noverride func layoutSubviews() {\n    super.layoutSubviews()\n\n    // layoutSubviews will be called again automatically when displayScale changes\n    let displayScale = traitCollection.displayScale\n    // ...\n}"
+    },
+    {
+      "timestamp": "4:36",
+      "title": "Register for trait changes",
+      "language": "swift",
+      "code": "// Manually register for trait changes\nlet displayScaleTrait: [UITrait] = [UITraitDisplayScale.self]\nregisterForTraitChanges(displayScaleTrait) {\n    (view: GalleryView, previousTraitCollection: UITraitCollection) in\n    view.cache.invalidate()\n}"
+    },
+    {
+      "timestamp": "5:19",
+      "title": "Monitor effective geometry changes",
+      "language": "swift",
+      "code": "// UIWindowSceneDelegate\nfunc windowScene(\n    _ windowScene: UIWindowScene,\n    didUpdateEffectiveGeometry previousEffectiveGeometry: UIWindowScene.Geometry\n) {\n    let geometry = windowScene.effectiveGeometry\n    let availableSpace = geometry.coordinateSpace.bounds\n    // ...\n}"
+    },
+    {
+      "timestamp": "5:35",
+      "title": "Check available space using view bounds",
+      "language": "swift",
+      "code": "// Checking available space\noverride func viewDidLayoutSubviews() {\n    super.viewDidLayoutSubviews()\n\n    let availableSpace = view.bounds.size\n    // ...\n}"
+    },
+    {
+      "timestamp": "8:12",
+      "title": "Configure motion and location body",
+      "language": "swift",
+      "code": "// Configure motion and heading bodies\noverride func viewDidLoad() {\n    super.viewDidLoad()\n\n    motionManager.deviceMotionBody = view\n    locationManager.headingBody = view\n}"
+    },
+    {
+      "timestamp": "9:51",
+      "title": "Opt into sidebar layout",
+      "language": "swift",
+      "code": "tabBarController.sidebar.preferredPlacement = .sidebar"
+    },
+    {
+      "timestamp": "10:22",
+      "title": "Check sidebar availability",
+      "language": "swift",
+      "code": "tabBarController.sidebar.isAvailable"
+    },
+    {
+      "timestamp": "10:53",
+      "title": "Set prominent tab identifier",
+      "language": "swift",
+      "code": "// Set the prominent tab\nlet tabs = [\n    // ...\n]\nlet tabBarController = UITabBarController(tabs: tabs)\ntabBarController.prominentTabIdentifier = \"cart\""
+    },
+    {
+      "timestamp": "11:30",
+      "title": "Customize bar minimization behavior",
+      "language": "swift",
+      "code": "// Customize bar minimization behavior\noverride init(\n    nibName nibNameOrNil: String?,\n    bundle nibBundleOrNil: Bundle?\n) {\n    super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)\n\n    navigationItem.barMinimizationBehavior = .always\n    navigationItem.barMinimizationSafeAreaAdjustment = .never\n}"
+    },
+    {
+      "timestamp": "15:05",
+      "title": "Export Xcode skills for use in other tools",
+      "language": "swift",
+      "code": "xcrun agent skills export"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "TN3208: Preparing your app’s launch screen to meet App Store requirements",
+        "url": "https://developer.apple.com/documentation/Technotes/tn3208-preparing-your-apps-launch-screen-to-meet-app-store-requirements"
+      },
+      {
+        "title": "TN3210: Optimizing your app for iPhone Mirroring",
+        "url": "https://developer.apple.com/documentation/Technotes/tn3210-optimizing-your-app-for-iphone-mirroring"
+      },
+      {
+        "title": "Make your UIKit app more flexible",
+        "url": "https://developer.apple.com/videos/play/wwdc2025/282/"
+      },
+      {
+        "title": "Adapting your app when traits change",
+        "url": "https://developer.apple.com/documentation/UIKit/adapting-your-app-when-traits-change"
+      },
+      {
+        "title": "Transitioning to the UIKit scene-based life cycle",
+        "url": "https://developer.apple.com/documentation/UIKit/transitioning-to-the-uikit-scene-based-life-cycle"
+      },
+      {
+        "title": "Automatic trait tracking",
+        "url": "https://developer.apple.com/documentation/UIKit/automatic-trait-tracking"
+      },
+      {
+        "title": "Human Interface Guidelines: Menus",
+        "url": "https://developer.apple.com/design/human-interface-guidelines/menus"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2026/278/4/8c3f2e61-52d3-4915-9543-96e2f13adc8b/downloads/wwdc2026-278_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2026/278/4/8c3f2e61-52d3-4915-9543-96e2f13adc8b/downloads/wwdc2026-278_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "343",
+      "year": "2026",
+      "title": "Explore advanced App Intents features for Siri and Apple Intelligence",
+      "url": "https://developer.apple.com/videos/play/wwdc2026/343"
+    },
+    {
+      "id": "260",
+      "year": "2026",
+      "title": "Get the most out of Device Hub",
+      "url": "https://developer.apple.com/videos/play/wwdc2026/260"
+    },
+    {
+      "id": "282",
+      "year": "2025",
+      "title": "Make your UIKit app more flexible",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/282"
+    },
+    {
+      "id": "10147",
+      "year": "2024",
+      "title": "Elevate your tab and sidebar experience in iPadOS",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10147"
+    }
+  ],
+  "extractedAt": "2026-06-12T10:24:18.121Z"
+}

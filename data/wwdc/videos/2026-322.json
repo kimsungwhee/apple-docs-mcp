@@ -1,0 +1,143 @@
+{
+  "id": "322",
+  "year": "2026",
+  "url": "https://developer.apple.com/videos/play/wwdc2026/322/",
+  "title": "Compose advanced graphics effects with SwiftUI",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Design",
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi! I am Haotian, an engineer on the UI Frameworks team. Since its inception, SwiftUI has been steadily growing with its capabilities in graphics and layout, making it the choice for people who want to ship rich and custom experiences on Apple devices. Apple uses SwiftUI to build advanced effects across its own apps, too. Well, the word advanced can sound intimidating. But here's the thing, even with advanced effects, SwiftUI apps share the same basic elements. It is like a pipeline.\n\nData flows through a series of standard pipes. It takes something in, transforms it, and passes it along. SwiftUI's progressive disclosure means each pipe already works on its own. But you can connect them, create branches, or merge the flows. That's when you get creative. The 'advanced' lies in the construction, not the complexity. Here's the roadmap. First, I will take a design and break it apart. Then I will build advanced effects. And finally, I will share how you can incorporate these techniques in your apps, using a creative pipeline. Here is a design I am building.\n\nSo, I have been building my own podcast app. This is what it currently looks like, a bare-bones transcript view. And I am going to make it fancy, like the live lyrics view in Apple Music. With animated cover art and transcripts that scroll in sync with time. How do I even start? I start with what I already have. My existing user interface already contains all the data I need, including the cover art, the playback info, and the transcript text. The question isn't what data I need, it's how I transform it using the pipeline. Here are a couple of examples.\n\nStarting with the cover art, I need a pipe that converts the image into a visualizer, and the shader pipe fits here.\n\nThe visualizer needs to be in motion to reflect our playback state. For dynamic visuals, I connect the time pipe to the pipeline, that is two pipes merged into one.\n\nWell, the time pipe can do more than that. The transcript pipe was transformed to have timestamp overlays, but it does not know about the current time and therefore cannot scroll correctly.\n\nI can connect the same time pipe to form a pipeline of time-synced scrolling text. And now I have dynamic visuals for the background, and a scrolling transcript for the foreground. Time to connect those two parallel pipes together. And if you zoom out, you realize that every modifier, every API, is another stage in the pipeline. It just flows.\n\nJust like what was shown, my podcast app contains advanced layout and graphics. I have a full-screen cover art, applied with shader effect, and time-driven animation. On the other front, I have a time-synced scrollable transcript view, refined with floating-view attachment! I will go through each of those and explain how to achieve them, starting with the cover art.\n\nHere's our raw material. A cover art image.\n\nThe cover art is beautiful but it's going to sit behind the transcript. I soften it with a .blur modifier so it doesn't compete.\n\nNow that my cover art is blurred, next, I will apply some shader magic. You might ask, what is a shader? And how different is it from writing SwiftUI code? Let me explain.\n\nThis icon here starts as vector, then it was rasterized by GPU to pixels.\n\nAt this point, I can run a program on GPU called shader to decide which color to fill in those pixels.\n\nThe shader function runs in parallel. Each pixel executes independently, with no awareness of its neighbors. Knowing that, it will make perfect sense how Metal shader can be called from SwiftUI's shader effect APIs. There are three types of shader effects. Each has different method signature, certain parameters are required, although you can also append additional ones for the information you want to forward from SwiftUI to shaders.\n\ncolorEffect works by transforming each pixel's color to a new color, where each pixel is provided with the pixel position and the original view's pixel color at that position. You then return a new color based on that information. This is useful for simple effects like turning a colored image into a black and white one.\n\ndistortionEffect works differently. Instead of expecting a color on a certain position, distortionEffectFunction takes the existing position for a new position that SwiftUI will sample from the original image. There is no pixel color involved, you tell SwiftUI 'I want this position's color to follow that position's color'. This is useful for geometric effects like the sheer effect shown here.\n\nlayerEffect is the most flexible. The layerEffectFunction still works per pixel, but it provides the layer of the entire view, which allows you to sample adjacent pixels or the entire region. This is useful for effects like blur where the output pixel color depends on multiple input pixels.\n\nFor my use case, distortionEffect works, but layer effect provides the most flexibility. I'll add a layerEffect modifier, then I will add a shader function called backgroundWarp.\n\nFor now it just samples from the original layer at the given position, which gives me back the same image. But now I have a shader function I can build on.\n\nWith layerEffect, I can sample anywhere from the original view. For example, I can pass a float2 vector to the shader function, and use it to offset the sample position in the shader.\n\nTo match with the function parameters, I now put a float2 vector from the SwiftUI side.\n\nNow as I increase the offset, each pixel runs the shader with this offset value and so they all uniformly and increasingly sample from a distance.\n\nAnd as I decrease offset to zero, the image goes back.\n\nStill, because of the uniform offset, I only get the shifted pixels in a fixed pattern. I need something more organic, something that varies per pixel.\n\nFor organic variation, I use a NoiseTexture, a pre-computed image of smooth, random values.\n\nThis time, on the SwiftUI side, I pass the view size alongside the NoiseTexture as an image parameter.\n\nAnd on the Metal side, the image arrives as texture2d.\n\nNow I am about to show some really metal Metal code.\n\nI first use the current pixel position and the size to get the uv value, which stands for where I am relative to this image, it allows me to sample textures without an absolute position.\n\nNow I'll unpack the NoiseTexture.\n\nIt has RGB channels, the red and green channels are interesting because each one contains a different noise pattern.\n\nIf I move my uv, I get different red and green values. This pair of constantly changing values happen to be a good fit for our organic offset in X and Y since it is different per pixel.\n\nNow come back to the Metal shader.\n\nI create a sampler with repeat mode so it tiles, then I sample the noise at each pixel's UV position. The red and green channels give me a two-dimensional offset, which I scaled and added to the position to sample from the original view. Now, the shader twists the image slightly.\n\nThat was per-pixel variation, but I want something richer.\n\nSo I experiment, what if, instead of one noise sample, I do it twice. The first gives me an initial offset. Then I sample the noise again, but this time at a position shifted by the initial offset, and just like that, I get these organic, flowing blobs.\n\nThis layered noise approach is a well known technique called domain warping. To explore how I did it, download the sample app, it even has a preview so you can play with the parameters as you want.\n\nNow I have a cool shader effect, but it's still frozen. I need to make it move. That's where time comes in.\n\nDifferent from SwiftUI's transaction-based animation, shaders are stateless. They have no memory of the previous frame, the output relies only on the parameters. So, if I want animation, I need to pass in a value that changes over time.\n\nTimelineView is exactly the pipe that I need to connect. With the animation schedule, it fires every frame with a timestamp. I pass that timestamp into the shader, add it to the position to sample from noise, and the pattern starts flowing.\n\nThat was shader animation, driven by time. For my transcript view, I also need to add time to the mix, so that the current running transcript line will be highlighted and centered in the scroll view.\n\nHere's my transcript. Text views in a LazyVStack inside a ScrollView. Each line is its own view, familiar SwiftUI. Now I need to make it follow the playback state.\n\nI use the playback timestamp to determine which line is current. The current line is bold and clear, the rest fades back. And with the onChange modifier to monitor the current line change, I scroll to keep the current line centered.\n\nI have got my time-synced scroll view working. Now, I want to focus on the small timestamp on the current line. Every line has a timestamp in its overlay, but only the one for the current line is visible. This way, it doesn't interfere with the layout. It's always there, just waiting to be shown.\n\nLet's focus on this one row, a sub view, attached on the edge of its container. How do I get it there? The offset modifier cannot do it without knowing the size of both views.\n\nFirst, let's talk about alignment. Every view has alignments. Think of it as the point the layout system uses to position the view, and it is defined by both axes.\n\nWhen I place the sub view in the overlay container, the layout system aligns them using the default center alignment.\n\nThink of it like a pin punching through both views, so it holds them together at each view's alignment point.\n\nI change the overlay's alignment to .bottomLeading.\n\nNow the pin goes through the bottom leading point of each view and they lock together there.\n\nRight now, the layout system asks for the bottom leading alignment, and so the subview returns its bottom leading point to punch through.\n\nIf I were to explicitly express this in code, I would write an alignment guide here to mean bottom is bottom.\n\nNow, remember the goal is that the subview's top edge should touch the bottom edge of the container.\n\nWhat if, I tell the subview that, when the layout system asks about the bottom alignment, don't use the default one. Instead, I have a custom override that moves the bottom alignment to the top edge.\n\nAnd now, when the pin comes to punch through, it follows that point instead.\n\nI get the result by just writing a purely semantic override without manually offsetting the view. There's more to this API. I can define my own custom alignments, and the closure gives me ViewDimensions so I can compute point from the view's actual size. Check out the documentation on \"SwiftUI Alignment\" for the full picture.\n\nAnd here it is. The bare-bones transcript view I started with, now with an animated background driven by a shader and time, a transcript that scrolls in sync with playback, and a floating timestamp positioned with alignment guides.\n\nAll from the simple pipes, composed together, and it works across Apple devices.\n\nLet's step back. I took a design, broke it down into layers, and for each layer I found the right API to turn raw data into views. Each stage's output fed the next stage's input.\n\nConnecting stages like this is what I called a creative pipeline. But those were the choices I made for this podcast app. For your own app, the pipeline can get even more creative. The inputs could have been gyroscope data instead of audio. The shader could have been a ripple instead of a twist. The foreground could have been a freeform canvas instead of a scroll view. Every combination gives you something different. That's the creative part, the APIs are the same. What you feed in and how you connect them, that's yours.\n\nSo go make it your thing. Download the sample project and experiment with the shader, change the noise, tweak the speed, try a different image. Look for opportunities in your own app where a small visual effect could make a big difference. And when you start connecting those pipes together, you'll be surprised how quickly something simple becomes something advanced.\n\nThank you for watching, and goodbye!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:18",
+      "title": "Cover art image",
+      "language": "swift",
+      "code": "Image(\"CoverArt\")"
+    },
+    {
+      "timestamp": "4:24",
+      "title": "Blurred cover art image",
+      "language": "swift",
+      "code": "Image(\"CoverArt\")\n    .blur(radius: 30)"
+    },
+    {
+      "timestamp": "7:09",
+      "title": "Applying layer effect in SwiftUI",
+      "language": "swift",
+      "code": "GeometryReader { proxy in\n    CoverArtView()\n        .layerEffect(\n            ShaderLibrary.backgroundWarp(),\n            maxSampleOffset: .zero\n        )\n}\n.ignoresSafeArea()"
+    },
+    {
+      "timestamp": "7:21",
+      "title": "Writing layer effect shader in Metal",
+      "language": "swift",
+      "code": "[[stitchable]] half4 backgroundWarp(\n    float2 position, SwiftUI::Layer layer\n) {\n    return layer.sample(position);\n}"
+    },
+    {
+      "timestamp": "7:39",
+      "title": "Metal shader with offset parameter",
+      "language": "swift",
+      "code": "[[stitchable]] half4 backgroundWarp(\n    float2 position, SwiftUI::Layer layer,\n    float2 offset\n) {\n    return layer.sample(position + offset);\n}"
+    },
+    {
+      "timestamp": "7:55",
+      "title": "SwiftUI layer effect with offset parameter",
+      "language": "swift",
+      "code": "GeometryReader { proxy in\n    CoverArtView()\n        .layerEffect(\n            ShaderLibrary.backgroundWarp(\n               .float2(.init(x: 0, y: 0))\n            ),\n            maxSampleOffset: .zero\n        )\n}\n.ignoresSafeArea()"
+    },
+    {
+      "timestamp": "8:04",
+      "title": "SwiftUI layer effect with full-width offset",
+      "language": "swift",
+      "code": "GeometryReader { proxy in\n    CoverArtView()\n        .layerEffect(\n            ShaderLibrary.backgroundWarp(\n               .float2(.init(x: proxy.size.width, y: 0))\n            ),\n            maxSampleOffset: .zero\n        )\n}\n.ignoresSafeArea()"
+    },
+    {
+      "timestamp": "8:37",
+      "title": "SwiftUI layer effect with noise sampling",
+      "language": "swift",
+      "code": "GeometryReader { proxy in\n    CoverArtView()\n        .layerEffect(\n            ShaderLibrary.backgroundWarp(\n                .float2(proxy.size),\n                .image(Image(\"NoiseTexture\"))\n            ),\n            maxSampleOffset: .zero\n        )\n}\n.ignoresSafeArea()"
+    },
+    {
+      "timestamp": "8:55",
+      "title": "Metal shader with noise sampling",
+      "language": "swift",
+      "code": "[[stitchable]] half4 backgroundWarp(\n    float2 position, SwiftUI::Layer layer,\n    float2 size, texture2d<half> noiseTex\n) {\n    constexpr sampler s(address::repeat, filter::linear);\n    float2 uv = position / size;\n\n    half4 n = noiseTex.sample(s, uv);\n    float2 offset = (float2(n.r, n.g) - 0.5) * 200.0;\n\n    return layer.sample(position + offset);\n}"
+    },
+    {
+      "timestamp": "10:22",
+      "title": "Metal shader with domain warping",
+      "language": "swift",
+      "code": "[[stitchable]] half4 backgroundWarp(\n    float2 position, SwiftUI::Layer layer,\n    float2 size, texture2d<half> noiseTex\n) {\n    constexpr sampler s(address::repeat, filter::linear);\n    float2 uv = position / size;\n\n    half4 n = noiseTex.sample(s, uv);\n\n    float2 q = float2(n.r, n.g);\n    n = noiseTex.sample(s, uv + q);\n\n    float2 offset = (float2(n.r, n.g) - 0.5) * 200.0;\n\n    return layer.sample(position + offset);\n}"
+    },
+    {
+      "timestamp": "11:37",
+      "title": "SwiftUI layer effect with animated visual",
+      "language": "swift",
+      "code": "@State private var startDate = Date.now\n\nTimelineView(.animation) { timeline in\n    let elapsed = timeline.date.timeIntervalSince(\n        startDate\n    )\n    CoverArtView()\n        .layerEffect(\n            ShaderLibrary.backgroundWarp(\n                .float2(proxy.size),\n                .image(Image(\"NoiseTexture\")),\n                .float(elapsed)\n            ),\n            maxSampleOffset: .zero\n        )\n}"
+    },
+    {
+      "timestamp": "12:15",
+      "title": "Basic transcript view",
+      "language": "swift",
+      "code": "ScrollView {\n    LazyVStack(alignment: .leading, spacing: 12) {\n        ForEach(sampleTranscript) { line in\n                .font(.title)\n                .fontWeight(.bold)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "12:33",
+      "title": "Time-synced transcript view",
+      "language": "swift",
+      "code": "@State private var playback = PlaybackState()\n\nScrollViewReader { scrollProxy in\n    ScrollView {\n        LazyVStack(alignment: .leading, spacing: 12) {\n            ForEach(sampleTranscript) { line in\n                Text(line.text)\n                    .transcriptLineStyle(isCurrent: \n                        line.id == playback.currentLineIndex\n                    )\n            }\n        }\n    }\n    .onChange(of: playback.currentLineIndex, { _, i in\n        scrollProxy.scrollTo(i, anchor: .center)\n    })\n}"
+    },
+    {
+      "timestamp": "13:53",
+      "title": "Overlay with center alignment",
+      "language": "swift",
+      "code": "Text(line.text)\n     .overlay {\n          Text(line.formattedTimestamp)\n     }"
+    },
+    {
+      "timestamp": "14:06",
+      "title": "Overlay with bottom leading alignment",
+      "language": "swift",
+      "code": "Text(line.text)\n     .overlay(alignment: .bottomLeading) {\n          Text(line.formattedTimestamp)\n     }"
+    },
+    {
+      "timestamp": "14:32",
+      "title": "Overlay with alignment guide override",
+      "language": "swift",
+      "code": "Text(line.text)\n     .overlay(alignment: .bottomLeading) {\n          Text(line.formattedTimestamp)\n              .alignmentGuide(.bottom) { $0[.top] }\n     }"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Alignment",
+        "url": "https://developer.apple.com/documentation/SwiftUI/Alignment"
+      },
+      {
+        "title": "Composing advanced graphics effects with SwiftUI",
+        "url": "https://developer.apple.com/documentation/SwiftUI/Composing-advanced-graphics-effects-with-SwiftUI"
+      },
+      {
+        "title": "Shader",
+        "url": "https://developer.apple.com/documentation/SwiftUI/Shader"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2026/322/4/db4c622a-2091-45ef-a024-df317a5b55a5/downloads/wwdc2026-322_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2026/322/4/db4c622a-2091-45ef-a024-df317a5b55a5/downloads/wwdc2026-322_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "10151",
+      "year": "2024",
+      "title": "Create custom visual effects with SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10151"
+    }
+  ],
+  "extractedAt": "2026-06-12T10:24:21.266Z"
+}

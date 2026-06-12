@@ -1,0 +1,102 @@
+{
+  "id": "232",
+  "year": "2026",
+  "url": "https://developer.apple.com/videos/play/wwdc2026/232/",
+  "title": "Run local agentic AI on the Mac using MLX",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Machine Learning & AI"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, I'm Angelos, an engineer on the MLX team. Today I'm going to show you how to build and run agentic AI workflows entirely on your Mac using MLX. No cloud, no API keys, just your hardware doing the work. Over the past year, AI agents have gone from research prototypes to everyday productivity tools. But before we talk about agents, let's look at what we had before.\n\nHere's the chat experience you're familiar with. You send a prompt to the language model. The model sends a response back. If you need to act on that response, run a command, check a file, or fix an error, that's on you. But now you're talking to an agent. The agent talks to the model to decide what to do. Then it calls tools to actually do it: running commands, reading files, hitting APIs — It observes the results and goes back to the model to figure out the next step. User to agent. Agent to model. Agent to tools. This is the agentic loop. And it keeps cycling until your task is done. What makes this particularly exciting on Apple silicon is that the entire loop can run locally. Your data stays on your machine; AI is available anywhere at any time and there are no usage costs. Let me now show you what this looks like in practice. Here I have an agent running locally on my Mac. On my screen you can see the setup: on the left, MLX running the model, and on the right the OpenCode agent I am interacting with. I asked it to fetch the recent pull requests from our MLX repository, summarize the changes, and identify anything that needs my attention. The model reasons about the request, calls the GitHub CLI to fetch PR data, reads through the diffs, and produces a concise summary. All of this is happening locally, the model runs on my hardware and only the git commands reach the network. Well it seems like I have a lot of work to do after finishing this video. Now that you've seen what's possible, let me walk you through how we'll get there today. We'll start by introducing the local agentic AI stack, the four layers that make all of this work, from MLX at the foundation all the way up to the agent. Then I'll show you step-by-step how to set up your own local agent. After that, we'll look at how MLX gets the most out of your hardware to make agents fast. And finally, we'll go through more live demos, including building a SwiftUI app from scratch and fixing a bug in Xcode. Let's start with the stack.\n\nThe stack that powers local agentic AI on the Mac has four layers. Let me walk you through each one, starting from the bottom. At the bottom is MLX, our open-source array framework purpose-built for Apple silicon. It handles all the low-level computation, Metal acceleration, and memory management. This is the foundation everything else is built on. One level up, we have the language model layer. MLX-LM provides everything you need to load, run, quantize, and fine-tune large language models. It supports thousands of models from HuggingFace and gives you both CLI tools and a Python API. If you saw our sessions last year, this is what we covered in depth. But to serve an agent, we need something more: a persistent server with a standard API. That's where MLX-LM Server comes in. This is an OpenAI-compatible HTTP server that exposes your local model through a standard API. It supports structured tool calling so the model can invoke functions reliably, and reasoning models that can analyze complex problems step-by-step before responding. It's a drop-in replacement for any cloud LLM API. And at the top of the stack, we have the agent itself. This can be any framework or tool that speaks the OpenAI chat completions protocol: Xcode, OpenCode, Pi agent, a custom script, or anything else. Because MLX-LM Server provides a standard interface, any agent framework works out of the box. And it's not just us building on this stack. Several popular apps and tools build on MLX and MLX-LM. Ollama, LM Studio, and vLLM are just a few of the most popular ones. The ecosystem is broad and growing, and if you're using one of these tools, chances are you're already running on MLX. So that's the stack. Let me now show you how to set everything up yourself. It only takes three steps to go from zero to a fully local agentic workflow. Step one: install MLX-LM. A single pip install gets you everything you need. Step two: start the server. Run mlx_lm.server with a model that supports tool calling. Starting with a small model to test your set-up is always a good idea. The server starts up, loads the model, and is ready to accept requests on local host. Step three: point your agent at the local server. In most agent frameworks, you just set the base URL to your local server's address and you're done. The agent doesn't know or care that the model is running on your Mac rather than in the cloud.\n\nLet me show you a concrete example. Here's the configuration for OpenCode. We define a local provider. In particular, we set the URL to local host and set the model name the server expects. We also tell OpenCode to use this local model for everything. That's it. Now every interaction runs through your local model. Now that we have an agent talking to MLX, let's look at how MLX gets the most out of your hardware and addresses the key challenges of running agents locally.\n\nThe first challenge is prompt processing. In an agentic workflow, every time the model receives tool output, it has to process all that new context before it can reason about the next step. This happens over and over throughout the agentic loop, and it adds up fast. Agentic sessions usually comprise hundreds of thousands of tokens and most of those are not generated.\n\nThe M5 chip introduces dedicated Neural Accelerators, and MLX can target them for exactly this kind of work. Specifically, Neural Accelerators make matrix multiplication four times faster on M5 compared to M4. And with the specialized multiplication and attention kernels in MLX this translates almost exactly to prompt processing speedup.\n\nReducing prompt processing time means your agents can read your codebase or process tool results almost four times faster. And the best part? Taking advantage of Neural Accelerators requires no special arguments or code changes on your part, MLX selects the best kernel for the available hardware and it just works.\n\nLet's now talk about the second challenge, concurrency. In practice, agents rarely work alone. A common pattern is for an agent to spawn several subagents, each tackling a different part of the problem in parallel. One might be reading documentation, another searching code, and a third writing tests; all at the same time. That means multiple requests hitting your local model simultaneously. MLX-LM Server handles this with continuous batching.\n\nInstead of processing requests one at a time, it dynamically groups incoming requests into batches and processes them together on the GPU. New requests can join a batch in progress without waiting for the current one to finish. The result is that your subagents don't stall waiting in a queue. They all get served concurrently, which keeps the entire agentic workflow moving. Finally, the third challenge is model size. Sometimes a single machine, even one with 512GB of RAM, just isn't enough because the model is too large to fit in memory. The most recent DeepSeek model for instance has a whopping 1.6 trillion parameters and requires more than 800GB of memory just for the weights. MLX's distributed support lets you spread a model across multiple Macs connected over Thunderbolt or Ethernet. For agents, this is powerful in two ways. First, it lets you run much larger, more capable models that wouldn't fit on a single machine. Second, it parallelizes prompt processing across devices, which directly speeds up the agentic loop since the model can process tool results faster.\n\nSetting up distributed inference with MLX-LM Server is fairly straightforward. You launch the server using mlx.launch and a hostfile that contains information about the nodes and the type of connection. The model is automatically sharded across all available devices and everything else just works. Starting with macOS 26.2, we have support for Thunderbolt RDMA, which provides low-latency, high-bandwidth communication over Thunderbolt. As a result, distributed inference with MLX has seen significant speed-ups: up to three times with four nodes. To learn how to set up your Macs for distributed inference with MLX, check out our session \"Explore distributed inference and training with MLX\". Remember our PR summary demo from earlier? That was a simple read-and-report task. Let's now push things further and see what happens when we ask an agent to write an entire project from scratch and then fix a bug in an existing one.\n\nIn this demo, I'm going to ask the agent to build a small SwiftUI application from scratch.\n\nI have started with a blank Xcode project and I am asking the agent to build a drawing app for the iPad.\n\nAnd off it goes. The agent first looks at the current directory to find out the existing project structure, makes a plan to guide its implementation, and gets on to writing the code. Using an agent means we don't need to copy anything or even build the project. The agent writes the file then builds the app, fixing any errors it encounters along the way.\n\nAnd here we are: the model is done, it only took a couple of minutes to create the first version of the app. At the same time, I have the project open in Xcode and I am launching the app in the simulator.\n\nLet's have a look at what the agent created.\n\nIt seems that we have a fully functional drawing app. That's really nice for something that was built in 2 minutes. With agentic coding, however, we can keep iterating until we are happy with the result. For instance, I prefer rounded end caps. I think they look much better. Let's ask the agent to add them.\n\nThe agent will edit the code and recompile the app until it compiles without errors.\n\nLet's test the new version.\n\nWe now have rounded end caps. This is cool indeed. It is even more cool that all of this happened locally, the model ran through MLX-LM server on this Mac and the agent used standard development tools like xcodebuild to verify and build its work.\n\nFor our final demo, let's look at something that integrates directly with your development environment.\n\nHere I have the same drawing app project open in Xcode. Let's connect Xcode to our already running MLX server. We open the settings and navigate to the Intelligence tab. We click on Add Chat Provider... and select a Locally Hosted provider. We set the Port to 8080 or whichever port we selected when launching our MLX server and we're done. Now Xcode can talk to our local model.\n\nI have introduced a bug to our previously working app and now we can ask the model to fix it.\n\nWithin seconds, it identifies the bug and inspects the code around it. Finally, it writes a fix and we can now build and run our app.\n\nThis shows how a locally running agent can integrate with your existing development workflow in Xcode, reading project files, understanding build errors, and making targeted fixes. Local AI means your code never leaves your Mac. Today, we showed you the full stack for running agentic AI locally on your Mac, from MLX all the way up to the agent, and how Neural Accelerators, continuous batching, and distributed inference make it fast. To get started, install MLX-LM, launch the server, and point your favorite agent at it. Everything we showed today is open-source and available right now. Thank you for watching and I'm excited to see what you build with local agentic AI on the Mac.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:40",
+      "title": "Set up MLX-LM and start the local server",
+      "language": "swift",
+      "code": "# Step 1: Install MLX-LM\npip install mlx-lm\n\n# Step 2: Start the server\nmlx_lm.server --model mlx-community/Qwen-3.5-4B-8bit\n\n# Step 3: Point your agent to the server\ncurl -X POST \\\n  http://127.0.0.1:8080/v1/chat/completions \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"model\":\"default_model\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello!\"}]}'"
+    },
+    {
+      "timestamp": "5:18",
+      "title": "Configure an agent to use your local MLX server",
+      "language": "swift",
+      "code": "{\n  \"$schema\": \"https://opencode.ai/config.json\",\n  \"model\": \"mlx/default_model\",\n  \"small_model\": \"mlx/default_model\",\n  \"provider\": {\n    \"mlx\": {\n      \"npm\": \"@ai-sdk/openai-compatible\",\n      \"name\": \"MLX (local)\",\n      \"options\": {\n        \"baseURL\": \"http://127.0.0.1:8080/v1\"\n      },\n      \"models\": {\n        \"default_model\": {\n          \"name\": \"Default MLX Model\"\n        }\n      }\n    }\n  }\n}"
+    },
+    {
+      "timestamp": "8:33",
+      "title": "Launch distributed inference with MLX",
+      "language": "swift",
+      "code": "mlx.launch --hostfile hosts.json \\\n  --backend jaccl \\\n  /remote/path/to/mlx_lm.server \\\n  --model mlx-community/Qwen-3.5-122B-A3B-8bit"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "MLX Swift LM on GitHub",
+        "url": "https://github.com/ml-explore/mlx-swift-lm"
+      },
+      {
+        "title": "MLX Swift Examples",
+        "url": "https://github.com/ml-explore/mlx-swift-examples"
+      },
+      {
+        "title": "MLX Examples",
+        "url": "https://github.com/ml-explore/mlx-examples"
+      },
+      {
+        "title": "MLX Swift",
+        "url": "https://github.com/ml-explore/mlx-swift"
+      },
+      {
+        "title": "MLX  LM - Python API",
+        "url": "https://github.com/ml-explore/mlx-lm"
+      },
+      {
+        "title": "MLX Explore - Python API",
+        "url": "https://github.com/ml-explore/mlx"
+      },
+      {
+        "title": "MLX Framework",
+        "url": "https://mlx-framework.org"
+      },
+      {
+        "title": "MLX",
+        "url": "https://ml-explore.github.io/mlx/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2026/232/4/f309be4a-8e5b-4c0f-843a-fcbd84c5e2d1/downloads/wwdc2026-232_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2026/232/4/f309be4a-8e5b-4c0f-843a-fcbd84c5e2d1/downloads/wwdc2026-232_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "233",
+      "year": "2026",
+      "title": "Explore distributed inference and training with MLX",
+      "url": "https://developer.apple.com/videos/play/wwdc2026/233"
+    },
+    {
+      "id": "328",
+      "year": "2026",
+      "title": "Explore numerical computing in Swift with MLX",
+      "url": "https://developer.apple.com/videos/play/wwdc2026/328"
+    },
+    {
+      "id": "298",
+      "year": "2025",
+      "title": "Explore large language models on Apple silicon with MLX",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/298"
+    },
+    {
+      "id": "315",
+      "year": "2025",
+      "title": "Get started with MLX for Apple silicon",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/315"
+    }
+  ],
+  "extractedAt": "2026-06-12T10:24:13.980Z"
+}

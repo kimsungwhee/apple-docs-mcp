@@ -1,0 +1,201 @@
+{
+  "id": "321",
+  "year": "2026",
+  "url": "https://developer.apple.com/videos/play/wwdc2026/321/",
+  "title": "Dive into lazy stacks and scrolling with SwiftUI",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Design",
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, my name is Rens, and I'm a UI Frameworks Engineer.\n\nLazy stacks are an essential component for any SwiftUI app showing long and custom scrolling content. And they have long been a part of SwiftUI. Like many other SwiftUI components, the power of lazy stacks comes from their simplicity. Different SwiftUI components can be mixed with many other SwiftUI components to build complex apps. For example, from the 2027 releases you can use reorderable to drag and reorder views. You can learn more about that in \"Code-along: Build powerful drag and drop in SwiftUI\".\n\nAnd SwiftUI allows swipe actions to be added on views outside list. Of course, both work great when used with lazy stacks. I think it's a good time for a refresh and dive into lazy stacks and scrolling. I'll explain how they work, what you can do with them, and what you may want to avoid. Afterwards, you will have a better understanding of the internals of lazy stacks stacks, that you'll be able to apply to lazy stacks in your own apps.\n\nThis video will assume basic familiarity with SwiftUI layout using stacks. If you're new to SwiftUI, I recommend \"Stacks, Grids, and Outlines in SwiftUI\".\n\nI've been working on an Origami app that shows the instructions to make some popular origami pieces.\n\nIn this early version, it's only showing the steps to make a swan. Here is the set-up for the main view. I have a ScrollView, with a LazyVStack inside, that in turn contains a StepView for each step.\n\nThe lazy stack allows scrolling through a potentially large number of steps, without loading all views at once immediately. I'll now focus on the LazyVStack.\n\nThree of the steps to create an origami swan are fully visible. A small part of the StepView for step 4 is also visible.\n\nNow, the full LazyVStack is a lot larger than the visible views. But, unlike a VStack, a LazyVStack does not evaluate or render views that aren't visible. A LazyVStack simply lays out its views top to bottom, and stops once the visible rect is filled. If you scroll down the LazyVStack adds views as appropriate to make sure the visible rect remains filled, and as views are scrolled out of screen, they are removed from the lazy stack.\n\nBy not loading all views at once, a LazyVStack can be more efficient than a VStack. But there is a correctness cost. Since a LazyVStack doesn't load all of its views, the height of the subviews that are off-screen are estimated. This estimated height is based on the average size of views that have been placed before, and the estimated number of remaining subviews. The lazy stack is also unaware of changes in off-screen views, since they aren't loaded.\n\nSimilarly, since not all views are loaded, it wouldn't be able to find the maximum width of all views. So the ideal width of a LazyVStack is that of its first subview. In the case of my origami app, the first view is infinitely flexible, so the width of the LazyVStack equals the screen width.\n\nSince the height of the LazyVStack is estimated and not precise, it can change during scrolling as the lazy stack learns more about the layout of new views scrolled onto screen. For example, if you scroll down all the way and the last views are a bit smaller than the other views the lazy stack has to adjust its originally estimated size to account for this.\n\nThe space above the visible rect isn't precise either. The scroll position, or content offset of the scroll view, therefore depends on an estimated position of the visible items. One example where the space above the visible region is not precise, is after an orientation change on an iPhone.\n\nStepViews are less tall in landscape than they are in portrait. The subtitle text generally fits on fewer lines in landscape. During the orientation change, the lazy stack will keep the StepView for step 4, the topmost visible view, anchored. The LazyVStack isn't yet aware of the exact layout changes in the first few StepViews, since they aren't loaded. But when scrolling all the way back up, the lazy stack must align to the top of the scroll view. This means it must correct the estimated space above the visible region along the way. It will update the content offset of the ScrollView with the same amount, such that the content offset at the top is zero as well.\n\nThe lazy stack and the embedding scroll view coordinate the position and content offset. That way, when the estimations are updated, the relative position of the visible subviews in the scroll view doesn't change.\n\nIt's common to compose different types of views or content in the same lazy stack. For my origami app, I think it could be cool if people could share a photo of their creation with others when they are done. I'd like to display these photos at the bottom, in a horizontal scroll view. I've added a Showcase view for these photos.\n\nThe Showcase view has a horizontally scrolling ScrollView, with a LazyHStack within.\n\nThis means that my app now has a LazyHStack nested inside the outer LazyVStack.\n\nNesting a LazyHStack in a LazyVStack like this can also be good for performance, since not everyone will scroll this nested scroll view to see the extra views.\n\nFor a LazyHStack, the ideal height, and therefore, its height in a vertical ScrollView, is that of the first subview. For my origami app, all photos use the same height. But if every photo had a user description label with a variable number of lines, longer subtitles would be cut off. The LazyHStack cannot know in advance what the largest subtitle of all views is. It hasn't loaded all of them. The best solution is to fix the view heights. For example, for text, you can set a line limit, and reserve space for shorter text.\n\nBut I'm actually thinking the photos in my origami app, should be a bit larger. Maybe I should just add them vertically below the steps. If I add them in a section, I could even pin the section header.\n\nTo pin section headers, use the pinnedViews parameter on the LazyVStack.\n\nI've added the new Section inside the Showcase view, with a header view. If I scroll down, the Showcase section header sticks to the top.\n\nI'll now discuss some patterns to avoid so the lazy stacks perform at their best. I'll do that using the photos showcase I've just added. It could be nice to add a scroll transition to the photos as they scroll into and out of screen.\n\nHere, I'm using the .scrollTransition modifier to give my steps an effect as they scroll on or off-screen. However, lazy stacks only load views that are on screen, based on their original position. And the transform here is pushing them out of their original frame.\n\nThat causes them to disappear when they should be visible, since the lazy stack believes they are off-screen. Here, as you scroll down, the pink swan disappears too soon.\n\nIf you apply a scroll transition to views in a lazy stack, make sure that views that wouldn't be normally visible aren't pushed into the visible rect. Here, I'm using a different scale effect.\n\nThis works fine. In general, make sure that views that wouldn't normally be visible aren't pushed into the visible rect in a transform. The lazy stack won't be aware of that.\n\nSince you need to scroll down a little to get to the Showcase, I'll also add a button to quickly scroll there.\n\nBut the button shouldn't always be visible. I'd like it to only be visible when near the top of the scroll view.\n\nWhen someone scrolls down, it should disappear.\n\nHere, I'm using an .onScrollGeometryChange on my scroll view to get the absolute content offset.\n\nWhen I'm scrolled down more than a 100 points, the button disappears.\n\nThis works, but since the content offset of a lazy stack is estimated, the exact position where the buttons disappears, can change when the estimations change. Instead, it's better to use the relative positions of subviews in the visible region of the scroll view.\n\nOne way to do that, is to use the .onScrollTargetVisibilityChange modifier.\n\nThe closure in that modifier is called when the visibility of the subviews in the visible region of the scroll view changes. Here, the visibility of the \"Scroll to Showcase\" button depends only on which subviews are visible, with a threshold of 80%.\n\nI've now covered the layout of lazy stacks in detail. I've said that lazy stacks add subviews, when they are about to enter the visible part of the scroll view. However, the subviews a lazy stack loads individually, do not always correspond directly to the view structs you define in code. Let's go back to my original code and take another look at the ContentView. In this simple case, there is a 1-to-1 correspondence of StepView instances and the subviews that the LazyVStack sees.\n\nThere's a ScrollView, and the ScrollView has a LazyVStack as a subview, and the LazyVStack has the ForEach as a subview. But of course the ForEach isn't just a single view.\n\nIt's resolved to one StepView for every step. And in most cases, these are the subviews that the LazyVStack loads.\n\nBut here, the StepView is slightly more complicated. And that will be important. The body contains two views, StepDiagram and StepInstructions, at the top level of the body. They're also not embedded in another layout, like a VStack.\n\nIn this case, LazyVStack still has the ForEach which is resolved to a StepView for every step. But just like the ForEach resolves to multiple StepViews, each StepView now resolves to two views as well. The LazyVStack evaluates and loads StepDiagram and StepInstructions seperately.\n\nOf course, StepView still needs to be evaluated for the lazy stack to create either of those. Views can also resolve to a dynamic number of views. But that is something you have to watch out for. In this case, StepView is using a detailLevel environment value, to check whether it should be visible.\n\nThe ForEach again resolves to a StepView for each step. But each StepView now resolves to either one subview or zero subviews. In this case, step 2 isn't visible given the current detail level, but the first and third steps are.\n\nThat works, and the contents of the StepView are loaded lazily, but the StepView itself can be kept alive longer than you may expect.\n\nThat is because a LazyVStack addresses the visible subviews using their index.\n\nIt now has to keep earlier StepViews around, just in case the detailLevel environment value changes, because that would affect the indices.\n\nIn leaf subviews that are created many times in a ForEach, like StepView, avoid creating a dynamic number of subviews.\n\nThe example where a detailLevel environment value is used to filter out steps, is therefore not a good idea.\n\nSay that unrelated environment value, like writingStyle, is used in the contents of the StepView body. A change in this environment value can now cause body evaluations for views that are scrolled out of screen, causing unnecessary view updates. The lazy stack also won't release state allocated for the StepView. Instead, filter at the data level. If you're using SwiftData, use a Predicate to filter your Query.\n\nHere, I'm using the detailLevel in the Predicate. This makes the number of subviews immediately clear to the LazyVStack. It doesn't have to construct views to compute view counts or indices.\n\nNote that unwrapping an optional in a view body has the same effect. Here, I'm optionally unwrapping an apiToken Environment variable. The body only returns something if that token isn't nil.\n\nThe token is something that could be handled by a NetworkClient model object.\n\nIf someone is not authenticated, a view higher up in the hierarchy could show a ContentUnavailableView, instead of showing the lazy stack in the first place.\n\nSince lazy stacks only keep a small part of their data in memory, they do not need to perform a full diff of their contents. They only perform a minimal check for changes in the visible views.\n\nLazy stacks don't always load a subview all at once. I'll now discuss prefetching, an internal mechanism with which lazy stacks improve the scrolling performance of your apps.\n\nWhen you scroll in a specific direction, and the visible part of the lazy stack reaches the end of the placed content, the lazy stack already prefetches views before adding them on screen. Prefetching means that lazy stacks will perform part of the work of displaying a view before it's visible.\n\nWhile scrolling, a ScrollView needs to draw frames at constant rates. That means there is only a limited time available to perform computations, up to a frame deadline. This work includes the ScrollView updating the content offset, your views rendering at a new position, and work your app may do in response to the content offset change. And when the ScrollView contains a lazy stack, it includes the work for evaluating views scrolled on screen, performing the layout, and rendering them. But, the work for placing new views on screen can be expensive.\n\nIf the work would take too long, passing the deadline, that would result in a dropped frame. That is visible as a hitch while scrolling so that should be avoided.\n\nPrefetching is used to prevent such dropped frames. While scrolling, the lazy stack already checks if there is enough time available to perform part of the work of rendering a new subview, before it is scrolled on screen.\n\nFor example, a lazy stack may be able to evaluate the body and layout of a view about to appear on screen, before it appears.\n\nWhen the view finally does appear, most of the work has already been performed, broken up across multiple frames.\n\nThe work to show a nested LazyHStack in a LazyVStack can be broken up across multiple frames as well. When the view appears, onAppear is called. So generally your view's body is called at one point, and onAppear only a little later, when the view is placed on the screen. If the scroll direction is reversed, it's even possible that the view's body is called as part of prefetching, and onAppear is never called.\n\nUsing onAppear in a lazy stack is useful for a number of things, even for data loading. One such use case is infinite scrolling. Here, the origami app fetches more photos from the web, when you scroll to the end. The last view, a ProgressView, has an .onAppear modifier. When that view appears, a new page is fetched.\n\nBut, loading everything in onAppear for each view is not a good idea.\n\nIn this example, onAppear is used to set-up every view. The size and large parts of the view's contents completely change after it's placed.\n\nThe work that prefetching has done earlier will be thrown away, and has to be re-done when the view appears. The lazy stack may also load more views than needed, and scrolling can be affected, as I'll show later.\n\nInstead, set-up the view in the initializer such that it is in a reasonable state before it appears on screen.\n\nEven when it's not essential, it can be useful to load content before views appear.\n\nHere, I'm using the task modifier to remotely load a diagram from the internet when the view appears. But I can actually make use of prefetching to load it slightly earlier, so the chance is higher it's loaded by the time it appears.\n\nFor example, I could use a DiagramLoader observable object, connected to a cache. When the cache doesn't contain the data for a specific ID, it could load the data immediately when it's initialized. Since it starts loading the diagram in the initializer, the diagram will be fetched slightly earlier. Views that are scrolled out of screen aren't rendered or updated anymore. But they aren't removed from memory immediately. Lazy stacks keep these around for a number of updates, in case they are scrolled back on screen. When views finally are deleted from memory, state variables are deleted alongside.\n\nSince the data associated with views scrolled out of screen will be deleted, don't depend on view state for data that needs to be kept alive after scrolling. Here, StepView uses an isHighlighted state variable. But if the view is scrolled away, that highlight state will be lost.\n\nInstead, move important state to model objects, or outer views using a binding, as here.\n\nYou typically use lazy stacks inside a scroll view. I'd now like to give you some tips to make scrolling work well in lazy stacks. Earlier, I added a button to my origami app, to scroll to the showcase with user photos.\n\nThe code to programmatically scroll to the section would look like this. I'm using a ScrollPosition binding to scroll to the showcase's section header.\n\nProgrammatic scrolling works in lazy stacks, even if the target view isn't on screen.\n\nScrolling to an off-screen view requires the lazy stack to estimate its position. In an animated scroll, the lazy stack updates this estimated position on every frame. Still, there are some things that can prevent scrolling from being smooth and fast. For example, also here, having a dynamic number of views in StepView has a performance impact. Programmatic scrolling to a view with an ID is most performant if each view in your ForEach always resolves to one single subview. In that case, the lazy stack can query the ForEach to find the ID to scroll to, without constructing any of the views. Scrolling to a subview near the end is also more performant, if the lazy stack can quickly count its subviews.\n\nAs before, instead of filtering out views with a conditional in the view body, you should filter on the data level, for example, with a predicate on a Query.\n\nProgrammatic scrolling also becomes less smooth, if too many views change their layout after they appear on screen. A common pattern that does this, is using onGeometryChange, to set a state value that is then used in another layout pass.\n\nHere, StepView has a state variable subtitleHeight, updated in an onGeometryChange on the subtitle.\n\nThe view is then evaluated again, and subtitleHeight is used to compute the frame of the diagram. This makes scrolling less reliable. The lazy stack measures the view's original height, but the height changes after the view appears, pushing down other content.\n\nIn cases like this, if you cannot use SwiftUI's layout primitives, use a custom layout instead. Here, that custom layout is StepLayout. To learn more about using custom layouts check out \"Compose custom layouts with SwiftUI\".\n\nAlright, I've shown you many aspects of lazy stacks. I've talked about their layout, how views structs don't always resolve to a single subview and how that affects lazy stacks, how lazy stacks prefetch views for better scrolling performance, and how they allow programmatic scrolling to views off-screen. Along the way, I've given some tips and best practices that you can use for lazy stacks in your apps. For example, avoid using the absolute content size or content offset with lazy stacks, since these are estimated and unstable.\n\nAvoid using conditional view content in leaf views to filter out data, as that can cause SwiftUI views to stay alive longer than expected.\n\nSet up your lazy stack's subviews before onAppear is called where possible to ensure prefetching works best. And don't change the layout of subviews of lazy stacks after they appear, as that can push the lazy stack out of the targeted scroll position.\n\nUnderstanding some of the mechanisms with which SwiftUI components work helps you excel at using them. And I think, after preparing this video, I now excel at creating swans.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "1:23",
+      "title": "Origami app",
+      "language": "swift",
+      "code": "// Origami app\n\nstruct ContentView: View {\n    var body: some View {\n        ScrollView {\n            LazyVStack {\n                ForEach(steps) { step in\n                    StepView(step: step)\n                }\n            }\n        }\n    }\n}\n\nstruct StepView: View { /* ... */ }"
+    },
+    {
+      "timestamp": "5:11",
+      "title": "Horizontally scrolling showcase",
+      "language": "swift",
+      "code": "// Horizontally scrolling showcase\n\nstruct ContentView: View {\n    var body: some View {\n        ScrollView {\n            LazyVStack {\n                ForEach(steps) { step in\n                    StepView(step: step)\n                }\n                Showcase()\n            }\n        }\n    }\n}\n\nstruct StepView: View { /* ... */ }\n\nstruct Showcase: View {\n    var body: some View {\n        ScrollView(.horizontal) {\n            LazyHStack {\n                ForEach(photos) { photo in\n                    PhotoView(photo: photo)\n                }\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "6:30",
+      "title": "Showcase section",
+      "language": "swift",
+      "code": "// Showcase section\n\nstruct ContentView: View {\n    var body: some View {\n        ScrollView {\n            LazyVStack(pinnedViews: [.sectionHeaders]) {\n                ForEach(steps) { step in\n                    StepView(step: step)\n                }\n                Showcase()\n            }\n        }\n    }\n}\n\nstruct StepView: View { /* ... */ }\n  \nstruct Showcase: View {\n    var body: some View {\n        Section {\n            ForEach(photos) { photo in\n                PhotoView(photo: photo)\n            }\n        } header: { /* ... */ }\n    }\n}"
+    },
+    {
+      "timestamp": "7:04",
+      "title": "Scroll effect",
+      "language": "swift",
+      "code": "// Scroll effect\n\nstruct ContentView: View { /* ... */ }\n\nstruct StepView: View { /* ... */ }\n\nstruct Showcase: View {\n    var body: some View {\n        Section {\n            ForEach(photos) { photo in\n                PhotoView(photo: photo)\n                    .scrollTransition { effect, phase in\n                        effect\n                            .rotationEffect(.degrees(phase.value * 20))\n                            .scaleEffect(1 + phase.value * 0.2)\n                    }\n            }\n        } header: { /* ... */ }\n    }\n}"
+    },
+    {
+      "timestamp": "7:36",
+      "title": "Scroll effect",
+      "language": "swift",
+      "code": "// Scroll effect\n\nstruct ContentView: View { /* ... */ }\n\nstruct StepView: View { /* ... */ }\n\nstruct Showcase: View {\n    var body: some View {\n        Section {\n            ForEach(photos) { photo in\n                PhotoView(photo: photo)\n                    .scrollTransition { effect, phase in\n                        effect\n                            .scaleEffect(1 - abs(phase.value) * 0.1)\n                    }\n            }\n        } header: { /* ... */ }\n    }\n}"
+    },
+    {
+      "timestamp": "8:20",
+      "title": "Scroll to Showcase button",
+      "language": "swift",
+      "code": "// Absolute offset\n\nstruct ContentView: View {\n    @State var isScrollToShowcaseVisible = false\n\n    var body: some View {\n        ScrollView { /* ... */ }\n            .overlay(alignment: .bottom) { /* ... */ }\n            .onScrollGeometryChange(for: Bool.self) { geo in\n                geo.contentOffset.y <= 100\n            } action: { _, newValue in\n                self.isScrollToShowcaseVisible = newValue\n            }\n    }\n}"
+    },
+    {
+      "timestamp": "8:51",
+      "title": "Scroll to Showcase button",
+      "language": "swift",
+      "code": "// Absolute offset\n\nstruct ContentView: View {\n    @State var isScrollToShowcaseVisible = false\n\n    var body: some View {\n        ScrollView { /* ... */ }\n            .overlay(alignment: .bottom) { /* ... */ }\n            .onScrollTargetVisibilityChange(\n                idType: Step.ID.self,\n                threshold: 0.8\n            ) { visibleIDs in\n                isScrollToShowcaseVisible = shouldShowScrollButton(visibleIDs: visibleIDs)\n            }\n    }\n}"
+    },
+    {
+      "timestamp": "9:29",
+      "title": "One resolved subview",
+      "language": "swift",
+      "code": "// Origami\n\nstruct ContentView: View {\n    var body: some View {\n        ScrollView {\n            LazyVStack {\n                ForEach(steps) { step in\n                    StepView(step: step)\n                }\n            }\n        }\n    }\n}\n\nstruct StepView: View { /* ... */ }"
+    },
+    {
+      "timestamp": "10:03",
+      "title": "Multiple resolved subviews",
+      "language": "swift",
+      "code": "// Multiple subviews\n\nstruct ContentView: View { /* ... */ }\n\nstruct StepView: View {\n    let step: Step\n\n    var body: some View {\n        StepDiagram(/* ... */)\n        StepInstructions(/* ... */)\n    }\n}"
+    },
+    {
+      "timestamp": "10:52",
+      "title": "Dynamic number of subviews",
+      "language": "swift",
+      "code": "// Dynamic number of views\n\nstruct ContentView: View { /* ... */ }\n\nstruct StepView: View {\n    let step: Step\n\n    @Environment(\\.detailLevel) var detailLevel\n\n    var body: some View {\n        if step.isVisible(in: detailLevel) {\n            VStack { /* ... */ }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "11:46",
+      "title": "Filtering on the view level",
+      "language": "swift",
+      "code": "// Dynamic number of views\n\nstruct ContentView: View { /* ... */ }\n\nstruct StepView: View {\n    let step: Step\n\n    @Environment(\\.detailLevel) var detailLevel\n    @Environment(\\.writingStyle) var writingStyle\n\n    var body: some View {\n        if step.isVisible(in: detailLevel) { /* ... */ }\n    }\n}"
+    },
+    {
+      "timestamp": "12:15",
+      "title": "Filtering on the data level",
+      "language": "swift",
+      "code": "// Filter at the data level\n\nstruct ContentView: View {\n    @Query var steps: [Step]\n\n    init(detailLevel: DetailLevel) {\n        _steps = Query(filter: #Predicate<Step> { step in\n            step.detailLevel >= detailLevel\n        })\n    }\n\n    var body: some View { /* ... */ }\n}\n\nstruct StepView: View { /* ... */ }"
+    },
+    {
+      "timestamp": "12:35",
+      "title": "Optional unwrapping",
+      "language": "swift",
+      "code": "// Optional unwrapping\n\nstruct ContentView: View { /* ... */ }\n\nstruct StepView: View {\n    let step: Step\n\n    @Environment(\\.apiToken) var token\n\n    var body: some View {\n        if let token { /* ... */ }\n    }\n}"
+    },
+    {
+      "timestamp": "12:48",
+      "title": "Optional unwrapping",
+      "language": "swift",
+      "code": "// Optional unwrapping\n\nstruct ContentView: View { /* ... */ }\n\nstruct StepView: View {\n    let step: Step\n\n    @Environment(NetworkClient.self) var networkClient\n\n    var body: some View { /* ... */ }\n}"
+    },
+    {
+      "timestamp": "15:28",
+      "title": "Loading more content",
+      "language": "swift",
+      "code": "// Loading more content\n\nstruct Showcase: View {\n    @State var pager = ShowcasePager()\n\n    var body: some View {\n        ForEach(pager.pages) { page in\n            PageView(page: page)\n        }\n        if !pager.atEnd {\n            ProgressView()\n                .progressViewStyle(.circular)\n                .onAppear {\n                    pager.fetchPage()\n                }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "15:53",
+      "title": "Setting up lazy stack subview in onAppear",
+      "language": "swift",
+      "code": "// onAppear\n\nstruct StepView: View {\n    let id: Step.ID\n    @State var viewModel = StepViewModel()\n\n    var body: some View {\n        VStack {\n            if let content = viewModel.content { /* ... */ }\n        }\n        .onAppear {\n            viewModel.configure(with: id)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "16:14",
+      "title": "Lazy stack subview ready before onAppear",
+      "language": "swift",
+      "code": "// onAppear\n\nstruct StepView: View {\n    @State var viewModel: StepViewModel\n\n    init(id: Step.ID) {\n        _viewModel = State(initialValue: StepViewModel(id: id))\n    }\n\n    var body: some View { /* ... */ }\n}"
+    },
+    {
+      "timestamp": "16:23",
+      "title": "Loading diagram with task modifier",
+      "language": "swift",
+      "code": "// Diagram loading\n\nstruct StepView: View {\n    let step: Step\n    @State var diagramLoader = DiagramLoader()\n\n    @State var diagram: Diagram?\n\n    var body: some View {\n        VStack { /* ... */ }\n            .task {\n                diagram = await diagramLoader.loadDiagram(id: step.id)\n            }\n    }\n}"
+    },
+    {
+      "timestamp": "16:40",
+      "title": "Loading diagram in initializer",
+      "language": "swift",
+      "code": "// Diagram loading\n\nstruct StepView: View {\n    let step: Step\n    @State var diagramLoader: DiagramLoader\n\n    init(step: Step) {\n        self.step = step\n        _diagramLoader = State(initialValue: DiagramLoader(id: step.id))\n    }\n\n    var body: some View { /* ... */ }\n}\n\n@Observable\nclass DiagramLoader { /* ... */ }"
+    },
+    {
+      "timestamp": "17:16",
+      "title": "Highlight @State variable",
+      "language": "swift",
+      "code": "// Highlighting\n\nstruct ContentView: View { /* ... */ }\n\nstruct StepView: View {\n    let step: Step\n    @State var isHighlighted = false\n\n    var body: some View { /* ... */ }\n}"
+    },
+    {
+      "timestamp": "17:33",
+      "title": "Highlight @Binding",
+      "language": "swift",
+      "code": "// Highlighting\n\nstruct ContentView: View {\n    @State var highlighted: Set<Step.ID> = []\n\n    var body: some View { /* ... */ }\n}\n\nstruct StepView: View {\n    let step: Step\n    @Binding var highlighted: Set<Step.ID>\n\n    var body: some View { /* ... */ }\n}"
+    },
+    {
+      "timestamp": "17:58",
+      "title": "Programmatically scroll to showcase",
+      "language": "swift",
+      "code": "// Programmatically scroll to showcase\n\nstruct ContentView: View {\n    @State var scrollPosition = ScrollPosition()\n\n    var body: some View {\n        ScrollView { /* ... */ }\n            .scrollPosition($scrollPosition)\n            .overlay(alignment: .bottom) {\n                Button {\n                    scrollToShowcase()\n                } label: { /* ... */ }\n            }\n    }\n\n    func scrollToShowcase() {\n        withAnimation {\n            scrollPosition.scrollTo(id: \"showcase-header\")\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "18:24",
+      "title": "Dynamic number of views",
+      "language": "swift",
+      "code": "// Dynamic number of views\n\nstruct ContentView: View { /* ... */ }\n\nstruct StepView: View {\n    let step: Step\n\n    @Environment(\\.detailLevel) var detailLevel\n\n    var body: some View {\n        if step.isVisible(in: detailLevel) { /* ... */ }\n    }\n}"
+    },
+    {
+      "timestamp": "19:16",
+      "title": "Using onGeometryChange in lazy stack subview",
+      "language": "swift",
+      "code": "// Don't change layout after views appear\n\nstruct ContentView: View { /* ... */ }\n\nstruct StepView: View {\n    let step: Step\n    @State var subtitleHeight: CGFloat?\n\n    var body: some View {\n        VStack {\n            StepDiagram(diagram: step.diagram)\n                .frame(height: diagramHeight(subtitleHeight: subtitleHeight))\n            Title(step.title)\n            Subtitle(step.subtitle)\n                .onGeometryChange(for: CGFloat.self, of: \\.size.height) { _, value in\n                    subtitleHeight = value\n                }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "19:17",
+      "title": "Using custom layout in lazy stack subview",
+      "language": "swift",
+      "code": "// Don't change layout after views appear\n\nstruct ContentView: View { /* ... */ }\n\nstruct StepView: View {\n    let step: Step\n\n    var body: some View {\n        StepLayout {\n            StepDiagram(diagram: step.diagram)\n            Title(step.title)\n            Subtitle(step.subtitle)\n        }\n    }\n}\n\nstruct StepLayout: Layout { /* ... */ }"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Grouping data with lazy stack views",
+        "url": "https://developer.apple.com/documentation/SwiftUI/Grouping-Data-with-Lazy-Stack-Views"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2026/321/5/78830752-d07d-4d89-aeab-94405c084de9/downloads/wwdc2026-321_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2026/321/5/78830752-d07d-4d89-aeab-94405c084de9/downloads/wwdc2026-321_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "271",
+      "year": "2026",
+      "title": "Code-along: Build powerful drag and drop in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2026/271"
+    },
+    {
+      "id": "10056",
+      "year": "2022",
+      "title": "Compose custom layouts with SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10056"
+    },
+    {
+      "id": "10031",
+      "year": "2020",
+      "title": "Stacks, Grids, and Outlines in SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10031"
+    }
+  ],
+  "extractedAt": "2026-06-12T10:24:21.462Z"
+}

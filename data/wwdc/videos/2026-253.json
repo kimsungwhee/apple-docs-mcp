@@ -1,0 +1,142 @@
+{
+  "id": "253",
+  "year": "2026",
+  "url": "https://developer.apple.com/videos/play/wwdc2026/253/",
+  "title": "Meet the Music Understanding framework",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Audio & Video"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi. I'm Conner from the Computational Music Team. And I'm excited to introduce you to a framework called Music Understanding. It gives you access to on-device musical intelligence across all Apple platforms. It handles all the signal processing and model inference for you so you don't need any expertise in signal processing or machine learning to use it. And because it runs entirely on-device, the audio you analyze stays private and works offline.\n\nAt Apple, The Final Cut Pro team used the Music Understanding framework to power two features of their app.\n\nIn the beat detection feature, Final Cut Pro analyzes a song for its rhythm and structure to reveal its beat grid.\n\nThis helps editors visualize and align their edits to song parts, bars, and beats.\n\nAnd in Final Cut Pro for iPad the montage feature analyzes for rhythm, pace, and structure to automatically synchronize clips to the music.\n\nI'll start by going over what the framework can do. Then, I'll follow that up by explaining how you can use the framework. Finally, I'll go through the API and show how it was used to build a sample app for understanding music.\n\nThe framework provides analysis around six main areas: key, rhythm, structure, pace, instrument activity, and loudness.\n\nRhythm is the pulse of a song, driven by individual beats. These beats build into bars.\n\nThe number of beats in one minute is called beats per minute or bpm.\n\nBars form phrases, which you can think of as musical sentences.\n\nPhrases combine into segments, creating a more complete musical statement...\n\nand those segments ultimately build the sections. You can think of a section as a chorus, verse, intro or bridge.\n\nDuring a song, instruments such as a drum, bass, or vocals may be playing at different times and at different intensities. These instruments play around a common set of notes called the key.\n\nWhile the song may have a consistent pulse or bpm, different parts of the song may feel slower or faster. This is called pace.\n\nOver time the song may sound louder at some points than others.\n\nThese are the building blocks of the Music Understanding framework, and by integrating it in your app, you unlock a whole new level of possibilities. Next, I'll talk about how to use the framework. At a high level, apps interact with a MusicUnderstandingSession, initializing with either an AVAsset or a custom audio provider. To start analysis, clients call analyze and await results.\n\nBy default, the framework analyzes for all analysis types. For the highest performance, you can specify which analysis types you are interested in to avoid unnecessary computations.\n\nTo explore the framework more deeply, I'll review a sample app called Music Understanding Lab, available on developer.apple.com. Let me show you how Music Understanding Lab works. First, I'll select a song on the device.\n\nThe app uses the Music Understanding framework to analyze the audio, turning it into a visual experience with a dedicated tile for each result. When I hit play, notice, the Rhythm and Structure tiles update as the song plays. The playhead ties the experience together, letting you follow along with the music.\n\nI'll start by talking about how the Select Song... button is implemented.\n\nUsing the SwiftUI fileImporter, I'll select a file to get its URL.\n\nThen I'll use that URL to create an AVURLAsset. Be sure to set PreferPreciseDurationAndTimingKey to true to ensure the most accurate results. Next, I'll create the session from the asset and call analyze and await the return of the session results. Inside the SessionResult struct, every feature Music Understanding analyzes gets its own results field. These are all optionals. When you use the general analyze() API, all results will be available. However, if you use the targeted analyze(for:) API, the framework will only return the results you asked for, and the rest will be nil.\n\nThroughout the Music Understanding framework, there are two standard types used to associate time with a value. A TimedValue associates a value with a CMTime. Similar to TimedValue, a RangedValue associates a CMTimeRange with a value. With these time-based types in mind, I'll discuss the features Music Understanding analyzes by showing how they are used in the Music Understanding Lab UI. First I'm going to start with the Key tile. In this song the musical key is D flat major.\n\nFor key analysis, the Music Understanding framework returns a KeyResult struct.\n\nThe result contains an array of ranges, mapping a KeySignature to a specific time range using a RangedValue. A KeySignature contains a tonic and a mode.\n\nA tonic can be any of the standard chromatic pitches. It represents the root note, like C or G, around which the song is built... and the mode, which is either major or minor.\n\nNext to Key is the Rhythm tile. The tile displays bpm on the left and indicators on the right that light up as each beat plays.\n\nWhen you analyze for rhythm, you get back a RhythmResult.\n\nIn this struct, Music Understanding gives you the timestamps for every beat and bar as arrays of CMTime. The framework also provides the overall global tempo with beatsPerMinute. Notice bpm is optional.\n\nThat's because if the framework hasn't processed enough audio to find at least two beats, the bpm will be set to nil. Now, I'm going to talk about the Structure tile.\n\nIn the tile there are 3 rows of rectangles that indicate a song's structural hierarchy.\n\nEach rectangle is a time range in the song. Music Understanding supports three levels of structure: sections, segments and phrases. The top row represents sections of a song. Each block shows the time range of a section.\n\nEach section is made up of one or more segments, which appear below the section rectangles, and each segment is made up of phrases. During playback the current section, segment and phrase appear highlighted.\n\nWhen you request structure analysis, the framework returns a StructureResult. It has three properties for sections, segments and phrases. For each of these, you get an array of CMTimeRanges.\n\nThe next tile is Pace. It tells you how fast the music feels to the listener. Parts of a song that feel faster or more energetic will have a higher value compared to slower or less energetic parts. In this UI, taller bars represent higher energy, while shorter bars represent lower energy.\n\nWhen you request pace analysis, you get back a PaceResult.\n\nThis struct has a single property containing an array of ranged values.\n\nNext, I'll talk about the instrument activity tiles.\n\nMusic Understanding Lab displays several tiles that visualize instrument activity. Either as time ranges, where color-coded bars indicate the active instruments present or as a detailed activity graph. The graph plots values between 0 and 1 representing the strength of each instrument.\n\nThe closer the value is to 1, the louder the instrument is in the mix.\n\nWhen you request instrument activity, the framework returns an InstrumentActivityResult. It has two properties, one for ranges and one for activity.\n\nThe Ranges API provides a dictionary, mapping each Instrument to an array of CMTimeRanges. This is great for situations where you just want to know if an instrument is present or not. But sometimes you need more detail and activity provides that.\n\nActivity maps an instrument to a TimedValue of Floats. The activity results express how intensely an instrument is playing over time, and is a great source to drive audio-reactive animations.\n\nThe Loudness tile appears below instrument activity.\n\nThe framework provides measurements in Loudness Units Full Scale, or LUFS, which is the industry standard for modeling how the human ear perceives volume.\n\nAt the top of the tile is a single Integrated Loudness value, which gives the average loudness for the whole song.\n\nBelow that is a graph of momentary loudness, showing how loudness varies over time.\n\nThe framework also provides a peak value, which describes the absolute highest audio volume in decibels.\n\nWhen you request loudness analysis, the framework returns a LoudnessResult struct.\n\nMusic Understanding supports integrated, momentary and shortTerm loudness. Integrated provides a single value that represents the overall loudness of the audio. Momentary and shortTerm provide time-stamped values every 100 milliseconds. Momentary values are calculated over a window of 400 milliseconds. They are useful to detect short, sudden spikes in loudness. ShortTerm values are calculated over a window of 3 seconds, which provides a smoother view of the loudness trend over time. The peak value tells you exactly where the track hits its maximum level and is measured in decibels. MusicUnderstandingSession also provides a streaming API for loudness. Values are delivered via an AsyncSequence for every 100ms of audio analyzed by the framework.\n\nHere's an example of how it can be used. I'll initialize the session as I did previously but this time I'll set up two tasks: one to consume the loudness results as they are delivered, and another to begin the analysis.\n\nNow I'll talk about the AudioProvider in this example.\n\nAn AudioProvider conforms to AsyncSequence and yields AVReadOnlyAudioPCMBuffer objects. When the AudioProvider has sent all audio buffers, it must send a final nil to signal completion.\n\nI'd like to focus now on the two icons at the top of Music Understanding Lab.\n\nAt the far right there is a Share button.\n\nWhen you tap it, a JSON file is exported with all analysis data.\n\nAll MusicUnderstanding results are codable. To encode to JSON, just create a JSONEncoder and encode the session results. A button with a filmstrip icon appears next to the export button.\n\nWhen tapped, it opens the Video tile. The Video tile uses structure and pace to create a video synced to the music. I'll talk about how it works. The Video tile displays a series of video clips that match the feeling of the music.\n\nThe algorithm starts by identifying the song section time ranges.\n\nThen it uses the pace of each section to determine how many clips to display in that time range.\n\nSince pace is an event per minute rate, it can be divided by 60 seconds to determine the time per clip. This produces clips that always begin at the start of each section, and the clips within a section match the energy of the song.\n\nI then used this timing information to construct a video synced to the music. The video clips are retimed to match the target clip duration with longer, slower clips during the less energetic parts, and shorter, faster clips during the more energetic parts.\n\nThis overview gives you a sense of how these APIs work together in practice.\n\nWith these basics covered, you are ready to dive in! With Music Understanding, you can sync visuals to the beat, loudness, or pace of a song to build powerful video editing features, organize music catalogs by tempo or key to drive a dj app or pre-compute and bundle analysis data to animate your game to music. Check out the Music Understanding Framework documentation on developer.apple.com, and download \"Music Understanding Lab\" to help kickstart development of your own applications.\n\nThis technology was built to solve real challenges here at Apple. The ideas were there but the tools to build them were not. These tools are now in your hands. Make something awesome. Thanks for watching!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "4:47",
+      "title": "Initialize the session",
+      "language": "swift",
+      "code": "import MusicUnderstanding\n\n.fileImporter(isPresented: $isPresented, allowedContentTypes: [.audio]) { result in\n    switch result {\n    case .success(let url):\n        let asset = AVURLAsset(url: url, \n                               options: [AVURLAssetPreferPreciseDurationAndTimingKey : true])\n        let session = try await MusicUnderstandingSession(asset: asset)\n        let results = try await session.analyze()\n    }\n}"
+    },
+    {
+      "timestamp": "5:24",
+      "title": "Inside SessionResult",
+      "language": "swift",
+      "code": "import MusicUnderstanding\n\npublic struct SessionResult: Codable, Sendable {\n    public let instrumentActivity: InstrumentActivityResult?\n    public let key: KeyResult?\n    public let loudness: LoudnessResult?\n    public let pace: PaceResult?\n    public let rhythm: RhythmResult?\n    public let structure: StructureResult?\n}"
+    },
+    {
+      "timestamp": "5:53",
+      "title": "TimedValue",
+      "language": "swift",
+      "code": "import MusicUnderstanding\n\npublic struct TimedValue<Value>: Codable, Equatable, Sendable\nwhere Value: Codable & Equatable & Sendable {\n    public let time: CMTime\n    public let value: Value\n}"
+    },
+    {
+      "timestamp": "5:58",
+      "title": "RangedValue",
+      "language": "swift",
+      "code": "import MusicUnderstanding\n\npublic struct RangedValue<Value>: Codable, Equatable, Sendable\nwhere Value: Codable & Equatable & Sendable {\n    public let range: CMTimeRange\n    public let value: Value\n}"
+    },
+    {
+      "timestamp": "6:27",
+      "title": "Key analysis",
+      "language": "swift",
+      "code": "public struct KeyResult: Codable, Sendable {\n    public let ranges: [MusicUnderstandingSession.RangedValue<KeySignature]\n}"
+    },
+    {
+      "timestamp": "6:43",
+      "title": "KeySignature",
+      "language": "swift",
+      "code": "public struct KeySignature: Codable, Hashable, Sendable {\n    public let tonic: Tonic\n    public let mode: Mode\n}"
+    },
+    {
+      "timestamp": "6:48",
+      "title": "Using tonic",
+      "language": "swift",
+      "code": "@frozen public enum Tonic: String, Codable, Hashable, Sendable {\n    case aFlat, aSharp, a, bFlat, b, c, cSharp, d, dFlat, dSharp, eFlat, e, f, fSharp, g, gFlat, gSharp\n}"
+    },
+    {
+      "timestamp": "6:59",
+      "title": "Using mode",
+      "language": "swift",
+      "code": "public enum Mode: String, Codable, Hashable, Sendable {\n    case major, minor\n}"
+    },
+    {
+      "timestamp": "7:16",
+      "title": "Rhythm analysis",
+      "language": "swift",
+      "code": "import MusicUnderstanding\n\npublic struct RhythmResult: Codable, Sendable {\n    public let beats: [CMTime]\n    public let bars: [CMTime]\n    public let beatsPerMinute: Float?\n}"
+    },
+    {
+      "timestamp": "8:42",
+      "title": "StructureResult",
+      "language": "swift",
+      "code": "import MusicUnderstanding\n\npublic struct StructureResult: Codable, Sendable {\n    public let sections: [CMTimeRange]\n    public let segments: [CMTimeRange]\n    public let phrases: [CMTimeRange]\n}"
+    },
+    {
+      "timestamp": "9:26",
+      "title": "Analyzing pace",
+      "language": "swift",
+      "code": "import MusicUnderstanding\n\npublic struct PaceResult: Codable, Sendable {\n    public let ranges: [MusicUnderstandingSession.RangedValue<Double>]\n}"
+    },
+    {
+      "timestamp": "10:13",
+      "title": "InstrumentActivityResult",
+      "language": "swift",
+      "code": "import MusicUnderstanding\n\npublic struct InstrumentActivityResult: Codable, Sendable {\n    public let ranges: [Instrument: [CMTimeRange]]\n    public let activity: [Instrument: [MusicUnderstandingSession.TimedValue<Float>]]\n}"
+    },
+    {
+      "timestamp": "11:45",
+      "title": "LoudnessResult",
+      "language": "swift",
+      "code": "import MusicUnderstanding\n\npublic struct LoudnessResult: Codable, Sendable {\n    public let integrated: MusicUnderstandingSession.TimedValue<Float>\n    public let momentary: [MusicUnderstandingSession.TimedValue<Float>]\n    public let shortTerm: [MusicUnderstandingSession.TimedValue<Float>]\n    public let peak: MusicUnderstandingSession.TimedValue<Float>\n}"
+    },
+    {
+      "timestamp": "12:48",
+      "title": "Streaming API for loudness",
+      "language": "swift",
+      "code": "import MusicUnderstanding\n\npublic var loudnessResults: some AsyncSequence<LoudnessResult, any Error> & Sendable"
+    },
+    {
+      "timestamp": "12:55",
+      "title": "Streaming API for loudness",
+      "language": "swift",
+      "code": "import MusicUnderstanding\n\nlet audioProvider = AudioProvider()\nlet session = MusicUnderstandingSession(audioProvider: audioProvider)\nawait withThrowingTaskGroup(of: Void.self) { taskGroup in\n    group.addTask {\n        for try await result in await session.loudnessResults {\n            updateAudioLevel(result.momentary.value)\n        }\n    }\n\n    group.addTask {\n        try await session.analyze(for: [.loudness])\n    }\n}"
+    },
+    {
+      "timestamp": "13:19",
+      "title": "Audio Provider",
+      "language": "swift",
+      "code": "import MusicUnderstanding\n\nstruct AudioProvider: AsyncSequence, AsyncIteratorProtocol {\n   func makeAsyncIterator() -> Self {\n        return self\n    }\n\n   mutating func next() async -> AVReadOnlyAudioPCMBuffer? {\n        // Return the next audio buffer, or nil to signal completion\n    }\n}"
+    },
+    {
+      "timestamp": "13:55",
+      "title": "Encode to JSON",
+      "language": "swift",
+      "code": "import MusicUnderstanding\n\nlet session = try await MusicUnderstandingSession(asset: asset)\nlet results = try await session.analyze()\n\nlet encoder = JSONEncoder()\ntry encoder.encode(results)"
+    },
+    {
+      "timestamp": "14:47",
+      "title": "Suggestion for using pace",
+      "language": "swift",
+      "code": "let timePerClip = 60 / paceValue"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Creating visuals with Music Understanding analysis results",
+        "url": "https://developer.apple.com/documentation/MusicUnderstanding/create-visuals-using-musicunderstanding-analysis-results"
+      },
+      {
+        "title": "Music Understanding",
+        "url": "https://developer.apple.com/documentation/MusicUnderstanding"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2026/253/5/db1c3715-aaaf-42db-8e9e-66d2a0011430/downloads/wwdc2026-253_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2026/253/5/db1c3715-aaaf-42db-8e9e-66d2a0011430/downloads/wwdc2026-253_sd.mp4?dl=1"
+  },
+  "extractedAt": "2026-06-12T10:24:15.588Z"
+}

@@ -1,0 +1,81 @@
+{
+  "id": "203",
+  "year": "2026",
+  "url": "https://developer.apple.com/videos/play/wwdc2026/203/",
+  "title": "Read between the strokes with PencilKit",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services",
+    "SwiftUI & UI Frameworks"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Welcome! I am Yichen, an engineer who works on drawing features. In this session, I'll show you some exciting new APIs in PencilKit that bring handwriting recognition to your apps, along with improved access to the drawing model that open up interesting use cases. Writing on iPad with Apple Pencil feels as natural as pen on paper. But unlike paper, your handwriting becomes searchable, recognizable, and interactive. PencilKit is the core framework for freehand drawing support on Apple's platforms. It gives you a low-latency canvas with expressive inks, full Apple Pencil support, and access to the underlying data model. iOS 26 introduced PaperKit, which builds on top of PencilKit to power Apple's drawing experience system-wide. All of the new PencilKit APIs covered in this session are also available when working with PaperKit. To learn more about it, check out the \"Meet PaperKit\" video from WWDC25 and the \"Unwrap PaperKit\" video from WWDC26. Apple's platforms have world-class handwriting recognition. You've seen it power features like searching handwriting in Freeform and Notes. One of the most requested capabilities for PencilKit is handwriting recognition. Now it's available to you in iOS, iPadOS, macOS, and visionOS 27. I'll start with PencilKit's handwriting recognition APIs, and show you how to turn handwriting into recognized words.\n\nNext, I'll go over new conversion APIs that let you translate between PencilKit stroke paths and standard Bézier paths. Then, I'll cover improvements to the drawing model, including stroke identity and selection access.\n\nAnd finally, I'll show new stroke slicing APIs that let you split or extract segments from strokes. I've been working with PencilKit in iOS 27 to build my son an app for learning to write in both Chinese and English. In my app, he can practice writing words in both languages and get feedback on his work. Here, the app has a flashcard showing a word in English. To practice, I will write the Chinese translation. Right now, it's showing \"Heart\" in English. So I need to write \"心\" in Chinese.\n\nNow, the app can use handwriting recognition to check my current work before I finish the whole word.\n\nThe Check button shakes to tell me the answer wasn't right.\n\nThis time the app recognized my handwriting as the Chinese word \"心\" which matched the prompt, and the app confirmed it's correct. Great!! That's what handwriting recognition APIs can do in PencilKit.\n\nI'll get started with the core of handwriting recognition.\n\nPKStrokeRecognizer is a Swift actor, so it's thread-safe by design. All methods are asynchronous, because recognition takes time.\n\nThere are three main capabilities that together provide a handwriting recognition experience that is broadly useful for your apps. I'll walk through each one. The first capability is Recognized text. It returns the single most likely result for what was written.\n\nBy default, PKStrokeRecognizer uses the device's languages to determine how to interpret the handwriting. You can also configure preferredLanguages explicitly to match your app's language context.\n\nYou can recognize an entire drawing at once, or pass in a specific subset of strokeIDs. I'll swipe over to the open-ended practice view, to show Recognized text in action.\n\nI can write anything I want here, and PencilKit will recognize it.\n\nAwesome! Hello WWDC.\n\nAs of iOS 27, PKStrokeRecognizer supports 29 languages. The list of languages supported can be accessed using the supportedLanguages property on PKStrokeRecognizer. Note that handwriting recognition in Simulator only supports languages that use Latin characters. Handwriting recognition in PencilKit runs entirely on device. The recognition model is offline and included with the operating system. Handwriting recognition is fast, and works on all devices supported by iOS 27. The next API is Indexable content. It provides a single string representing the contents of the entire drawing.\n\nThis is particularly useful for features like Spotlight search.\n\nWhen multiple languages are active, Indexable content may contain results in more than one of those languages. When handwriting is ambiguous, you want all possible interpretations in your index; so users can find their content regardless of what they search for. Is that a \"1\" or a lowercase \"L\"? Is that \"101\" or \"lol\"? Where recognized text gives you one best answer, Indexable content gives you all the candidates concatenated together.\n\nIf you're persisting Indexable content to disk, keep in mind that recognition results can improve over time as the underlying models are updated.\n\nPKStrokeRecognizer exposes a recognizerVersion property. Store this alongside your indexedContent, and when loading it back, compare against the current version to decide whether to re-index.\n\nAdditionally, consider throttling your calls to PKStrokeRecognizer.\n\nUpdating the results on every stroke may use more power than you need to provide your indexing feature. The third API is for searching text.\n\nGiven a target string, it returns an array of search results indicating where that word likely appears in the drawing, considering all the candidates.\n\nThis is what powers interactive search, where a highlight appears around matching strokes.\n\nsearch() also pairs naturally with UIFindInteraction, the system find and replace experience.\n\nBy implementing UIFindInteractionDelegate and driving it with search() under the hood, you get the system search UI, complete with result navigation and highlighting, directly in your drawing canvas. Back in the flashcards, I've made a change to show how the search function powers flashcard matching.\n\nI've added a visualization of the bounds returned in SearchResults.\n\nNow there's a box showing where the search matched.\n\nThese capabilities also make handwritten content more accessible. You can connect VoiceOver to speak handwriting aloud, making handwriting accessible to people who rely on screen readers. And search lets assistive features locate and navigate to specific words within a drawing. Together, they help bridge the gap in accessibility between handwritten and typed text. Next: Path conversion. Path conversion is a powerful set of APIs that help you to bring PencilKit to your app.\n\nPencilKit represents stroke paths as cubic uniform B-splines. For more information on how PencilKit stores paths, check out the \"Inspect, modify, and construct PencilKit drawings\" video from WWDC20.\n\nB-Splines are a great representation for drawing, but are less common than Bézier paths. In iOS 27, PKStrokePath supports conversion between the two.\n\nWhen converting a path, PencilKit handles the geometry. Bézier paths don't carry PencilKit properties like size, opacity, or force. So you need to provide those for each control point.\n\nWhen starting from a PKStrokePath, converting to and back from a Bézier path will result in the same control point locations, allowing for storing PencilKit strokes in a Bézier-based format, and reconstructing without any loss of fidelity. If your app has its own canvas with strokes stored as Bézier paths, you can now convert those to PKStrokePaths, build a PKDrawing, and feed it into PKStrokeRecognizer. This makes handwriting recognition compatible with any canvas, not just PKCanvasView.\n\nBeyond expanding where PencilKit can be used, iOS 27 introduced key additions that enable deeper access to the model. This flexibility supports more custom use cases in your apps.\n\nPKStroke and PKStrokePath both gain conformance to the Identifiable protocol. It is a stable UUID, so you can track a stroke across transforms, edits, and undo operations.\n\nWith a stable identity in place, you can now control the selection state on PKCanvasView.\n\nThere's also a new delegate method, canvasViewSelectionDidChange, that fires whenever the user's selection changes. When certain inks are drawn together quickly, PencilKit composites those strokes together as if the inks were still wet, by using an equal renderGroupID. In iOS 27, it is now controllable. The last set of new APIs gives you the ability to slice through strokes in two different ways: Programmatic erasing and Substroke extraction. If you have worked with PencilKit's data model, you may already be familiar with the stroke mask. PencilKit represents partial erasure using a mask.\n\nWhen the pixel eraser removes part of a stroke, the remaining visible portions are defined by a mask. Starting in iOS 27, you can apply that same operation programmatically. You provide a PKStrokePath as the eraser.\n\nIt cuts through the drawing, slicing a single stroke into multiple independent strokes with their own mask, just as if the user had used the eraser tool on the canvas.\n\nOne thing to keep in mind: slicing can be expensive on complex drawings.\n\nIf your drawing has a large number of strokes, be mindful of performance and consider erasing on a background thread rather than blocking your UI.\n\nWhen erasing visually cuts strokes, Substroke extraction lets you efficiently obtain a section as a new stroke or path.\n\nStarting in iOS 27, both PKStroke and PKStrokePath support subscript access with parametric ranges anywhere along the path. This gives you precise control over exactly where a slice begins and ends.\n\nPencilKit inks have features like pencil texture particles that are positioned relative to the full stroke.\n\nWhen taking substrokes, PencilKit maintains the consistency of those particles. For Chinese characters, the order that you write the strokes is important. To check that the order is correct, I built a feature using substrokes to replay how I wrote the word.\n\nPencilKit implements rendering in Metal with optimizations that make my animation smooth.\n\nTo take full advantage of these powerful APIs: Adopt PKStrokeRecognizer and bring handwriting recognition to your app.\n\nTry PencilKit in new places to convert your existing Bézier paths into PKStrokePaths and take advantage of handwriting recognition, even without PKCanvasView. Dive deep into PencilKit's model to track strokes with stable identity, respond to selection changes, and build a new level of custom experiences. Finally, take advantage of stroke slicing. Cut through drawings with programmatic erasing, and build smooth animations with substrokes.\n\nEach of these APIs are simple to integrate. Together, they unlock features in your apps that were not possible before.\n\nThe sample code for the demo is available in the resources for this video. Handwriting becomes recognized, searchable, and interactive — everywhere in your app. That's PencilKit in iOS 27. Thanks for watching!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:53",
+      "title": "Recognized text",
+      "language": "swift",
+      "code": "import PencilKit\n\nlet recognizer = PKStrokeRecognizer()\nawait recognizer.updateDrawing(drawing)\nmyLabel.text = await recognizer.recognizedText()"
+    },
+    {
+      "timestamp": "5:22",
+      "title": "Indexable content",
+      "language": "swift",
+      "code": "import PencilKit\n\nlet recognizer = PKStrokeRecognizer()\nawait recognizer.updateDrawing(drawing)\nif let indexedContent = await recognizer.indexableContent {\n    index(text: indexedContent)\n}"
+    },
+    {
+      "timestamp": "6:58",
+      "title": "Find text",
+      "language": "swift",
+      "code": "import PencilKit\n\nlet recognizer = PKStrokeRecognizer()\nawait recognizer.updateDrawing(drawing)\nlet results = await recognizer.search(\"apple\")\nfor result in results {\n    highlight(bounds: result.bounds)\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "Controlling stroke rendering for animation and editing",
+        "url": "https://developer.apple.com/documentation/PencilKit/controlling-stroke-rendering-for-animation-and-editing"
+      },
+      {
+        "title": "Recognizing handwriting and converting it to text",
+        "url": "https://developer.apple.com/documentation/PencilKit/recognizing-handwriting-and-converting-to-text"
+      },
+      {
+        "title": "Building a handwriting recognition experience with PencilKit",
+        "url": "https://developer.apple.com/documentation/PencilKit/building-a-handwriting-recognition-experience-with-pencilkit"
+      },
+      {
+        "title": "PencilKit",
+        "url": "https://developer.apple.com/documentation/PencilKit"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2026/203/4/eb979cd5-af5b-4091-87ec-4839e8d131b9/downloads/wwdc2026-203_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2026/203/4/eb979cd5-af5b-4091-87ec-4839e8d131b9/downloads/wwdc2026-203_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "372",
+      "year": "2026",
+      "title": "Unwrap PaperKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2026/372"
+    },
+    {
+      "id": "285",
+      "year": "2025",
+      "title": "Meet PaperKit",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/285"
+    },
+    {
+      "id": "10148",
+      "year": "2020",
+      "title": "Inspect, modify, and construct PencilKit drawings",
+      "url": "https://developer.apple.com/videos/play/wwdc2020/10148"
+    }
+  ],
+  "extractedAt": "2026-06-12T10:24:11.455Z"
+}

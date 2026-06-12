@@ -1,0 +1,203 @@
+{
+  "id": "265",
+  "year": "2026",
+  "url": "https://developer.apple.com/videos/play/wwdc2026/265/",
+  "title": "Build real-time apps and services with gRPC and Swift",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Developer Tools",
+    "Swift"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi, I'm George from the Swift Server team. In this video, I'll show you how you can build real time experiences in your apps and services with gRPC Swift. Dynamic app experiences usually depend on fetching data from a server, but working with services can be challenging. Hand crafting networking code to interact with a service can be time consuming. You start with some documentation, spend time crafting great APIs and end up with something that seems to work. But the documentation isn't always up-to-date, and maybe you made some mistakes along the way and the result can be something that doesn't always work as you expect. Fortunately, there's a better way. Many service APIs are defined separately in a specification which acts as the source of truth for the service. This allows you to generate the code required to interact with it, saving you time and eliminating errors. These benefits scale across all of the APIs that you need to interact with. A great option for HTTP based APIs is OpenAPI. It's widely used and has great support in Swift which my teammate Si talked about in the session named \"Meet Swift OpenAPI Generator\". We'll look at an alternative called gRPC. Then I'll show you how you can use it in your app to make simple requests and build real-time experiences using streaming RPCs. Then, we'll see how to implement a gRPC service and deploy it to the cloud. First though, let's talk about what gRPC is.\n\ngRPC is a framework for making remote procedure calls. It's a CNCF project and widely adopted industry standard. Like with OpenAPI you work with code that's generated from a specification, allowing you to start working with services quickly. But in gRPC your APIs are defined in terms of functions with input and outputs, rather than in terms of HTTP. Let's see how this works in practice. There's a new go karting league starting nearby. They've got a system which tracks everything from the schedule to all of the live race data, but they need a way to make that information available. I've been working on integrating an iOS app with their backend via a gRPC service. I've prepared a few views in the app and populated them with some example data. I can list the upcoming races. And then tap in to each to get more information. But it would be great to use gRPC to get this content from the server instead. A function to return the race schedule might be called list races. It could be called with the number of races to request and it would return the list of races. As a remote procedure call, the request message is sent by the client to the server, which executes the function and sends back the list of races as the response. Let's put this theory into practice and see how to use gRPC Swift in my app.\n\nI'll start by defining the service API. Then I'll add the required dependencies to my Xcode project, configure the gRPC build plugin to generate the code I need to call my service. And then, update my app to make a call to the server. The most common format for specifying gRPC services is called Protocol Buffers, or Protobuf for short. In a .proto file, I'll define the service with one RPC called ListRaces. It has a ListRacesRequest as the input and a ListRacesResponse as the output. The request message has one field called limit which is an integer representing the maximum number of races to include in the response. I've given it a default value of 100. Every field in a message is also assigned a unique field number. The response message contains a repeated Race field. Race is defined as a separate message and contains information such as its name, location, and championship as strings, the number of laps as an integer and the start time as a timestamp. The timestamp type is one of Protobuf's Well Known Types and defined elsewhere so I need to import its definition. Now that I've defined the service I can switch to Xcode to add the gRPC dependencies and configure the code generator. To get started, I need to add some dependencies to my project. I'll navigate to the Project Editor.\n\nThen, I'll select the Package Dependencies tab and then click plus.\n\nFirst, I'll add a dependency on grpc-swift-nio-transport which provides the high performance networking code built on top of the open source SwiftNIO library.\n\nThen I'll add a dependency on grpc-swift-protobuf which provides a build plugin for generating gRPC code from my proto file.\n\nNow that I've setup the dependencies, I can configure the target to use the build plugin. I'll select the app Target. Then, I'll select the Build Phases tab, and expand the section named Run Build Tool Plug-ins. Then I'll click the plus icon, select GRPCProtobufGenerator and click Add. The plugin scans the target directory for proto files and can be configured using a JSON config file. I'll add those to my target now.\n\nThe JSON file configures what code is generated. Since this is an app I only need messages and clients, I don't need the server code. Now I can recompile the app to generate the code. As a security measure, you'll be asked to trust the plug-in the first time you use it.\n\nThat's everything setup, I'm now ready to call my service. I'll open up the RaceScheduleView.\n\nAnd import the modules I need.\n\nThe core module provides common gRPC runtime components, the HTTP module provides the networking code, and SwiftProtobuf lets us interact with our Protobuf messages. Next, I'll add a task modifier to the view in which I'll make the request. Inside the task, I'm going to use the withGRPCClient function to create a client. I'll do this inside a do catch block and just print the errors for now. gRPC Swift lets you configure the implementation used for networking. I'll use a SwiftNIO based one to connect to a server running locally on my Mac.\n\nThe client passed to the closure only knows about the server. It doesn't know anything about the service. This is where the generated code comes in: I'll create a SwiftKart client, and initialize it with the gRPC client, then I'll create the request, call the list races RPC and await the response.\n\nFinally, I'll update the view with the new data by mapping the response from the server to the data model used by the view.\n\nAnd just like that we've fetched the race schedule from our local server. Finite Loops sounds fun, and it's starting soon! Before I go any further I need to make one important change. At the moment, my app creates a new gRPC client every time the view appears. This means each view needs to establish its own connection to the server, adding unnecessary latency. Instead, my app should create a client and share it between views so that connections can be reused.\n\nI can propagate the client via the app's environment. Clients should also be disconnected when the app enters the background to free up resources. In Xcode I'll add some code for a client manager I wrote earlier.\n\nThen I'll open the app entry point and create an instance of the manager.\n\nI'll make it available to child views via the environment modifier. I should also disconnect the client when the scene enters the background phase. To do that, I'll create a scene phase property and then watch it for changes.\n\nMy manager class connects lazily when asked for a client so I don't need to do anything when the scene enters the active state. Now I'll use the manager in the RaceScheduleView. I'll add it to the view, and make it available in the preview.\n\nFinally I'll replace the withGRPCClient call with a call to the manager.\n\nThat's my app setup and talking to my service using code generated from a service API defined in Protobuf. In addition to the Service API, Protobuf provides a message interchange format. SwiftProtobuf has a code generator so that you can work directly with Swift types that represent your messages. For example I can create a race message and populate the fields with the relevant information. When gRPC sends messages between the client and server, it serializes them to a binary representation. It uses the unique field number rather than name to identify each field. As a result, the Protobuf message is roughly half the size of the equivalent JSON message. Reducing message size is great for mobile apps where minimizing data transfer helps improve the performance of your network calls. This is especially important when network conditions are poor. This efficiency is great for other environments too, like service-to-service communication. And interprocess communication like in Apple's open source Containerization framework. It uses gRPC Swift to communicate over virtual sockets between the host operating system and a Linux Virtual Machine. gRPC Swift is also a key component in cloud services like Private Cloud Compute, iCloud Keychain and Photos, and SharePlay file sharing. But our use doesn't just power external facing services, gRPC runs deep into our internal infrastructure, such as in our OS build and release systems. One of gRPC's standout features is its first class support for streaming Many RPCs, like list races, simply send a single request message to the server which replies with a single response message. This is called a unary RPC. But RPCs can stream request and response messages, meaning there are three other types of RPC to explore. A client streaming RPC is when the client sends any number of messages to the server which replies with a single response message. Imagine each go kart streaming its telemetry data to the server. In server streaming RPCs the client sends a single request message to the server which replies with any number of response messages. Think about real-time updates, like a live text commentary feed. The final type is bidirectional streaming where the client and server can send each other any number of messages. I've got a great idea for how I can use this in my app to provide live race updates. The request messages will tell the server what type of events the client has subscribed to, and the response messages will contain the relevant events. The client can send more messages to the server when they change what events they're interested in receiving.\n\nMy app has been making requests to a server running on my Mac which is also written in Swift. Let's take a look. Setting up the server is straightforward. I create a server object initialized with a transport, and the services it should offer. To start the server, I just call serve. The service is just a type that implements a protocol generated by the build plugin. You can see the list races RPC I implemented earlier: it's an async function which takes a request and returns a response. Implementing it is just a matter of querying the database for races, populating the message and then returning it. To incorporate the streaming RPC, I'll update the service definition, then I'll switch to the server and regenerate the code so I can implement the new RPC. And once that's done, I'll update the app to call it. I'll start by adding a FollowRace RPC to the service definition. Because the RPC streams request and response messages, I need to add the stream keyword before the input and output. Then I need to define the messages. The request message includes the name of the race to follow and a list of event types to subscribe to which is represented as an enum. The response type has a oneof field which is just like a Swift enum with associated values. The message can either hold the locations of each kart or the current race standings, which are defined as separate messages. Now that the service definition has been updated, I'll switch to the server in Xcode so I can work on implementing the new RPC. I'll build the project to regenerate the code.\n\nI have a build error now because the protocol has a new requirement that I haven't implemented yet, so I'll fill out a stub.\n\nThis looks a bit different to the list races RPC because of the streaming. The request parameter is an async sequence of request messages and the response parameter is an object for writing response messages to the client. I know that I need to handle two streams of data simultaneously so I'll need a task group.\n\nI need to wait for the first request message so that I know the name of the race to track and which events the caller is interested in. I'll create an async iterator and await the first message. I'll store the events in a set protected by a mutex because two different tasks will need to access it concurrently. Then I'll add a task to the task group which calls the live race tracker with the name of the race to follow.\n\nThis gives me an async sequence of events which I can then filter to only include the ones the client is currently interested in.\n\nI'll iterate the filtered events and create an empty response message.\n\nThen, I'll switch over the event and populate the message. First, I'll map the array of kart locations from the tracker to the data type used by the RPC. Then, I'll do the same for the standings.\n\nNow I'll write the message to the client.\n\nThere are a few things left to do: the first is to continue consuming the request messages as the caller might change what events they're interested in. We'll use the end of the request stream as a signal that the client no longer wants any more events, so we can cancel the tasks running in the task group to stop sending back messages. Finally I'll restart my server so that the client can call the new RPC.\n\nThat's the RPC implemented in the service, now I can update the app. I'll open the Xcode project for the app, and update the proto file to include the new RPC and messages.\n\nI'll build the project to regenerate the gRPC code.\n\nThen I'll navigate to the RaceInfoView. and add a NavigationLink to a LiveStreamView that I created earlier. Then I'll open up the live stream view.\n\nIt displays a map that will draw annotations representing the positions of each kart in the race. There's also a toolbar button which opens a sheet to display a live leaderboard. The showLeaderboard property tracks whether this is displayed or not. The view already has properties to store the various bits of state I'm interested in, I just need to call the RPC and wire up the data received from the server. First, I'll add the imports I used earlier. Then I'll inject the client via the environment.\n\nLike before I'll create a task, and call manager.withClient.\n\nThen I'll create a kart client and call the FollowRace RPC.\n\nIts structure is different to the unary list races RPC. It has two closures, one for writing request messages and another for handling response messages. I need to send a request message every time the value of showLeaderboard changes. I'll use an AsyncStream to track it over time and store its continuation as a property.\n\nWhen showLeaderboard changes, I'll yield the new value to the continuation. I'll create the AsyncStream and its continuation in the task.\n\nI'll need to yield the current value of showLeaderboard to the stream as the initial value. In the first closure of the RPC I can iterate the stream, and send a message to the server for each value. If the leaderboard is being shown I'll add the standings event.\n\nAnd then I'll write the message to the server.\n\nIn the response closure, I'll iterate the messages and update the view state for each event. I'll use a helper method for handling the events.\n\nI'll switch over the event and map each to the data type used by the view.\n\nI'll start with the kart locations. And then I'll do the same for the standings Finally, I'll iterate the response messages and call the helper for each event.\n\nLet's check it out.\n\nIt looks like a race is about to start at Apple Park. They're heading down towards the Rainbow Arches and now it looks like they're turning right towards the Duck Pond. Monty's in the lead, followed closely by Pepper and Bo. That's great, but I still haven't achieved my goal of making the information available to spectators because the service is running locally. Let's deploy it to the cloud so that it's available to everyone using the app. I'm using Google Cloud Platform to host my service, but you could use another platform like AWS or Fly.io. The approach will be similar but the exact steps will be different. Most servers run Linux and that's what I'll deploy to today. I don't need to make any code changes but I do need to package up the server executable into a container image with its runtime dependencies. Then I'll publish the image to my cloud provider's image registry. After that I'll create a deployment. Finally I'll update the app to target the deployed service. I'll start by creating a Containerfile which describes the steps required to build the container image. I'll use swift:latest as the base image. Next, I'll set the working directory, and copy over the package manifest and source files. Then I'll build the server in release mode and copy it into a known location. At this point, I have the server executable in my image, but it also contains the whole Swift toolchain. I don't need all of that to run my server and it makes the image much larger than it needs to be.\n\nI'll use a multi-stage build and copy the binary into a swift:slim runtime image. Finally, I expose a port and set the entry point to be the server. That's the Containerfile written, at this point I would build and publish the image to a container registry but that will take a few minutes, so I'll use one I published earlier. In the terminal I can use the gcloud run deploy command.\n\nI'll provide the name of the deployment, the image name and the region. Then I need to specify that my service uses http2 and allows unauthenticated requests. When the deployment finishes, it prints out the URL for the service which I'll need when I update the client, so I'll copy it now.\n\nI'll switch back to the app and open the ClientManager. I'll update the connect target to the DNS name of the service from the deploy command. Then I'll enable TLS by changing the transport security option from plaintext to TLS.\n\nLet's test it out.\n\nIt looks like we just made the start of the Finite Loops race.\n\nOh what a disastrous start for Pepper, as Monty takes first position, followed closely by Mycroft and Kiko.\n\nThe drivers are turning into the Infinite Loop campus. Pepper's gained back a few positions. It looks like we're in for a great race here.\n\nI've shown you how to use gRPC Swift to build great live experiences in your apps, and how it can simplify app-to-server communication from defining a service, generating code, all the way through to implementing and deploying a service to the cloud. And that's just the start. gRPC Swift has plenty of built in features to help you take your application from prototype to production Whether that's integration with other Swift packages like Swift OTel or Swift service lifecycle. Or advanced connection management features like custom transports and name resolvers, and client side load balancing. You're now ready to use gRPC in your app: why not prototype part of the app to server interactions and see how simple gRPC Swift makes the workflow. Or you could try out one of the tutorials and examples in the project's repository available on GitHub. Because the project is open source, you can also contribute, whether that's asking questions, improving documentation, or proposing and implementing new features. Thank you for watching and see you on track!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:38",
+      "title": "ListRaces RPC definition",
+      "language": "swift",
+      "code": "edition = \"2024\";\n\nimport \"google/protobuf/timestamp.proto\";\n\nservice SwiftKartService {\n  rpc ListRaces(ListRacesRequest) returns (ListRacesResponse);\n}\n\nmessage ListRacesRequest {\n  int32 limit = 1 [default = 100];\n}\n\nmessage ListRacesResponse {\n  repeated Race races = 1;\n}\n\nmessage Race {\n  string name = 1;\n  string location = 2;\n  google.protobuf.Timestamp start_time = 3;\n  int32 laps = 4;\n  string championship = 5;\n}"
+    },
+    {
+      "timestamp": "5:55",
+      "title": "grpc-swift-proto-generator-config.json",
+      "language": "swift",
+      "code": "{\n    \"generate\": {\n        \"clients\": true,\n        \"servers\": false,\n        \"messages\": true\n    }\n}"
+    },
+    {
+      "timestamp": "6:24",
+      "title": "Add gRPC imports",
+      "language": "swift",
+      "code": "import GRPCCore\nimport GRPCNIOTransportHTTP2\nimport SwiftProtobuf"
+    },
+    {
+      "timestamp": "6:38",
+      "title": "Create a gRPC client connected to a local server",
+      "language": "swift",
+      "code": ".task {\n    do {\n        try await withGRPCClient(\n            transport: .http2NIOTS(\n                address: .ipv4(host: \"127.0.0.1\", port: 8080),\n                transportSecurity: .tls\n            )\n        ) { client in\n            <#code#>\n        }\n    } catch {\n        print(\"gRPC error: \\(error)\")\n    }\n}"
+    },
+    {
+      "timestamp": "7:14",
+      "title": "Call the ListRaces RPC and update the view",
+      "language": "swift",
+      "code": ".task {\n    do {\n        try await withGRPCClient(\n            transport: .http2NIOTS(\n                address: .ipv4(host: \"127.0.0.1\", port: 8080),\n                transportSecurity: .tls\n            )\n        ) { client in\n            let kart = SwiftKartService.Client(wrapping: client)\n            let request = ListRacesRequest()\n            let response = try await kart.listRaces(request)\n            self.races = response.races.map { race in\n                RaceInfo(\n                    name: race.name,\n                    location: race.location,\n                    startTime: race.startTime.date,\n                    championship: race.championship,\n                    laps: Int(race.laps),\n                    drivers: race.drivers\n                )\n            }\n        }\n    } catch {\n        print(\"gRPC error: \\(error)\")\n    }\n}"
+    },
+    {
+      "timestamp": "8:30",
+      "title": "ClientManager.swift",
+      "language": "swift",
+      "code": "import GRPCCore\nimport GRPCNIOTransportHTTP2\nimport Synchronization\nimport SwiftUI\n\n@Observable\nfinal class ClientManager: Sendable {\n    fileprivate let state = Mutex(State.disconnected)\n\n    static func makeTransport() throws -> HTTP2ClientTransport.TransportServices {\n        try .http2NIOTS(\n            target: .ipv4(address: \"127.0.0.1\", port: 8080),\n            transportSecurity: .plaintext\n        )\n    }\n\n    func withClient(\n        body: (_ client: GRPCClient<HTTP2ClientTransport.TransportServices>) async throws -> Void\n    ) async throws {\n        let client = try connectIfNecessary()\n        try await body(client)\n    }\n\n    private func connectIfNecessary() throws -> GRPCClient<HTTP2ClientTransport.TransportServices> {\n        try self.state.withLock { state in\n            try state.connectIfNecessary()\n        }\n    }\n\n    func disconnect() {\n        let client = self.state.withLock { state in\n            state.disconnect()\n        }\n\n        client?.beginGracefulShutdown()\n    }\n}\n\nextension ClientManager {\n    enum State {\n        case connected(GRPCClient<HTTP2ClientTransport.TransportServices>, Task<Void, any Error>)\n        case disconnected\n    }\n}\n\nextension ClientManager.State {\n    mutating func connectIfNecessary() throws -> GRPCClient<HTTP2ClientTransport.TransportServices> {\n        switch self {\n        case .connected(let client, _):\n            return client\n\n        case .disconnected:\n            let client = try GRPCClient(transport: ClientManager.makeTransport())\n            let task = Task { try await client.runConnections() }\n            self = .connected(client, task)\n            return client\n        }\n    }\n\n    mutating func disconnect() -> GRPCClient<HTTP2ClientTransport.TransportServices>? {\n        switch self {\n        case .connected(let client, _):\n            self = .disconnected\n            return client\n        case .disconnected:\n            return nil\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "8:39",
+      "title": "Propagate ClientManager to child views",
+      "language": "swift",
+      "code": "import SwiftUI\n\n@main\nstruct SwiftKartApp: App {\n    let manager = ClientManager()\n\n    var body: some Scene {\n        WindowGroup {\n            RaceScheduleView()\n                .environment(manager)\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "8:52",
+      "title": "Disconnect ClientManager when the scene enters the background phase",
+      "language": "swift",
+      "code": "import SwiftUI\n\n@main\nstruct SwiftKartApp: App {\n    let manager = ClientManager()\n    @Environment(\\.scenePhase) private var scenePhase\n\n    var body: some Scene {\n        WindowGroup {\n            RaceScheduleView()\n                .environment(manager)\n        }\n        .onChange(of: scenePhase) { _, newPhase in\n            switch newPhase {\n            case .background :\n                manager.disconnect()\n            case .inactive, .active:\n                break\n            @unknown default:\n                break\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "9:12",
+      "title": "Inject ClientManager into the view via @Environment",
+      "language": "swift",
+      "code": "@Environment(ClientManager.self) var manager"
+    },
+    {
+      "timestamp": "9:21",
+      "title": "Replace withGRPCClient with manager.withClient",
+      "language": "swift",
+      "code": ".task {\n    do {\n        try await manager.withClient { client in\n            let kart = SwiftKartService.Client(wrapping: client)\n            let request = ListRacesRequest()\n            let response = try await kart.listRaces(request)\n            self.races = response.races.map { race in\n                RaceInfo(\n                    name: race.name,\n                    location: race.location,\n                    startTime: race.startTime.date,\n                    championship: race.championship,\n                    laps: Int(race.laps),\n                    drivers: race.drivers\n                )\n            }\n        }\n    } catch {\n        print(\"gRPC error: \\(error)\")\n    }\n}"
+    },
+    {
+      "timestamp": "9:41",
+      "title": "Using SwiftProtobuf",
+      "language": "swift",
+      "code": "var race = Race()\nrace.name = \"Duck Pond Dash\"\nrace.location = \"Apple Park, Cupertino\"\nrace.startTime = .init(roundingTimeIntervalSince1970: 1_781_198_600)\nrace.laps = 6\nrace.championship = \"Corporate Cup\"\nrace.drivers = [\"Monty\", \"Pepper\", \"Mycroft\", \"Pancakes\", \"Duke\", \"Kiko\", \"Sissi\", \"Bo\"]\n\ntry race.serializedBytes()"
+    },
+    {
+      "timestamp": "12:32",
+      "title": "Server",
+      "language": "swift",
+      "code": "let server = GRPCServer(\n    transport: .http2NIOPosix(\n        address: .ipv4(host: \"127.0.0.1\", port: 8080),\n        transportSecurity: .plaintext\n    ),\n    services: [Service()]\n)\ntry await server.serve()"
+    },
+    {
+      "timestamp": "12:45",
+      "title": "Service",
+      "language": "swift",
+      "code": "struct Service: SwiftKartService.SimpleServiceProtocol {\n    private let database = RaceDB()\n\n    func listRaces(\n        request: ListRacesRequest,\n        context: ServerContext\n    ) async throws -> ListRacesResponse {\n        var response = ListRacesResponse()\n        response.races = await database.listRaces(atMost: request.limit)\n        return response\n    }\n}"
+    },
+    {
+      "timestamp": "13:20",
+      "title": "swift_kart_service.proto",
+      "language": "swift",
+      "code": "edition = \"2024\";\n\nimport \"google/protobuf/duration.proto\";\nimport \"google/protobuf/timestamp.proto\";\n\nservice SwiftKartService {\n  rpc ListRaces(ListRacesRequest) returns (ListRacesResponse);\n  rpc FollowRace(stream FollowRaceRequest) returns (stream FollowRaceResponse);\n}\n\nmessage ListRacesRequest {\n  int32 limit = 1 [default = 100];\n}\n\nmessage ListRacesResponse {\n  repeated Race races = 1;\n}\n\nmessage Race {\n  string name = 1;\n  string location = 2;\n  google.protobuf.Timestamp start_time = 3;\n  int32 laps = 4;\n  string championship = 5;\n  repeated string drivers = 6;\n}\n\nmessage FollowRaceRequest {\n  string race_name = 1;\n  repeated RaceEventType event_types = 2;\n}\n\nenum RaceEventType {\n  RACE_EVENT_TYPE_UNSPECIFIED = 0;\n  RACE_EVENT_TYPE_KART_LOCATIONS = 1;\n  RACE_EVENT_TYPE_STANDINGS = 2;\n}\n\nmessage FollowRaceResponse {\n  oneof event {\n    KartLocations locations = 1;\n    Standings standings = 2;\n  }\n}\n\nmessage KartLocations {\n  message Kart {\n    int32 number = 1;\n    double latitude = 2;\n    double longitude = 3;\n    google.protobuf.Timestamp recorded_at = 4;\n  }\n  repeated Kart karts = 1;\n}\n\nmessage Standings {\n  message Entry {\n    int32 kart_number = 1;\n    google.protobuf.Duration gap_to_leader = 2;\n    int32 position = 3;\n    int32 lap = 4;\n  }\n\n  repeated Entry entries = 1;\n}"
+    },
+    {
+      "timestamp": "14:16",
+      "title": "FollowRace stub",
+      "language": "swift",
+      "code": "func followRace(\n    request: RPCAsyncSequence<FollowRaceRequest, any Error>,\n    response: RPCWriter<FollowRaceResponse>,\n    context: ServerContext\n) async throws {\n    throw RPCError(code: .unimplemented, message: \"FollowRace is unimplemented\")\n}"
+    },
+    {
+      "timestamp": "14:38",
+      "title": "Implement the FollowRace RPC",
+      "language": "swift",
+      "code": "func followRace(\n    request: RPCAsyncSequence<FollowRaceRequest, any Error>,\n    response: RPCWriter<FollowRaceResponse>,\n    context: ServerContext\n) async throws {\n    try await withThrowingTaskGroup { group in\n        var iterator = request.makeAsyncIterator()\n        guard let first = try await iterator.next() else { return }\n        let eventTypes = Mutex(Set(first.eventTypes))\n\n        group.addTask {\n            let events = tracker.events(forRace: first.raceName).filter { event in\n                eventTypes.withLock { $0.contains(event.type) }\n            }\n\n            for await event in events {\n                var message = FollowRaceResponse()\n                switch event {\n                case .locations(let locations):\n                    message.locations.karts = locations.map { location in\n                        var kart = KartLocations.Kart()\n                        kart.number = Int32(location.number)\n                        kart.latitude = location.latitude\n                        kart.longitude = location.longitude\n                        return kart\n                    }\n                case .standings(let standings):\n                    message.standings.entries = standings.map { standing in\n                        var entry = Standings.Entry()\n                        entry.gapToLeader = .init(rounding: standing.delta, rule: .towardZero)\n                        entry.kartNumber = Int32(standing.kartNumber)\n                        entry.lap = Int32(standing.lap)\n                        entry.position = Int32(standing.position)\n                        return entry\n                    }\n                }\n\n                try await response.write(message)\n            }\n        }\n\n        while let next = try await iterator.next() {\n            eventTypes.withLock { $0 = Set(next.eventTypes) }\n        }\n\n        group.cancelAll()\n    }\n}"
+    },
+    {
+      "timestamp": "16:40",
+      "title": "swift_kart_service.proto",
+      "language": "swift",
+      "code": "edition = \"2024\";\n\nimport \"google/protobuf/timestamp.proto\";\n\nservice SwiftKartService {\n  rpc ListRaces(ListRacesRequest) returns (ListRacesResponse);\n}\n\nmessage ListRacesRequest {\n  int32 limit = 1 [default = 100];\n}\n\nmessage ListRacesResponse {\n  repeated Race races = 1;\n}\n\nmessage Race {\n  string name = 1;\n  string location = 2;\n  google.protobuf.Timestamp start_time = 3;\n  int32 laps = 4;\n  string championship = 5;\n  repeated string drivers = 6;\n}"
+    },
+    {
+      "timestamp": "16:56",
+      "title": "Navigation link to LiveStreamView",
+      "language": "swift",
+      "code": "NavigationLink(destination: LiveStreamView(race: race)) {\n    Text(\"Live stream\")\n}"
+    },
+    {
+      "timestamp": "17:32",
+      "title": "Call the FollowRace RPC in the LiveStreamView",
+      "language": "swift",
+      "code": "import SwiftUI\nimport GRPCCore\nimport GRPCNIOTransportHTTP2\nimport SwiftProtobuf\n\nstruct LiveStreamView: View {\n    private let race: RaceInfo\n\n    @Environment(ClientManager.self) var manager\n    @State private var tracking: KartTrackingViewModel\n    @State private var standings: [StandingsEntry] = []\n    @State private var showLeaderboard = false\n    @State private var continuation: AsyncStream<Bool>.Continuation?\n\n    init(race: RaceInfo) {\n        self.race = race\n        self.tracking = KartTrackingViewModel(race: race)\n    }\n\n    var body: some View {\n        VStack {\n            KartTrackingMapView(viewModel: tracking)\n                .ignoresSafeArea()\n                .onAppear { tracking.start() }\n                .onDisappear { tracking.stop() }\n        }\n        .onChange(of: showLeaderboard) { _, newValue in\n            continuation?.yield(newValue)\n        }\n        .sheet(isPresented: $showLeaderboard) {\n            LeaderboardView(race: race, standings: standings)\n                .presentationDetents([.fraction(0.3), .medium, .large])\n                .presentationBackgroundInteraction(.enabled)\n        }\n        .toolbar {\n            Toggle(isOn: $showLeaderboard) {\n                Label(\"Leaderboard\", systemImage: \"list.number\")\n            }\n        }\n        .toolbarBackgroundVisibility(.visible, for: .navigationBar)\n        .task {\n            do {\n                let (stream, continuation) = AsyncStream.makeStream(of: Bool.self)\n                self.continuation = continuation\n                continuation.yield(showLeaderboard)\n\n                try await manager.withClient { client in\n                    let kart = SwiftKartService.Client(wrapping: client)\n                    try await kart.followRace { requestStream in\n                        for await showLeaderboard in stream {\n                            var message = FollowRaceRequest()\n                            message.raceName = race.name\n                            message.eventTypes = [.kartLocations]\n                            if showLeaderboard {\n                                message.eventTypes.append(.standings)\n                            }\n                            try await requestStream.write(message)\n                        }\n                    } onResponse: { responseStream in\n                        for try await message in responseStream.messages {\n                            if let event = message.event {\n                                await handleEvent(event)\n                            }\n                        }\n                    }\n\n                }\n            } catch {\n                print(\"gRPC error: \\(error)\")\n            }\n        }\n    }\n\n    @MainActor\n    private func handleEvent(_ event: FollowRaceResponse.OneOf_Event) {\n        switch event {\n        case .locations(let locations):\n            self.tracking.updateKartCoordinates(\n                locations.karts.map {\n                    TrackedKart(number: $0.number, latitude: $0.latitude, longitude: $0.longitude)\n                }\n            )\n        case .standings(let standings):\n            self.standings = standings.entries.map {\n                StandingsEntry(\n                    kartNumber: $0.kartNumber,\n                    secondsToLeader: $0.gapToLeader.timeInterval,\n                    position: $0.position,\n                    lap: $0.lap\n                )\n            }\n        }\n    }\n}\n\n#Preview {\n    NavigationStack {\n        LiveStreamView(race: .example4)\n            .environment(ClientManager())\n    }\n}"
+    },
+    {
+      "timestamp": "20:55",
+      "title": "Containerfile",
+      "language": "swift",
+      "code": "FROM swift:latest AS builder\n\n# Copy sources into /app\nWORKDIR /app\nCOPY Package.swift Package.resolved .\nCOPY Sources/ Sources/\n\n# Build the server\nRUN swift build -c release --product server\nRUN cp \"$(swift build -c release --show-bin-path)/server\" /usr/bin/server\n\n# Copy the binary from the builder into a smaller runtime image.\nFROM swift:slim\nCOPY --from=builder /usr/bin/server /usr/bin/server\n\nEXPOSE 8080\nENTRYPOINT [\"/usr/bin/server\"]"
+    },
+    {
+      "timestamp": "21:56",
+      "title": "Deploy service",
+      "language": "swift",
+      "code": "gcloud run deploy wwdc-demo-server \\\n  --image us-central1-docker.pkg.dev/wwdc26/wwdc-demo-server/wwdc-demo-server:latest \\\n  --region us-central1 \\\n  --use-http2 \\\n  --allow-unauthenticated"
+    },
+    {
+      "timestamp": "22:22",
+      "title": "Target deployed service",
+      "language": "swift",
+      "code": "static func makeTransport() throws -> HTTP2ClientTransport.TransportServices {\n    try .http2NIOTS(\n        target: .dns(host: \"wwdc-demo-server-863666503339.us-central1.run.app\"),\n        transportSecurity: .tls\n    )\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "About gRPC",
+        "url": "https://grpc.io/"
+      },
+      {
+        "title": "gRPC Swift Extras",
+        "url": "https://github.com/grpc/grpc-swift-extras"
+      },
+      {
+        "title": "gRPC Swift Protobuf",
+        "url": "https://github.com/grpc/grpc-swift-protobuf"
+      },
+      {
+        "title": "gRPC Swift NIO Transport",
+        "url": "https://github.com/grpc/grpc-swift-nio-transport"
+      },
+      {
+        "title": "gRPC Swift",
+        "url": "https://github.com/grpc/grpc-swift-2"
+      },
+      {
+        "title": "Swift on Server",
+        "url": "https://www.swift.org/server/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2026/265/4/05249c6d-4136-4164-a8d0-5db0bbb22c7f/downloads/wwdc2026-265_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2026/265/4/05249c6d-4136-4164-a8d0-5db0bbb22c7f/downloads/wwdc2026-265_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "346",
+      "year": "2025",
+      "title": "Meet Containerization",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/346"
+    },
+    {
+      "id": "10216",
+      "year": "2024",
+      "title": "Explore the Swift on Server ecosystem",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10216"
+    },
+    {
+      "id": "10171",
+      "year": "2023",
+      "title": "Meet Swift OpenAPI Generator",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10171"
+    }
+  ],
+  "extractedAt": "2026-06-12T10:24:16.849Z"
+}

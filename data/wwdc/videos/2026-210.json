@@ -1,0 +1,120 @@
+{
+  "id": "210",
+  "year": "2026",
+  "url": "https://developer.apple.com/videos/play/wwdc2026/210/",
+  "title": "What’s new in Apple In-App Purchase",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "App Services",
+    "App Store, Distribution & Marketing",
+    "Machine Learning & AI"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hello, I'm Sam, and I'm an engineer on the StoreKit team.\n\nThe App Store provides a safe and trusted marketplace for people around the world to discover your apps. By leveraging the App Store APIs, you can offer digital goods and services to customers, while letting the App Store commerce platform facilitate transactions and end-to-end payment processing.\n\nI'll cover new features in this session to help you merchandise products and grow your apps business. First, I'll share how to expand pricing options for your subscription products, Then, I'll discuss updates coming to the offer code redemption API, And finally, I'll review the enhanced App Store Connect submission experience coming to In-App Purchases. I'll start with updates to subscription pricing. iOS 26.5 introduced monthly subscriptions with a 12-month commitment. With this new pricing capability, you can offer customers an option to pay monthly for annual subscriptions.\n\nBilling plans can be added to both new and existing, one-year, auto-renewable subscriptions for your app in App Store Connect. By providing customers with the option to pay upfront or monthly, you can reach a larger customer base and allow the customer to choose which billing plan best suits their needs. Once you compile your app against the 26.5 SDK, customers in available markets can subscribe to the new billing plan inside your app on devices running iOS, iPadOS, macOS, tvOS, or visionOS 26.4. I'll show you how it works by setting up a new billing plan for the SKDemo app. This app uses StoreKit to merchandise and sell In-App Purchase products. You can download the sample code project in the Resources for this session to follow along. Here, I have the SKDemo app set up in App Store Connect, and I navigated to the Subscriptions section. I want to offer customers more affordable options for the SKDemo+ subscription, so I'll select a product with a one-year duration.\n\nThen, under monthly with a 12-month commitment availability, I'll choose Set Up Availability. And then follow the steps to configure the billing plan. Once created, subscription offers can be configured for each billing plan type. For example, I added a free trial only for the customers who subscribe to a 12-month commitment.\n\nNow that I have new subscription pricing configured for SKDemo in App Store Connect, I can merchandise the new payment option to customers with StoreKit.\n\nPricingTerms is a new property available on SubscriptionInfo for merchandising billing plan information. The PricingTerms array lists all available billing plans for a given product.\n\nEvery auto-renewable subscription carries at least one billing plan in this array with a default billingPlanType of .upFront. Because I configured a monthly subscription with a 12-month commitment for SKDemo+, a second object is returned in the PricingTerms array. This billing plan uses a billingPlanType of .monthly, which only applies to monthly subscriptions with a 12-month commitment.\n\nTo merchandise pricing terms in my app, I'll use StoreKit views. The StoreKit views APIs handle the work of loading product metadata from the App Store and adjusting layout, so your store automatically adapts to feel at home across all platforms. I'll show you how it works in code. I'll start by adding the new SwiftUI view modifier, .preferredSubscriptionPricingTerms and attach it to my existing SubscriptionStoreView. I'll then filter for the .pricingTerms with a .monthly .billingPlanType.\n\nAnd now, my subscription store is updated and ready to merchandise the monthly subscription with a 12-month commitment. If you want to customize the SubscriptionStoreView further, check out \"Meet StoreKit for SwiftUI\" from WWDC23, and learn how StoreKit views can match your app with custom icons, backgrounds, and any other changes.\n\nTo merchandise the commitment plan in custom store UI in your app, fetch products with the Product API. And filter for .pricingTerms with a .monthly .billingPlanType.\n\nThen, obtain the monthly and totalCommitmentPrice and display in the UI. Note, that billing plan metadata is only returned when available in the customer's storefront.\n\nTo make the purchase, pass the new .billingPlanType purchase option and handle the result.\n\nBefore a customer subscribes to a commitment plan for the first time, new messaging is included with a disclosure sheet. The App Store automatically presents this sheet, and it's displayed once per Apple Account. The sheet includes information about the number of payments required to fulfill the commitment, along with cancellation guidance. When a subscription is active, the App Store also automatically provides new UI for customers to manage their monthly subscription with a 12-month commitment. Here, customers can see all available plans and check the number of remaining payments along with when their billing commitment renews.\n\nYou can present the .manageSubscriptionsSheet directly inside your app using the .manageSubscriptionsSheet API in SwiftUI. Or in UIKit call the showManageSubscriptions API.\n\nTo retrieve the active subscription information in your app, you can use new fields on Transaction that provide billing plan-specific metadata.\n\nFor Transactions with an .upfront billingPlanType, commitmentInfo is nil. For transactions with a .monthly billingPlanType, commitmentInfo returns the progress, price and expiration for the 12-month commitment.\n\nYou can use these fields from the latest transaction to check customer entitlements or build your own commitment progress indicator. Always use the latest transaction to get an accurate expirationDate.\n\nSimilarly, you can retrieve the renewalBillingPlanType and commitmentInfo on RenewalInfo, for information on the renewal of the overall commitment. These new fields are available starting with OS 26.4.\n\nOnce you've added logic to merchandise and unlock content for the new billing plan, you can start testing with StoreKit Testing in Xcode. Starting with Xcode 26.5, open your StoreKit configuration file and select a one-year, auto-renewable subscription. Then, using the new Billing Plan picker, choose Monthly with a 12-month commitment to create a billing plan.\n\nThis creates new fields to configure pricing for the monthly subscription with a 12-month commitment. Similar to App Store Connect, offers can be uniquely created for each billing plan type, here in Xcode.\n\nOnce configured, test your purchase flow with the transaction manager and verify commitmentInfo in the Transaction inspector.\n\nTo learn more about best practices and setting up StoreKit Testing in Xcode, check out \"What's new in Storekit 2 and Storekit Testing in Xcode\" from WWDC23. If your app uses the App Store Server APIs or App Store Server Notifications V2, you can leverage new capabilities for customers who subscribe to a monthly subscription with a 12-month commitment. There are new fields available in the signed transaction and renewal info objects that provide additional information about the commitment plan. Subscription notifications continue to provide updates on the subscription lifecycle, such as monthly renewals, throughout the 12-month commitment.\n\nThe Retention Messaging API also supports this new payment option for auto-renewable subscriptions. Check out our WWDC26 session \"Explore Retention Messaging in App Store Connect\" to learn how this server-to-server API can help with your customer retention strategy.\n\nI'll now show you a transaction payload example from the server for one billing period purchase of a 12-month commitment.\n\nThis decoded JWSTransaction includes new fields that correspond to the ones I covered earlier in StoreKit.\n\nUse these fields to detect billing period purchases and understand where they live in the context of the overall commitment.\n\nThe signed renewal info object contains similar fields which reflect the renewal preferences of the customer after the current commitment ends. Accordingly, they are only present in the renewal info when the subscription is currently in a commitment. In this example, the customer changed their subscription to renew into a different BILLED_UPFRONT plan once their commitment completes.\n\nTo learn more about handling renewals and other events throughout the 12-month commitment, check out the developer documentation for \"Managing the life cycle of monthly subscriptions with a 12-month commitment.\" In addition to new pricing capabilities available on annual subscriptions, I'm excited to share that there is another new feature to expand your subscription offerings. Bundles and Suites. Offering subscription Bundles and Suites is another way you can provide customers with more value in their subscriptions across apps.\n\nLet's review the difference between Bundles and Suites. A Bundle is a group of subscriptions which can be purchased individually but are sold together in a single purchase and offered at a better price than purchasing all of the subscriptions individually.\n\nA Suite is a group of subscriptions which only exist in the context of the Suite. These subscriptions cannot be purchased individually, but together typically provide service to a related set of apps. You can start testing the API for Bundles and Suites in Xcode 27, and more details on this program are coming later in 2026.\n\nShifting gears to offer codes. Offer codes can be added to a consumable, non-consumable, auto-renewable subscription, or non-renewing subscription product and allow you to provide free or discounted In-App Purchases to customers for a specific duration.\n\nTo learn how to configure offer codes in App Store Connect, check out \"Implement App Store Offers\" from WWDC24.\n\nCustomers can redeem offer codes directly within your app, when you present this sheet using the OfferCodeRedemption API. Similar to creating a purchase, the API now returns a verificationResult when the redemption completes. The API also accepts a set of RedeemOption values that configure the code redemption.\n\nIf the redemption succeeds, you receive a transaction object in the verificationResult. If the redemption fails, you receive an error that describes why the redemption failed. A UIKit variation of the updated redemption API is available as well using presentOfferCodeRedeemSheet.\n\nYou can now test redeeming offer codes in Xcode 27 with the new redemption API on all applicable product types.\n\nWhen you're ready to submit an app to the App Store, you can utilize the enhanced submission experience for In-App Purchases in App Store Connect.\n\nThis includes the ability to group multiple products as review items into a single App Review submission.\n\nIn-App Purchase products can now be combined with other review items including in-app events, custom product pages, and product page optimizations.\n\nAfter submission, you can check the status from App Review in a centralized view for all review items. These enhancements help keep your submission workflow organized and consistent across all review item types by unifying the submission process.\n\nI'll go through an example of the enhanced submission flow using the SKDemo app in App Store Connect. When I have an In-App Purchase product ready to submit to App Review, I can add to an in-draft submission with the Add for Review drop-down. Then, I can view all of the review items in a submission by clicking on the in-progress draft.\n\nTo add a large group of products to a submission, I'll go to my list of In-App Purchase products and select each one that I would like reviewed together.\n\nThen, I'll click Add for Review and select the in-progress submission.\n\nIn addition to the App Store Connect website, the enhanced submission experience is coming to the App Store Connect API. reviewSubmissions is expanding to support In-App Purchase, subscription, and subscription group resources.\n\nThe reviewSubmissions API collection will enable you to automate your tasks for all review items through a single interface.\n\nThe existing resources for In-App Purchase, subscription, and subscription group will be deprecated in favor of the reviewSubmission and reviewSubmissionItems resources, so start migrating today.\n\nCheck out \"What's New in App Store Connect\" from WWDC22 for a deep dive on the mechanics of review items and submitting to App Review.\n\nThese new features for In-App Purchases equip you with more ways to grow your customer base and provide great value to customers. Before we conclude, here are some next steps to get you on your way. Start by adding new billing plans to offer customers the flexibility of a monthly subscription while still securing a long-term commitment for your annual subscription products. Update offer code redemption call sites across your app to take advantage of the extended redemption API.\n\nBegin testing these new features today in Xcode 27 and sandbox. When you're ready, submit your updated In-App Purchase products with the enhanced App Review experience.\n\nThank you for joining me and being part of the Apple Developer community. I hope these features will drive your In-App Purchases to reach even more people, so you can focus on creating great apps and games that people will love.",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:29",
+      "title": "Merchandise pricing terms with StoreKit views",
+      "language": "swift",
+      "code": "// Merchandise pricing terms with StoreKit views\n\nimport StoreKit\nimport SwiftUI\n\nstruct SubscriptionStore: View {\n    var body: some View {\n        SubscriptionStoreView(groupID: \"3F19ED53\") {\n            // Custom marketing content\n        }\n        .preferredSubscriptionPricingTerms {_, subscriptionInfo in\n            subscriptionInfo.pricingTerms.first {\n                $0.billingPlanType == .monthly\n            }\n        }\n    }\n}"
+    },
+    {
+      "timestamp": "4:02",
+      "title": "Get subscription pricing terms and make a purchase",
+      "language": "swift",
+      "code": "// Get subscription pricing terms and make a purchase\n\nimport StoreKit\n\nvar product: Product?\n// Fetch and assign product\n\n// Get the monthly billing plan's pricing terms for merchandising\nlet pricingTerms = product?.subscription?.pricingTerms\n  .first(where: {$0.billingPlanType == .monthly })\nif let pricingTerms {\n  let monthlyPrice = pricingTerms.billingDisplayPrice\n  let totalCommitmentPrice = pricingTerms.commitmentInfo.price\n  // Display both monthly and total commitment price to the customer\n}\n\nlet result = try? await product?.purchase(options: [.billingPlanType(.monthly)])\nswitch result {\n  // Verify the transaction, give the customer access to\n  // the purchased content, and then finish the transaction\n}"
+    },
+    {
+      "timestamp": "5:05",
+      "title": "Sheet to manage subscriptions by subscriptionGroupID",
+      "language": "swift",
+      "code": "// Sheet to manage subscriptions by subscriptionGroupID\n\nimport SwiftUI\nimport StoreKit\n\nstruct ManageSubscriptionsButton: View {\n    let subscriptionGroupID: String\n    @State var presentingManageSubscriptionsSheet: Bool = false\n\n    var body: some View {\n        Button(\"Manage Subscriptions\") {\n            presentingManageSubscriptionsSheet = true\n        }\n        .manageSubscriptionsSheet(\n            isPresented: $presentingManageSubscriptionsSheet,\n            subscriptionGroupID: subscriptionGroupID\n        )\n    }\n}"
+    },
+    {
+      "timestamp": "7:45",
+      "title": "JWSTransaction (decoded) for a monthly subscription with a 12-month commitment",
+      "language": "swift",
+      "code": "// JWSTransaction (decoded) for a monthly subscription with a 12-month commitment\n\n{\n    // …\n    \"expiresDate\": 1783503660000, // for this billing period\n    \"price\": 10990, // for this billing period\n    \"productId\": \"plus.pro.annual\",\n    \"purchaseDate\": 1780911660000,\n    \"type\": \"Auto-Renewable Subscription\",\n    \"billingPlanType\": \"MONTHLY\",\n    \"commitmentInfo\": {\n        \"billingPeriodNumber\": 1,\n        \"totalBillingPeriods\": 12,\n        \"commitmentExpiresDate\": 1812447660000,\n        \"commitmentPrice\": 131880,\n    }\n}"
+    },
+    {
+      "timestamp": "7:59",
+      "title": "JWSRenewalInfo (decoded) for a monthly subscription with a 12-month commitment",
+      "language": "swift",
+      "code": "// JWSRenewalInfo (decoded) for a monthly subscription with a 12-month commitment\n\n{\n    // … \n    \"renewalBillingPlanType\": \"MONTHLY\",\n    \"commitmentInfo\": {\n        \"commitmentAutoRenewProductId\": “plus.standard.annual”,\n        \"commitmentAutoRenewStatus\": 0,\n        \"commitmentRenewalDate\": 1812447660000,\n        \"commitmentRenewalPrice\": 10990,\n        \"commitmentRenewalBillingPlanType\": \"BILLED_UPFRONT\"\n    }\n}"
+    },
+    {
+      "timestamp": "9:58",
+      "title": "Sheet to redeem an offer code",
+      "language": "swift",
+      "code": "// Sheet to redeem an offer code\n\nstruct OfferCodeRedemption: View {\n    @State var presentingOfferCodeSheet: Bool = false\n\n    var body: some View {\n        Button(\"Redeem Offer Code\") {\n            presentingOfferCodeSheet = true\n        }\n        .offerCodeRedemption(options: [], isPresented: $presentingOfferCodeSheet) {result in\n            switch result {\n            case .success(let verificationResult):\n                switch verificationResult {\n                    // Verify the transaction, give the customer access to\n                    // the purchased content, and then finish the transaction\n                }\n            case .failure(let error):\n                // Handle error\n            }\n        }\n    }\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "In-App Purchase types",
+        "url": "https://developer.apple.com/help/app-store-connect/reference/in-app-purchases-and-subscriptions/in-app-purchase-types"
+      },
+      {
+        "title": "Managing the life cycle of monthly subscriptions with a 12-month commitment",
+        "url": "https://developer.apple.com/documentation/StoreKit/managing-lifecycle-of-monthly-subscriptions-with-a-12-month-commitment-"
+      },
+      {
+        "title": "Supporting monthly subscriptions with a 12-month commitment",
+        "url": "https://developer.apple.com/documentation/StoreKit/supporting-monthly-subscriptions-with-a-12-month-commitment"
+      },
+      {
+        "title": "App Store Server Notifications V2",
+        "url": "https://developer.apple.com/documentation/AppStoreServerNotifications/App-Store-Server-Notifications-V2"
+      },
+      {
+        "title": "Supporting offer codes in your app",
+        "url": "https://developer.apple.com/documentation/StoreKit/supporting-offer-codes-in-your-app"
+      },
+      {
+        "title": "Implementing a store in your app using the StoreKit API",
+        "url": "https://developer.apple.com/documentation/StoreKit/implementing-a-store-in-your-app-using-the-storekit-api"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2026/210/4/f029ab19-6670-48c6-b9b1-88ac6692cdda/downloads/wwdc2026-210_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2026/210/4/f029ab19-6670-48c6-b9b1-88ac6692cdda/downloads/wwdc2026-210_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "309",
+      "year": "2026",
+      "title": "Explore Retention Messaging in App Store Connect",
+      "url": "https://developer.apple.com/videos/play/wwdc2026/309"
+    },
+    {
+      "id": "10110",
+      "year": "2024",
+      "title": "Implement App Store Offers",
+      "url": "https://developer.apple.com/videos/play/wwdc2024/10110"
+    },
+    {
+      "id": "10013",
+      "year": "2023",
+      "title": "Meet StoreKit for SwiftUI",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10013"
+    },
+    {
+      "id": "10140",
+      "year": "2023",
+      "title": "What’s new in StoreKit 2 and StoreKit Testing in Xcode",
+      "url": "https://developer.apple.com/videos/play/wwdc2023/10140"
+    },
+    {
+      "id": "10043",
+      "year": "2022",
+      "title": "What's new in App Store Connect",
+      "url": "https://developer.apple.com/videos/play/wwdc2022/10043"
+    }
+  ],
+  "extractedAt": "2026-06-12T10:24:12.080Z"
+}

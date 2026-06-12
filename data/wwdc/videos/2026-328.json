@@ -1,0 +1,120 @@
+{
+  "id": "328",
+  "year": "2026",
+  "url": "https://developer.apple.com/videos/play/wwdc2026/328/",
+  "title": "Explore numerical computing in Swift with MLX",
+  "speakers": [],
+  "duration": "",
+  "topics": [
+    "Swift"
+  ],
+  "hasTranscript": true,
+  "hasCode": true,
+  "transcript": {
+    "fullText": "Hi! I'm David Koski and I work on MLX Swift. Numerical computing, also called numerical analysis or scientific computing, is a set of techniques and algorithms used to solve mathematical problems. These are often problems that are impractical to solve symbolically or by hand. They need massive amounts of computation. Some applications include simulations in chemistry, biology, physics and financial systems. Other domains include audio and signal processing. Visual applications include rendering, ray tracing, and fractals. Large scale gradient descent can do arbitrary curve fitting. This is the basis of training machine learning models. Today we are going to discuss numerical computing using MLX Swift.\n\nApple platforms have a rich numerical-computing ecosystem. Each existing framework is great at what it's designed for. Accelerate gives you hand-tuned vector primitives on the CPU.\n\nBNNS is the building block layer for neural networks. Metal Performance Shaders give you direct access to GPU kernels.\n\nSwift Numerics adds a Complex type and generic numeric protocols.\n\nSo when do you use MLX Swift? If your primary goal is writing mathematical code with an eye for performance, MLX Swift is a great solution.\n\nThe code you write looks like the math you are implementing without the programming overhead of some of the lower level libraries or the detailed bookkeeping required when manipulating arrays in plain Swift.\n\nHow does it look like math? The core idea is simple. Mathematicians and numerical analysts work with vectors and matrices. Rather than performing operations on single values you are doing it for the entire matrix at once. MLX Swift uses n-dimensional arrays as the central abstraction, like NumPy and many others before it. In fact if you've used NumPy, the API will look very familiar.\n\nMost NumPy code can be translated to MLX Swift with minimal changes.\n\nThis is incredibly expressive without being complicated. You can understand the code when you write it and read it later. Array computing and lazy evaluation are what make two things possible: automatic GPU execution and automatic differentiation.\n\nBest of all, mlx-swift and the entire MLX ecosystem are all open source with an MIT license.\n\nWe welcome issues and PRs and have a very active community, ask questions, fix bugs, and make it better! Here's the plan. I will first introduce MLX Swift with some basic matrix-vector operations.\n\nThen I will dive into three examples showing how MLX Swift makes it easy to translate math into code: computation of the Mandelbrot set, finding the steady state for heat distribution, and finally curve fitting.\n\nFirst up, let's talk about MLX Swift.\n\nHere we show some MLX Swift operations, using the power iteration as an example. Let's walk through it.\n\nWe import MLX and set the matrix size and iteration count, then sample a random matrix and vector from a normal distribution.\n\nNext we build a symmetric matrix by adding B and its transpose.\n\nNotice how close this is to the math.\n\n.T gives the transpose, and plus does matrix addition.\n\nInside the loop, matmul does matrix-vector multiplication, and norm gives the L2 norm.\n\nAgain, the code reads like the math.\n\nHere we also see a key MLX feature: lazy evaluation.\n\nOperations on MLX array objects build a compute graph, and nothing runs until you call ee-val or read a value.\n\nIn a loop like this, we call ee-val each step so the graph stays small.\n\nLazy evaluation is also what powers MLX's function transformations, like grad for automatic differentiation.\n\nFinally, we recover the eigenvalue, and reading the value forces the computation.\n\nLike other array frameworks, MLX Swift code reads almost like the math.\n\nAnd if you actually need all the eigenvalues and eigenvectors of a matrix, the MLX Swift linear algebra package has functions for that too.\n\nLet's move on to the next example.\n\nNext, the Mandelbrot set. It's a classic fractal, and it's also a perfect showcase for array computing where we apply a function over a large grid of points.\n\nThe definition is surprisingly simple. For every point c in the complex plane, you iterate z = z² + c. If the magnitude never exceeds 2, the point is in the set and it's colored black.\n\nIf it diverges, it's colored by how quickly it escapes.\n\nThe beauty of a fractal is that it's self-similar and infinitely detailed, you can pan and zoom forever and the patterns never repeat. Let's start with a plain Swift implementation using scalars.\n\nYou loop over every pixel, and run the Mandelbrot iterations and check for divergence. It works. It's idiomatic Swift. But you're managing a lot of bookkeeping that has nothing to do with the problem. And it runs on the CPU, one point at a time.\n\nLet's look at MLX Swift.\n\nHere it is in MLX Swift. Set up a grid of complex numbers, that's c. Then the loop is just two lines. z = z * z + c applied to every point at once. Count how many iterations each point stays bounded. That's it. The code is a direct translation of the math. The computation is performed over an entire grid of points as easily as it is for a single point.\n\nBy default, the GPU is used, giving us fast performance.\n\nPlain Swift is expressive. You can write numerical computing code naturally. But you're working scalar-at-a-time, so you have to iterate over every point yourself. The bookkeeping can obscure the math.\n\nMLX Swift is built for numerical computing, you operate on arrays rather than scalars. It looks like the math you are trying to express. It runs faster on the GPU, processing all points in parallel. How much faster depends on the exact algorithm, but 10x faster is certainly possible. All this with smaller and simpler code.\n\nMandelbrot was embarrassingly parallel, every point independent. The next example is different: each cell talks to its neighbors. That pattern shows up all over physics, image processing, and neural networks. MLX handles it with a single operation: convolution.\n\nImagine a room with walls and heat sources. We want to know the steady-state temperature everywhere inside. The simplest method to solve this is known as the Jacobi iteration.\n\nModel the temperature as a 2D grid.\n\nEach new iteration averages the neighboring values with a stencil like this.\n\nYou repeat this over and over and the heat spreads out until it reaches a steady state. Notice the update only looks at a small neighborhood, and it's the same recipe at every point, that's exactly what a convolution is. Let's see it in code.\n\nHere's the core of the solver in MLX Swift. Let me walk through it. The kernel is the stencil from the previous slide, written out literally: the four quarters on the neighbors, zeros on the center and corners. The temperature grid starts as the heat sources, a reasonable initial value. Inside the loop, two lines. The first is the physics: conv2d applies the stencil across the entire grid in one call. The second line handles the boundary conditions: which is an elementwise ternary. Wherever the mask says this is a heat source or a wall, keep the fixed value; everywhere else, take the new value from the convolution. That's it.\n\nThe math said average the four neighbors and we implemented that as a single call to conv2d.\n\nJacobi iteration is fast to compute but slow to converge. Heat can move one cell at a time and typically steady state requires N^2 iterations where N is the side of the grid. Much like quicksort does less work than bubble sort, there are algorithms that reach steady state with less work. One of these is called Successive Over-Relaxation, or SOR.\n\nThe equation looks similar to Jacobi iterations. In fact it uses the same convolution kernel. It uses a parameter, omega, which pushes each update further in the direction of change, overshooting slightly to get there faster.\n\nThe overshoot will recover as it iterates. The omega parameter can be computed based on the size of the array and if the optimal value is used, this will converge in N iterations. The other key to the technique is in-place updates. MLX typically produces new arrays rather than updating in place, but a red/black checkerboard pattern where alternating cells are processed can be used to compute new values, giving the same effect.\n\nOn to the code! First, we compute the optimal omega based on the size of the grid.\n\nYou can see how we use omega here, it exactly matches the equation.\n\nWe use the checkerboard masks to update alternating cells in the array.\n\nNow the black cells run the same update, but this time their red neighbors already have fresh values, which is exactly the in-place effect we needed. Repeat this in a loop as before. Let's see the difference.\n\nThe Jacobi and SOR code are nearly identical and they closely match the math.\n\nLet's see how these run.\n\nYou can see Jacobi on the top slowly spread while SOR on the bottom quickly fills the area.\n\nSOR has a striking ripple pattern as it runs, that's the overshooting and correcting in real time.\n\nBy the end, both converge to the same configuration. One more thing. I had to slow SOR down by a factor of 100 just to make it visible. The power of choosing the right algorithm! The first two examples were forward computation: start with inputs, compute outputs. The last one flips that around. You have outputs, data points, and you want to find the parameters that produce them. This is where we will apply a key function transformation provided by MLX Swift: 'grad' for automatic differentiation.\n\nLet's say you have some points and you want to find a function that approximates them.\n\nYou decide the structure of the function you want. It could be a polynomial, a sum of sines, or whatever you like.\n\nFor this example we will use a polynomial, a quadratic that will give us a parabola. You want to minimize the loss.\n\nThe mean of the squared differences between the output of your function and the actual data.\n\nThis is the same core idea behind training every ML model, just on a smaller scale.\n\nTo minimize the loss, we need the gradient with respect to the parameters and an optimization loop to update parameters. We define the function f and the loss, which is mean squared error.\n\nNext we make theta, the coefficients we are going to fit, and transform the loss function into a function that produces the exact gradient with respect to the parameters. We didn't write any derivatives by hand. They were derived by MLX.\n\nIn the optimization loop we evaluate the gradient at the current parameters, take a small step, and call eval to flush the computation graph each iteration so it doesn't grow without bound. That's gradient descent.\n\nHere is what that looks like. The parabola quickly gets close and overshoots the data but settles in to closer and closer approximations.\n\nNow this example was a simple polynomial and we could have used QR from the linear algebra package to fit the curve directly.\n\nGradients work with arbitrarily complex functions. If you need more than just gradients, MLX has a suite of optimization algorithms like SGD, Adam, RMSprop, and more.\n\nI've shown array computing, convolution and grad today, but MLX includes the full numericalcomputing toolkit.\n\nHere is a sample. Linear algebra, FFTs, N-dimensional convolutions, Reductions, Scans, Indexing, Random number generation, and many more.\n\nThere's already a healthy ecosystem of packages built on MLX Swift. The core mlx-swift repo is the framework you've been seeing all session. mlx-swift-lm is where the Swift language-model implementations live. mlx-swift-examples has example programs that you can look at to get started. Examples based on this session will be posted there.\n\nAll of these are open source and are installable with a few lines with Swift Package Manager. MLX isn't only Swift. It's one framework with four front-ends: Swift, Python, C++, and C. Third parties have built even more front-ends if you have needs beyond that. They share the same concepts, the same operations, and the same lazy-evaluation model. The concepts and patterns transfer across them with minimal changes. So you can prototype in Python and ship in Swift. Python also has a broader research ecosystem around it. Projects like mlx-lm and mlx-vlm are worth a look if you want to see what's been built on the Python side. I encourage everybody to take a look at mlx-swift and mlx-swift-examples. mlx-swift has documentation and tests you can explore to see how it works. mlx-swift-examples has a variety of example applications that demonstrate LLM integration, stable diffusion, model training and fine-tuning, and of course the examples shown in this talk.\n\nDo you have numerical computing needs? Or just want to play around with interesting simulations and visualizations? Give it a try! And if something sparks an idea I encourage everybody to participate and contribute. There are open issues that you can try fixing or make a new example program.\n\nThanks for watching!",
+    "segments": []
+  },
+  "codeExamples": [
+    {
+      "timestamp": "3:04",
+      "title": "Power iteration with MLX Swift arrays",
+      "language": "swift",
+      "code": "import MLX\nlet n = 100\nlet steps = 10\nlet B = MLXRandom.normal([n, n])\nvar v = MLXRandom.normal([n])\n\n// get symmetric matrix A = Bᵀ + B\nlet A = B.T + B\n\n// Power iteration → top eigenvector of A.\n//   v ← A v / ‖A v‖\nfor _ in 0 ..< steps {\n    let Av = matmul(A, v)\n    v = Av / norm(Av)\n    eval(v)\n}\n\n// recover the eigenvalue.\n//   λ = vᵀ A v\nlet lambda = matmul(matmul(v.T, A), v)\n\nprint(lambda)"
+    },
+    {
+      "timestamp": "5:09",
+      "title": "Mandelbrot set in plain Swift (scalar)",
+      "language": "swift",
+      "code": "// Plain Swift, scalar-at-a-time\nvar counts = Array2D<Int>(width: w, height: h)\n\nfor y in 0 ..< h {\n    for x in 0 ..< w {\n        let c = Complex(xMin + Float(x) * xStep, yMin + Float(y) * yStep)\n        var z = Complex<Float>.zero\n        var limit = maxIterations\n        for i in 0 ..< maxIterations {\n            z = z * z + c\n            if z.lengthSquared > radiusSquared {\n                limit = i\n                break\n            }\n        }\n        counts[x, y] = limit\n    }\n}"
+    },
+    {
+      "timestamp": "5:27",
+      "title": "Mandelbrot set in MLX Swift (array)",
+      "language": "swift",
+      "code": "// Compute the Mandelbrot set on a grid of complex numbers\nimport MLX\n\nlet x = linspace(Float(-2.0), 0.5, count: w)\nlet y = linspace(Float(-1.25), 1.25, count: h).reshaped(h, 1)\nlet c = x + y.asImaginary()\n\nvar z = MLXArray.zeros(like: c)\nvar counts = MLXArray.zeros(c.shape, dtype: .int16)\n\nfor _ in 0 ..< maxIterations {\n    z = z * z + c                       // iterate z ← z² + c\n    counts = counts + (abs(z) .< 2)     // count bounded iterations\n}"
+    },
+    {
+      "timestamp": "7:27",
+      "title": "Jacobi iteration with conv2d",
+      "language": "swift",
+      "code": "// Jacobi iteration: average the four neighbors\n\n// Convolution weights\nlet kernel = MLXArray(converting: [\n    0,    0.25, 0,\n    0.25, 0,    0.25,\n    0,    0.25, 0,\n]).reshaped(1, 3, 3, 1)\n\n// Initial value\nvar temperature = heatSources\n\n// Run this in a loop until convergence\nlet next = conv2d(temperature, kernel, padding: 1)\ntemperature = which(heatMask, heatSources, next)"
+    },
+    {
+      "timestamp": "9:17",
+      "title": "Successive Over-Relaxation (SOR)",
+      "language": "swift",
+      "code": "// Successive Over-Relaxation: blend the previous and next state\nlet ω: Float = 2.0 / (1.0 + sin(Float.pi / Float(max(M, N))))\n\nlet redMask   = checkerboard(rows: M, cols: N, phase: 0)\nlet blackMask = checkerboard(rows: M, cols: N, phase: 1)\n\n// Update red cells using black neighbors\nlet sorRed  = ω * conv2d(temperature, kernel, padding: 1) + (1 - ω) * temperature\ntemperature = which(redMask, sorRed, temperature)\ntemperature = which(heatMask, heatSources, temperature)\n\n// Update black cells using (now-updated) red neighbors\nlet sorBlack = ω * conv2d(temperature, kernel, padding: 1) + (1 - ω) * temperature\ntemperature  = which(blackMask, sorBlack, temperature)\ntemperature  = which(heatMask, heatSources, temperature)"
+    },
+    {
+      "timestamp": "11:13",
+      "title": "Curve fitting with automatic differentiation",
+      "language": "swift",
+      "code": "// Define a loss, then optimize it with autodiff\n// x, y: data points as MLXArrays\nfunc f(_ θ: MLXArray) -> MLXArray {\n    θ[0] + θ[1] * x + θ[2] * x ** 2\n}\n\nfunc loss(_ θ: MLXArray) -> MLXArray {\n    mean((f(θ) - y) ** 2)\n}\n\nvar θ = zeros([numParams])\nlet gradLoss = grad(loss)\n\nfor _ in 0 ..< steps {\n    let g = gradLoss(θ)         // ∇L(θ)\n    θ = θ - learningRate * g    // parameter update\n    eval(θ)                     // force evaluation\n}"
+    }
+  ],
+  "resources": {
+    "resourceLinks": [
+      {
+        "title": "MLX Swift LM on GitHub",
+        "url": "https://github.com/ml-explore/mlx-swift-lm"
+      },
+      {
+        "title": "MLX Swift Examples",
+        "url": "https://github.com/ml-explore/mlx-swift-examples"
+      },
+      {
+        "title": "MLX Examples",
+        "url": "https://github.com/ml-explore/mlx-examples"
+      },
+      {
+        "title": "MLX Swift",
+        "url": "https://github.com/ml-explore/mlx-swift"
+      },
+      {
+        "title": "MLX  LM - Python API",
+        "url": "https://github.com/ml-explore/mlx-lm"
+      },
+      {
+        "title": "MLX Explore - Python API",
+        "url": "https://github.com/ml-explore/mlx"
+      },
+      {
+        "title": "MLX Framework",
+        "url": "https://mlx-framework.org"
+      },
+      {
+        "title": "MLX",
+        "url": "https://ml-explore.github.io/mlx/"
+      }
+    ],
+    "hdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2026/328/5/51d0ab0a-f401-4514-9f04-6b211897d3e8/downloads/wwdc2026-328_hd.mp4?dl=1",
+    "sdVideo": "https://devstreaming-cdn.apple.com/videos/wwdc/2026/328/5/51d0ab0a-f401-4514-9f04-6b211897d3e8/downloads/wwdc2026-328_sd.mp4?dl=1"
+  },
+  "relatedVideos": [
+    {
+      "id": "233",
+      "year": "2026",
+      "title": "Explore distributed inference and training with MLX",
+      "url": "https://developer.apple.com/videos/play/wwdc2026/233"
+    },
+    {
+      "id": "232",
+      "year": "2026",
+      "title": "Run local agentic AI on the Mac using MLX",
+      "url": "https://developer.apple.com/videos/play/wwdc2026/232"
+    },
+    {
+      "id": "298",
+      "year": "2025",
+      "title": "Explore large language models on Apple silicon with MLX",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/298"
+    },
+    {
+      "id": "315",
+      "year": "2025",
+      "title": "Get started with MLX for Apple silicon",
+      "url": "https://developer.apple.com/videos/play/wwdc2025/315"
+    }
+  ],
+  "extractedAt": "2026-06-12T10:24:21.548Z"
+}
