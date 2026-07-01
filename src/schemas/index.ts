@@ -9,3 +9,10 @@ export { findSimilarApisSchema } from './similar-apis.schema.js';
 export { getDocumentationUpdatesSchema } from './documentation-updates.schema.js';
 export { getTechnologyOverviewsSchema } from './technology-overviews.schema.js';
 export { getSampleCodeSchema } from './sample-code.schema.js';
+export {
+  searchAppleDesignDocsSchema,
+  getAppleDesignContentSchema,
+  listAppleDesignResourcesSchema,
+  downloadAppleDesignResourceSchema,
+  getAppleDesignExamplesSchema,
+} from './design.schema.js';

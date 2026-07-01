@@ -33,6 +33,10 @@ interface RequestOptions {
   retries?: number;
   /** Delay between retries in milliseconds */
   retryDelay?: number;
+  /** Redirect handling mode for fetch */
+  redirect?: RequestRedirect;
+  /** Return manual redirect responses instead of treating them as failed requests */
+  allowManualRedirect?: boolean;
   /** Additional headers to include in the request */
   headers?: Record<string, string>;
 }
@@ -141,6 +145,8 @@ class HttpClient {
       timeout = REQUEST_CONFIG.TIMEOUT,
       retries = REQUEST_CONFIG.MAX_RETRIES,
       retryDelay = REQUEST_CONFIG.RETRY_DELAY,
+      redirect,
+      allowManualRedirect = false,
       headers = {},
     } = options;
 
@@ -156,8 +162,9 @@ class HttpClient {
       return this.fetchWithRetry(url, {
         method: 'GET',
         headers: requestHeaders,
+        redirect,
         signal: AbortSignal.timeout(timeout),
-      }, retries, retryDelay);
+      }, retries, retryDelay, allowManualRedirect);
     });
   }
 
@@ -202,6 +209,7 @@ class HttpClient {
     options: RequestInit,
     retries: number,
     retryDelay: number,
+    allowManualRedirect: boolean,
   ): Promise<Response> {
     const startTime = Date.now();
     const domain = new URL(url).hostname;
@@ -229,13 +237,22 @@ class HttpClient {
           this.updateStats(response.status, responseTime, true);
         }
 
+        const isAllowedManualRedirect = allowManualRedirect
+          && response.status >= 300
+          && response.status < 400;
+
+        // Manual redirect callers rely on redirect: 'manual' preserving the 3xx status and Location header.
         // Mark User-Agent success/failure in pool
         if (pool && currentUserAgent) {
-          if (response?.ok) {
+          if (response?.ok || isAllowedManualRedirect) {
             await pool.markSuccess(currentUserAgent);
           } else {
             await pool.markFailure(currentUserAgent, response?.status);
           }
+        }
+
+        if (isAllowedManualRedirect) {
+          return response;
         }
 
         if (!response?.ok) {
@@ -388,6 +405,8 @@ class HttpClient {
       timeout = REQUEST_CONFIG.TIMEOUT,
       retries = REQUEST_CONFIG.MAX_RETRIES,
       retryDelay = REQUEST_CONFIG.RETRY_DELAY,
+      redirect,
+      allowManualRedirect = false,
       headers = {},
     } = options;
 
@@ -407,8 +426,9 @@ class HttpClient {
         const response = await this.fetchWithRetry(url, {
           method: 'GET',
           headers: requestHeaders,
+          redirect,
           signal: AbortSignal.timeout(timeout),
-        }, retries, retryDelay);
+        }, retries, retryDelay, allowManualRedirect);
 
         return await response.text();
       });

@@ -67,6 +67,153 @@ export const toolDefinitions: Tool[] = [
     },
   },
   {
+    name: 'search_apple_design_docs',
+    description: 'Search Apple Design pages, Human Interface Guidelines JSON, and Design Resources catalog entries. Use this for HIG guidance, design resources, templates, fonts, product bezels, and Apple Design overview pages.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Search query for Apple Design or HIG content. Examples: "layout", "iOS templates", "SF Pro", "visionOS".',
+        },
+        contentType: {
+          type: 'string',
+          enum: ['all', 'hig', 'resource', 'page'],
+          description: 'Content filter. Use "hig" for Human Interface Guidelines, "resource" for Design Resources, "page" for Apple Design HTML pages. Default: "all".',
+        },
+        platform: {
+          type: 'string',
+          description: 'Platform filter such as iOS, iPadOS, macOS, watchOS, tvOS, or visionOS. Default: "all".',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of results. Default: 20.',
+          minimum: 1,
+          maximum: 50,
+        },
+      },
+      required: ['query'],
+    },
+    annotations: {
+      title: 'Search Apple Design Docs',
+      readOnlyHint: true,
+    },
+  },
+  {
+    name: 'get_apple_design_content',
+    description: 'Read Apple Design and Human Interface Guidelines URLs. HIG pages use Apple JSON data when available, and other /design/ pages use HTML parsing.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: {
+          type: 'string',
+          description: 'Apple Design URL. Examples: "https://developer.apple.com/design/human-interface-guidelines/layout" or "https://developer.apple.com/design/resources/".',
+        },
+      },
+      required: ['url'],
+    },
+    annotations: {
+      title: 'Get Apple Design Content',
+      readOnlyHint: true,
+    },
+  },
+  {
+    name: 'list_apple_design_resources',
+    description: 'List Apple Design Resources catalog entries with stable resource IDs, categories, platforms, formats, notes, preview image URLs, and download URLs.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        category: {
+          type: 'string',
+          description: 'Optional category filter such as "Design templates", "Fonts", "Tools", or "Product bezels".',
+        },
+        platform: {
+          type: 'string',
+          description: 'Optional platform or subsection filter such as "iOS", "macOS", or "visionOS".',
+        },
+        format: {
+          type: 'string',
+          description: 'Optional format filter such as "figma", "sketch", "dmg", "zip", or "pdf".',
+        },
+        searchQuery: {
+          type: 'string',
+          description: 'Optional search query for titles, labels, notes, and categories.',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of resources. Default: 50.',
+          minimum: 1,
+          maximum: 100,
+        },
+      },
+      required: [],
+    },
+    annotations: {
+      title: 'List Apple Design Resources',
+      readOnlyHint: true,
+    },
+  },
+  {
+    name: 'download_apple_design_resource',
+    description: 'Download a selected direct Apple Design resource into the local MCP cache and return MCP resource links. External Figma, Sketch web, and sketch:// links are reported as metadata and are not browser-authenticated downloads.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        resourceId: {
+          type: 'string',
+          description: 'Stable resource ID returned by list_apple_design_resources.',
+        },
+        url: {
+          type: 'string',
+          description: 'Direct Apple-hosted resource URL to download. Allowed hosts include developer.apple.com, docs-assets.developer.apple.com, devimages-cdn.apple.com, and itunespartner.apple.com.',
+        },
+        maxBytes: {
+          type: 'number',
+          description: 'Optional maximum download size in bytes. Default: 52428800.',
+          minimum: 1,
+          maximum: 262144000,
+        },
+      },
+      required: [],
+    },
+    annotations: {
+      title: 'Download Apple Design Resource',
+      readOnlyHint: false,
+    },
+  },
+  {
+    name: 'get_apple_design_examples',
+    description: 'Return Apple Design visual examples as MCP image content blocks with base64 data and MIME type. Supports HIG images, resource thumbnails, and direct image asset URLs.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: {
+          type: 'string',
+          description: 'Apple Design URL, HIG URL, resource preview URL, or direct image URL.',
+        },
+        resourceId: {
+          type: 'string',
+          description: 'Stable resource ID returned by list_apple_design_resources.',
+        },
+        query: {
+          type: 'string',
+          description: 'Search query for resource thumbnails.',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of image blocks. Default: 3.',
+          minimum: 1,
+          maximum: 10,
+        },
+      },
+      required: [],
+    },
+    annotations: {
+      title: 'Get Apple Design Examples',
+      readOnlyHint: true,
+    },
+  },
+  {
     name: 'list_technologies',
     description: 'Browse all Apple technologies and frameworks by category. Essential for discovering available frameworks and understanding Apple\'s technology ecosystem. Use this when: exploring what\'s available, finding framework identifiers for search_framework_symbols, checking beta status.',
     inputSchema: {

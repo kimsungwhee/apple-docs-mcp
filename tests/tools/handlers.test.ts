@@ -70,6 +70,36 @@ describe('Tool Handlers', () => {
       getSampleCode: jest.fn().mockResolvedValue({
         content: [{ type: 'text', text: 'Sample code' }],
       }),
+      searchAppleDesignDocs: jest.fn().mockResolvedValue({
+        content: [{ type: 'text', text: 'Design search results' }],
+      }),
+      getAppleDesignContent: jest.fn().mockResolvedValue({
+        content: [{ type: 'text', text: 'Design content' }],
+      }),
+      listAppleDesignResources: jest.fn().mockResolvedValue({
+        content: [{ type: 'text', text: 'Design resources' }],
+      }),
+      downloadAppleDesignResource: jest.fn().mockResolvedValue({
+        content: [
+          { type: 'text', text: 'Downloaded resource' },
+          {
+            type: 'resource_link',
+            uri: 'apple-design://cache/test/example.zip',
+            name: 'example.zip',
+            mimeType: 'application/zip',
+          },
+        ],
+      }),
+      getAppleDesignExamples: jest.fn().mockResolvedValue({
+        content: [
+          { type: 'text', text: 'Design examples' },
+          {
+            type: 'image',
+            data: Buffer.from('image').toString('base64'),
+            mimeType: 'image/png',
+          },
+        ],
+      }),
     };
   });
 
@@ -110,6 +140,130 @@ describe('Tool Handlers', () => {
       });
     });
 
+    it('should handle search_apple_design_docs tool', async () => {
+      const args = { query: 'layout', contentType: 'all', platform: 'iOS', limit: 5 };
+      const result = await handleToolCall('search_apple_design_docs', args, mockServer);
+
+      expect(mockServer.searchAppleDesignDocs).toHaveBeenCalledWith('layout', 'all', 'iOS', 5);
+      expect(result).toEqual({
+        content: [{ type: 'text', text: 'Design search results' }],
+      });
+    });
+
+    it('should handle get_apple_design_content tool', async () => {
+      const args = { url: 'https://developer.apple.com/design/human-interface-guidelines/layout' };
+      const result = await handleToolCall('get_apple_design_content', args, mockServer);
+
+      expect(mockServer.getAppleDesignContent).toHaveBeenCalledWith(args.url);
+      expect(result).toEqual({
+        content: [{ type: 'text', text: 'Design content' }],
+      });
+    });
+
+    it('should handle list_apple_design_resources tool', async () => {
+      const args = {
+        category: 'Design templates',
+        platform: 'iOS',
+        format: 'figma',
+        searchQuery: 'template',
+        limit: 10,
+      };
+      const result = await handleToolCall('list_apple_design_resources', args, mockServer);
+
+      expect(mockServer.listAppleDesignResources).toHaveBeenCalledWith(
+        'Design templates',
+        'iOS',
+        'figma',
+        'template',
+        10,
+      );
+      expect(result).toEqual({
+        content: [{ type: 'text', text: 'Design resources' }],
+      });
+    });
+
+    it('should handle list_apple_design_resources tool with omitted arguments', async () => {
+      const result = await handleToolCall('list_apple_design_resources', undefined, mockServer);
+
+      expect(mockServer.listAppleDesignResources).toHaveBeenCalledWith(
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        50,
+      );
+      expect(result).toEqual({
+        content: [{ type: 'text', text: 'Design resources' }],
+      });
+    });
+
+    it('should handle download_apple_design_resource tool with resource links', async () => {
+      const args = { resourceId: 'design-resource:templates:ios:download' };
+      const result = await handleToolCall('download_apple_design_resource', args, mockServer);
+
+      expect(mockServer.downloadAppleDesignResource).toHaveBeenCalledWith(
+        'design-resource:templates:ios:download',
+        undefined,
+        undefined,
+      );
+      expect(result.content).toEqual([
+        { type: 'text', text: 'Downloaded resource' },
+        {
+          type: 'resource_link',
+          uri: 'apple-design://cache/test/example.zip',
+          name: 'example.zip',
+          mimeType: 'application/zip',
+        },
+      ]);
+    });
+
+    it('should handle download_apple_design_resource tool with omitted arguments', async () => {
+      await handleToolCall('download_apple_design_resource', undefined, mockServer);
+
+      expect(mockServer.downloadAppleDesignResource).toHaveBeenCalledWith(
+        undefined,
+        undefined,
+        undefined,
+      );
+    });
+
+    it('should handle get_apple_design_examples tool with image blocks', async () => {
+      const args = {
+        url: 'https://developer.apple.com/design/human-interface-guidelines/layout',
+        limit: 1,
+      };
+      const result = await handleToolCall('get_apple_design_examples', args, mockServer);
+
+      expect(mockServer.getAppleDesignExamples).toHaveBeenCalledWith(args.url, undefined, undefined, 1);
+      expect(result.content).toEqual([
+        { type: 'text', text: 'Design examples' },
+        {
+          type: 'image',
+          data: Buffer.from('image').toString('base64'),
+          mimeType: 'image/png',
+        },
+      ]);
+    });
+
+    it('should handle get_apple_design_examples tool with omitted arguments', async () => {
+      const result = await handleToolCall('get_apple_design_examples', undefined, mockServer);
+
+      expect(mockServer.getAppleDesignExamples).toHaveBeenCalledWith(
+        undefined,
+        undefined,
+        undefined,
+        3,
+      );
+      expect(result.content).toEqual([
+        { type: 'text', text: 'Design examples' },
+        {
+          type: 'image',
+          data: Buffer.from('image').toString('base64'),
+          mimeType: 'image/png',
+        },
+      ]);
+    });
+
     it('should handle validation errors gracefully', async () => {
       // Mock schema parse to throw validation error
       jest.spyOn(schemas.searchAppleDocsSchema, 'parse').mockImplementationOnce(() => {
@@ -136,6 +290,11 @@ describe('Tool Handlers', () => {
         'get_documentation_updates',
         'get_technology_overviews',
         'get_sample_code',
+        'search_apple_design_docs',
+        'get_apple_design_content',
+        'list_apple_design_resources',
+        'download_apple_design_resource',
+        'get_apple_design_examples',
       ];
 
       expectedTools.forEach(tool => {

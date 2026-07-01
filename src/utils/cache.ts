@@ -172,6 +172,14 @@ export const technologyOverviewsCache = new MemoryCache(
   CACHE_SIZE.TECHNOLOGY_OVERVIEWS,
   CACHE_TTL.TECHNOLOGY_OVERVIEWS,
 );
+export const designContentCache = new MemoryCache(
+  CACHE_SIZE.DESIGN_CONTENT,
+  CACHE_TTL.DESIGN_CONTENT,
+);
+export const designResourcesCache = new MemoryCache(
+  CACHE_SIZE.DESIGN_RESOURCES,
+  CACHE_TTL.DESIGN_RESOURCES,
+);
 export const wwdcDataCache = new MemoryCache(100, 30 * 60 * 1000); // 30 minutes TTL
 
 /**
@@ -295,4 +303,3 @@ export function getCacheInstance(
   }
   return cacheInstances.get(name)!;
 }
-

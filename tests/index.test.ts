@@ -1,7 +1,12 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import {
+  CallToolRequestSchema,
+  ListResourcesRequestSchema,
+  ListToolsRequestSchema,
+  ReadResourceRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js';
 
 // Mock all dependencies
 jest.mock('@modelcontextprotocol/sdk/server/index.js');
@@ -26,9 +31,48 @@ jest.mock('../src/tools/handlers.js', () => ({
     content: [{ type: 'text', text: 'Test result' }],
   }),
 }));
+jest.mock('../src/tools/design-docs.js', () => ({
+  handleSearchAppleDesignDocs: jest.fn().mockResolvedValue({
+    content: [{ type: 'text', text: 'Design search results' }],
+  }),
+  handleGetAppleDesignContent: jest.fn().mockResolvedValue({
+    content: [{ type: 'text', text: 'Design content' }],
+  }),
+  handleListAppleDesignResources: jest.fn().mockResolvedValue({
+    content: [{ type: 'text', text: 'Design resources' }],
+  }),
+  handleDownloadAppleDesignResource: jest.fn().mockResolvedValue({
+    content: [{ type: 'text', text: 'Downloaded design resource' }],
+  }),
+  handleGetAppleDesignExamples: jest.fn().mockResolvedValue({
+    content: [{ type: 'image', data: 'aW1hZ2U=', mimeType: 'image/png' }],
+  }),
+  listCachedDesignResources: jest.fn().mockResolvedValue({
+    resources: [
+      {
+        uri: 'apple-design://cache/test/example.zip',
+        name: 'example.zip',
+        mimeType: 'application/zip',
+      },
+    ],
+  }),
+  readCachedDesignResource: jest.fn().mockResolvedValue({
+    contents: [
+      {
+        uri: 'apple-design://cache/test/example.zip',
+        mimeType: 'application/zip',
+        blob: 'emlw',
+      },
+    ],
+  }),
+}));
 
 // Import after mocks
 import { handleToolCall } from '../src/tools/handlers.js';
+import {
+  listCachedDesignResources,
+  readCachedDesignResource,
+} from '../src/tools/design-docs.js';
 
 describe('AppleDeveloperDocsMCPServer', () => {
   let mockServer: any;
@@ -66,6 +110,7 @@ describe('AppleDeveloperDocsMCPServer', () => {
         {
           capabilities: {
             tools: {},
+            resources: {},
           },
         }
       );
@@ -74,8 +119,8 @@ describe('AppleDeveloperDocsMCPServer', () => {
     it('should setup tools and error handling', () => {
       new AppleDeveloperDocsMCPServer();
 
-      // Should register two request handlers
-      expect(mockServer.setRequestHandler).toHaveBeenCalledTimes(2);
+      // Should register tools and resources request handlers
+      expect(mockServer.setRequestHandler).toHaveBeenCalledTimes(4);
       
       // First call should be for ListToolsRequestSchema
       expect(mockServer.setRequestHandler).toHaveBeenNthCalledWith(
@@ -88,6 +133,18 @@ describe('AppleDeveloperDocsMCPServer', () => {
       expect(mockServer.setRequestHandler).toHaveBeenNthCalledWith(
         2,
         CallToolRequestSchema,
+        expect.any(Function)
+      );
+
+      expect(mockServer.setRequestHandler).toHaveBeenNthCalledWith(
+        3,
+        ListResourcesRequestSchema,
+        expect.any(Function)
+      );
+
+      expect(mockServer.setRequestHandler).toHaveBeenNthCalledWith(
+        4,
+        ReadResourceRequestSchema,
         expect.any(Function)
       );
     });
@@ -187,6 +244,50 @@ describe('AppleDeveloperDocsMCPServer', () => {
     });
   });
 
+  describe('resource listing and reading', () => {
+    it('should list cached Apple Design resources', async () => {
+      new AppleDeveloperDocsMCPServer();
+
+      const listResourcesHandler = mockServer.setRequestHandler.mock.calls[2][1];
+      const result = await listResourcesHandler({});
+
+      expect(listCachedDesignResources).toHaveBeenCalledWith();
+      expect(result).toEqual({
+        resources: [
+          {
+            uri: 'apple-design://cache/test/example.zip',
+            name: 'example.zip',
+            mimeType: 'application/zip',
+          },
+        ],
+      });
+    });
+
+    it('should read cached Apple Design resources as blob contents', async () => {
+      new AppleDeveloperDocsMCPServer();
+
+      const readResourcesHandler = mockServer.setRequestHandler.mock.calls[3][1];
+      const result = await readResourcesHandler({
+        params: {
+          uri: 'apple-design://cache/test/example.zip',
+        },
+      });
+
+      expect(readCachedDesignResource).toHaveBeenCalledWith(
+        'apple-design://cache/test/example.zip',
+      );
+      expect(result).toEqual({
+        contents: [
+          {
+            uri: 'apple-design://cache/test/example.zip',
+            mimeType: 'application/zip',
+            blob: 'emlw',
+          },
+        ],
+      });
+    });
+  });
+
   describe('run method', () => {
     it('should create transport and start server', async () => {
       const server = new AppleDeveloperDocsMCPServer();
@@ -257,6 +358,19 @@ describe('AppleDeveloperDocsMCPServer', () => {
     it('should have getSampleCode method', () => {
       expect(server.getSampleCode).toBeDefined();
       expect(typeof server.getSampleCode).toBe('function');
+    });
+
+    it('should have Apple Design public methods', () => {
+      expect(server.searchAppleDesignDocs).toBeDefined();
+      expect(typeof server.searchAppleDesignDocs).toBe('function');
+      expect(server.getAppleDesignContent).toBeDefined();
+      expect(typeof server.getAppleDesignContent).toBe('function');
+      expect(server.listAppleDesignResources).toBeDefined();
+      expect(typeof server.listAppleDesignResources).toBe('function');
+      expect(server.downloadAppleDesignResource).toBeDefined();
+      expect(typeof server.downloadAppleDesignResource).toBe('function');
+      expect(server.getAppleDesignExamples).toBeDefined();
+      expect(typeof server.getAppleDesignExamples).toBe('function');
     });
   });
 });

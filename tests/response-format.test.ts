@@ -19,6 +19,7 @@ jest.mock('../src/utils/wwdc-data-source.js', () => ({
 }));
 
 import AppleDeveloperDocsMCPServer from '../src/index.js';
+import { handleDownloadAppleDesignResource } from '../src/tools/design-docs.js';
 
 // Mock external dependencies
 jest.mock('../src/utils/http-client.js', () => ({
@@ -95,6 +96,60 @@ jest.mock('../src/tools/doc-fetcher.js', () => ({
   })
 }));
 
+jest.mock('../src/tools/design-docs.js', () => ({
+  handleSearchAppleDesignDocs: jest.fn().mockResolvedValue({
+    content: [{
+      type: 'text',
+      text: 'Mock Apple Design search results'
+    }]
+  }),
+  handleGetAppleDesignContent: jest.fn().mockResolvedValue({
+    content: [{
+      type: 'text',
+      text: 'Mock Apple Design content'
+    }]
+  }),
+  handleListAppleDesignResources: jest.fn().mockResolvedValue({
+    content: [{
+      type: 'text',
+      text: 'Mock Apple Design resources'
+    }]
+  }),
+  handleDownloadAppleDesignResource: jest.fn().mockResolvedValue({
+    content: [
+      {
+        type: 'text',
+        text: 'Mock downloaded Apple Design resource'
+      },
+      {
+        type: 'resource_link',
+        uri: 'apple-design://cache/test/example.zip',
+        name: 'example.zip',
+        mimeType: 'application/zip'
+      }
+    ]
+  }),
+  handleGetAppleDesignExamples: jest.fn().mockResolvedValue({
+    content: [
+      {
+        type: 'text',
+        text: 'Mock Apple Design examples'
+      },
+      {
+        type: 'image',
+        data: Buffer.from('image').toString('base64'),
+        mimeType: 'image/png'
+      }
+    ]
+  }),
+  listCachedDesignResources: jest.fn().mockResolvedValue({
+    resources: []
+  }),
+  readCachedDesignResource: jest.fn().mockResolvedValue({
+    contents: []
+  })
+}));
+
 describe('Response Format Validation', () => {
   let server: AppleDeveloperDocsMCPServer;
 
@@ -108,8 +163,10 @@ describe('Response Format Validation', () => {
    * {
    *   content: [
    *     {
-   *       type: 'text',
-   *       text: string
+   *       type: 'text' | 'image' | 'resource_link' | 'resource',
+   *       text?: string,
+   *       data?: string,
+   *       uri?: string
    *     }
    *   ],
    *   isError?: boolean
@@ -122,13 +179,30 @@ describe('Response Format Validation', () => {
     
     response.content.forEach((item: any) => {
       expect(item).toHaveProperty('type');
-      expect(item.type).toBe('text');
-      expect(item).toHaveProperty('text');
-      expect(typeof item.text).toBe('string');
-      
-      // Ensure text is not a nested object (the main issue we're preventing)
-      expect(typeof item.text).not.toBe('object');
-      expect(item.text).not.toHaveProperty('content');
+      expect(['text', 'image', 'resource_link', 'resource']).toContain(item.type);
+
+      if (item.type === 'text') {
+        expect(item).toHaveProperty('text');
+        expect(typeof item.text).toBe('string');
+
+        // Ensure text is not a nested object (the main issue we're preventing)
+        expect(typeof item.text).not.toBe('object');
+        expect(item.text).not.toHaveProperty('content');
+      }
+
+      if (item.type === 'image') {
+        expect(item).toHaveProperty('data');
+        expect(item).toHaveProperty('mimeType');
+        expect(typeof item.data).toBe('string');
+        expect(typeof item.mimeType).toBe('string');
+      }
+
+      if (item.type === 'resource_link') {
+        expect(item).toHaveProperty('uri');
+        expect(item).toHaveProperty('name');
+        expect(typeof item.uri).toBe('string');
+        expect(typeof item.name).toBe('string');
+      }
     });
   };
 
@@ -192,6 +266,26 @@ describe('Response Format Validation', () => {
         name: 'getSampleCode',
         method: () => server.getSampleCode(),
       },
+      {
+        name: 'searchAppleDesignDocs',
+        method: () => server.searchAppleDesignDocs('layout'),
+      },
+      {
+        name: 'getAppleDesignContent',
+        method: () => server.getAppleDesignContent('https://developer.apple.com/design/human-interface-guidelines/layout'),
+      },
+      {
+        name: 'listAppleDesignResources',
+        method: () => server.listAppleDesignResources(),
+      },
+      {
+        name: 'downloadAppleDesignResource',
+        method: () => server.downloadAppleDesignResource(undefined, 'https://developer.apple.com/design/downloads/templates.zip'),
+      },
+      {
+        name: 'getAppleDesignExamples',
+        method: () => server.getAppleDesignExamples('https://developer.apple.com/design/human-interface-guidelines/layout'),
+      },
     ];
 
     toolTests.forEach(({ name, method }) => {
@@ -201,6 +295,15 @@ describe('Response Format Validation', () => {
         validateResponseFormat(response);
         expect(typeof response.content[0].text).toBe('string');
       });
+    });
+
+    it('should delegate Apple Design URLs from getAppleDocContent without nesting', async () => {
+      const response = await server.getAppleDocContent(
+        'https://developer.apple.com/design/human-interface-guidelines/layout'
+      );
+
+      validateResponseFormat(response);
+      expect(response.content[0].text).toContain('Mock Apple Design content');
     });
   });
 
@@ -223,6 +326,18 @@ describe('Response Format Validation', () => {
       
       validateResponseFormat(response);
       expect(response.isError).toBe(true);
+    });
+
+    it('should format Apple Design handler errors without nesting', async () => {
+      (handleDownloadAppleDesignResource as jest.Mock).mockRejectedValueOnce(
+        new Error('A resourceId or direct URL is required.'),
+      );
+
+      const response = await server.downloadAppleDesignResource();
+
+      validateResponseFormat(response);
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('A resourceId or direct URL is required.');
     });
   });
 

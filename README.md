@@ -11,6 +11,9 @@ Apple Developer Documentation MCP Server - Access Apple's official developer doc
 
 - 🔍 **Smart Search**: Intelligent search across Apple Developer Documentation for SwiftUI, UIKit, Foundation, CoreData, ARKit, and more
 - 📚 **Complete Documentation Access**: Full access to Apple's JSON API for Swift, Objective-C, and framework documentation
+- 🎨 **Apple Design and HIG Access**: Read Human Interface Guidelines JSON, Apple Design pages, and Design Resources catalog entries
+- 🖼️ **Design Resource Previews**: Return Apple-provided HIG images and resource thumbnails as MCP image content blocks
+- 📦 **Downloadable Design Resources**: Download direct Apple-hosted templates, fonts, tools, and archives into a local MCP resource cache
 - 🔧 **Framework Index**: Browse hierarchical API structures for iOS, macOS, watchOS, tvOS, visionOS frameworks
 - 📋 **Technology Catalog**: Explore Apple technologies including SwiftUI, UIKit, Metal, Core ML, Vision, and ARKit
 - 📰 **Documentation Updates**: Track WWDC 2024/2025 announcements, iOS 26, macOS 26, and latest SDK releases
@@ -269,6 +272,15 @@ npm install && npm run build
 "Get URLSession async/await methods"
 ```
 
+### 🎨 Apple Design and HIG
+```
+"Search Apple Design docs for layout"
+"Read the HIG page about color"
+"List Apple Design Resources for iOS templates"
+"Download the Apple Design resource with this resourceId"
+"Show Apple Design examples for the layout HIG page"
+```
+
 ### 🔧 Framework Exploration
 ```
 "Show me SwiftUI framework API index"
@@ -366,6 +378,11 @@ npm install && npm run build
 |------|-------------|--------------|
 | `search_apple_docs` | Search Apple Developer Documentation | Official search API, find specific APIs, classes, methods |
 | `get_apple_doc_content` | Get detailed documentation content | JSON API access, optional enhanced analysis (related/similar APIs, platform compatibility) |
+| `search_apple_design_docs` | Search Apple Design and HIG content | HIG JSON references, Design pages, Design Resources catalog |
+| `get_apple_design_content` | Read Apple Design and HIG pages | HIG JSON rendering, HTML fallback for `/design/` pages |
+| `list_apple_design_resources` | List Apple Design Resources | Stable resource IDs, category/platform/format filters, previews and links |
+| `download_apple_design_resource` | Download direct Apple Design resources | Local cache, MCP `resource_link` blocks, `resources/read` blob access |
+| `get_apple_design_examples` | Return Apple Design visual examples | MCP `image` blocks with base64 data and MIME type |
 | `list_technologies` | Browse all Apple technologies | Category filtering, language support, beta status |
 | `search_framework_symbols` | Search symbols in specific framework | Classes, structs, protocols, wildcard patterns, type filtering |
 | `get_related_apis` | Find related APIs | Inheritance, conformance, "See Also" relationships |
@@ -389,6 +406,7 @@ apple-docs-mcp/
 │   ├── tools/                        # MCP tool implementations
 │   │   ├── search-parser.ts          # HTML search result parsing
 │   │   ├── doc-fetcher.ts            # JSON API documentation fetching
+│   │   ├── design-docs.ts            # Apple Design, HIG, resources, and previews
 │   │   ├── list-technologies.ts      # Technology catalog handling
 │   │   ├── get-documentation-updates.ts # Documentation updates tracking
 │   │   ├── get-technology-overviews.ts # Technology overviews and guides
@@ -436,6 +454,10 @@ apple-docs-mcp/
 | Framework Indexes | 1 hour | 100 entries | Stable structure, less frequent changes |
 | Technologies List | 2 hours | 50 entries | Rarely changes, large content |
 | Documentation Updates | 30 minutes | 100 entries | Regular updates, WWDC announcements |
+| Apple Design Content | 2 hours | 100 entries | HIG and Design pages are stable during a session |
+| Apple Design Resources | 2 hours | 20 entries | Catalog metadata changes less often than page reads |
+
+Downloaded Apple Design files are cached outside the repository by default. Set `APPLE_DOCS_MCP_CACHE_DIR` to choose a cache directory for downloaded resource files exposed through MCP `resources/list` and `resources/read`.
 
 ## 📦 WWDC Data
 

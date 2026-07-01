@@ -22,6 +22,11 @@ export function convertToJsonApiUrl(webUrl: string): string | null {
       return null;
     }
 
+    const designJsonUrl = convertToDesignJsonApiUrl(webUrl);
+    if (designJsonUrl) {
+      return designJsonUrl;
+    }
+
     let path = urlObj.pathname;
 
     // For documentation URLs, format for the JSON API
@@ -48,6 +53,34 @@ export function convertToJsonApiUrl(webUrl: string): string | null {
 }
 
 /**
+ * Convert a Human Interface Guidelines web URL to a JSON API URL
+ * @param webUrl The web URL to convert
+ * @returns The corresponding HIG JSON API URL
+ */
+export function convertToDesignJsonApiUrl(webUrl: string): string | null {
+  try {
+    const urlObj = new URL(webUrl);
+    if (urlObj.hostname !== 'developer.apple.com') {
+      return null;
+    }
+
+    let path = urlObj.pathname;
+    if (path.endsWith('/')) {
+      path = path.slice(0, -1);
+    }
+
+    if (path !== '/design/human-interface-guidelines' && !path.startsWith('/design/human-interface-guidelines/')) {
+      return null;
+    }
+
+    const designPath = path.replace('/design/', '');
+    return `https://developer.apple.com/tutorials/data/design/${designPath}.json`;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Validate if URL is from Apple Developer domain
  * @param url The URL to validate
  * @returns True if valid Apple Developer URL
@@ -56,6 +89,21 @@ export function isValidAppleDeveloperUrl(url: string): boolean {
   try {
     const urlObj = new URL(url);
     return urlObj.hostname === 'developer.apple.com';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Validate if URL is an Apple Design URL
+ * @param url The URL to validate
+ * @returns True if valid Apple Design URL
+ */
+export function isAppleDesignUrl(url: string): boolean {
+  try {
+    const urlObj = new URL(url);
+    return urlObj.hostname === 'developer.apple.com'
+      && (urlObj.pathname === '/design' || urlObj.pathname.startsWith('/design/'));
   } catch {
     return false;
   }

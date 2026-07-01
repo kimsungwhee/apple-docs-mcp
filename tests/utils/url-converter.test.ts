@@ -2,7 +2,13 @@
  * Tests for URL converter utilities
  */
 
-import { convertToJsonApiUrl, isValidAppleDeveloperUrl, extractApiNameFromUrl } from '../../src/utils/url-converter.js';
+import {
+  convertToDesignJsonApiUrl,
+  convertToJsonApiUrl,
+  extractApiNameFromUrl,
+  isAppleDesignUrl,
+  isValidAppleDeveloperUrl,
+} from '../../src/utils/url-converter.js';
 
 describe('URL Converter', () => {
   describe('convertToJsonApiUrl', () => {
@@ -32,6 +38,38 @@ describe('URL Converter', () => {
       
       expect(convertToJsonApiUrl(webUrl)).toBe(webUrl);
     });
+
+    it('should convert Human Interface Guidelines root URL to JSON API URL', () => {
+      const webUrl = 'https://developer.apple.com/design/human-interface-guidelines';
+      const expected = 'https://developer.apple.com/tutorials/data/design/human-interface-guidelines.json';
+
+      expect(convertToJsonApiUrl(webUrl)).toBe(expected);
+      expect(convertToDesignJsonApiUrl(webUrl)).toBe(expected);
+    });
+
+    it('should convert Human Interface Guidelines child URL to JSON API URL', () => {
+      const webUrl = 'https://developer.apple.com/design/human-interface-guidelines/layout';
+      const expected = 'https://developer.apple.com/tutorials/data/design/human-interface-guidelines/layout.json';
+
+      expect(convertToJsonApiUrl(webUrl)).toBe(expected);
+      expect(convertToDesignJsonApiUrl(webUrl)).toBe(expected);
+    });
+
+    it('should convert Human Interface Guidelines URL with trailing slash', () => {
+      const webUrl = 'https://developer.apple.com/design/human-interface-guidelines/layout/';
+      const expected = 'https://developer.apple.com/tutorials/data/design/human-interface-guidelines/layout.json';
+
+      expect(convertToJsonApiUrl(webUrl)).toBe(expected);
+      expect(convertToDesignJsonApiUrl(webUrl)).toBe(expected);
+    });
+
+    it('should convert Human Interface Guidelines URL with anchor', () => {
+      const webUrl = 'https://developer.apple.com/design/human-interface-guidelines/layout#columns';
+      const expected = 'https://developer.apple.com/tutorials/data/design/human-interface-guidelines/layout.json';
+
+      expect(convertToJsonApiUrl(webUrl)).toBe(expected);
+      expect(convertToDesignJsonApiUrl(webUrl)).toBe(expected);
+    });
   });
 
   describe('isValidAppleDeveloperUrl', () => {
@@ -57,6 +95,34 @@ describe('URL Converter', () => {
 
       invalidUrls.forEach(url => {
         expect(isValidAppleDeveloperUrl(url)).toBe(false);
+      });
+    });
+  });
+
+  describe('isAppleDesignUrl', () => {
+    it('should return true for Apple Design URLs', () => {
+      const validUrls = [
+        'https://developer.apple.com/design',
+        'https://developer.apple.com/design/',
+        'https://developer.apple.com/design/resources/',
+        'https://developer.apple.com/design/human-interface-guidelines/layout',
+      ];
+
+      validUrls.forEach(url => {
+        expect(isAppleDesignUrl(url)).toBe(true);
+      });
+    });
+
+    it('should return false for non-design URLs', () => {
+      const invalidUrls = [
+        'https://developer.apple.com/documentation/swiftui',
+        'https://developer.apple.com/news/',
+        'https://apple.com/design/',
+        'not-a-url',
+      ];
+
+      invalidUrls.forEach(url => {
+        expect(isAppleDesignUrl(url)).toBe(false);
       });
     });
   });

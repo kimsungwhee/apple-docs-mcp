@@ -70,6 +70,15 @@ describe('HTTP Client Headers Integration', () => {
       expect(options.headers['User-Agent']).toBe('Custom-Agent/1.0');
       expect(options.headers['Custom-Header']).toBe('custom-value');
     });
+
+    test('should pass redirect handling options to fetch', async () => {
+      await httpClient.get('https://example.com/api', {
+        redirect: 'manual',
+      });
+
+      const [, options] = mockFetch.mock.calls[0];
+      expect(options.redirect).toBe('manual');
+    });
   });
 
   describe('getText with generated headers', () => {

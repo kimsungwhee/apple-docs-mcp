@@ -44,6 +44,8 @@ export const CACHE_TTL = {
   UPDATES: 30 * 60 * 1000, // 30 minutes
   SAMPLE_CODE: 2 * 60 * 60 * 1000, // 2 hours
   TECHNOLOGY_OVERVIEWS: 2 * 60 * 60 * 1000, // 2 hours
+  DESIGN_CONTENT: 2 * 60 * 60 * 1000, // 2 hours
+  DESIGN_RESOURCES: 2 * 60 * 60 * 1000, // 2 hours
 } as const;
 
 // Cache Size Configuration
@@ -55,6 +57,8 @@ export const CACHE_SIZE = {
   UPDATES: 100,
   SAMPLE_CODE: 100,
   TECHNOLOGY_OVERVIEWS: 100,
+  DESIGN_CONTENT: 100,
+  DESIGN_RESOURCES: 20,
 
   // Default cache configuration
   DEFAULT_CACHE_SIZE: 1000,
@@ -233,6 +237,9 @@ export const APPLE_URLS = {
   TECHNOLOGY_OVERVIEWS_INDEX_JSON: 'https://developer.apple.com/tutorials/data/index/technologyoverviews',
   SAMPLE_CODE_JSON: 'https://developer.apple.com/tutorials/data/documentation/SampleCode.json',
   SAMPLE_CODE_INDEX_JSON: 'https://developer.apple.com/tutorials/data/index/samplecode',
+  DESIGN: 'https://developer.apple.com/design/',
+  DESIGN_RESOURCES: 'https://developer.apple.com/design/resources/',
+  DESIGN_HIG_JSON: 'https://developer.apple.com/tutorials/data/design/human-interface-guidelines.json',
 } as const;
 
 // WWDC URLs

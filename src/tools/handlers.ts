@@ -2,6 +2,7 @@
  * Tool handlers for Apple Developer Documentation MCP Server
  */
 
+import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import {
   searchAppleDocsSchema,
   getAppleDocContentSchema,
@@ -14,6 +15,11 @@ import {
   getDocumentationUpdatesSchema,
   getTechnologyOverviewsSchema,
   getSampleCodeSchema,
+  searchAppleDesignDocsSchema,
+  getAppleDesignContentSchema,
+  listAppleDesignResourcesSchema,
+  downloadAppleDesignResourceSchema,
+  getAppleDesignExamplesSchema,
 } from '../schemas/index.js';
 import {
   listWWDCVideosSchema,
@@ -39,7 +45,7 @@ import {
 export type ToolHandler = (
   args: unknown,
   server: any
-) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
+) => Promise<CallToolResult>;
 
 /**
  * Map of tool names to their handlers
@@ -90,7 +96,17 @@ export const toolHandlers: Record<string, ToolHandler> = {
   },
 
   get_cache_stats: async () => {
-    const { apiCache, searchCache, indexCache, technologiesCache, updatesCache, sampleCodeCache, technologyOverviewsCache } = await import('../utils/cache.js');
+    const {
+      apiCache,
+      searchCache,
+      indexCache,
+      technologiesCache,
+      updatesCache,
+      sampleCodeCache,
+      technologyOverviewsCache,
+      designContentCache,
+      designResourcesCache,
+    } = await import('../utils/cache.js');
 
     const stats = {
       apiCache: apiCache.getStats(),
@@ -100,6 +116,8 @@ export const toolHandlers: Record<string, ToolHandler> = {
       updatesCache: updatesCache.getStats(),
       sampleCodeCache: sampleCodeCache.getStats(),
       technologyOverviewsCache: technologyOverviewsCache.getStats(),
+      designContentCache: designContentCache.getStats(),
+      designResourcesCache: designResourcesCache.getStats(),
     };
 
     let report = '# Cache Statistics Report\n\n';
@@ -135,6 +153,51 @@ export const toolHandlers: Record<string, ToolHandler> = {
       validatedArgs.includeReferences,
       validatedArgs.includeSimilarApis,
       validatedArgs.includePlatformAnalysis,
+    );
+  },
+
+  search_apple_design_docs: async (args, server) => {
+    const validatedArgs = searchAppleDesignDocsSchema.parse(args);
+    return await server.searchAppleDesignDocs(
+      validatedArgs.query,
+      validatedArgs.contentType,
+      validatedArgs.platform,
+      validatedArgs.limit,
+    );
+  },
+
+  get_apple_design_content: async (args, server) => {
+    const validatedArgs = getAppleDesignContentSchema.parse(args);
+    return await server.getAppleDesignContent(validatedArgs.url);
+  },
+
+  list_apple_design_resources: async (args, server) => {
+    const validatedArgs = listAppleDesignResourcesSchema.parse(args ?? {});
+    return await server.listAppleDesignResources(
+      validatedArgs.category,
+      validatedArgs.platform,
+      validatedArgs.format,
+      validatedArgs.searchQuery,
+      validatedArgs.limit,
+    );
+  },
+
+  download_apple_design_resource: async (args, server) => {
+    const validatedArgs = downloadAppleDesignResourceSchema.parse(args ?? {});
+    return await server.downloadAppleDesignResource(
+      validatedArgs.resourceId,
+      validatedArgs.url,
+      validatedArgs.maxBytes,
+    );
+  },
+
+  get_apple_design_examples: async (args, server) => {
+    const validatedArgs = getAppleDesignExamplesSchema.parse(args ?? {});
+    return await server.getAppleDesignExamples(
+      validatedArgs.url,
+      validatedArgs.resourceId,
+      validatedArgs.query,
+      validatedArgs.limit,
     );
   },
 
@@ -314,14 +377,14 @@ export async function handleToolCall(
   toolName: string,
   args: unknown,
   server: any,
-): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> {
+): Promise<CallToolResult> {
   try {
     const handler = toolHandlers[toolName];
     if (!handler) {
       throw new Error(`Unknown tool: ${toolName}`);
     }
 
-    return await handler(args, server) as { content: Array<{ type: string; text: string }>; isError?: boolean };
+    return await handler(args, server);
   } catch (error) {
     // Return error response for validation errors and unknown tools
     return {
