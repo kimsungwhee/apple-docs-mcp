@@ -65,6 +65,17 @@ claude mcp add apple-docs -- npx -y @kimsungwhee/apple-docs-mcp@latest
 </details>
 
 <details>
+<summary><strong>🛠️ Autohand Code</strong></summary>
+
+```bash
+autohand mcp add apple-docs npx -y @kimsungwhee/apple-docs-mcp@latest
+```
+
+Add `--scope project` after `mcp add` to keep the registration in the current workspace. See [Autohand Code](https://github.com/autohandai/code-cli/) for current CLI details.
+
+</details>
+
+<details>
 <summary><strong>🖱️ Cursor</strong></summary>
 
 **Via Settings**: Settings → Cursor Settings → MCP → Add new global MCP server
