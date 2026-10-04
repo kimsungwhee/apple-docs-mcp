@@ -24,6 +24,7 @@ import AppleDeveloperDocsMCPServer from '../src/index.js';
 jest.mock('../src/utils/http-client.js', () => ({
   httpClient: {
     getText: jest.fn().mockResolvedValue('<html><body><ul class="search-results"></ul></body></html>'),
+    postText: jest.fn().mockResolvedValue(''),
     get: jest.fn().mockResolvedValue({
       ok: true,
       json: jest.fn().mockResolvedValue({})
@@ -217,7 +218,7 @@ describe('Response Format Validation', () => {
     it('should handle network errors with proper format', async () => {
       // Mock network failure
       const { httpClient } = await import('../src/utils/http-client.js');
-      (httpClient.getText as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
+      (httpClient.postText as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
 
       const response = await server.searchAppleDocs('SwiftUI', 'all');
       

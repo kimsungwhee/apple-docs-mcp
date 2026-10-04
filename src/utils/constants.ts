@@ -224,6 +224,7 @@ export const PROCESSING_LIMITS = {
 export const APPLE_URLS = {
   BASE: 'https://developer.apple.com',
   SEARCH: 'https://developer.apple.com/search/',
+  SEARCH_API: 'https://devintserv.msc.sbz.apple.com/api/v1/query',
   DOCUMENTATION: 'https://developer.apple.com/documentation/',
   TUTORIALS_DATA: 'https://developer.apple.com/tutorials/data/',
   TECHNOLOGIES_JSON: 'https://developer.apple.com/tutorials/data/documentation/technologies.json',

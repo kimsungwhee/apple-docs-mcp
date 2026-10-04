@@ -2,7 +2,6 @@
  * Search result parsing utilities
  */
 
-import type * as cheerio from 'cheerio';
 
 export interface SearchResult {
   title: string;
@@ -28,21 +27,6 @@ export const typeMapping: Record<string, string[]> = {
 const UNSUPPORTED_TYPES = ['general', 'video', 'forums', 'news'];
 
 /**
- * Extract search result type from element classes
- */
-export function extractResultType(element: cheerio.Cheerio<any>): string {
-  const classes = element.attr('class')?.split(' ') ?? [];
-
-  for (const className of classes) {
-    if (className !== 'search-result' && className.trim()) {
-      return className;
-    }
-  }
-
-  return 'other';
-}
-
-/**
  * Check if result type is supported
  */
 export function isResultTypeSupported(resultType: string, filterType: string): boolean {
@@ -58,23 +42,6 @@ export function isResultTypeSupported(resultType: string, filterType: string): b
   }
 
   return true;
-}
-
-/**
- * Extract result title and URL
- */
-export function extractTitleAndUrl(resultItem: cheerio.Cheerio<any>): { title: string; url: string } {
-  const titleElement = resultItem.find('.result-title');
-  const title = titleElement.text().trim();
-
-  const urlElement = titleElement.find('a');
-  let url = urlElement.attr('href') ?? '';
-
-  if (url && url.startsWith('/')) {
-    url = `https://developer.apple.com${url}`;
-  }
-
-  return { title, url };
 }
 
 /**
@@ -104,77 +71,45 @@ export function isUrlSupported(url: string): boolean {
 }
 
 /**
- * Extract result description
+ * A result as Apple's search API streams it
  */
-export function extractDescription(resultItem: cheerio.Cheerio<any>): string {
-  const descriptionElement = resultItem.find('.result-description');
-  return descriptionElement.text().trim();
+export interface ApiSearchResult {
+  value?: {
+    metadata?: {
+      title?: string;
+      permalink?: string;
+      kind?: string;
+      description?: string;
+      hierarchy?: string;
+    };
+  };
 }
 
 /**
- * Extract framework information
+ * Result types by the API's `kind`; every other kind (a symbol, an overview) is API reference
  */
-export function extractFramework(resultItem: cheerio.Cheerio<any>, url: string): string | undefined {
-  // Try to extract from link text
-  const linkText = resultItem.find('.result-link').text().trim();
-  const frameworkMatch = linkText.match(/^([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)\s+[>›]/);
-
-  if (frameworkMatch) {
-    return frameworkMatch[1];
-  }
-
-  // Try to extract from URL
-  const urlMatch = url.match(/\/documentation\/([^\/]+)/);
-  if (urlMatch) {
-    const framework = urlMatch[1];
-    // Convert underscore to space and capitalize
-    return framework.split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  }
-
-  return undefined;
-}
-
-/**
- * Extract beta status
- */
-export function extractBetaStatus(resultItem: cheerio.Cheerio<any>): boolean {
-  const titleText = resultItem.find('.result-title').text();
-  const descriptionText = resultItem.find('.result-description').text();
-
-  return titleText.includes('Beta') || descriptionText.includes('Beta');
-}
+const KIND_TYPES: Record<string, string> = {
+  article: 'documentation-article',
+  tutorial: 'documentation-tutorial',
+  sampleCode: 'sample-code',
+};
 
 /**
  * Parse a single search result
  */
-export function parseSearchResult(
-  element: cheerio.Cheerio<any>,
-  filterType: string,
-): SearchResult | null {
-  const resultType = extractResultType(element);
+export function parseSearchResult(result: ApiSearchResult, filterType: string): SearchResult | null {
+  const { title, permalink, kind, description, hierarchy } = result.value?.metadata ?? {};
+  const type = KIND_TYPES[kind ?? ''] ?? 'documentation';
 
-  if (!isResultTypeSupported(resultType, filterType)) {
+  if (!title || !permalink || !isResultTypeSupported(type, filterType) || !isUrlSupported(permalink)) {
     return null;
   }
-
-  const { title, url } = extractTitleAndUrl(element);
-
-  if (!isUrlSupported(url)) {
-    return null;
-  }
-
-  const description = extractDescription(element);
-  const framework = extractFramework(element, url);
-  const beta = extractBetaStatus(element);
 
   return {
     title,
-    url,
-    type: resultType,
-    description,
-    framework,
-    beta,
+    url: permalink,
+    type,
+    description: description ?? '',
+    framework: hierarchy?.split(' > ')[0],
   };
 }

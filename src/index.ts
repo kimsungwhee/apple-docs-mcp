@@ -120,11 +120,26 @@ export default class AppleDeveloperDocsMCPServer {
 
       logger.info(`Searching Apple docs for: ${query}`);
 
-      // 获取搜索结果页面
-      const html = await httpClient.getText(searchUrl);
+      // The search page fills itself in the browser from this API, so its HTML holds no results
+      // (https://github.com/kimsungwhee/apple-docs-mcp/issues/51). The scopes are the ones the page
+      // sends for its Sample Code and Documentation filters.
+      const jsonl = await httpClient.postText(APPLE_URLS.SEARCH_API, {
+        text: query,
+        targetResultLocale: 'en',
+        includedResponses: ['search'],
+        searchScope: type === 'sample'
+          ? { kind: 'documentationRole', value: 'sampleCode' }
+          : {
+            kind: 'and',
+            scopes: [
+              { kind: 'hostname', value: 'developer.apple.com' },
+              { kind: 'pathPrefix', value: '/documentation/' },
+            ],
+          },
+      }, 'application/jsonl');
 
       // 解析并返回搜索结果，传递type参数进行过滤
-      return parseSearchResults(html, query, searchUrl, type);
+      return parseSearchResults(jsonl, query, searchUrl, type);
     } catch (error) {
       if (error && typeof error === 'object' && 'type' in error) {
         return createToolErrorResponse(error as any, 'search_apple_docs');

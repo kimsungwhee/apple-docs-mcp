@@ -419,6 +419,39 @@ class HttpClient {
   }
 
   /**
+   * POST a JSON body and return the response text, with the same queue, rate limit and retries as `getText`
+   */
+  async postText(url: string, body: unknown, accept: string, options: RequestOptions = {}): Promise<string> {
+    const {
+      timeout = REQUEST_CONFIG.TIMEOUT,
+      retries = REQUEST_CONFIG.MAX_RETRIES,
+      retryDelay = REQUEST_CONFIG.RETRY_DELAY,
+      headers = {},
+    } = options;
+
+    try {
+      return await this.executeWithQueue(async () => {
+        if (!globalRateLimiter.canMakeRequest()) {
+          throw new Error('Rate limit exceeded. Please try again later.');
+        }
+
+        const requestHeaders = await this.generateRequestHeaders(headers, accept);
+
+        const response = await this.fetchWithRetry(url, {
+          method: 'POST',
+          headers: { ...requestHeaders, 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(timeout),
+        }, retries, retryDelay);
+
+        return await response.text();
+      });
+    } catch (error) {
+      throw handleFetchError(error, url);
+    }
+  }
+
+  /**
    * Get current queue status
    */
   getStatus() {

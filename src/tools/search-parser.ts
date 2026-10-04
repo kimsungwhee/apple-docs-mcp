@@ -1,5 +1,4 @@
-import * as cheerio from 'cheerio';
-import type { SearchResult } from './search-result-parser.js';
+import type { ApiSearchResult, SearchResult } from './search-result-parser.js';
 import { parseSearchResult } from './search-result-parser.js';
 import { API_LIMITS } from '../utils/constants.js';
 import { logger } from '../utils/logger.js';
@@ -188,37 +187,37 @@ This search covers documentation and samples, but not WWDC videos. For WWDC cont
 }
 
 /**
- * Parse search results with reduced complexity
+ * Replays the JSON lines Apple's search API streams, as its search page does: each `search` event takes `removeLast`
+ * characters off the results document, then appends `append`
  */
 export function parseSearchResults(
-  html: string,
+  jsonl: string,
   query: string,
   searchUrl: string,
   filterType: string = 'all',
 ): { content: Array<{ type: string; text: string }> } {
   try {
-    const $ = cheerio.load(html);
-    const results: SearchResult[] = [];
-
-    // Parse each search result (with limit)
-    $('.search-result').each((_, element) => {
-      if (results.length >= API_LIMITS.MAX_SEARCH_RESULTS) {
-        return false; // Stop parsing when limit reached
+    let document = '';
+    for (const line of jsonl.split('\n')) {
+      if (!line.trim()) {
+        continue;
       }
-      const result = parseSearchResult($(element), filterType);
-      if (result) {
-        results.push(result);
+      const event = JSON.parse(line) as { kind?: string; diff?: { append?: string; removeLast?: number } };
+      if (event.kind === 'search') {
+        const { append = '', removeLast = 0 } = event.diff ?? {};
+        document = document.slice(0, Math.max(0, document.length - removeLast)) + append;
       }
-      return true; // Continue parsing
-    });
-
-    // Format results
-    const formattedContent = formatSearchResults(results, query, filterType, searchUrl);
+    }
+    const apiResults: ApiSearchResult[] = document ? JSON.parse(document).results : [];
+    const results = apiResults
+      .map(result => parseSearchResult(result, filterType))
+      .filter((result): result is SearchResult => result !== null)
+      .slice(0, API_LIMITS.MAX_SEARCH_RESULTS);
 
     return {
       content: [{
         type: 'text',
-        text: formattedContent,
+        text: formatSearchResults(results, query, filterType, searchUrl),
       }],
     };
   } catch (error) {
