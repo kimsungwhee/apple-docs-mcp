@@ -153,6 +153,57 @@ describe('fetchAppleDocJson', () => {
     });
   });
 
+  describe('nested content blocks', () => {
+    it('should render code in language tabs, notes and lists', async () => {
+      // The shape of UNCalendarNotificationTrigger's page: its only code listing sits in Swift and Objective-C tabs.
+      const doc = {
+        primaryContentSections: [
+          { kind: 'declarations', declarations: [{ tokens: [{ text: 'class UNCalendarNotificationTrigger' }, { text: '\n' }] }] },
+          {
+            kind: 'content',
+            content: [
+              { type: 'heading', text: 'Overview' },
+              {
+                type: 'tabNavigator',
+                tabs: [
+                  {
+                    title: 'Swift',
+                    content: [{ type: 'codeListing', syntax: 'swift', code: ['var date = DateComponents()', 'date.hour = 8'] }],
+                  },
+                  {
+                    title: 'Objective-C',
+                    content: [{ type: 'codeListing', syntax: 'objc', code: ['NSDateComponents* date = [NSDateComponents new];'] }],
+                  },
+                ],
+              },
+              {
+                type: 'aside',
+                name: 'Important',
+                content: [{ type: 'paragraph', inlineContent: [{ type: 'text', text: 'Ask for permission first.' }] }],
+              },
+              {
+                type: 'unorderedList',
+                items: [{ content: [{ type: 'paragraph', inlineContent: [{ type: 'text', text: 'First item' }] }] }],
+              },
+            ],
+          },
+        ],
+        metadata: { roleHeading: 'Class', title: 'UNCalendarNotificationTrigger' },
+      };
+
+      (apiCache.get as jest.Mock).mockReturnValue(null);
+      (httpClient.getJson as jest.Mock).mockResolvedValue(doc);
+
+      const text = (await fetchAppleDocJson(mockDocUrl)).content[0].text;
+
+      expect(text).toContain('```swift\nclass UNCalendarNotificationTrigger\n```');
+      expect(text).toContain('**Swift**\n\n```swift\nvar date = DateComponents()\ndate.hour = 8\n```');
+      expect(text).toContain('**Objective-C**\n\n```objc\nNSDateComponents* date = [NSDateComponents new];\n```');
+      expect(text).toContain('> **Important:** Ask for permission first.');
+      expect(text).toContain('- First item');
+    });
+  });
+
   describe('error handling', () => {
     it('should handle network errors', async () => {
       (apiCache.get as jest.Mock).mockReturnValue(null);

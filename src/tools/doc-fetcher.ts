@@ -102,7 +102,7 @@ function formatSpecificAPIContent(jsonData: AppleDocJSON): string {
             const declaration = typedSection.declarations[0].tokens
               .map((token) => token.text ?? '')
               .join('');
-            content += `\`\`\`swift\n${declaration}\`\`\`\n\n`;
+            content += `\`\`\`swift\n${declaration.trimEnd()}\n\`\`\`\n\n`;
           }
           break;
 
@@ -123,31 +123,7 @@ function formatSpecificAPIContent(jsonData: AppleDocJSON): string {
 
         case 'content':
           if (typedSection.content && Array.isArray(typedSection.content)) {
-            typedSection.content.forEach((item) => {
-              const contentItem = item as ContentItem;
-              if (contentItem.type === 'heading') {
-                content += `## ${contentItem.text}\n\n`;
-              } else if (contentItem.type === 'paragraph' && contentItem.inlineContent) {
-                const paragraphText = contentItem.inlineContent
-                  .map((inline: any) => {
-                    if (inline.type === 'text') {
-                      return inline.text ?? '';
-                    } else if (inline.type === 'codeVoice') {
-                      return `\`${(inline).code ?? ''}\``;
-                    } else if (inline.type === 'reference' && (inline).identifier) {
-                      const apiName = ((inline).identifier as string).split('/').pop() ?? (inline).identifier;
-                      return `\`${apiName}\``;
-                    }
-                    return '';
-                  })
-                  .join('');
-                if (paragraphText.trim()) {
-                  content += `${paragraphText}\n\n`;
-                }
-              } else if (contentItem.type === 'codeListing' && (contentItem as any).code) {
-                content += `\`\`\`${(contentItem as any).syntax ?? 'swift'}\n${(contentItem as any).code.join('\n')}\`\`\`\n\n`;
-              }
-            });
+            content += formatContentItems(typedSection.content as ContentItem[]);
           }
           break;
       }
@@ -155,6 +131,68 @@ function formatSpecificAPIContent(jsonData: AppleDocJSON): string {
   }
 
   return content;
+}
+
+/**
+ * Format the inline content of a paragraph
+ */
+function formatInlineContent(inlineContent: NonNullable<ContentItem['inlineContent']>): string {
+  return inlineContent
+    .map((inline) => {
+      if (inline.type === 'text') {
+        return inline.text ?? '';
+      } else if (inline.type === 'codeVoice') {
+        return `\`${inline.code ?? ''}\``;
+      } else if (inline.type === 'reference' && inline.identifier) {
+        return `\`${inline.identifier.split('/').pop() ?? inline.identifier}\``;
+      }
+      return '';
+    })
+    .join('');
+}
+
+/**
+ * Format content blocks, including the blocks that hold other blocks: a code listing's language tabs
+ * (Swift, Objective-C), notes, and lists. Blocks of any other type are left out.
+ */
+function formatContentItems(items: ContentItem[]): string {
+  return items.map((item) => {
+    switch (item.type) {
+      case 'heading':
+        return `## ${item.text}\n\n`;
+      case 'paragraph': {
+        const text = formatInlineContent(item.inlineContent ?? []);
+        return text.trim() ? `${text}\n\n` : '';
+      }
+      case 'codeListing':
+        return item.code ? `\`\`\`${item.syntax ?? 'swift'}\n${item.code.join('\n')}\n\`\`\`\n\n` : '';
+      case 'tabNavigator':
+        return (item.tabs ?? [])
+          .map((tab) => `**${tab.title ?? ''}**\n\n${formatContentItems(tab.content ?? [])}`)
+          .join('');
+      case 'aside': {
+        const body = formatContentItems(item.content ?? []).trim().replace(/\n/g, '\n> ');
+        return `> **${item.name ?? 'Note'}:** ${body}\n\n`;
+      }
+      case 'unorderedList':
+      case 'orderedList':
+        return formatList(item);
+      default:
+        return '';
+    }
+  }).join('');
+}
+
+/**
+ * Format a list's items, numbered for an ordered list
+ */
+function formatList(item: ContentItem): string {
+  const listItems = (item.items ?? []) as Array<{ content?: ContentItem[] }>;
+  const lines = listItems.map((listItem, index) => {
+    const marker = item.type === 'orderedList' ? `${index + 1}.` : '-';
+    return `${marker} ${formatContentItems(listItem.content ?? []).trim().replace(/\n/g, '\n  ')}`;
+  });
+  return `${lines.join('\n')}\n\n`;
 }
 
 /**

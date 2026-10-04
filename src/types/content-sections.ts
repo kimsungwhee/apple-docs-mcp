@@ -22,8 +22,15 @@ export interface ContentItem {
   inlineContent?: Array<{
     type: string;
     text?: string;
+    code?: string;
+    identifier?: string;
   }>;
   items?: unknown[];
+  code?: string[];
+  syntax?: string;
+  name?: string;
+  content?: ContentItem[];
+  tabs?: Array<{ title?: string; content?: ContentItem[] }>;
 }
 
 export interface ListItem {

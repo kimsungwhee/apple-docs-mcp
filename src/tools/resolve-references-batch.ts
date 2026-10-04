@@ -253,7 +253,7 @@ function formatSingleReference(ref: ResolvedReference): string {
   if (ref.fragments && ref.fragments.length > 0) {
     const codeSignature = ref.fragments.map(f => f.text).join('');
     if (codeSignature.trim()) {
-      content += `\`\`\`swift\n${codeSignature}\`\`\`\n\n`;
+      content += `\`\`\`swift\n${codeSignature.trimEnd()}\n\`\`\`\n\n`;
     }
   }
 
